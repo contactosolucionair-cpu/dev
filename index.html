@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SolucionAir — Compensaciones Aéreas</title>
+  <meta name="description" content="Gestionamos reclamos por vuelos demorados, cancelados, sobreventa y problemas de equipaje. Sin costo inicial." />
+  <link rel="stylesheet" href="src/css/styles.css" />
+  <style>
+    .sec{max-width:1060px;margin:0 auto;padding:60px 24px}
+    .sec--alt{background:var(--w)}
+    .sec__ey{font-family:var(--fm);font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--au);margin-bottom:8px}
+    .sec__h{font-family:var(--fh);font-size:1.55rem;font-weight:800;color:var(--g);letter-spacing:-.02em;margin-bottom:6px}
+    .sec__p{font-size:.86rem;color:var(--t3);max-width:520px;line-height:1.65}
+    .sec__c{text-align:center;margin-bottom:36px}
+    .sec__p--c{text-align:center;margin:0 auto}
+
+    /* Nav extended */
+    .nav__wrap{gap:16px}
+    .nav__center{display:flex;align-items:center;gap:20px;list-style:none;margin:0;padding:0}
+    .nav__center a{font-size:.74rem;font-weight:500;color:var(--t3);transition:color .15s;text-decoration:none;white-space:nowrap}
+    .nav__center a:hover{color:var(--g)}
+    .nav__actions{display:flex;align-items:center;gap:8px}
+    .nav__btn-account{display:inline-flex;align-items:center;gap:4px;padding:7px 14px;background:transparent;color:var(--t2);font-family:var(--f);font-weight:600;font-size:.74rem;border-radius:8px;border:1px solid var(--bd);transition:all .15s;cursor:pointer;white-space:nowrap}
+    .nav__btn-account:hover{background:var(--bg);border-color:var(--g);color:var(--g)}
+    .nav__btn-cta{display:inline-flex;align-items:center;gap:4px;padding:7px 16px;background:var(--g);color:var(--w);font-family:var(--fh);font-weight:700;font-size:.74rem;border-radius:8px;transition:all .15s;text-decoration:none;white-space:nowrap}
+    .nav__btn-cta:hover{background:var(--gl);color:var(--w)}
+    .nav__hamburger{display:none;background:none;border:none;color:var(--g);cursor:pointer}
+
+    /* Hero extras */
+    .hero__badges{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+    .hero__bi{display:inline-flex;align-items:center;gap:4px;font-family:var(--fm);font-size:.64rem;color:rgba(255,255,255,.48);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);padding:4px 11px;border-radius:14px}
+    .hero__link{display:inline-flex;align-items:center;gap:4px;color:var(--aul);font-size:.82rem;font-weight:500;margin-top:12px;text-decoration:none;transition:color .2s}
+    .hero__link:hover{color:#fff}
+
+    /* Steps */
+    .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:28px}
+    .stp{background:var(--w);border:1px solid var(--bdl);border-radius:12px;padding:22px;text-align:center;transition:box-shadow .2s}
+    .stp:hover{box-shadow:0 4px 20px rgba(0,0,0,.05)}
+    .stp__n{font-family:var(--fm);font-size:.62rem;font-weight:600;color:var(--au);background:rgba(212,168,83,.1);display:inline-block;padding:2px 8px;border-radius:8px;margin-bottom:10px}
+    .stp__t{font-family:var(--fh);font-size:.86rem;font-weight:700;color:var(--t1);margin-bottom:4px}
+    .stp__d{font-size:.74rem;color:var(--t3);line-height:1.45}
+
+    /* Contingency */
+    .ctg{background:linear-gradient(135deg,#1A2D26,#2D4A3E);border-radius:14px;padding:32px;margin-top:32px;color:#fff}
+    .ctg__t{font-family:var(--fh);font-size:1.05rem;font-weight:700;margin-bottom:8px;color:var(--aul)}
+    .ctg__p{font-size:.8rem;color:rgba(255,255,255,.65);line-height:1.6;margin-bottom:14px}
+    .ctg__g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .ctg__i{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:13px}
+    .ctg__it{font-family:var(--fh);font-size:.76rem;font-weight:700;color:var(--aul);margin-bottom:2px}
+    .ctg__id{font-size:.7rem;color:rgba(255,255,255,.5);line-height:1.4}
+    .ctg__note{font-family:var(--fm);font-size:.66rem;color:var(--aul);margin-top:12px;text-align:center}
+
+    /* Cases */
+    .cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}
+    .ccard{background:var(--bg);border:1px solid var(--bdl);border-radius:12px;padding:20px;transition:box-shadow .2s}
+    .ccard:hover{box-shadow:0 4px 20px rgba(0,0,0,.05)}
+    .ccard__ic{font-size:1.3rem;margin-bottom:6px}
+    .ccard__t{font-family:var(--fh);font-size:.84rem;font-weight:700;color:var(--t1);margin-bottom:3px}
+    .ccard__d{font-size:.73rem;color:var(--t3);line-height:1.45}
+
+    /* Advantages */
+    .agrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}
+    .acard{background:var(--bg);border:1px solid var(--bdl);border-radius:10px;padding:18px}
+    .acard__ic{font-size:1.1rem;margin-bottom:5px}
+    .acard__t{font-family:var(--fh);font-size:.8rem;font-weight:700;color:var(--t1);margin-bottom:2px}
+    .acard__d{font-size:.73rem;color:var(--t3);line-height:1.4}
+
+    /* Testimonials */
+    .tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}
+    .tcard{background:var(--w);border:1px solid var(--bdl);border-radius:12px;padding:20px}
+    .tcard__s{color:var(--au);font-size:.78rem;margin-bottom:6px;letter-spacing:2px}
+    .tcard__q{font-size:.78rem;color:var(--t2);line-height:1.55;margin-bottom:10px;font-style:italic}
+    .tcard__n{font-family:var(--fh);font-size:.76rem;font-weight:700;color:var(--t1)}
+    .tcard__m{font-family:var(--fm);font-size:.62rem;color:var(--t4);margin-top:2px}
+
+    /* About */
+    .abox{background:var(--w);border:1px solid var(--bdl);border-radius:14px;padding:32px;text-align:center;max-width:600px;margin:0 auto}
+    .abox p{font-size:.82rem;color:var(--t2);line-height:1.65;margin-bottom:10px}
+    .abox a{color:var(--g);font-weight:600}
+
+    /* FAQ */
+    .faq{margin-top:24px}
+    .fq{border-bottom:1px solid var(--bdl)}
+    .fq__q{width:100%;text-align:left;padding:15px 0;font-family:var(--fh);font-size:.86rem;font-weight:700;color:var(--t1);background:none;border:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:color .15s}
+    .fq__q:hover{color:var(--g)}
+    .fq__q::after{content:'+';font-size:1rem;color:var(--t4);transition:transform .2s}
+    .fq.open .fq__q::after{content:'\2212'}
+    .fq__a{max-height:0;overflow:hidden;transition:max-height .3s ease}
+    .fq.open .fq__a{max-height:300px}
+    .fq__ai{padding:0 0 14px;font-size:.78rem;color:var(--t3);line-height:1.6}
+
+    /* Login modal */
+    .login-ov{display:none;position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.35);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);align-items:center;justify-content:center;padding:24px}
+    .login-ov.visible{display:flex;animation:fadeIn .2s ease}
+    .login-modal{background:var(--w);border-radius:14px;padding:30px 26px;max-width:370px;width:100%;box-shadow:0 16px 48px rgba(0,0,0,.1);animation:modalPop .25s ease;position:relative;text-align:center}
+    .login-modal__x{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--t4);cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:all .15s}
+    .login-modal__x:hover{background:var(--bg);color:var(--t1)}
+    .login-modal__title{font-family:var(--fh);font-size:1.05rem;font-weight:700;color:var(--t1);margin-bottom:4px}
+    .login-modal__desc{font-size:.78rem;color:var(--t3);margin-bottom:18px;line-height:1.5}
+    .login-modal .field{text-align:left;margin-bottom:12px}
+    .login-modal .btn-main{margin-top:6px}
+    .login-modal__err{font-family:var(--fm);font-size:.7rem;color:var(--err);margin-top:8px;min-height:16px}
+
+    /* Footer grid */
+    .ft__grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;text-align:left;margin-bottom:18px}
+    .ft__col-t{font-family:var(--fh);font-size:.74rem;font-weight:700;color:var(--aul);margin-bottom:5px}
+    .ft__col p,.ft__col a{font-size:.7rem;color:rgba(255,255,255,.4);line-height:1.6;display:block;text-decoration:none}
+    .ft__col a:hover{color:var(--aul)}
+    .ft__tag{font-size:.76rem;color:rgba(255,255,255,.28);margin-top:10px}
+    .ft__cp{font-size:.66rem;color:rgba(255,255,255,.18);margin-top:6px}
+
+    /* Wizard */
+    .wizard-steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:20px}
+    .wz{display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;transition:all .15s}
+    .wz.active{background:var(--g05)}
+    .wz.done{opacity:.5}
+    .wz__n{width:22px;height:22px;border-radius:50%;background:var(--bdl);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:.62rem;font-weight:700;color:var(--t3)}
+    .wz.active .wz__n{background:var(--g);color:var(--w)}
+    .wz__t{font-family:var(--fh);font-size:.74rem;font-weight:700;color:var(--t3)}
+    .wz.active .wz__t{color:var(--g)}
+    .wz__line{width:32px;height:1px;background:var(--bdl)}
+    .wz-panel{display:none}
+    .wz-panel.active{display:block;animation:fadeIn .2s ease}
+    .wz-nav{display:flex;justify-content:space-between;gap:10px;margin-top:20px;flex-wrap:wrap}
+
+    @media(max-width:768px){.nav__center{display:none}.nav__hamburger{display:block}.nav__actions{gap:6px}.steps,.cgrid,.agrid,.tgrid{grid-template-columns:1fr}.ctg__g{grid-template-columns:1fr}.ft__grid{grid-template-columns:1fr;text-align:center}}
+    @media(max-width:640px){.sec{padding:40px 16px}}
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav" role="navigation">
+    <div class="nav__wrap">
+      <a href="#" class="nav__brand"><span class="nav__logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></span><span class="nav__name">SolucionAir</span></a>
+      <ul class="nav__center">
+        <li><a href="#casos">Casos</a></li>
+        <li><a href="#como-funciona">Cómo funciona</a></li>
+        <li><a href="#ventajas">Por qué elegirnos</a></li>
+        <li><a href="#quienes-somos">Quiénes somos</a></li>
+        <li><a href="#faq">FAQ</a></li>
+      </ul>
+      <div class="nav__actions">
+        <div class="lang" role="group" aria-label="Idioma"><button class="lang__btn active" data-lang-btn="es" type="button">ES</button><button class="lang__btn" data-lang-btn="en" type="button">EN</button></div>
+        <button class="nav__btn-account" id="btn-login-open" type="button">&#128100; Mi Cuenta</button>
+        <a href="#claim" class="nav__btn-cta">Iniciá tu reclamo</a>
+      </div>
+      <button class="nav__hamburger" aria-label="Menú"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero__wrap">
+      <span class="hero__pill"><span class="hero__pill-icon">&#9889;</span><span data-lang="es">Evaluación inicial sin costo</span><span data-lang="en">Free initial evaluation</span></span>
+      <h1 class="hero__h1">Compensaciones aéreas.<br/>Tu vuelo falló. Nosotros reclamamos por vos.</h1>
+      <p class="hero__sub">Gestionamos reclamos por vuelos demorados, cancelados, sobreventa o problemas con equipaje. Sin costo inicial: cobramos solo si conseguís compensación.</p>
+      <a href="#claim" class="hero__cta">Iniciá tu reclamo gratis <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></a>
+      <a href="#casos" class="hero__link">Ver si mi caso aplica &rarr;</a>
+      <div class="hero__badges"><span class="hero__bi">&#10003; Evaluación inicial sin costo</span><span class="hero__bi">&#10003; Cubrimos todos los costos</span><span class="hero__bi">&#10003; Solo cobramos si ganás</span></div>
+      <div class="hero__kpis">
+        <div class="hero__kpi"><span class="hero__kpi-num">12,500+</span><span class="hero__kpi-txt" data-lang="es">Reclamos gestionados</span><span class="hero__kpi-txt" data-lang="en">Claims managed</span></div>
+        <span class="hero__kpi-div"></span>
+        <div class="hero__kpi"><span class="hero__kpi-num">94%</span><span class="hero__kpi-txt" data-lang="es">Tasa de éxito</span><span class="hero__kpi-txt" data-lang="en">Success rate</span></div>
+        <span class="hero__kpi-div"></span>
+        <div class="hero__kpi"><span class="hero__kpi-num">$8.2M</span><span class="hero__kpi-txt" data-lang="es">Recuperados</span><span class="hero__kpi-txt" data-lang="en">Recovered</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- TRUST -->
+  <section class="trust"><div class="trust__wrap">
+    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><strong>Respaldo jurídico real</strong><p>Abogados aeronáuticos certificados</p></div></div>
+    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div><strong>Visión IA que lee tu pasaje</strong><p>Subí una foto y completamos todo automáticamente</p></div></div>
+    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><strong>100% gratuito hasta ganar</strong><p>Sin costos iniciales ni ocultos</p></div></div>
+  </div></section>
+
+  <!-- CLAIM / FORM — 3 PASOS -->
+  <section class="claim" id="claim"><div class="claim__wrap">
+    <div class="claim__head">
+      <h2 class="claim__title">Comenzá tu reclamo</h2>
+      <p class="claim__sub">Analizamos tu caso sin costo y nos encargamos del proceso. Completá estos datos y revisamos si tu reclamo puede avanzar. Si falta información, te vamos a contactar para orientarte.</p>
+    </div>
+
+    <!-- Step indicators -->
+    <div class="wizard-steps" id="wizard-steps">
+      <div class="wz active" data-wz="1"><span class="wz__n">1</span><span class="wz__t">Tus datos</span></div>
+      <div class="wz__line"></div>
+      <div class="wz" data-wz="2"><span class="wz__n">2</span><span class="wz__t">Tu caso</span></div>
+      <div class="wz__line"></div>
+      <div class="wz" data-wz="3"><span class="wz__n">3</span><span class="wz__t">Enviar</span></div>
+    </div>
+
+    <div class="prog" role="progressbar"><div class="prog__top"><span class="prog__step" id="prog-step">Paso 1 de 3</span><span class="prog__pct" id="prog-pct">0%</span></div><div class="prog__bar"><div class="prog__fill" id="prog-fill"></div></div></div>
+
+    <div class="panel active" id="panel-flight" role="tabpanel">
+
+    <!-- PASO 1: SUBIDA + TUS DATOS -->
+    <div class="card wz-panel active" id="wz-1">
+
+      <!-- AI Multi-file Scanner -->
+      <div class="ai-scan" id="ai-scan"><div class="ai-scan__idle" id="ai-idle"><div class="ai-scan__drop" id="ai-drop"><input type="file" id="ai-file" accept=".jpg,.jpeg,.png,.webp,.pdf" multiple /><div class="ai-scan__body"><div class="ai-scan__icon-wrap"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="ai-scan__badge">IA</span></div><p class="ai-scan__txt">Subí tus documentos de viaje para autocompletar con IA &#9889;</p><p class="ai-scan__meta">Seleccioná uno o varios archivos · JPG, PNG, PDF · Máx. 10MB c/u</p></div></div></div>
+      <div id="ai-file-list" style="padding:8px 16px;font-family:var(--fm);font-size:.68rem;color:var(--t3);display:none"></div>
+      <div class="ai-scan__loading hidden" id="ai-loading"><div class="ai-scan__spinner"></div><p class="ai-scan__status" id="ai-status">La IA está analizando tus documentos...</p><p class="ai-scan__substatus">Extrayendo datos combinados de todos los archivos</p></div>
+      <div class="ai-scan__done hidden" id="ai-done"><div class="ai-scan__check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p class="ai-scan__result" id="ai-result">Datos extraídos correctamente</p><button class="ai-scan__retry" id="ai-retry" type="button">Escanear otros</button></div>
+      <div class="ai-scan__error hidden" id="ai-error"><p class="ai-scan__err-msg" id="ai-err-msg">No se pudieron analizar los archivos. Completá los campos manualmente.</p><button class="ai-scan__retry" id="ai-retry-err" type="button">Reintentar</button></div></div>
+
+      <hr class="card__hr"/>
+
+      <!-- Datos personales -->
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">01</span><div><h3 class="card__blk-title">Tus datos personales</h3><p class="card__blk-sub">Tal como figuran en tu documento de identidad.</p></div></div>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Nombre y Apellido <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-name" data-required="true" placeholder="Juan Pablo Martínez" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Teléfono <span class="field__ast">*</span></label><input class="field__in" type="tel" id="f-phone" data-required="true" placeholder="+54 9 11 2557-8402" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Mail <span class="field__ast">*</span></label><input class="field__in" type="email" id="f-email" data-required="true" placeholder="juan@email.com" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Tipo de documento <span class="field__ast">*</span></label><select class="field__in" id="f-doctype" data-required="true"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Número de documento <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-docnum" data-required="true" placeholder="37.806.475" /><span class="field__msg"></span></div>
+        </div>
+      </div>
+      <div class="wz-nav"><button class="btn-verify" id="wz-next-1" type="button">Continuar al Paso 2 &rarr;</button></div>
+    </div>
+
+    <!-- PASO 2: DETALLES DEL VUELO -->
+    <div class="card wz-panel" id="wz-2">
+
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">02</span><div><h3 class="card__blk-title">Identificación del vuelo</h3><p class="card__blk-sub">Si subiste tu pasaje con IA, estos campos ya están completos. Revisalos o corregí lo que haga falta.</p></div></div>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Aerolínea <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-airline" data-required="true" placeholder="Aerolíneas Argentinas" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Número de vuelo <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-flight" data-required="true" placeholder="AR1234" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Origen <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-origin" data-required="true" placeholder="Buenos Aires (EZE)" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Destino <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-destination" data-required="true" placeholder="Madrid (MAD)" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Fecha del vuelo <span class="field__ast">*</span></label><input class="field__in" type="date" id="f-date" data-required="true" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Código de reserva (PNR)</label><input class="field__in" type="text" id="f-pnr" placeholder="ABC123" /><span class="field__msg"></span></div>
+        </div>
+      </div>
+
+      <hr class="card__hr"/>
+
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#9888;</span><div><h3 class="card__blk-title">Incidente</h3></div></div>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Tipo de incidencia <span class="field__ast">*</span></label><select class="field__in" id="f-incident" data-required="true"><option value="">Seleccionar...</option><option value="cancelacion">Cancelación</option><option value="demora">Demora</option><option value="overbooking">Overbooking</option><option value="reprogramacion">Reprogramación</option><option value="denegacion">Denegación de embarque</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Magnitud del retraso (horas)</label><input class="field__in" type="number" id="f-delay-hours" placeholder="4" min="0" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Anticipación de notificación</label><input class="field__in" type="text" id="f-notice" placeholder="Ej: 2 horas antes, en el aeropuerto" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">¿Ofrecieron reembolso?</label><select class="field__in" id="f-refund"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option></select><span class="field__msg"></span></div>
+        </div>
+      </div>
+
+      <hr class="card__hr"/>
+
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#128269;</span><div><h3 class="card__blk-title">Causa informada por la aerolínea</h3></div></div>
+        <div class="g g1">
+          <div class="field"><label class="field__lbl">Causa</label><select class="field__in" id="f-cause"><option value="">Sin especificar</option><option value="operativa">Operativa</option><option value="tecnica">Técnica</option><option value="climatica">Climática</option><option value="atc">Control de tráfico aéreo (ATC)</option><option value="otra">Otra</option><option value="no_informada">No informada</option></select><span class="field__msg"></span></div>
+        </div>
+      </div>
+
+      <hr class="card__hr"/>
+
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#128176;</span><div><h3 class="card__blk-title">Gastos incurridos</h3><p class="card__blk-sub">Si tuviste gastos extras por el incidente, detallalos acá.</p></div></div>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Moneda</label><select class="field__in" id="f-currency"><option value="ARS">ARS (Peso argentino)</option><option value="USD">USD (Dólar)</option><option value="EUR">EUR (Euro)</option><option value="BRL">BRL (Real)</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Monto total</label><input class="field__in" type="number" id="f-expenses-amount" placeholder="0.00" min="0" step="0.01" /><span class="field__msg"></span></div>
+        </div>
+        <div class="g g1" style="margin-top:12px">
+          <div class="field"><label class="field__lbl">Detalle de gastos</label><textarea class="field__in field__ta" id="f-expenses-detail" rows="2" placeholder="Ej: Hotel USD 120, Comida USD 45, Transporte USD 30"></textarea><span class="field__msg"></span></div>
+        </div>
+        <div style="margin-top:12px">
+          <div class="drop" id="drop-flight"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple /><div class="drop__body"><svg class="drop__ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p class="drop__txt">Tickets y comprobantes de gastos</p><p class="drop__meta">PDF, JPG, PNG · Máx. 5 · 10MB c/u</p></div><div class="drop__list"></div></div>
+        </div>
+      </div>
+
+      <div class="wz-nav"><button class="btn-verify" id="wz-back-2" type="button" style="background:transparent;color:var(--t2);border:1px solid var(--bd)">&larr; Volver</button><button class="btn-verify" id="wz-next-2" type="button">Continuar al Paso 3 &rarr;</button></div>
+    </div>
+
+    <!-- PASO 3: ENVIAR RECLAMO & FIRMA -->
+    <div class="card wz-panel" id="wz-3">
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">03</span><div><h3 class="card__blk-title">Declaración jurada y firma electrónica</h3><p class="card__blk-sub">Leé atentamente antes de firmar y enviar.</p></div></div>
+
+        <div style="background:var(--bg);border:1px solid var(--bdl);border-radius:8px;padding:16px;margin-bottom:16px;font-size:.76rem;color:var(--t2);line-height:1.65">
+          <p style="margin-bottom:10px">Mediante la presente, el/la reclamante declara bajo juramento que toda la información proporcionada en este formulario es verídica, completa y exacta. Autorizo expresamente a <strong>SolucionAir</strong>, representada por <strong>Juan Pablo Mario Adaniya</strong> (DNI 37.806.475) y <strong>Tomás Gregorio Dicranian</strong> (DNI 37.606.877), a:</p>
+          <ul style="padding-left:18px;margin-bottom:10px">
+            <li>Gestionar y presentar reclamos formales ante la aerolínea y/o autoridades competentes en mi nombre.</li>
+            <li>Acceder, utilizar y compartir la documentación provista exclusivamente con fines de gestión del presente reclamo.</li>
+            <li>Representarme en instancias de mediación privada online, si correspondiera.</li>
+          </ul>
+          <p style="margin-bottom:10px">Entiendo que SolucionAir opera bajo un esquema de honorarios por éxito: <strong>no se cobran costos iniciales</strong> y los honorarios equivalen al 20% de la compensación obtenida, más un reintegro de gastos administrativos de hasta USD 20, únicamente si el reclamo prospera.</p>
+          <p>Esta declaración constituye una firma electrónica válida en los términos de la Ley 25.506 de Firma Digital de la República Argentina.</p>
+        </div>
+
+        <div class="consent" id="consent-flight"><label class="consent__row"><input type="checkbox" class="consent__cb" data-required="true" /><span class="consent__txt">Acepto los <strong>Términos y Condiciones</strong>, la <strong>Política de Privacidad</strong> y la declaración jurada precedente. Firmo digitalmente este reclamo autorizando a SolucionAir a actuar en mi representación.</span></label></div>
+      </div>
+
+      <div class="wz-nav"><button class="btn-verify" id="wz-back-3" type="button" style="background:transparent;color:var(--t2);border:1px solid var(--bd)">&larr; Volver al Paso 2</button><button class="btn-verify" id="btn-verify" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> Enviar reclamo</button></div>
+      <p class="cta-area__note" style="text-align:center;margin-top:10px">Análisis gratuito e instantáneo · Sin compromiso</p>
+    </div>
+
+    <!-- SUCCESS CARD (in-page) -->
+    <div class="card wz-panel" id="wz-success" style="text-align:center;padding:40px 28px">
+      <div style="width:56px;height:56px;border-radius:50%;background:var(--okbg);display:flex;align-items:center;justify-content:center;margin:0 auto 16px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1B9B5A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <h3 style="font-family:var(--fh);font-size:1.2rem;font-weight:800;color:var(--g);margin-bottom:6px">¡Reclamo enviado con éxito!</h3>
+      <p style="font-size:.84rem;color:var(--t3);margin-bottom:18px;line-height:1.6">Tu caso fue registrado correctamente. Nuestro equipo legal y nuestra IA ya están trabajando en tu reclamo.</p>
+      <div style="background:var(--bg);border:1px solid var(--bdl);border-radius:8px;padding:16px;display:inline-block;margin-bottom:18px">
+        <div style="font-size:.66rem;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Tu número de caso</div>
+        <div id="success-case-id" style="font-family:var(--fm);font-size:1.4rem;font-weight:700;color:var(--g);letter-spacing:.04em"></div>
+      </div>
+      <p style="font-size:.78rem;color:var(--t3);line-height:1.55">Guardá este código para consultar el estado de tu caso. Te contactaremos pronto con novedades.</p>
+      <div style="margin-top:20px"><a href="/" style="display:inline-block;padding:10px 24px;background:var(--g);color:var(--w);font-family:var(--fh);font-weight:700;font-size:.8rem;border-radius:8px;text-decoration:none">Volver al inicio</a></div>
+    </div>
+
+    </div>
+  </div></section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section class="sec sec--alt" id="como-funciona"><div class="sec__c"><p class="sec__ey">Proceso</p><h2 class="sec__h" style="text-align:center">Cómo funciona</h2><p class="sec__p sec__p--c">Cuatro pasos simples para recuperar tu compensación</p></div>
+    <div class="steps">
+      <div class="stp"><span class="stp__n">01</span><h3 class="stp__t">Cargás tu caso</h3><p class="stp__d">Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.</p></div>
+      <div class="stp"><span class="stp__n">02</span><h3 class="stp__t">SolucionAir reclama por vos</h3><p class="stp__d">Analizamos tu caso, identificamos tus derechos y presentamos el reclamo formal. 100% gratis.</p></div>
+      <div class="stp"><span class="stp__n">03</span><h3 class="stp__t">Se resuelve tu caso</h3><p class="stp__d">La aerolínea responde con un acuerdo o derivamos a mediación online profesional.</p></div>
+      <div class="stp"><span class="stp__n">04</span><h3 class="stp__t">Cobrás tu compensación</h3><p class="stp__d">Recibís el dinero y recién ahí pagamos nuestros honorarios sobre lo percibido.</p></div>
+    </div>
+    <div class="ctg"><h3 class="ctg__t">¿Sin respuesta de la aerolínea?</h3><p class="ctg__p">Derivamos tu caso a nuestra Red de Profesionales: una mediación privada y 100% online, sin necesidad de tribunales.</p>
+      <div class="ctg__g"><div class="ctg__i"><div class="ctg__it">Abogado especializado</div><p class="ctg__id">Un profesional en derecho aeronáutico toma tu caso de forma personalizada.</p></div><div class="ctg__i"><div class="ctg__it">Estrategia legal</div><p class="ctg__id">Armamos la mejor estrategia basada en normativa vigente y jurisprudencia.</p></div><div class="ctg__i"><div class="ctg__it">Mediación por videollamada</div><p class="ctg__id">Resolución 100% online, sin necesidad de trasladarte a ningún tribunal.</p></div><div class="ctg__i"><div class="ctg__it">Solo si ganás</div><p class="ctg__id">Comisión del 20% más reintegro de gastos de hasta USD 20. Solo si se gana.</p></div></div>
+      <p class="ctg__note">Sin riesgo para vos. Si no hay compensación, no pagás nada.</p>
+    </div>
+  </section>
+
+  <!-- CASOS -->
+  <section class="sec" id="casos"><div class="sec__c"><p class="sec__ey">Cobertura</p><h2 class="sec__h" style="text-align:center">Casos que podés reclamar</h2></div>
+    <div class="cgrid">
+      <div class="ccard"><div class="ccard__ic">&#9201;</div><h3 class="ccard__t">Vuelo demorado</h3><p class="ccard__d">Demoras mayores a 3 horas dan derecho a compensación económica según la normativa vigente.</p></div>
+      <div class="ccard"><div class="ccard__ic">&#9992;</div><h3 class="ccard__t">Vuelo cancelado</h3><p class="ccard__d">Si tu vuelo fue cancelado sin aviso previo de al menos 14 días, podés reclamar.</p></div>
+      <div class="ccard"><div class="ccard__ic">&#128683;</div><h3 class="ccard__t">Sobreventa</h3><p class="ccard__d">Si no te dejaron embarcar por overbooking, la aerolínea debe compensarte.</p></div>
+      <div class="ccard"><div class="ccard__ic">&#129523;</div><h3 class="ccard__t">Equipaje perdido</h3><p class="ccard__d">Equipaje extraviado o no entregado da derecho a indemnización por los convenios internacionales.</p></div>
+      <div class="ccard"><div class="ccard__ic">&#128295;</div><h3 class="ccard__t">Equipaje dañado</h3><p class="ccard__d">Si tu equipaje llegó roto o dañado, la aerolínea es responsable de reparar o compensar.</p></div>
+      <div class="ccard"><div class="ccard__ic">&#128230;</div><h3 class="ccard__t">Equipaje entregado tarde</h3><p class="ccard__d">Retrasos en la entrega del equipaje generan derecho a reembolso de gastos de primera necesidad.</p></div>
+    </div>
+  </section>
+
+  <!-- VENTAJAS -->
+  <section class="sec sec--alt" id="ventajas"><div class="sec__c"><p class="sec__ey">Beneficios</p><h2 class="sec__h" style="text-align:center">Por qué elegirnos</h2></div>
+    <div class="agrid">
+      <div class="acard"><div class="acard__ic">&#128176;</div><h3 class="acard__t">Sin costos iniciales</h3><p class="acard__d">No pagás nada por adelantado. Nosotros cubrimos todos los gastos del proceso.</p></div>
+      <div class="acard"><div class="acard__ic">&#127942;</div><h3 class="acard__t">Solo cobramos si ganás</h3><p class="acard__d">Nuestros honorarios se aplican únicamente si conseguimos tu compensación.</p></div>
+      <div class="acard"><div class="acard__ic">&#128170;</div><h3 class="acard__t">No te peleás con la aerolínea</h3><p class="acard__d">Nosotros nos encargamos de toda la gestión. Vos solo cargás tu caso y esperás.</p></div>
+      <div class="acard"><div class="acard__ic">&#128231;</div><h3 class="acard__t">Te mantenemos informado</h3><p class="acard__d">Recibís actualizaciones por email en cada etapa del proceso.</p></div>
+      <div class="acard"><div class="acard__ic">&#128269;</div><h3 class="acard__t">Revisamos viabilidad</h3><p class="acard__d">Antes de avanzar, evaluamos si tu caso tiene chances reales con nuestra IA.</p></div>
+      <div class="acard"><div class="acard__ic">&#128101;</div><h3 class="acard__t">Equipo especializado</h3><p class="acard__d">Abogados con experiencia en derecho aeronáutico y mediaciones internacionales.</p></div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIOS -->
+  <section class="sec"><div class="sec__c"><p class="sec__ey">Testimonios</p><h2 class="sec__h" style="text-align:center">Lo que dicen nuestros clientes</h2></div>
+    <div class="tgrid">
+      <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q">"Pensé que era imposible reclamar, pero SolucionAir se encargó de todo. En pocas semanas tenía mi compensación acreditada."</p><div class="tcard__n">Martina R.</div><div class="tcard__m">Buenos Aires · Vuelo demorado · USD 600 recuperados</div></div>
+      <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q">"Me cancelaron el vuelo y no sabía qué hacer. Subí mi pasaje, la IA completó todo y a los días ya tenía respuesta."</p><div class="tcard__n">Jorge L.</div><div class="tcard__m">Córdoba · Vuelo cancelado · USD 320 recuperados</div></div>
+      <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q">"Mi equipaje llegó destruido. SolucionAir gestionó el reclamo completo, incluyendo la mediación. Excelente servicio."</p><div class="tcard__n">Sofía V.</div><div class="tcard__m">Mendoza · Equipaje dañado · USD 450 recuperados</div></div>
+    </div>
+  </section>
+
+  <!-- QUIÉNES SOMOS -->
+  <section class="sec sec--alt" id="quienes-somos"><div class="sec__c"><p class="sec__ey">Equipo</p><h2 class="sec__h" style="text-align:center">Quién está detrás de SolucionAir</h2></div>
+    <div class="abox"><p>Somos un equipo especializado en derecho aeronáutico y tecnología, con la misión de simplificar el acceso a la justicia para pasajeros afectados por problemas con aerolíneas.</p><p>Combinamos inteligencia artificial con experiencia legal real para gestionar reclamos de forma rápida, transparente y sin costos iniciales para el usuario.</p><p>¿Tenés alguna consulta? Escribinos a <a href="mailto:contacto@solucionair.com">contacto@solucionair.com</a></p></div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="sec" id="faq"><div class="sec__c"><p class="sec__ey">Ayuda</p><h2 class="sec__h" style="text-align:center">Preguntas frecuentes</h2></div>
+    <div class="faq">
+      <div class="fq"><button class="fq__q" type="button">¿Cuánto cuesta usar SolucionAir?</button><div class="fq__a"><div class="fq__ai">Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión sobre la compensación obtenida si el reclamo es exitoso.</div></div></div>
+      <div class="fq"><button class="fq__q" type="button">¿Cuándo cobran sus honorarios?</button><div class="fq__a"><div class="fq__ai">Únicamente cuando vos cobrás tu compensación. Si no se consigue nada, no nos debés nada.</div></div></div>
+      <div class="fq"><button class="fq__q" type="button">¿Qué pasa si mi reclamo no prospera?</button><div class="fq__a"><div class="fq__ai">No pagás absolutamente nada. Nosotros asumimos el riesgo y los costos del proceso completo.</div></div></div>
+      <div class="fq"><button class="fq__q" type="button">¿Cuánto tarda el proceso?</button><div class="fq__a"><div class="fq__ai">Depende de la aerolínea y el tipo de reclamo. Los casos simples pueden resolverse en semanas, mientras que los que van a mediación pueden tomar algunos meses.</div></div></div>
+      <div class="fq"><button class="fq__q" type="button">¿Qué documentación necesito?</button><div class="fq__a"><div class="fq__ai">Lo mínimo es tu pasaje, boarding pass o reserva. Si tenés fotos, emails de la aerolínea o recibos de gastos adicionales, también nos sirven. Nuestra IA puede extraer los datos de una captura de pantalla.</div></div></div>
+      <div class="fq"><button class="fq__q" type="button">¿Mis datos están protegidos?</button><div class="fq__a"><div class="fq__ai">Sí. Toda la información que compartís está protegida con encriptación y solo se usa para gestionar tu reclamo. No vendemos ni compartimos tus datos con terceros.</div></div></div>
+      <div class="fq"><button class="fq__q" type="button">¿Qué casos se pueden reclamar?</button><div class="fq__a"><div class="fq__ai">Vuelos demorados (más de 3 horas), cancelaciones, sobreventa (overbooking), denegación de embarque, downgrades de clase, equipaje perdido, dañado o entregado con demora.</div></div></div>
+    </div>
+  </section>
+
+  <!-- REGISTER MODAL -->
+  <div class="ov" id="ov-register" role="dialog" aria-modal="true" aria-labelledby="reg-title">
+    <div class="modal">
+      <button class="modal__x" id="modal-x" type="button" aria-label="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="modal__top">
+        <div class="modal__icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+        <h3 class="modal__title" id="reg-title"><span data-lang="es">Creá tu cuenta para firmar</span><span data-lang="en">Create your account to sign</span></h3>
+        <p class="modal__desc"><span data-lang="es">Identificate para iniciar tu reclamo. Usamos tu email para completar automáticamente tus datos. <strong>No guardamos tu contraseña.</strong> &#128274; Solo accedemos a tu nombre y email.</span><span data-lang="en">Identify yourself to start your claim. We use your email to auto-fill your data. <strong>We don't store your password.</strong> &#128274;</span></p>
+      </div>
+      <form class="modal__form" id="form-register" novalidate>
+        <div class="field"><label class="field__lbl"><span data-lang="es">Correo electrónico</span><span data-lang="en">Email</span><span class="field__ast">*</span></label><input class="field__in" type="email" id="reg-email" placeholder="tu@email.com" /><span class="field__msg"></span></div>
+        <div class="field"><label class="field__lbl"><span data-lang="es">Contraseña</span><span data-lang="en">Password</span><span class="field__ast">*</span></label><input class="field__in" type="password" id="reg-pass" placeholder="Mín. 8 caracteres" /><span class="field__msg"></span></div>
+        <button class="btn-main" id="btn-register" type="submit"><span class="btn-main__spin"></span><span class="btn-main__txt" data-lang="es">Registrar y enviar reclamo</span><span class="btn-main__txt" data-lang="en">Register &amp; submit claim</span></button>
+      </form>
+      <p class="modal__legal"><span data-lang="es">Al registrarte aceptás los Términos de Servicio y Política de Privacidad.</span><span data-lang="en">By signing up you agree to the Terms of Service and Privacy Policy.</span></p>
+    </div>
+  </div>
+
+  <!-- SUCCESS OVERLAY -->
+  <div class="ov" id="ov-success" role="dialog" aria-modal="true">
+    <div class="modal modal--ok">
+      <div class="modal__ok-ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+      <h3 class="modal__title"><span data-lang="es">Reclamo enviado con éxito</span><span data-lang="en">Claim submitted successfully</span></h3>
+      <p class="modal__desc"><span data-lang="es">Tu reclamo fue recibido. Te enviaremos las actualizaciones a <strong id="success-email-es"></strong>. Nuestro equipo legal y nuestra IA ya están trabajando en tu caso.</span><span data-lang="en">Your claim was received. We'll send updates to <strong id="success-email-en"></strong>. Our legal team and AI are already working on your case.</span></p>
+      <div class="modal__ref" id="ref-code"></div>
+      <button class="btn-main" id="btn-ok" type="button"><span data-lang="es">Entendido</span><span data-lang="en">Got it</span></button>
+    </div>
+  </div>
+
+  <!-- LOGIN MODAL -->
+  <div class="login-ov" id="login-overlay">
+    <div class="login-modal">
+      <button class="login-modal__x" id="login-close" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      <div class="login-modal__title">Ingresá a tu panel</div>
+      <p class="login-modal__desc">Usá el email y contraseña con los que registraste tu reclamo.</p>
+      <form id="login-form" novalidate>
+        <div class="field"><label class="field__lbl">Email <span class="field__ast">*</span></label><input class="field__in" type="email" id="login-email" placeholder="tu@email.com" /></div>
+        <div class="field"><label class="field__lbl">Contraseña <span class="field__ast">*</span></label><input class="field__in" type="password" id="login-pass" placeholder="Tu contraseña" /></div>
+        <button class="btn-main" type="submit"><span class="btn-main__txt">Entrar</span></button>
+      </form>
+      <div class="login-modal__err" id="login-err"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="ft"><div class="ft__wrap">
+    <div class="ft__grid">
+      <div class="ft__col"><div class="ft__col-t">SolucionAir</div><p>Tu compensación siempre despega.</p><p>Plataforma LegalTech con inteligencia artificial para reclamos aéreos.</p></div>
+      <div class="ft__col"><div class="ft__col-t">Contacto</div><a href="mailto:contacto@solucionair.com">contacto@solucionair.com</a><a href="tel:+5491125578402">+54 9 11 2557-8402</a></div>
+      <div class="ft__col"><div class="ft__col-t">Legal</div><a href="#">Términos y Condiciones</a><a href="#">Política de Privacidad</a></div>
+    </div>
+    <div class="ft__tag">SolucionAir. Tu compensación siempre despega.</div>
+    <div class="ft__cp">&copy; 2026 SolucionAir. Todos los derechos reservados.</div>
+  </div></footer>
+
+  <script src="src/js/app.js"></script>
+  <script>
+  /* FAQ accordion */
+  document.querySelectorAll('.fq__q').forEach(function(b){b.addEventListener('click',function(){var i=b.closest('.fq'),o=i.classList.contains('open');document.querySelectorAll('.fq').forEach(function(x){x.classList.remove('open')});if(!o)i.classList.add('open')})});
+
+  /* Wizard step navigation */
+  function goToStep(n){
+    document.querySelectorAll('.wz-panel').forEach(function(p){p.classList.remove('active')});
+    var target=document.getElementById('wz-'+n);if(target)target.classList.add('active');
+    document.querySelectorAll('.wz[data-wz]').forEach(function(w){
+      var s=parseInt(w.getAttribute('data-wz'));
+      w.classList.remove('active','done');
+      if(s===n)w.classList.add('active');
+      else if(s<n)w.classList.add('done');
+    });
+    /* Update progress indicator */
+    var pctMap={1:0,2:50,3:100};
+    var progFill=document.getElementById('prog-fill');
+    var progPct=document.getElementById('prog-pct');
+    var progStep=document.getElementById('prog-step');
+    if(progFill)progFill.style.width=pctMap[n]+'%';
+    if(progPct)progPct.textContent=pctMap[n]+'%';
+    if(progStep)progStep.textContent='Paso '+n+' de 3';
+    document.getElementById('claim').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  var n1=document.getElementById('wz-next-1');
+  var n2=document.getElementById('wz-next-2');
+  var b2=document.getElementById('wz-back-2');
+  var b3=document.getElementById('wz-back-3');
+
+  /* Check if all required fields in a wizard step are filled */
+  function checkStepFields(stepId){
+    var panel=document.getElementById(stepId);
+    if(!panel)return true;
+    var fields=panel.querySelectorAll('[data-required="true"]');
+    var ok=true;
+    fields.forEach(function(f){
+      if(f.type==='checkbox'){if(!f.checked)ok=false}
+      else if(f.tagName==='SELECT'){if(!f.value)ok=false}
+      else{if(!f.value.trim())ok=false}
+    });
+    return ok;
+  }
+
+  function updateWzButton(btn,stepId){
+    if(!btn)return;
+    var valid=checkStepFields(stepId);
+    btn.disabled=!valid;
+    btn.style.opacity=valid?'':'0.45';
+    btn.style.cursor=valid?'':'not-allowed';
+  }
+
+  /* Real-time validation listeners for step 1 */
+  function attachStepValidation(stepId,btn){
+    var panel=document.getElementById(stepId);
+    if(!panel||!btn)return;
+    panel.addEventListener('input',function(){updateWzButton(btn,stepId)});
+    panel.addEventListener('change',function(){updateWzButton(btn,stepId)});
+    updateWzButton(btn,stepId);
+  }
+
+  attachStepValidation('wz-1',n1);
+  attachStepValidation('wz-2',n2);
+
+  if(n1)n1.addEventListener('click',function(){if(checkStepFields('wz-1'))goToStep(2)});
+  if(n2)n2.addEventListener('click',function(){if(checkStepFields('wz-2'))goToStep(3)});
+  if(b2)b2.addEventListener('click',function(){goToStep(1)});
+  if(b3)b3.addEventListener('click',function(){goToStep(2)});
+  /* Login modal */
+  var loginOv=document.getElementById('login-overlay'),loginForm=document.getElementById('login-form'),loginErr=document.getElementById('login-err');
+  document.getElementById('btn-login-open').addEventListener('click',function(){loginOv.classList.add('visible')});
+  document.getElementById('login-close').addEventListener('click',function(){loginOv.classList.remove('visible');loginErr.textContent=''});
+  loginOv.addEventListener('click',function(e){if(e.target===loginOv){loginOv.classList.remove('visible');loginErr.textContent=''}});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&loginOv.classList.contains('visible')){loginOv.classList.remove('visible');loginErr.textContent=''}});
+  loginForm.addEventListener('submit',function(e){
+    e.preventDefault();loginErr.textContent='';
+    var em=document.getElementById('login-email').value.trim(),pw=document.getElementById('login-pass').value;
+    if(!em||!pw){loginErr.textContent='Completá todos los campos.';return}
+    var btn=loginForm.querySelector('.btn-main');btn.style.opacity='.5';btn.disabled=true;
+    fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})})
+    .then(function(r){return r.json()})
+    .then(function(d){
+      btn.style.opacity='';btn.disabled=false;
+      if(d.success){localStorage.setItem('sb_token',d.token);localStorage.setItem('sb_email',em);window.location.href='/perfil.html'}
+      else{loginErr.textContent=d.error||'Credenciales inválidas.'}
+    }).catch(function(){btn.style.opacity='';btn.disabled=false;loginErr.textContent='Error de conexión. Intentá de nuevo.'});
+  });
+  </script>
+</body>
+</html>

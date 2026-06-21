@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SolucionAir — Mi Panel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+    :root{--g:#2D4A3E;--gl:#3A6154;--gd:#1E332B;--au:#D4A853;--aul:#E0BE7A;--bg:#F7F5F0;--bgd:#EDE9E1;--w:#FFF;--t1:#111;--t2:#3A3A3A;--t3:#6B6B6B;--t4:#999;--bd:#E0DCD4;--bdl:#EDEAE4;--ok:#1B9B5A;--okbg:#EDF9F0;--warn:#D4A853;--warnbg:#FDF8EE;--err:#C0392B;--errbg:#FDF0EE;--f:'Inter',system-ui,sans-serif;--fh:'Plus Jakarta Sans','Inter',sans-serif;--fm:'JetBrains Mono',monospace;--ez:cubic-bezier(.4,0,.2,1)}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{font-size:15px}body{font-family:var(--f);color:var(--t1);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+
+    .topbar{background:var(--gd);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .topbar__brand{display:flex;align-items:center;gap:8px;text-decoration:none}
+    .topbar__logo{width:28px;height:28px;background:var(--g);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--au)}
+    .topbar__name{font-family:var(--fh);font-weight:700;font-size:.95rem;color:var(--w);letter-spacing:-.02em}
+    .topbar__tag{font-family:var(--fm);font-size:.58rem;color:var(--au);background:rgba(212,168,83,.15);padding:1px 6px;border-radius:8px;margin-left:4px}
+    .topbar__right{display:flex;align-items:center;gap:12px}
+    .topbar__email{font-family:var(--fm);font-size:.7rem;color:rgba(255,255,255,.5)}
+    .topbar__btn{padding:6px 14px;border-radius:6px;font-family:var(--fh);font-size:.72rem;font-weight:700;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+    .topbar__btn--home{background:rgba(255,255,255,.08);color:rgba(255,255,255,.6)}.topbar__btn--home:hover{background:rgba(255,255,255,.12);color:var(--w)}
+    .topbar__btn--logout{background:rgba(192,57,43,.15);color:#E74C3C}.topbar__btn--logout:hover{background:rgba(192,57,43,.25)}
+
+    .shell{max-width:720px;margin:0 auto;padding:40px 24px;flex:1}
+    .welcome{text-align:center;margin-bottom:36px}
+    .welcome__title{font-family:var(--fh);font-size:1.5rem;font-weight:800;color:var(--g);margin-bottom:4px;letter-spacing:-.02em}
+    .welcome__sub{font-size:.84rem;color:var(--t3)}
+    .welcome__email{font-family:var(--fm);font-size:.78rem;color:var(--g);background:var(--bgd);display:inline-block;padding:4px 12px;border-radius:8px;margin-top:8px}
+
+    .case-card{background:var(--w);border:1px solid var(--bdl);border-radius:14px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.04)}
+    .case-card__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+    .case-card__title{font-family:var(--fh);font-size:1rem;font-weight:700;color:var(--t1)}
+    .badge{display:inline-block;padding:3px 10px;border-radius:10px;font-family:var(--fm);font-size:.64rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+    .badge--pendiente{background:var(--warnbg);color:var(--warn)}
+    .badge--aprobado,.badge--resuelto{background:var(--okbg);color:var(--ok)}
+    .badge--rechazado{background:var(--errbg);color:var(--err)}
+    .case-card__grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .case-card__field{display:flex;flex-direction:column;gap:2px}
+    .case-card__label{font-size:.66rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.06em}
+    .case-card__value{font-size:.84rem;color:var(--t1)}
+    .case-card__value.mono{font-family:var(--fm);font-size:.78rem}
+    .case-card__divider{height:1px;background:var(--bdl);margin:18px 0}
+    .case-card__note{font-size:.76rem;color:var(--t3);line-height:1.5;text-align:center}
+    .case-card__actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+    .btn-sm{padding:6px 14px;border-radius:6px;font-family:var(--fh);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s;border:none}
+    .btn-sm--secondary{background:transparent;color:var(--t2);border:1px solid var(--bd)}
+    .btn-sm--secondary:hover{background:var(--bg);border-color:var(--g);color:var(--g)}
+    .btn-sm--danger{background:transparent;color:var(--err);border:1px solid rgba(192,57,43,.2)}
+    .btn-sm--danger:hover{background:var(--errbg)}
+    .btn-sm--send{background:var(--g);color:var(--w);border:none}
+    .btn-sm--send:hover{background:var(--gl)}
+    .btn-sm--send:disabled{opacity:.5;cursor:not-allowed}
+    .novedad-box{margin-top:12px;display:none}
+    .novedad-box.open{display:block;animation:fadeIn .2s ease}
+    .novedad-ta{width:100%;min-height:70px;border:1px solid var(--bd);border-radius:6px;padding:10px 12px;font-family:var(--f);font-size:.8rem;color:var(--t1);resize:vertical;line-height:1.5}
+    .novedad-ta:focus{outline:none;border-color:var(--g);box-shadow:0 0 0 3px rgba(45,74,62,.1)}
+    .novedad-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:8px}
+    .novedad-ok{font-family:var(--fm);font-size:.68rem;color:var(--ok);margin-top:6px;min-height:14px}
+    .badge--cancelado{background:#F0F0F0;color:#888}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+    .empty{text-align:center;padding:40px}
+    .empty__title{font-family:var(--fh);font-size:1.1rem;font-weight:700;color:var(--t2);margin-bottom:6px}
+    .empty__text{font-size:.82rem;color:var(--t3);margin-bottom:16px}
+    .empty__btn{display:inline-block;padding:10px 22px;background:var(--g);color:var(--w);font-family:var(--fh);font-weight:700;font-size:.8rem;border-radius:6px;text-decoration:none;transition:all .15s}
+    .empty__btn:hover{background:var(--gl);color:var(--w)}
+
+    .loading{text-align:center;padding:40px}
+    .loading__spin{width:24px;height:24px;border:3px solid var(--bdl);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading__text{font-size:.82rem;color:var(--t3)}
+
+    .ft-mini{background:var(--gd);text-align:center;padding:16px;font-size:.66rem;color:rgba(255,255,255,.2)}
+
+    @media(max-width:640px){.case-card__grid{grid-template-columns:1fr}.shell{padding:24px 16px}}
+  </style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a href="/" class="topbar__brand">
+      <div class="topbar__logo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></div>
+      <span class="topbar__name">SolucionAir</span>
+      <span class="topbar__tag">Mi Panel</span>
+    </a>
+    <div class="topbar__right">
+      <span class="topbar__email" id="user-email"></span>
+      <a href="/" class="topbar__btn topbar__btn--home">Volver al sitio</a>
+      <button class="topbar__btn topbar__btn--logout" id="btn-logout" type="button">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="welcome">
+      <h1 class="welcome__title">Bienvenido a tu Panel de Control</h1>
+      <p class="welcome__sub">Acá podés ver el estado actual de tus reclamos.</p>
+      <div class="welcome__email" id="welcome-email"></div>
+    </div>
+    <div id="case-container">
+      <div class="loading"><div class="loading__spin"></div><p class="loading__text">Cargando tus reclamos...</p></div>
+    </div>
+  </div>
+
+  <div class="ft-mini">&copy; 2026 SolucionAir. Todos los derechos reservados.</div>
+
+  <script>
+  (function(){
+    var token=localStorage.getItem('sb_token');
+    var email=localStorage.getItem('sb_email');
+    if(!token||!email){window.location.href='/';return}
+
+    document.getElementById('user-email').textContent=email;
+    document.getElementById('welcome-email').textContent=email;
+
+    document.getElementById('btn-logout').addEventListener('click',function(){
+      localStorage.removeItem('sb_token');localStorage.removeItem('sb_email');window.location.href='/';
+    });
+
+    var container=document.getElementById('case-container');
+
+    fetch('/api/get-claims').then(function(r){return r.json()}).then(function(json){
+      if(!json.success)throw new Error(json.error||'Error');
+      var claims=(json.claims||[]).filter(function(c){return c.email===email});
+
+      if(!claims.length){
+        container.innerHTML='<div class="empty"><div class="empty__title">No tenés reclamos registrados</div><p class="empty__text">Iniciá tu primer reclamo desde la página principal.</p><a href="/#claim" class="empty__btn">Iniciar reclamo</a></div>';
+        return;
+      }
+
+      var html='';
+      claims.forEach(function(c,idx){
+        var estado=c.estado||'pendiente';
+        var isActive=estado==='pendiente'||estado==='en revision';
+        var bc=estado==='aprobado'||estado==='resuelto'?'badge--aprobado':estado==='rechazado'?'badge--rechazado':estado==='cancelado'?'badge--cancelado':'badge--pendiente';
+        var estadoLabel=estado==='pendiente'?'En revisión':estado==='aprobado'?'Aprobado':estado==='resuelto'?'Resuelto':estado==='rechazado'?'Rechazado':estado==='cancelado'?'Cancelado por el usuario':estado;
+        var fecha=c.creado_en?new Date(c.creado_en).toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'}):'—';
+
+        html+='<div class="case-card" id="card-'+idx+'" style="margin-bottom:18px">';
+        html+='<div class="case-card__head"><div class="case-card__title">Reclamo '+(c.ref_code||'')+'</div><span class="badge '+bc+'" id="badge-'+idx+'">'+estadoLabel+'</span></div>';
+        html+='<div class="case-card__grid">';
+        html+='<div class="case-card__field"><div class="case-card__label">Referencia</div><div class="case-card__value mono">'+(c.ref_code||'—')+'</div></div>';
+        html+='<div class="case-card__field"><div class="case-card__label">Pasajero</div><div class="case-card__value">'+(c.nombre||'—')+'</div></div>';
+        html+='<div class="case-card__field"><div class="case-card__label">Vuelo</div><div class="case-card__value mono">'+(c.vuelo_nro||'—')+'</div></div>';
+        html+='<div class="case-card__field"><div class="case-card__label">Aerolínea</div><div class="case-card__value">'+(c.aerolinea||'—')+'</div></div>';
+        html+='<div class="case-card__field"><div class="case-card__label">Fecha del vuelo</div><div class="case-card__value mono">'+(c.fecha_vuelo||'—')+'</div></div>';
+        html+='<div class="case-card__field"><div class="case-card__label">Registrado</div><div class="case-card__value mono">'+fecha+'</div></div>';
+        html+='</div>';
+        html+='<div class="case-card__divider"></div>';
+        html+='<p class="case-card__note">Nuestro equipo legal y nuestra IA están trabajando en tu caso. Te notificaremos cada avance por email.</p>';
+
+        if(isActive){
+          html+='<div class="case-card__actions" id="actions-'+idx+'">';
+          html+='<button class="btn-sm btn-sm--secondary" data-toggle-novedad="'+idx+'" type="button">Enviar actualización &#128193;</button>';
+          html+='<button class="btn-sm btn-sm--danger" data-cancel="'+idx+'" data-id="'+c.id+'" type="button">Cancelar caso &#128683;</button>';
+          html+='</div>';
+          html+='<div class="novedad-box" id="novedad-'+idx+'">';
+          html+='<textarea class="novedad-ta" id="novedad-ta-'+idx+'" placeholder="Escribí tu novedad o información adicional..."></textarea>';
+          html+='<div class="novedad-actions">';
+          html+='<button class="btn-sm btn-sm--secondary" data-close-novedad="'+idx+'" type="button">Cancelar</button>';
+          html+='<button class="btn-sm btn-sm--send" data-send-novedad="'+idx+'" data-id="'+c.id+'" type="button">Enviar Novedad</button>';
+          html+='</div>';
+          html+='<div class="novedad-ok" id="novedad-ok-'+idx+'"></div>';
+          html+='</div>';
+        }
+
+        html+='</div>';
+      });
+      container.innerHTML=html;
+
+      /* Wire up action buttons */
+      container.querySelectorAll('[data-toggle-novedad]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var i=btn.getAttribute('data-toggle-novedad');
+          var box=document.getElementById('novedad-'+i);
+          box.classList.toggle('open');
+        });
+      });
+      container.querySelectorAll('[data-close-novedad]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var i=btn.getAttribute('data-close-novedad');
+          document.getElementById('novedad-'+i).classList.remove('open');
+        });
+      });
+      container.querySelectorAll('[data-send-novedad]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var i=btn.getAttribute('data-send-novedad');
+          var claimId=btn.getAttribute('data-id');
+          var ta=document.getElementById('novedad-ta-'+i);
+          var ok=document.getElementById('novedad-ok-'+i);
+          var text=ta.value.trim();
+          if(!text){ok.textContent='Escribí algo antes de enviar.';ok.style.color='#C0392B';return}
+          btn.disabled=true;btn.textContent='Enviando...';
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:claimId,novedad:text})})
+          .then(function(r){return r.json()})
+          .then(function(d){
+            btn.disabled=false;btn.textContent='Enviar Novedad';
+            if(d.success){ok.style.color='';ok.textContent='Novedad enviada correctamente.';ta.value='';setTimeout(function(){ok.textContent=''},4000)}
+            else{ok.style.color='#C0392B';ok.textContent=d.error||'Error al enviar.'}
+          }).catch(function(){btn.disabled=false;btn.textContent='Enviar Novedad';ok.style.color='#C0392B';ok.textContent='Error de conexión.'});
+        });
+      });
+      container.querySelectorAll('[data-cancel]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          if(!confirm('¿Estás seguro de que deseás cancelar este reclamo? Esta acción no se puede deshacer.'))return;
+          var i=btn.getAttribute('data-cancel');
+          var claimId=btn.getAttribute('data-id');
+          btn.disabled=true;btn.textContent='Cancelando...';
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:claimId,action:'cancel'})})
+          .then(function(r){return r.json()})
+          .then(function(d){
+            if(d.success){
+              var badge=document.getElementById('badge-'+i);
+              badge.className='badge badge--cancelado';badge.textContent='Cancelado por el usuario';
+              var actions=document.getElementById('actions-'+i);if(actions)actions.remove();
+              var novedad=document.getElementById('novedad-'+i);if(novedad)novedad.remove();
+            }else{btn.disabled=false;btn.textContent='Cancelar caso 🚫';alert(d.error||'Error al cancelar.')}
+          }).catch(function(){btn.disabled=false;btn.textContent='Cancelar caso 🚫';alert('Error de conexión.')});
+        });
+      });
+
+    }).catch(function(err){
+      container.innerHTML='<div class="empty"><div class="empty__title">Error al cargar</div><p class="empty__text">'+err.message+'</p><a href="/" class="empty__btn">Volver al inicio</a></div>';
+    });
+  })();
+  </script>
+</body>
+</html>
