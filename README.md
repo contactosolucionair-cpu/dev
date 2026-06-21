@@ -16,6 +16,9 @@ Panel administrativo en el Backoffice que permite controlar en tiempo real:
 - **Textos globales**: Edición de títulos, subtítulos y CTAs en ambos idiomas desde una interfaz visual.
 - **Feature Flags**: Interruptores para activar/desactivar el procesamiento de imágenes con IA y el cálculo automático de tasa de éxito, almacenados en estructura JSONB.
 
+### Módulo de Seguridad de Datos (Soft Delete)
+Sistema de papelera de reciclaje que implementa eliminación lógica (soft delete) mediante campo `deleted_at` en la tabla de reclamos. Los registros eliminados desaparecen de la vista principal con transición suave y se almacenan en una papelera accesible desde el Backoffice, desde donde pueden ser restaurados o eliminados permanentemente con doble confirmación. La consulta principal filtra automáticamente los registros con `deleted_at` no nulo.
+
 ### Cálculo Predictivo de Éxito
 Algoritmo predictivo basado en IA que analiza parámetros del vuelo (aerolínea, horas de retraso, causa informada, tipo de incidencia) cruzándolos con normativas internacionales para otorgar un porcentaje de viabilidad financiera:
 - **Argentina (ANAC / Decreto 1476/98)**: Umbral de 4 horas para demoras. Cancelaciones sin aviso y overbooking en vuelos nacionales: 85-95%. Causa meteorológica comprobable: 0%.
@@ -141,6 +144,7 @@ npx vercel logs --since 1h --expand
 | GET | `/api/get-claims` | Lista todos los reclamos |
 | POST | `/api/generate-reply` | Genera o optimiza respuestas con AI |
 | POST | `/api/update-ticket` | Actualiza estado o agrega novedades |
+| POST | `/api/delete-ticket` | Soft delete, restaurar o eliminar permanentemente |
 | POST | `/api/login` | Autenticación de usuarios |
 | GET | `/api/get-config` | Lee configuración dinámica del sitio |
 | POST | `/api/save-config` | Guarda configuración dinámica |
