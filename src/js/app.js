@@ -425,17 +425,22 @@ document.addEventListener('DOMContentLoaded', function () {
   /* Built-in fallback translations for all data-t keys */
   var DICT = {
     es: {
+      /* Nav */
+      nav_cases:'Casos', nav_how:'Cómo funciona', nav_why:'Por qué elegirnos', nav_about:'Quiénes somos', nav_faq:'FAQ',
+      /* How it works */
       how_ey:'Proceso', how_title:'Cómo funciona', how_sub:'Cuatro pasos simples para recuperar tu compensación',
       step1_t:'Cargás tu caso', step1_d:'Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.',
       step2_t:'SolucionAir reclama por vos', step2_d:'Analizamos tu caso, identificamos tus derechos y presentamos el reclamo formal. 100% gratis.',
       step3_t:'Se resuelve tu caso', step3_d:'La aerolínea responde con un acuerdo o derivamos a mediación online profesional.',
       step4_t:'Cobrás tu compensación', step4_d:'Recibís el dinero y recién ahí pagamos nuestros honorarios sobre lo percibido.',
+      /* Contingency */
       ctg_title:'¿Sin respuesta de la aerolínea?', ctg_desc:'Derivamos tu caso a nuestra Red de Profesionales: una mediación privada y 100% online, sin necesidad de tribunales.',
       ctg1_t:'Abogado especializado', ctg1_d:'Un profesional en derecho aeronáutico toma tu caso de forma personalizada.',
       ctg2_t:'Estrategia legal', ctg2_d:'Armamos la mejor estrategia basada en normativa vigente y jurisprudencia.',
       ctg3_t:'Mediación por videollamada', ctg3_d:'Resolución 100% online, sin necesidad de trasladarte a ningún tribunal.',
       ctg4_t:'Solo si ganás', ctg4_d:'Comisión del 20% más reintegro de gastos de hasta USD 20. Solo si se gana.',
       ctg_note:'Sin riesgo para vos. Si no hay compensación, no pagás nada.',
+      /* Cases */
       cases_ey:'Cobertura', cases_title:'Casos que podés reclamar',
       case1_t:'Vuelo demorado', case1_d:'Demoras mayores a 3 horas dan derecho a compensación económica según la normativa vigente.',
       case2_t:'Vuelo cancelado', case2_d:'Si tu vuelo fue cancelado sin aviso previo de al menos 14 días, podés reclamar.',
@@ -443,19 +448,59 @@ document.addEventListener('DOMContentLoaded', function () {
       case4_t:'Equipaje perdido', case4_d:'Equipaje extraviado o no entregado da derecho a indemnización por los convenios internacionales.',
       case5_t:'Equipaje dañado', case5_d:'Si tu equipaje llegó roto o dañado, la aerolínea es responsable de reparar o compensar.',
       case6_t:'Equipaje entregado tarde', case6_d:'Retrasos en la entrega del equipaje generan derecho a reembolso de gastos de primera necesidad.',
+      /* Advantages */
+      adv_ey:'Beneficios', adv_title:'Por qué elegirnos',
+      adv1_t:'Sin costos iniciales', adv1_d:'No pagás nada por adelantado. Nosotros cubrimos todos los gastos del proceso.',
+      adv2_t:'Solo cobramos si ganás', adv2_d:'Nuestros honorarios se aplican únicamente si conseguimos tu compensación.',
+      adv3_t:'No te peleás con la aerolínea', adv3_d:'Nosotros nos encargamos de toda la gestión. Vos solo cargás tu caso y esperás.',
+      adv4_t:'Te mantenemos informado', adv4_d:'Recibís actualizaciones por email en cada etapa del proceso.',
+      adv5_t:'Revisamos viabilidad', adv5_d:'Antes de avanzar, evaluamos si tu caso tiene chances reales con nuestra IA.',
+      adv6_t:'Equipo especializado', adv6_d:'Abogados con experiencia en derecho aeronáutico y mediaciones internacionales.',
+      /* Testimonials */
+      test_ey:'Testimonios', test_title:'Lo que dicen nuestros clientes',
+      test1_q:'"Pensé que era imposible reclamar, pero SolucionAir se encargó de todo. En pocas semanas tenía mi compensación acreditada."',
+      test1_m:'Buenos Aires · Vuelo demorado · USD 600 recuperados',
+      test2_q:'"Me cancelaron el vuelo y no sabía qué hacer. Subí mi pasaje, la IA completó todo y a los días ya tenía respuesta."',
+      test2_m:'Córdoba · Vuelo cancelado · USD 320 recuperados',
+      test3_q:'"Mi equipaje llegó destruido. SolucionAir gestionó el reclamo completo, incluyendo la mediación. Excelente servicio."',
+      test3_m:'Mendoza · Equipaje dañado · USD 450 recuperados',
+      /* About */
+      about_ey:'Equipo', about_title:'Quién está detrás de SolucionAir',
+      about_p1:'Somos un equipo especializado en derecho aeronáutico y tecnología, con la misión de simplificar el acceso a la justicia para pasajeros afectados por problemas con aerolíneas.',
+      about_p2:'Combinamos inteligencia artificial con experiencia legal real para gestionar reclamos de forma rápida, transparente y sin costos iniciales para el usuario.',
+      about_p3:'¿Tenés alguna consulta? Escribinos a contacto@solucionair.com',
+      /* FAQ */
+      faq_ey:'Ayuda', faq_title:'Preguntas frecuentes',
+      faq1_q:'¿Cuánto cuesta usar SolucionAir?', faq1_a:'Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión sobre la compensación obtenida si el reclamo es exitoso.',
+      faq2_q:'¿Cuándo cobran sus honorarios?', faq2_a:'Únicamente cuando vos cobrás tu compensación. Si no se consigue nada, no nos debés nada.',
+      faq3_q:'¿Qué pasa si mi reclamo no prospera?', faq3_a:'No pagás absolutamente nada. Nosotros asumimos el riesgo y los costos del proceso completo.',
+      faq4_q:'¿Cuánto tarda el proceso?', faq4_a:'Depende de la aerolínea y el tipo de reclamo. Los casos simples pueden resolverse en semanas, mientras que los que van a mediación pueden tomar algunos meses.',
+      faq5_q:'¿Qué documentación necesito?', faq5_a:'Lo mínimo es tu pasaje, boarding pass o reserva. Si tenés fotos, emails de la aerolínea o recibos de gastos adicionales, también nos sirven. Nuestra IA puede extraer los datos de una captura de pantalla.',
+      faq6_q:'¿Mis datos están protegidos?', faq6_a:'Sí. Toda la información que compartís está protegida con encriptación y solo se usa para gestionar tu reclamo. No vendemos ni compartimos tus datos con terceros.',
+      faq7_q:'¿Qué casos se pueden reclamar?', faq7_a:'Vuelos demorados (más de 3 horas), cancelaciones, sobreventa (overbooking), denegación de embarque, downgrades de clase, equipaje perdido, dañado o entregado con demora.',
+      /* Login */
+      login_title:'Ingresá a tu panel', login_desc:'Usá el email y contraseña con los que registraste tu reclamo.',
+      /* Footer */
+      ft_tagline:'Tu compensación siempre despega.', ft_desc:'Plataforma LegalTech con inteligencia artificial para reclamos aéreos.',
+      ft_contact:'Contacto', ft_legal:'Legal', ft_terms:'Términos y Condiciones', ft_privacy:'Política de Privacidad',
     },
     en: {
+      /* Nav */
+      nav_cases:'Cases', nav_how:'How it works', nav_why:'Why choose us', nav_about:'About us', nav_faq:'FAQ',
+      /* How it works */
       how_ey:'Process', how_title:'How it works', how_sub:'Four simple steps to recover your compensation',
       step1_t:'Upload your case', step1_d:'Upload your data and documents from your PC or phone. Our AI reads your ticket automatically.',
       step2_t:'SolucionAir claims for you', step2_d:'We analyze your case, identify your rights and file the formal claim. 100% free.',
       step3_t:'Your case is resolved', step3_d:'The airline responds with an agreement or we refer to professional online mediation.',
       step4_t:'You receive your compensation', step4_d:'You get the money and only then we charge our fee on the amount received.',
+      /* Contingency */
       ctg_title:'No response from the airline?', ctg_desc:'We refer your case to our Professional Network: private and 100% online mediation, no courts needed.',
       ctg1_t:'Specialized attorney', ctg1_d:'An aviation law professional takes your case personally.',
       ctg2_t:'Legal strategy', ctg2_d:'We build the best strategy based on current regulations and case law.',
       ctg3_t:'Video call mediation', ctg3_d:'100% online resolution, no need to travel to any court.',
       ctg4_t:'Only if you win', ctg4_d:'20% commission plus expense reimbursement up to USD 20. Only if the case is won.',
       ctg_note:'No risk for you. If there is no compensation, you pay nothing.',
+      /* Cases */
       cases_ey:'Coverage', cases_title:'Cases you can claim',
       case1_t:'Delayed flight', case1_d:'Delays over 3 hours entitle you to financial compensation under current regulations.',
       case2_t:'Cancelled flight', case2_d:'If your flight was cancelled without at least 14 days notice, you can claim.',
@@ -463,6 +508,41 @@ document.addEventListener('DOMContentLoaded', function () {
       case4_t:'Lost baggage', case4_d:'Lost or undelivered baggage entitles you to compensation under international conventions.',
       case5_t:'Damaged baggage', case5_d:'If your baggage arrived broken or damaged, the airline is responsible for repair or compensation.',
       case6_t:'Late baggage', case6_d:'Delays in baggage delivery entitle you to reimbursement of essential expenses.',
+      /* Advantages */
+      adv_ey:'Benefits', adv_title:'Why choose us',
+      adv1_t:'No upfront costs', adv1_d:'You pay nothing in advance. We cover all process expenses.',
+      adv2_t:'We only charge if you win', adv2_d:'Our fees apply only if we secure your compensation.',
+      adv3_t:'No fighting with the airline', adv3_d:'We handle the entire process. You just upload your case and wait.',
+      adv4_t:'We keep you informed', adv4_d:'You receive email updates at every stage of the process.',
+      adv5_t:'We assess viability', adv5_d:'Before proceeding, we evaluate if your case has real chances with our AI.',
+      adv6_t:'Specialized team', adv6_d:'Attorneys with experience in aviation law and international mediations.',
+      /* Testimonials */
+      test_ey:'Testimonials', test_title:'What our clients say',
+      test1_q:'"I thought it was impossible to claim, but SolucionAir handled everything. In a few weeks I had my compensation credited."',
+      test1_m:'Buenos Aires · Delayed flight · USD 600 recovered',
+      test2_q:'"My flight was cancelled and I didn\'t know what to do. I uploaded my ticket, the AI filled everything in, and within days I had an answer."',
+      test2_m:'Córdoba · Cancelled flight · USD 320 recovered',
+      test3_q:'"My baggage arrived destroyed. SolucionAir managed the entire claim, including mediation. Excellent service."',
+      test3_m:'Mendoza · Damaged baggage · USD 450 recovered',
+      /* About */
+      about_ey:'Team', about_title:'Who is behind SolucionAir',
+      about_p1:'We are a team specialized in aviation law and technology, with the mission of simplifying access to justice for passengers affected by airline issues.',
+      about_p2:'We combine artificial intelligence with real legal expertise to manage claims quickly, transparently and at no upfront cost to the user.',
+      about_p3:'Have a question? Write to us at contacto@solucionair.com',
+      /* FAQ */
+      faq_ey:'Help', faq_title:'Frequently asked questions',
+      faq1_q:'How much does SolucionAir cost?', faq1_a:'Nothing upfront. The initial service is 100% free. We only charge a commission on the compensation obtained if the claim is successful.',
+      faq2_q:'When do you charge your fees?', faq2_a:'Only when you receive your compensation. If nothing is obtained, you owe us nothing.',
+      faq3_q:'What happens if my claim doesn\'t succeed?', faq3_a:'You pay absolutely nothing. We assume the risk and costs of the entire process.',
+      faq4_q:'How long does the process take?', faq4_a:'It depends on the airline and type of claim. Simple cases can be resolved in weeks, while those going to mediation may take a few months.',
+      faq5_q:'What documentation do I need?', faq5_a:'At minimum, your ticket, boarding pass or booking. If you have photos, airline emails or receipts for additional expenses, those help too. Our AI can extract data from a screenshot.',
+      faq6_q:'Is my data protected?', faq6_a:'Yes. All information you share is encrypted and used solely to manage your claim. We do not sell or share your data with third parties.',
+      faq7_q:'What cases can be claimed?', faq7_a:'Delayed flights (over 3 hours), cancellations, overbooking, denied boarding, class downgrades, lost, damaged or delayed baggage.',
+      /* Login */
+      login_title:'Access your panel', login_desc:'Use the email and password you registered your claim with.',
+      /* Footer */
+      ft_tagline:'Your compensation always takes off.', ft_desc:'AI-powered LegalTech platform for flight claims.',
+      ft_contact:'Contact', ft_legal:'Legal', ft_terms:'Terms and Conditions', ft_privacy:'Privacy Policy',
     }
   };
 
