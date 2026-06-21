@@ -177,7 +177,7 @@ export default async function handler(req, res) {
         var senderFrom = 'SolucionAir <onboarding@resend.dev>';
         var vuelo = body.vuelo_nro || 'N/A';
         var aerolinea = body.aerolinea || 'N/A';
-        var panelUrl = 'https://solucionair-web-seven.vercel.app/backoffice.html';
+        var panelUrl = 'https://solucionair-web-seven.vercel.app/backoffice';
 
         /* 1. Internal alert to contacto.solucionair@gmail.com */
         try {

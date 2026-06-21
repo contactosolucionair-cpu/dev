@@ -103,6 +103,15 @@ python3 -m http.server 8000
 npx vercel dev
 ```
 
+### Rutas limpias (Clean URLs)
+
+El proyecto usa `cleanUrls: true` en `vercel.json`, lo que elimina la extension `.html` de todas las rutas. El acceso a los modulos se realiza sin extension:
+
+- `/backoffice` en lugar de `/backoffice.html`
+- `/perfil` en lugar de `/perfil.html`
+
+Todos los enlaces internos y redirecciones del frontend ya apuntan a las rutas limpias.
+
 ### Produccion
 ```bash
 # Login (una sola vez)
@@ -125,8 +134,8 @@ npx vercel env ls
 | Pagina | URL |
 |---|---|
 | Landing | https://solucionair-web-seven.vercel.app |
-| Backoffice | https://solucionair-web-seven.vercel.app/backoffice.html |
-| Panel cliente | https://solucionair-web-seven.vercel.app/perfil.html |
+| Backoffice | https://solucionair-web-seven.vercel.app/backoffice |
+| Panel cliente | https://solucionair-web-seven.vercel.app/perfil |
 
 ## Flujo del Sistema
 

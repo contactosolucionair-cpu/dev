@@ -513,7 +513,7 @@
     .then(function(r){return r.json()})
     .then(function(d){
       btn.style.opacity='';btn.disabled=false;
-      if(d.success){localStorage.setItem('sb_token',d.token);localStorage.setItem('sb_email',em);window.location.href='/perfil.html'}
+      if(d.success){localStorage.setItem('sb_token',d.token);localStorage.setItem('sb_email',em);window.location.href='/perfil'}
       else{loginErr.textContent=d.error||'Credenciales inválidas.'}
     }).catch(function(){btn.style.opacity='';btn.disabled=false;loginErr.textContent='Error de conexión. Intentá de nuevo.'});
   });
