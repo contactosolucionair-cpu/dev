@@ -1,72 +1,72 @@
-# SolucionAir - Portal de Reclamaciones de Vuelos
+# SolucionAir — Enterprise Flight Claim Portal
 
-Plataforma LegalTech que automatiza reclamos aereos mediante inteligencia artificial. Extrae datos de pasajes y comprobantes de vuelo usando vision por IA, calcula el porcentaje de exito del reclamo segun normativas vigentes y gestiona el proceso legal completo.
+Plataforma LegalTech de nivel enterprise que automatiza la gestión integral de reclamos aéreos mediante inteligencia artificial. El sistema procesa documentos de viaje con visión por IA, calcula la viabilidad financiera del reclamo según normativas internacionales y gestiona el ciclo de vida completo del caso desde la carga inicial hasta la resolución.
+
+## Características Clave Integradas
+
+### Procesamiento Inteligente Multi-Archivo
+Motor avanzado de visión artificial (Google Gemini 2.5 Flash via OpenRouter) que extrae, unifica y sanitiza datos de múltiples pasajes, fotos de boarding passes y PDFs en una única sesión consolidada. El sistema implementa sanitización en tres capas (prompt, backend, frontend) para garantizar la integridad de los datos extraídos, incluyendo detección automática de códigos PNR, rutas de vuelo con escalas, importes de gastos y tipo de incidencia.
+
+### Módulo de Internacionalización Dinámica (i18n)
+Sistema centralizado que conmuta de forma fluida el 100% de la interfaz entre Español e Inglés. La traducción abarca el Hero, el proceso de 4 pasos, las secciones de asesoría legal, los tipos de cobertura, tarjetas de testimonios y el formulario completo de 3 pasos. Las traducciones se gestionan mediante un diccionario built-in con fallback automático y pueden ser sobreescritas dinámicamente desde la base de datos.
+
+### Core de Configuración Dinámica (CMS & Feature Flags)
+Panel administrativo en el Backoffice que permite controlar en tiempo real:
+- **Paleta de colores**: Modificación de colores primario, secundario, fondo y texto mediante variables CSS (`:root`) que se inyectan dinámicamente al cargar la página.
+- **Textos globales**: Edición de títulos, subtítulos y CTAs en ambos idiomas desde una interfaz visual.
+- **Feature Flags**: Interruptores para activar/desactivar el procesamiento de imágenes con IA y el cálculo automático de tasa de éxito, almacenados en estructura JSONB.
+
+### Cálculo Predictivo de Éxito
+Algoritmo predictivo basado en IA que analiza parámetros del vuelo (aerolínea, horas de retraso, causa informada, tipo de incidencia) cruzándolos con normativas internacionales para otorgar un porcentaje de viabilidad financiera:
+- **Argentina (ANAC / Decreto 1476/98)**: Umbral de 4 horas para demoras. Cancelaciones sin aviso y overbooking en vuelos nacionales: 85-95%. Causa meteorológica comprobable: 0%.
+- **Europa (EU261)**: Demoras superiores a 3 horas o cancelaciones con aerolínea europea: 90-100% por multas automáticas.
+- **EE.UU. (DOT)**: Sin compensación obligatoria por demora simple. Overbooking o cancelación sin reembolso: 60-80%.
+- **Ponderación por aerolínea**: Ajuste según comportamiento histórico en mediaciones.
+
+El porcentaje se almacena internamente y es visible únicamente para el equipo administrativo en el Backoffice.
 
 ## Arquitectura del Sistema
 
 ```
 solucionair-web/
-├── index.html              # Landing + formulario de 3 pasos
+├── index.html              # Landing page + formulario wizard de 3 pasos
 ├── perfil.html             # Panel del cliente (estado de reclamos)
-├── backoffice.html         # Panel de administracion interno
+├── backoffice.html         # Panel de administración (reclamos + config)
+├── vercel.json             # Configuración de Clean URLs
 ├── src/
 │   ├── css/
-│   │   └── styles.css      # Estilos globales (Plus Jakarta Sans, Inter, JetBrains Mono)
+│   │   └── styles.css      # Sistema de diseño con CSS custom properties
 │   └── js/
-│       └── app.js          # Logica del formulario, AI scanner, wizard de 3 pasos
+│       └── app.js          # Lógica del formulario, AI scanner, wizard, i18n
 ├── api/
-│   ├── process-ticket.js   # Procesamiento de reclamos + AI vision + calculo % exito
-│   ├── analyze-document.js # Analisis individual de documentos con AI
+│   ├── process-ticket.js   # Procesamiento de reclamos + AI vision + % éxito
+│   ├── analyze-document.js # Análisis individual de documentos con AI
 │   ├── get-claims.js       # Listado de reclamos desde Supabase
-│   ├── generate-reply.js   # Generacion de respuestas con AI (backoffice)
-│   ├── update-ticket.js    # Actualizacion de estado y novedades
-│   └── login.js            # Autenticacion de usuarios
+│   ├── generate-reply.js   # Generación y optimización de respuestas con AI
+│   ├── update-ticket.js    # Actualización de estado y novedades de casos
+│   ├── login.js            # Autenticación de usuarios
+│   ├── get-config.js       # Lectura de configuración dinámica (site_config)
+│   └── save-config.js      # Persistencia de configuración dinámica
 └── README.md
 ```
 
-### Frontend
-- HTML5, CSS3 con diseno responsivo
-- Formulario wizard de 3 pasos con validacion en tiempo real
-- Carga multi-archivo con preview y autocompletado por IA
-- Tipografias: Plus Jakarta Sans (titulos), Inter (cuerpo), JetBrains Mono (datos tecnicos)
+### Stack Tecnológico
 
-### Backend
-- Vercel Serverless Functions (Node.js, ESM)
-- 6 endpoints API independientes en `/api/`
-- Sin dependencias npm — usa `fetch` nativo para Supabase REST API y OpenRouter
-
-### Procesamiento de IA
-- Modelo: `google/gemini-2.5-flash` via OpenRouter
-- Extraccion unificada multi-archivo (imagenes + PDFs)
-- Sanitizacion anti-null en 3 capas (prompt, backend, frontend)
-- Calculo automatico de porcentaje de exito basado en:
-  - **Argentina (ANAC / Decreto 1476/98)**: Umbral de 4 horas, causa climatica = 0%
-  - **Europa (EU261)**: Demoras +3hs, multas automaticas 90-100%
-  - **EEUU (DOT)**: Sin compensacion obligatoria por demora simple
-  - Ponderacion por comportamiento historico de la aerolinea
-
-### Base de Datos
-- Supabase (PostgreSQL)
-- Tabla principal: `reclamos`
-- Datos extendidos almacenados en columna JSONB `ai_raw`
-- REST API directa (sin SDK)
-
-## Configuracion del Entorno
-
-Variables requeridas en Vercel Dashboard > Settings > Environment Variables:
-
-| Variable | Descripcion |
+| Capa | Tecnología |
 |---|---|
-| `OPENROUTER_API_KEY` | API key de OpenRouter para acceder a modelos de IA (Gemini 2.5 Flash) |
-| `SUPABASE_URL` | URL del proyecto Supabase (ej: `https://xxxxx.supabase.co`) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Service role key de Supabase con permisos de escritura |
-| `RESEND_API_KEY` | API key de Resend para envio de emails transaccionales |
-| `NOTIFY_EMAIL` | Casilla interna donde llegan alertas de nuevos reclamos |
+| Frontend | HTML5, CSS3 (custom properties), JavaScript ES5+ |
+| Tipografías | Plus Jakarta Sans, Inter, JetBrains Mono |
+| Backend | Vercel Serverless Functions (Node.js, ESM) |
+| IA / Visión | Google Gemini 2.5 Flash via OpenRouter API |
+| Base de Datos | Supabase (PostgreSQL) con REST API directa |
+| Email | Resend API (transaccional) |
+| Hosting | Vercel (Edge Network) |
 
-## Schema de Base de Datos
+### Persistencia y Esquema de Datos
 
+**Tabla `reclamos`** — Almacena cada caso con datos del pasajero, vuelo, estado y metadatos de IA:
 ```sql
-CREATE TABLE IF NOT EXISTS reclamos (
+CREATE TABLE reclamos (
   id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   nombre        TEXT NOT NULL,
   telefono      TEXT,
@@ -80,104 +80,101 @@ CREATE TABLE IF NOT EXISTS reclamos (
   ref_code      TEXT,
   creado_en     TIMESTAMPTZ DEFAULT now()
 );
-
-ALTER TABLE reclamos DISABLE ROW LEVEL SECURITY;
 ```
 
-Campos extendidos almacenados en `ai_raw` (JSONB):
-- `doc_tipo`, `doc_numero`, `origen`, `destino`, `pnr`
-- `incidencia`, `delay_hours`, `causa`, `reembolso`
-- `moneda`, `gastos_monto`, `gastos_detalle`
-- `porcentaje_exito` (0-100, oculto del usuario)
+El campo `ai_raw` (JSONB) almacena datos extendidos: documento, origen, destino, PNR, incidencia, gastos, causa y porcentaje de éxito.
 
-## Guia de Despliegue
+**Tabla `site_config`** — Configuración dinámica del sitio con estructura JSONB:
+```sql
+CREATE TABLE site_config (
+  id            TEXT PRIMARY KEY DEFAULT 'global',
+  colors        JSONB,
+  feature_flags JSONB,
+  translations  JSONB,
+  updated_at    TIMESTAMPTZ DEFAULT now()
+);
+```
 
-### Desarrollo local
+Ambas tablas operan con Row Level Security (RLS) configurado para permitir operaciones del service role.
+
+### Rutas Limpias (Clean URLs)
+
+El proyecto utiliza `cleanUrls: true` en `vercel.json`, eliminando la extensión `.html` de todas las rutas:
+
+| Ruta | Descripción |
+|---|---|
+| `/` | Landing page con formulario de reclamos |
+| `/backoffice` | Panel de administración |
+| `/perfil` | Panel del cliente |
+
+## Configuración del Entorno
+
+Variables requeridas en Vercel Dashboard > Settings > Environment Variables:
+
+| Variable | Descripción |
+|---|---|
+| `OPENROUTER_API_KEY` | API key de OpenRouter para modelos de IA (Gemini 2.5 Flash) |
+| `SUPABASE_URL` | URL del proyecto Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key de Supabase con permisos de escritura |
+| `RESEND_API_KEY` | API key de Resend para emails transaccionales |
+| `NOTIFY_EMAIL` | Casilla interna para alertas de nuevos reclamos |
+
+## Despliegue
+
 ```bash
-# Servir archivos estaticos
-python3 -m http.server 8000
-# Abrir http://localhost:8000
-
-# Las funciones de /api/ solo funcionan en Vercel
-# Para probar el backend usar npx vercel dev
+# Desarrollo local
 npx vercel dev
-```
 
-### Rutas 
-
-El proyecto usa `cleanUrls: true` en `vercel.json`. El acceso a los modulos se realiza sin extension:
-
-- `/backoffice`
-- `/perfil` 
-
-
-### Produccion
-```bash
-# Login (una sola vez)
-npx vercel login
-
-# Linkear al proyecto (una sola vez)
-npx vercel link --scope solucionair --yes
-
-# Deploy a produccion
+# Producción
 npx vercel --prod --yes
 
-# Ver logs
+# Logs en tiempo real
 npx vercel logs --since 1h --expand
-
-# Ver variables de entorno
-npx vercel env ls
-```
-
-### URLs de produccion
-| Pagina | URL |
-|---|---|
-| Landing | https://solucionair-web-seven.vercel.app |
-| Backoffice | https://solucionair-web-seven.vercel.app/backoffice |
-| Panel cliente | https://solucionair-web-seven.vercel.app/perfil |
-
-## Flujo del Sistema
-
-```
-Usuario sube documentos (multi-archivo)
-    │
-    ▼
-Frontend convierte a Base64 → POST /api/process-ticket
-    │
-    ▼
-Backend envia imagenes a Gemini 2.5 Flash (OpenRouter)
-    │
-    ▼
-IA extrae: nombre, vuelo, PNR, origen, destino, fecha
-    │
-    ▼
-Frontend autocompleta formulario (Paso 1 y 2)
-    │
-    ▼
-Usuario completa datos faltantes + firma (Paso 3)
-    │
-    ▼
-POST /api/process-ticket (manualSubmit)
-    │
-    ├── Calcula % exito con IA (oculto)
-    ├── INSERT en Supabase
-    ├── Email interno via Resend
-    └── Email confirmacion al cliente
-    │
-    ▼
-Tarjeta de exito con codigo CSA correlativo
 ```
 
 ## Endpoints API
 
-| Metodo | Ruta | Descripcion |
+| Método | Ruta | Descripción |
 |---|---|---|
-| POST | `/api/process-ticket` | Scan IA multi-archivo + submit final de reclamo |
-| POST | `/api/analyze-document` | Analisis individual de documento |
-| GET | `/api/get-claims` | Lista todos los reclamos (backoffice) |
-| POST | `/api/generate-reply` | Genera respuesta con IA / optimiza borrador |
+| POST | `/api/process-ticket` | Scan AI multi-archivo + submit final de reclamo |
+| POST | `/api/analyze-document` | Análisis individual de documento con AI |
+| GET | `/api/get-claims` | Lista todos los reclamos |
+| POST | `/api/generate-reply` | Genera o optimiza respuestas con AI |
 | POST | `/api/update-ticket` | Actualiza estado o agrega novedades |
-| POST | `/api/login` | Autenticacion de usuarios |
+| POST | `/api/login` | Autenticación de usuarios |
+| GET | `/api/get-config` | Lee configuración dinámica del sitio |
+| POST | `/api/save-config` | Guarda configuración dinámica |
+
+## Flujo del Sistema
+
+```
+Carga de documentos (multi-archivo)
+    │
+    ▼
+Gemini 2.5 Flash extrae datos unificados
+    │
+    ▼
+Autocompletado del formulario (Paso 1 + 2)
+    │
+    ▼
+Firma electrónica y envío (Paso 3)
+    │
+    ├── Cálculo predictivo de % éxito (interno)
+    ├── Persistencia en Supabase
+    ├── Email de alerta interna (Resend)
+    └── Email de confirmación al cliente
+    │
+    ▼
+Tarjeta de éxito con código CSA correlativo
+```
+
+## URLs de Producción
+
+| Recurso | URL |
+|---|---|
+| Landing | https://solucionair-web-seven.vercel.app |
+| Backoffice | https://solucionair-web-seven.vercel.app/backoffice |
+| Panel Cliente | https://solucionair-web-seven.vercel.app/perfil |
 
 ## Licencia
 

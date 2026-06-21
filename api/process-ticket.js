@@ -1,19 +1,26 @@
 /**
- * POST /api/process-ticket
+ * POST /api/process-ticket — Core Claim Processing Engine
  *
- * Handles two flows:
- * 1. AI Scan (multiFile/image): Receives base64 images, sends to Gemini 2.5 Flash
- *    for unified data extraction. Returns extracted fields without DB insert.
- * 2. Manual Submit (manualSubmit): Receives form data, calculates AI success %,
- *    inserts into Supabase, sends notification emails via Resend.
+ * Dual-mode serverless function that handles the complete claim lifecycle:
  *
- * @param {Object} req.body.images - Array of {base64, mimeType} for multi-file scan
- * @param {string} req.body.image - Single base64 image (legacy compat)
- * @param {boolean} req.body.manualSubmit - True for final form submission
- * @param {string} req.body.email - User email (required for manualSubmit)
- * @returns {Object} {success, data, refCode} or error
+ * Mode 1 — AI Document Extraction:
+ *   Receives one or multiple base64-encoded images/PDFs, sends them to
+ *   Google Gemini 2.5 Flash for unified data extraction with route-aware
+ *   parsing (origin/destination/stopovers), PNR detection and expense
+ *   consolidation. Returns structured JSON without database persistence.
  *
- * Environment: OPENROUTER_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY
+ * Mode 2 — Claim Submission:
+ *   Receives validated form data, calculates predictive success percentage
+ *   based on jurisdiction analysis (ANAC/EU261/DOT), persists the claim
+ *   in Supabase, and dispatches notification emails via Resend.
+ *
+ * Feature flags are read from site_config table at runtime.
+ * Success percentage is stored internally and excluded from client response.
+ *
+ * @param {Object[]} req.body.images - Array of {base64, mimeType} for multi-file scan
+ * @param {boolean} req.body.manualSubmit - Activates claim submission mode
+ * @param {string} req.body.email - Client email (required for submission)
+ * @returns {Object} {success, data, refCode}
  */
 
 export const config = {
@@ -43,6 +50,23 @@ export default async function handler(req, res) {
     var body = req.body;
     if (!body) return res.status(400).json({ error: 'No body provided' });
 
+    /* Fetch feature flags from site_config table (with fallback to enabled) */
+    var flagAi = true;
+    var flagPct = true;
+    try {
+      var cfgRes = await fetch(SB_URL + '/rest/v1/site_config?id=eq.global&select=feature_flags&limit=1', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      });
+      if (cfgRes.ok) {
+        var cfgRows = JSON.parse(await cfgRes.text());
+        if (cfgRows.length && cfgRows[0].feature_flags) {
+          var ff = cfgRows[0].feature_flags;
+          flagAi = ff.ai_extraction !== false;
+          flagPct = ff.ai_success_pct !== false;
+        }
+      }
+    } catch (e) { /* Flags default to true if config unavailable */ }
+
     var email = (body.email || '').trim();
 
     /* ---- Manual submit (no image, form data only) ---- */
@@ -59,7 +83,7 @@ export default async function handler(req, res) {
       /* ---- Step 1: Calculate AI success percentage (hidden from user) ---- */
       var porcentaje_exito = null;
       var OR_KEY = process.env.OPENROUTER_API_KEY;
-      if (OR_KEY) {
+      if (OR_KEY && flagPct) {
         try {
           var aiPrompt = 'Sos un analista legal de SolucionAir especializado en reclamos aereos. '
             + 'Evalua el siguiente caso y devolvé UNICAMENTE un numero entero de 0 a 100 representando el porcentaje de exito estimado. '
@@ -269,6 +293,7 @@ export default async function handler(req, res) {
     }
 
     /* ---- AI scan flow (single or multi-file) ---- */
+    if (!flagAi) return res.status(200).json({ success: true, data: {}, flagDisabled: true });
     var images = body.images || [];
     if (body.image) images = [{ base64: body.image, mimeType: body.mimeType || 'image/jpeg' }];
     if (!images.length) return res.status(400).json({ error: 'No images provided' });

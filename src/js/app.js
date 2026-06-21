@@ -1,21 +1,17 @@
 /**
- * SolucionAir — Frontend Application Logic
+ * SolucionAir — Frontend Application Controller
  *
- * Manages the 3-step claim wizard:
- *   Step 1: Multi-file AI scanner + personal data fields
- *   Step 2: Flight details (auto-filled by AI) + incident + expenses
- *   Step 3: Legal declaration + digital signature + submit
+ * Orchestrates the claim submission wizard, AI-powered document extraction,
+ * real-time form validation, dynamic internationalization (i18n) and
+ * runtime configuration from Supabase.
  *
- * Key features:
- * - Multi-file upload with base64 conversion and POST to /api/process-ticket
- * - Real-time field validation with visual feedback (.field-ok, .field-error, .field-ai)
- * - Wizard step navigation with progress bar (Paso 1-3 de 3)
- * - Anti-null sanitization: rejects "null"/"undefined" strings from AI responses
- * - Email forced to lowercase on both AI extraction and user input
- *
- * DOM dependencies: Expects specific element IDs defined in index.html
- * (ai-file, ai-drop, ai-idle, ai-loading, ai-done, ai-error, f-name,
- * f-email, f-phone, f-flight, f-airline, f-date, f-incident, etc.)
+ * Architecture:
+ * - 3-step wizard: Document upload → Flight details → Legal signature
+ * - Multi-file AI scanner with base64 encoding and consolidated extraction
+ * - Real-time validation with visual states (.field-ok, .field-error, .field-ai)
+ * - Dynamic i18n via data-t attributes with built-in ES/EN dictionary
+ * - Runtime color theming and feature flags from site_config table
+ * - Sanitization layer that strips "null"/"undefined" strings from AI responses
  */
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
@@ -423,8 +419,132 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  /* ============ DYNAMIC CONFIG FROM SUPABASE ============ */
+  var siteConfig = null;
+
+  /* Built-in fallback translations for all data-t keys */
+  var DICT = {
+    es: {
+      how_ey:'Proceso', how_title:'Cómo funciona', how_sub:'Cuatro pasos simples para recuperar tu compensación',
+      step1_t:'Cargás tu caso', step1_d:'Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.',
+      step2_t:'SolucionAir reclama por vos', step2_d:'Analizamos tu caso, identificamos tus derechos y presentamos el reclamo formal. 100% gratis.',
+      step3_t:'Se resuelve tu caso', step3_d:'La aerolínea responde con un acuerdo o derivamos a mediación online profesional.',
+      step4_t:'Cobrás tu compensación', step4_d:'Recibís el dinero y recién ahí pagamos nuestros honorarios sobre lo percibido.',
+      ctg_title:'¿Sin respuesta de la aerolínea?', ctg_desc:'Derivamos tu caso a nuestra Red de Profesionales: una mediación privada y 100% online, sin necesidad de tribunales.',
+      ctg1_t:'Abogado especializado', ctg1_d:'Un profesional en derecho aeronáutico toma tu caso de forma personalizada.',
+      ctg2_t:'Estrategia legal', ctg2_d:'Armamos la mejor estrategia basada en normativa vigente y jurisprudencia.',
+      ctg3_t:'Mediación por videollamada', ctg3_d:'Resolución 100% online, sin necesidad de trasladarte a ningún tribunal.',
+      ctg4_t:'Solo si ganás', ctg4_d:'Comisión del 20% más reintegro de gastos de hasta USD 20. Solo si se gana.',
+      ctg_note:'Sin riesgo para vos. Si no hay compensación, no pagás nada.',
+      cases_ey:'Cobertura', cases_title:'Casos que podés reclamar',
+      case1_t:'Vuelo demorado', case1_d:'Demoras mayores a 3 horas dan derecho a compensación económica según la normativa vigente.',
+      case2_t:'Vuelo cancelado', case2_d:'Si tu vuelo fue cancelado sin aviso previo de al menos 14 días, podés reclamar.',
+      case3_t:'Sobreventa', case3_d:'Si no te dejaron embarcar por overbooking, la aerolínea debe compensarte.',
+      case4_t:'Equipaje perdido', case4_d:'Equipaje extraviado o no entregado da derecho a indemnización por los convenios internacionales.',
+      case5_t:'Equipaje dañado', case5_d:'Si tu equipaje llegó roto o dañado, la aerolínea es responsable de reparar o compensar.',
+      case6_t:'Equipaje entregado tarde', case6_d:'Retrasos en la entrega del equipaje generan derecho a reembolso de gastos de primera necesidad.',
+    },
+    en: {
+      how_ey:'Process', how_title:'How it works', how_sub:'Four simple steps to recover your compensation',
+      step1_t:'Upload your case', step1_d:'Upload your data and documents from your PC or phone. Our AI reads your ticket automatically.',
+      step2_t:'SolucionAir claims for you', step2_d:'We analyze your case, identify your rights and file the formal claim. 100% free.',
+      step3_t:'Your case is resolved', step3_d:'The airline responds with an agreement or we refer to professional online mediation.',
+      step4_t:'You receive your compensation', step4_d:'You get the money and only then we charge our fee on the amount received.',
+      ctg_title:'No response from the airline?', ctg_desc:'We refer your case to our Professional Network: private and 100% online mediation, no courts needed.',
+      ctg1_t:'Specialized attorney', ctg1_d:'An aviation law professional takes your case personally.',
+      ctg2_t:'Legal strategy', ctg2_d:'We build the best strategy based on current regulations and case law.',
+      ctg3_t:'Video call mediation', ctg3_d:'100% online resolution, no need to travel to any court.',
+      ctg4_t:'Only if you win', ctg4_d:'20% commission plus expense reimbursement up to USD 20. Only if the case is won.',
+      ctg_note:'No risk for you. If there is no compensation, you pay nothing.',
+      cases_ey:'Coverage', cases_title:'Cases you can claim',
+      case1_t:'Delayed flight', case1_d:'Delays over 3 hours entitle you to financial compensation under current regulations.',
+      case2_t:'Cancelled flight', case2_d:'If your flight was cancelled without at least 14 days notice, you can claim.',
+      case3_t:'Overbooking', case3_d:'If you were denied boarding due to overbooking, the airline must compensate you.',
+      case4_t:'Lost baggage', case4_d:'Lost or undelivered baggage entitles you to compensation under international conventions.',
+      case5_t:'Damaged baggage', case5_d:'If your baggage arrived broken or damaged, the airline is responsible for repair or compensation.',
+      case6_t:'Late baggage', case6_d:'Delays in baggage delivery entitle you to reimbursement of essential expenses.',
+    }
+  };
+
+  function applyTexts(lang) {
+    /* Apply hero/CTA from Supabase config if available */
+    var cfgT = (siteConfig && siteConfig.translations && siteConfig.translations[lang]) || {};
+    var cfgFb = (siteConfig && siteConfig.translations && siteConfig.translations.es) || {};
+
+    var heroTitle = cfgT.hero_title || cfgFb.hero_title;
+    var heroSub = cfgT.hero_sub || cfgFb.hero_sub;
+    var ctaText = cfgT.cta_text || cfgFb.cta_text;
+    var formTitle = cfgT.form_title || cfgFb.form_title;
+
+    if (heroTitle) document.querySelectorAll('.hero__h1').forEach(function (el) { el.innerHTML = heroTitle.replace(/\n/g, '<br/>'); });
+    if (heroSub) document.querySelectorAll('.hero__sub').forEach(function (el) { el.textContent = heroSub; });
+    if (ctaText) document.querySelectorAll('.hero__cta').forEach(function (el) { var svg = el.querySelector('svg'); el.textContent = ctaText + ' '; if (svg) el.appendChild(svg); });
+    if (formTitle) document.querySelectorAll('.claim__title').forEach(function (el) { el.textContent = formTitle; });
+
+    /* Apply all data-t elements from built-in dictionary */
+    var dict = DICT[lang] || DICT.es;
+    var fallback = DICT.es;
+    document.querySelectorAll('[data-t]').forEach(function (el) {
+      var key = el.getAttribute('data-t');
+      var text = dict[key] || fallback[key];
+      if (text) el.textContent = text;
+    });
+  }
+
+  function applyColors() {
+    if (!siteConfig || !siteConfig.colors) return;
+    var c = siteConfig.colors;
+    var r = document.documentElement.style;
+    if (c.primary) {
+      r.setProperty('--au', c.primary);
+      r.setProperty('--aul', c.primary);
+      r.setProperty('--aud', c.primary);
+    }
+    if (c.secondary) {
+      r.setProperty('--g', c.secondary);
+      r.setProperty('--gl', c.secondary);
+      r.setProperty('--gd', c.secondary);
+    }
+    if (c.bg) {
+      r.setProperty('--bg', c.bg);
+      r.setProperty('--bgd', c.bg);
+    }
+    if (c.text) {
+      r.setProperty('--t1', c.text);
+    }
+  }
+
+  function applyFlags() {
+    if (!siteConfig || !siteConfig.feature_flags) return;
+    var ff = siteConfig.feature_flags;
+    var aiScan = document.getElementById('ai-scan');
+    if (aiScan && ff.ai_extraction === false) {
+      aiScan.style.display = 'none';
+      var hr = aiScan.nextElementSibling;
+      if (hr && hr.tagName === 'HR') hr.style.display = 'none';
+    }
+  }
+
+  function loadSiteConfig() {
+    fetch('/api/get-config').then(function (r) { return r.json(); }).then(function (json) {
+      if (!json.success || !json.config) return;
+      siteConfig = json.config;
+      window.__SA_CONFIG = siteConfig;
+      applyColors();
+      applyFlags();
+      applyTexts(S.lang);
+    }).catch(function () { /* Fallback: hardcoded defaults in HTML remain */ });
+  }
+
+  /* Override setLang to also apply translated texts */
+  var originalSetLang = setLang;
+  setLang = function (l) {
+    originalSetLang(l);
+    applyTexts(l);
+  };
+
   /* ============ INIT ============ */
   setLang('es');
   setTab('flight');
-  /* App initialized */
+  loadSiteConfig();
 });
