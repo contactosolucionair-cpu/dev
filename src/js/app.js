@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function fillField(id, value) {
-    if (!value || value === 'null' || value === 'undefined') return;
+    if (!value || value === 'null' || value === 'undefined' || value === 'N/A' || value === 'unknown') return;
     var el = document.getElementById(id);
     if (!el || el.value) return;
     el.value = value;

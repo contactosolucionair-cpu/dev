@@ -310,20 +310,20 @@ export default async function handler(req, res) {
     });
     contentParts.push({
       type: 'text',
-      text: 'Actuas como un extractor de datos de viaje ultra preciso de SolucionAir. Analiza en conjunto TODOS los archivos provistos arriba. Tu objetivo es armar un unico rompecabezas con la informacion dispersa en los distintos documentos.\n\n'
+      text: 'Actuas como un extractor de datos de viaje ultra preciso de SolucionAir. Analiza EXHAUSTIVAMENTE cada archivo provisto arriba. Tu objetivo es armar un unico rompecabezas combinando la informacion dispersa en TODOS los documentos del lote.\n\n'
         + 'INSTRUCCIONES ESTRICTAS DE EXTRACCION:\n\n'
-        + 'CODIGO DE RESERVA (PNR): Busca combinaciones de exactamente 6 caracteres alfanumericos (letras mayusculas y numeros) tipicos de aerolineas, como "GFE6IH" o "ABC123". NO confundas con codigos de tasas de impuestos (XR, AR, QO, YR) ni con codigos de aeropuerto. Si no encontras un PNR claro, devuelve "".\n\n'
-        + 'NUMERO DE TICKET: Busca secuencias numericas largas de 10-13 digitos (ej: "0062433887909"). Suelen estar precedidas por la palabra "Ticket" o "eTicket".\n\n'
-        + 'ORIGEN Y DESTINO: Analiza la secuencia completa de vuelos en el itinerario. El ORIGEN es el aeropuerto del PRIMER despegue del viaje (ej: EZE Buenos Aires). El DESTINO es el aeropuerto de LLEGADA FINAL del ultimo tramo (ej: TUL Tulsa). NUNCA repitas el mismo aeropuerto en ambos campos si el boleto muestra una ruta con escalas. Si hay escalas intermedias (ej: ATL Atlanta), ponelas en el campo "escalas".\n\n'
-        + 'NUMERO DE DOCUMENTO: Extrae UNICAMENTE el numero de DNI o Pasaporte del pasajero. NO confundas con Tax ID, CUIT, CUIL, datos de AFIP, Tax Address ni numeros fiscales. Si no ves un documento de identidad real, devuelve "".\n\n'
-        + 'GASTOS: Suma los importes de "Charges", "Total Fare", tarifas o montos monetarios visibles. Indica la moneda.\n\n'
-        + 'INCIDENCIA: Detecta alertas como "Cancelacion", "Flight Cancelled", "Delayed", "Overbooked" para pre-seleccionar el tipo.\n\n'
-        + 'EMAIL: Siempre en minusculas. Si no aparece un email real del pasajero, devuelve "".\n\n'
-        + 'TELEFONO: Solo si aparece un numero de telefono real del pasajero. Si no, devuelve "".\n\n'
-        + 'REGLA ANTI-NULL CRITICA: NUNCA devuelvas la palabra "null" como string. Si un dato no se encuentra, devuelve un string vacio "". Si un campo aparece en una imagen y en otra no, MANTEN el dato y combinalos.\n\n'
+        + 'NOMBRE: Busca el nombre completo del pasajero tal como aparece en el pasaje o boarding pass. Incluye apellidos y sufijos (Sr, Jr, etc).\n\n'
+        + 'EMAIL Y TELEFONO: Revisa TODOS los documentos buscando direcciones de email y numeros de telefono. Pueden aparecer en confirmaciones de reserva, recibos de pago, facturas, detalles del itinerario, headers o footers, o datos de cuenta del pasajero. Si encontras un email, devolvelo en minusculas. Si NO encontras email ni telefono en NINGUNA de las imagenes, devuelve estrictamente "" (string vacio). NUNCA inventes, adivines ni generes datos de contacto ficticios.\n\n'
+        + 'NUMERO DE DOCUMENTO: Busca numeros de DNI o Pasaporte del pasajero. NO confundas con Tax ID, CUIT, CUIL, datos de AFIP, Tax Address, frequent flyer numbers ni numeros de tarjeta de credito. Si no encontras un documento de identidad real y claro, devuelve "".\n\n'
+        + 'CODIGO DE RESERVA (PNR): Busca combinaciones de exactamente 6 caracteres alfanumericos (letras mayusculas y numeros). NO confundas con codigos de tasas de impuestos (XR, AR, QO). Si no hay PNR claro, devuelve "".\n\n'
+        + 'NUMERO DE TICKET: Busca secuencias numericas de 10-13 digitos precedidas por "Ticket" o "eTicket".\n\n'
+        + 'ORIGEN Y DESTINO: ORIGEN = aeropuerto del PRIMER despegue. DESTINO = aeropuerto de LLEGADA FINAL del ultimo tramo. NUNCA repitas el mismo aeropuerto. Escalas intermedias van en "escalas".\n\n'
+        + 'GASTOS: Suma importes de "Charges", "Total Fare", tarifas visibles. Indica la moneda.\n\n'
+        + 'INCIDENCIA: Detecta alertas como "Cancelled", "Delayed", "Overbooked".\n\n'
+        + 'REGLA ANTI-FABRICACION: NUNCA inventes ni generes datos que no esten visiblemente escritos en los documentos. Si un dato no aparece en ninguna imagen, devuelve SIEMPRE "". NUNCA devuelvas "null", "N/A", "unknown" ni datos de ejemplo.\n\n'
         + 'Devuelve OBLIGATORIAMENTE un unico objeto JSON con esta estructura exacta, sin markdown, sin backticks, sin texto extra:\n'
-        + '{ "nombre": "...", "email": "", "telefono": "", "doc_numero": "", "aerolinea": "...", "vuelo_nro": "codigo del vuelo del primer tramo", "numero_ticket": "", "pnr": "", "origen": "codigo IATA - ciudad de primer despegue", "destino": "codigo IATA - ciudad de llegada final", "escalas": "", "fecha_vuelo": "YYYY-MM-DD", "incidencia_detectada": "", "gastos_monto": "", "gastos_moneda": "" }\n\n'
-        + 'Responde SOLO el JSON.',
+        + '{ "nombre": "", "email": "", "telefono": "", "doc_numero": "", "aerolinea": "", "vuelo_nro": "", "numero_ticket": "", "pnr": "", "origen": "", "destino": "", "escalas": "", "fecha_vuelo": "", "incidencia_detectada": "", "gastos_monto": "", "gastos_moneda": "" }\n\n'
+        + 'Rellena SOLO los campos que puedas confirmar visualmente en los documentos. Todo lo demas dejalo como "". Responde SOLO el JSON.',
     });
 
     var aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
