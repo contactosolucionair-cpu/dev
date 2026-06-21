@@ -144,7 +144,7 @@
       <div class="nav__actions">
         <div class="lang" role="group" aria-label="Idioma"><button class="lang__btn active" data-lang-btn="es" type="button">ES</button><button class="lang__btn" data-lang-btn="en" type="button">EN</button></div>
         <button class="nav__btn-account" id="btn-login-open" type="button">&#128100; Mi Cuenta</button>
-        <a href="#claim" class="nav__btn-cta">Iniciá tu reclamo</a>
+        <a href="#claim" class="nav__btn-cta" data-t="nav_cta">Iniciá tu reclamo</a>
       </div>
       <button class="nav__hamburger" aria-label="Menú"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
     </div>
@@ -171,9 +171,9 @@
 
   <!-- TRUST -->
   <section class="trust"><div class="trust__wrap">
-    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><strong>Respaldo jurídico real</strong><p>Abogados aeronáuticos certificados</p></div></div>
-    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div><strong>Visión IA que lee tu pasaje</strong><p>Subí una foto y completamos todo automáticamente</p></div></div>
-    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><strong>100% gratuito hasta ganar</strong><p>Sin costos iniciales ni ocultos</p></div></div>
+    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><strong data-t="trust1_t">Respaldo jurídico real</strong><p data-t="trust1_d">Abogados aeronáuticos certificados</p></div></div>
+    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div><strong data-t="trust2_t">Visión IA que lee tu pasaje</strong><p data-t="trust2_d">Subí una foto y completamos todo automáticamente</p></div></div>
+    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><strong data-t="trust3_t">100% gratuito hasta ganar</strong><p data-t="trust3_d">Sin costos iniciales ni ocultos</p></div></div>
   </div></section>
 
   <!-- CLAIM / FORM — 3 PASOS -->
@@ -214,7 +214,7 @@
           <div class="field"><label class="field__lbl" data-t="lbl_name">Nombre y Apellido <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-name" data-required="true" placeholder="Juan Pablo Martínez" /><span class="field__msg"></span></div>
           <div class="field"><label class="field__lbl" data-t="lbl_phone">Teléfono <span class="field__ast">*</span></label><input class="field__in" type="tel" id="f-phone" data-required="true" placeholder="+54 9 11 2557-8402" /><span class="field__msg"></span></div>
           <div class="field"><label class="field__lbl" data-t="lbl_email">Mail <span class="field__ast">*</span></label><input class="field__in" type="email" id="f-email" data-required="true" placeholder="juan@email.com" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl" data-t="lbl_doctype">Tipo de documento <span class="field__ast">*</span></label><select class="field__in" id="f-doctype" data-required="true"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_doctype">Tipo de documento <span class="field__ast">*</span></label><select class="field__in" id="f-doctype" data-required="true"><option value="" data-t="opt_select">Seleccionar...</option><option value="DNI" data-t="opt_dni">DNI</option><option value="Pasaporte" data-t="opt_passport">Pasaporte</option><option value="ID" data-t="opt_id">ID / Cédula</option></select><span class="field__msg"></span></div>
           <div class="field"><label class="field__lbl" data-t="lbl_docnum">Número de documento <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-docnum" data-required="true" placeholder="37.806.475" /><span class="field__msg"></span></div>
         </div>
       </div>

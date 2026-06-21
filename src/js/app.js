@@ -427,6 +427,13 @@ document.addEventListener('DOMContentLoaded', function () {
     es: {
       /* Nav */
       nav_cases:'Casos', nav_how:'Cómo funciona', nav_why:'Por qué elegirnos', nav_about:'Quiénes somos', nav_faq:'FAQ',
+      nav_cta:'Iniciá tu reclamo',
+      /* Trust cards */
+      trust1_t:'Respaldo jurídico real', trust1_d:'Abogados aeronáuticos certificados',
+      trust2_t:'Visión IA que lee tu pasaje', trust2_d:'Subí una foto y completamos todo automáticamente',
+      trust3_t:'100% gratuito hasta ganar', trust3_d:'Sin costos iniciales ni ocultos',
+      /* Select options */
+      opt_select:'Seleccionar...', opt_dni:'DNI', opt_passport:'Pasaporte', opt_id:'ID / Cédula',
       /* Wizard */
       wz1:'Tus datos', wz2:'Tu caso', wz3:'Enviar',
       form_sub:'Analizamos tu caso sin costo y nos encargamos del proceso. Completá estos datos y revisamos si tu reclamo puede avanzar. Si falta información, te vamos a contactar para orientarte.',
@@ -508,6 +515,13 @@ document.addEventListener('DOMContentLoaded', function () {
     en: {
       /* Nav */
       nav_cases:'Cases', nav_how:'How it works', nav_why:'Why choose us', nav_about:'About us', nav_faq:'FAQ',
+      nav_cta:'Start your claim',
+      /* Trust cards */
+      trust1_t:'Real Legal Support', trust1_d:'Certified aviation attorneys',
+      trust2_t:'AI Vision Ticket Reader', trust2_d:'Upload a photo and we will autofill everything',
+      trust3_t:'100% Free Until We Win', trust3_d:'No upfront or hidden fees',
+      /* Select options */
+      opt_select:'Select...', opt_dni:'National ID', opt_passport:'Passport', opt_id:'ID Card',
       /* Wizard */
       wz1:'Your data', wz2:'Your case', wz3:'Submit',
       form_sub:'We analyze your case for free and handle the process. Fill in these details and we\'ll check if your claim can proceed. If information is missing, we\'ll contact you.',
