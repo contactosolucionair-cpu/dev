@@ -179,17 +179,17 @@
   <!-- CLAIM / FORM — 3 PASOS -->
   <section class="claim" id="claim"><div class="claim__wrap">
     <div class="claim__head">
-      <h2 class="claim__title">Comenzá tu reclamo</h2>
-      <p class="claim__sub">Analizamos tu caso sin costo y nos encargamos del proceso. Completá estos datos y revisamos si tu reclamo puede avanzar. Si falta información, te vamos a contactar para orientarte.</p>
+      <h2 class="claim__title" data-t="form_title">Comenzá tu reclamo</h2>
+      <p class="claim__sub" data-t="form_sub">Analizamos tu caso sin costo y nos encargamos del proceso. Completá estos datos y revisamos si tu reclamo puede avanzar. Si falta información, te vamos a contactar para orientarte.</p>
     </div>
 
     <!-- Step indicators -->
     <div class="wizard-steps" id="wizard-steps">
-      <div class="wz active" data-wz="1"><span class="wz__n">1</span><span class="wz__t">Tus datos</span></div>
+      <div class="wz active" data-wz="1"><span class="wz__n">1</span><span class="wz__t" data-t="wz1">Tus datos</span></div>
       <div class="wz__line"></div>
-      <div class="wz" data-wz="2"><span class="wz__n">2</span><span class="wz__t">Tu caso</span></div>
+      <div class="wz" data-wz="2"><span class="wz__n">2</span><span class="wz__t" data-t="wz2">Tu caso</span></div>
       <div class="wz__line"></div>
-      <div class="wz" data-wz="3"><span class="wz__n">3</span><span class="wz__t">Enviar</span></div>
+      <div class="wz" data-wz="3"><span class="wz__n">3</span><span class="wz__t" data-t="wz3">Enviar</span></div>
     </div>
 
     <div class="prog" role="progressbar"><div class="prog__top"><span class="prog__step" id="prog-step">Paso 1 de 3</span><span class="prog__pct" id="prog-pct">0%</span></div><div class="prog__bar"><div class="prog__fill" id="prog-fill"></div></div></div>
@@ -200,55 +200,55 @@
     <div class="card wz-panel active" id="wz-1">
 
       <!-- AI Multi-file Scanner -->
-      <div class="ai-scan" id="ai-scan"><div class="ai-scan__idle" id="ai-idle"><div class="ai-scan__drop" id="ai-drop"><input type="file" id="ai-file" accept=".jpg,.jpeg,.png,.webp,.pdf" multiple /><div class="ai-scan__body"><div class="ai-scan__icon-wrap"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="ai-scan__badge">IA</span></div><p class="ai-scan__txt">Subí tus documentos de viaje para autocompletar con IA &#9889;</p><p class="ai-scan__meta">Seleccioná uno o varios archivos · JPG, PNG, PDF · Máx. 10MB c/u</p></div></div></div>
+      <div class="ai-scan" id="ai-scan"><div class="ai-scan__idle" id="ai-idle"><div class="ai-scan__drop" id="ai-drop"><input type="file" id="ai-file" accept=".jpg,.jpeg,.png,.webp,.pdf" multiple /><div class="ai-scan__body"><div class="ai-scan__icon-wrap"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><span class="ai-scan__badge">IA</span></div><p class="ai-scan__txt" data-t="ai_txt">Subí tus documentos de viaje para autocompletar con IA &#9889;</p><p class="ai-scan__meta" data-t="ai_meta">Seleccioná uno o varios archivos · JPG, PNG, PDF · Máx. 10MB c/u</p></div></div></div>
       <div id="ai-file-list" style="padding:8px 16px;font-family:var(--fm);font-size:.68rem;color:var(--t3);display:none"></div>
-      <div class="ai-scan__loading hidden" id="ai-loading"><div class="ai-scan__spinner"></div><p class="ai-scan__status" id="ai-status">La IA está analizando tus documentos...</p><p class="ai-scan__substatus">Extrayendo datos combinados de todos los archivos</p></div>
-      <div class="ai-scan__done hidden" id="ai-done"><div class="ai-scan__check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p class="ai-scan__result" id="ai-result">Datos extraídos correctamente</p><button class="ai-scan__retry" id="ai-retry" type="button">Escanear otros</button></div>
-      <div class="ai-scan__error hidden" id="ai-error"><p class="ai-scan__err-msg" id="ai-err-msg">No se pudieron analizar los archivos. Completá los campos manualmente.</p><button class="ai-scan__retry" id="ai-retry-err" type="button">Reintentar</button></div></div>
+      <div class="ai-scan__loading hidden" id="ai-loading"><div class="ai-scan__spinner"></div><p class="ai-scan__status" id="ai-status" data-t="ai_loading">La IA está analizando tus documentos...</p><p class="ai-scan__substatus" data-t="ai_loading_sub">Extrayendo datos combinados de todos los archivos</p></div>
+      <div class="ai-scan__done hidden" id="ai-done"><div class="ai-scan__check"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><p class="ai-scan__result" id="ai-result" data-t="ai_done">Datos extraídos correctamente</p><button class="ai-scan__retry" id="ai-retry" type="button" data-t="ai_retry">Escanear otros</button></div>
+      <div class="ai-scan__error hidden" id="ai-error"><p class="ai-scan__err-msg" id="ai-err-msg" data-t="ai_err">No se pudieron analizar los archivos. Completá los campos manualmente.</p><button class="ai-scan__retry" id="ai-retry-err" type="button" data-t="ai_retry2">Reintentar</button></div></div>
 
       <hr class="card__hr"/>
 
       <!-- Datos personales -->
-      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">01</span><div><h3 class="card__blk-title">Tus datos personales</h3><p class="card__blk-sub">Tal como figuran en tu documento de identidad.</p></div></div>
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">01</span><div><h3 class="card__blk-title" data-t="f_personal_t">Tus datos personales</h3><p class="card__blk-sub" data-t="f_personal_sub">Tal como figuran en tu documento de identidad.</p></div></div>
         <div class="g g2">
-          <div class="field"><label class="field__lbl">Nombre y Apellido <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-name" data-required="true" placeholder="Juan Pablo Martínez" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Teléfono <span class="field__ast">*</span></label><input class="field__in" type="tel" id="f-phone" data-required="true" placeholder="+54 9 11 2557-8402" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Mail <span class="field__ast">*</span></label><input class="field__in" type="email" id="f-email" data-required="true" placeholder="juan@email.com" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Tipo de documento <span class="field__ast">*</span></label><select class="field__in" id="f-doctype" data-required="true"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Número de documento <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-docnum" data-required="true" placeholder="37.806.475" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_name">Nombre y Apellido <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-name" data-required="true" placeholder="Juan Pablo Martínez" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_phone">Teléfono <span class="field__ast">*</span></label><input class="field__in" type="tel" id="f-phone" data-required="true" placeholder="+54 9 11 2557-8402" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_email">Mail <span class="field__ast">*</span></label><input class="field__in" type="email" id="f-email" data-required="true" placeholder="juan@email.com" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_doctype">Tipo de documento <span class="field__ast">*</span></label><select class="field__in" id="f-doctype" data-required="true"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_docnum">Número de documento <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-docnum" data-required="true" placeholder="37.806.475" /><span class="field__msg"></span></div>
         </div>
       </div>
-      <div class="wz-nav"><button class="btn-verify" id="wz-next-1" type="button">Continuar al Paso 2 &rarr;</button></div>
+      <div class="wz-nav"><button class="btn-verify" id="wz-next-1" type="button" data-t="btn_next2">Continuar al Paso 2 &rarr;</button></div>
     </div>
 
     <!-- PASO 2: DETALLES DEL VUELO -->
     <div class="card wz-panel" id="wz-2">
 
-      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">02</span><div><h3 class="card__blk-title">Identificación del vuelo</h3><p class="card__blk-sub">Si subiste tu pasaje con IA, estos campos ya están completos. Revisalos o corregí lo que haga falta.</p></div></div>
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">02</span><div><h3 class="card__blk-title" data-t="f_flight_t">Identificación del vuelo</h3><p class="card__blk-sub" data-t="f_flight_sub">Si subiste tu pasaje con IA, estos campos ya están completos. Revisalos o corregí lo que haga falta.</p></div></div>
         <div class="g g2">
-          <div class="field"><label class="field__lbl">Aerolínea <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-airline" data-required="true" placeholder="Aerolíneas Argentinas" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Número de vuelo <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-flight" data-required="true" placeholder="AR1234" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Origen <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-origin" data-required="true" placeholder="Buenos Aires (EZE)" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Destino <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-destination" data-required="true" placeholder="Madrid (MAD)" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Fecha del vuelo <span class="field__ast">*</span></label><input class="field__in" type="date" id="f-date" data-required="true" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Código de reserva (PNR)</label><input class="field__in" type="text" id="f-pnr" placeholder="ABC123" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_airline">Aerolínea <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-airline" data-required="true" placeholder="Aerolíneas Argentinas" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_flight">Número de vuelo <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-flight" data-required="true" placeholder="AR1234" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_origin">Origen <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-origin" data-required="true" placeholder="Buenos Aires (EZE)" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_dest">Destino <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-destination" data-required="true" placeholder="Madrid (MAD)" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_date">Fecha del vuelo <span class="field__ast">*</span></label><input class="field__in" type="date" id="f-date" data-required="true" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_pnr">Código de reserva (PNR)</label><input class="field__in" type="text" id="f-pnr" placeholder="ABC123" /><span class="field__msg"></span></div>
         </div>
       </div>
 
       <hr class="card__hr"/>
 
-      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#9888;</span><div><h3 class="card__blk-title">Incidente</h3></div></div>
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#9888;</span><div><h3 class="card__blk-title" data-t="f_incident_t">Incidente</h3></div></div>
         <div class="g g2">
-          <div class="field"><label class="field__lbl">Tipo de incidencia <span class="field__ast">*</span></label><select class="field__in" id="f-incident" data-required="true"><option value="">Seleccionar...</option><option value="cancelacion">Cancelación</option><option value="demora">Demora</option><option value="overbooking">Overbooking</option><option value="reprogramacion">Reprogramación</option><option value="denegacion">Denegación de embarque</option></select><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Magnitud del retraso (horas)</label><input class="field__in" type="number" id="f-delay-hours" placeholder="4" min="0" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">Anticipación de notificación</label><input class="field__in" type="text" id="f-notice" placeholder="Ej: 2 horas antes, en el aeropuerto" /><span class="field__msg"></span></div>
-          <div class="field"><label class="field__lbl">¿Ofrecieron reembolso?</label><select class="field__in" id="f-refund"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_incident">Tipo de incidencia <span class="field__ast">*</span></label><select class="field__in" id="f-incident" data-required="true"><option value="">Seleccionar...</option><option value="cancelacion">Cancelación</option><option value="demora">Demora</option><option value="overbooking">Overbooking</option><option value="reprogramacion">Reprogramación</option><option value="denegacion">Denegación de embarque</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_delay">Magnitud del retraso (horas)</label><input class="field__in" type="number" id="f-delay-hours" placeholder="4" min="0" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_notice">Anticipación de notificación</label><input class="field__in" type="text" id="f-notice" placeholder="Ej: 2 horas antes, en el aeropuerto" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" data-t="lbl_refund">¿Ofrecieron reembolso?</label><select class="field__in" id="f-refund"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option></select><span class="field__msg"></span></div>
         </div>
       </div>
 
       <hr class="card__hr"/>
 
-      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#128269;</span><div><h3 class="card__blk-title">Causa informada por la aerolínea</h3></div></div>
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#128269;</span><div><h3 class="card__blk-title" data-t="f_cause_t">Causa informada por la aerolínea</h3></div></div>
         <div class="g g1">
           <div class="field"><label class="field__lbl">Causa</label><select class="field__in" id="f-cause"><option value="">Sin especificar</option><option value="operativa">Operativa</option><option value="tecnica">Técnica</option><option value="climatica">Climática</option><option value="atc">Control de tráfico aéreo (ATC)</option><option value="otra">Otra</option><option value="no_informada">No informada</option></select><span class="field__msg"></span></div>
         </div>
@@ -256,7 +256,7 @@
 
       <hr class="card__hr"/>
 
-      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#128176;</span><div><h3 class="card__blk-title">Gastos incurridos</h3><p class="card__blk-sub">Si tuviste gastos extras por el incidente, detallalos acá.</p></div></div>
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#128176;</span><div><h3 class="card__blk-title" data-t="f_expenses_t">Gastos incurridos</h3><p class="card__blk-sub" data-t="f_expenses_sub">Si tuviste gastos extras por el incidente, detallalos acá.</p></div></div>
         <div class="g g2">
           <div class="field"><label class="field__lbl">Moneda</label><select class="field__in" id="f-currency"><option value="ARS">ARS (Peso argentino)</option><option value="USD">USD (Dólar)</option><option value="EUR">EUR (Euro)</option><option value="BRL">BRL (Real)</option></select><span class="field__msg"></span></div>
           <div class="field"><label class="field__lbl">Monto total</label><input class="field__in" type="number" id="f-expenses-amount" placeholder="0.00" min="0" step="0.01" /><span class="field__msg"></span></div>
@@ -269,12 +269,12 @@
         </div>
       </div>
 
-      <div class="wz-nav"><button class="btn-verify" id="wz-back-2" type="button" style="background:transparent;color:var(--t2);border:1px solid var(--bd)">&larr; Volver</button><button class="btn-verify" id="wz-next-2" type="button">Continuar al Paso 3 &rarr;</button></div>
+      <div class="wz-nav"><button class="btn-verify" id="wz-back-2" type="button" style="background:transparent;color:var(--t2);border:1px solid var(--bd)" data-t="btn_back">&larr; Volver</button><button class="btn-verify" id="wz-next-2" type="button" data-t="btn_next3">Continuar al Paso 3 &rarr;</button></div>
     </div>
 
     <!-- PASO 3: ENVIAR RECLAMO & FIRMA -->
     <div class="card wz-panel" id="wz-3">
-      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">03</span><div><h3 class="card__blk-title">Declaración jurada y firma electrónica</h3><p class="card__blk-sub">Leé atentamente antes de firmar y enviar.</p></div></div>
+      <div class="card__blk"><div class="card__blk-head"><span class="badge-step">03</span><div><h3 class="card__blk-title" data-t="f_sign_t">Declaración jurada y firma electrónica</h3><p class="card__blk-sub" data-t="f_sign_sub">Leé atentamente antes de firmar y enviar.</p></div></div>
 
         <div style="background:var(--bg);border:1px solid var(--bdl);border-radius:8px;padding:16px;margin-bottom:16px;font-size:.76rem;color:var(--t2);line-height:1.65">
           <p style="margin-bottom:10px">Mediante la presente, el/la reclamante declara bajo juramento que toda la información proporcionada en este formulario es verídica, completa y exacta. Autorizo expresamente a <strong>SolucionAir</strong>, representada por <strong>Juan Pablo Mario Adaniya</strong> (DNI 37.806.475) y <strong>Tomás Gregorio Dicranian</strong> (DNI 37.606.877), a:</p>
@@ -290,8 +290,9 @@
         <div class="consent" id="consent-flight"><label class="consent__row"><input type="checkbox" class="consent__cb" data-required="true" /><span class="consent__txt">Acepto los <strong>Términos y Condiciones</strong>, la <strong>Política de Privacidad</strong> y la declaración jurada precedente. Firmo digitalmente este reclamo autorizando a SolucionAir a actuar en mi representación.</span></label></div>
       </div>
 
-      <div class="wz-nav"><button class="btn-verify" id="wz-back-3" type="button" style="background:transparent;color:var(--t2);border:1px solid var(--bd)">&larr; Volver al Paso 2</button><button class="btn-verify" id="btn-verify" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> Enviar reclamo</button></div>
-      <p class="cta-area__note" style="text-align:center;margin-top:10px">Análisis gratuito e instantáneo · Sin compromiso</p>
+      <div class="wz-nav"><button class="btn-verify" id="wz-back-3" type="button" style="background:transparent;color:var(--t2);border:1px solid var(--bd)" data-t="btn_back2">&larr; Volver al Paso 2</button><button class="btn-verify" id="btn-verify" type="button" data-t="btn_submit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> Enviar reclamo</button>
+</div>
+      <p class="cta-area__note" style="text-align:center;margin-top:10px" data-t="btn_note">Análisis gratuito e instantáneo · Sin compromiso</p>
     </div>
 
     <!-- SUCCESS CARD (in-page) -->

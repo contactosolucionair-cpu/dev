@@ -427,6 +427,27 @@ document.addEventListener('DOMContentLoaded', function () {
     es: {
       /* Nav */
       nav_cases:'Casos', nav_how:'Cómo funciona', nav_why:'Por qué elegirnos', nav_about:'Quiénes somos', nav_faq:'FAQ',
+      /* Wizard */
+      wz1:'Tus datos', wz2:'Tu caso', wz3:'Enviar',
+      form_sub:'Analizamos tu caso sin costo y nos encargamos del proceso. Completá estos datos y revisamos si tu reclamo puede avanzar. Si falta información, te vamos a contactar para orientarte.',
+      /* AI Scanner */
+      ai_txt:'Subí tus documentos de viaje para autocompletar con IA ⚡', ai_meta:'Seleccioná uno o varios archivos · JPG, PNG, PDF · Máx. 10MB c/u',
+      ai_loading:'La IA está analizando tus documentos...', ai_loading_sub:'Extrayendo datos combinados de todos los archivos',
+      ai_done:'Datos extraídos correctamente', ai_retry:'Escanear otros', ai_err:'No se pudieron analizar los archivos. Completá los campos manualmente.', ai_retry2:'Reintentar',
+      /* Form Step 1 */
+      f_personal_t:'Tus datos personales', f_personal_sub:'Tal como figuran en tu documento de identidad.',
+      lbl_name:'Nombre y Apellido *', lbl_phone:'Teléfono *', lbl_email:'Mail *', lbl_doctype:'Tipo de documento *', lbl_docnum:'Número de documento *',
+      btn_next2:'Continuar al Paso 2 →',
+      /* Form Step 2 */
+      f_flight_t:'Identificación del vuelo', f_flight_sub:'Si subiste tu pasaje con IA, estos campos ya están completos. Revisalos o corregí lo que haga falta.',
+      lbl_airline:'Aerolínea *', lbl_flight:'Número de vuelo *', lbl_origin:'Origen *', lbl_dest:'Destino *', lbl_date:'Fecha del vuelo *', lbl_pnr:'Código de reserva (PNR)',
+      f_incident_t:'Incidente', lbl_incident:'Tipo de incidencia *', lbl_delay:'Magnitud del retraso (horas)', lbl_notice:'Anticipación de notificación', lbl_refund:'¿Ofrecieron reembolso?',
+      f_cause_t:'Causa informada por la aerolínea',
+      f_expenses_t:'Gastos incurridos', f_expenses_sub:'Si tuviste gastos extras por el incidente, detallalos acá.',
+      btn_back:'← Volver', btn_next3:'Continuar al Paso 3 →',
+      /* Form Step 3 */
+      f_sign_t:'Declaración jurada y firma electrónica', f_sign_sub:'Leé atentamente antes de firmar y enviar.',
+      btn_back2:'← Volver al Paso 2', btn_submit:'Enviar reclamo', btn_note:'Análisis gratuito e instantáneo · Sin compromiso',
       /* How it works */
       how_ey:'Proceso', how_title:'Cómo funciona', how_sub:'Cuatro pasos simples para recuperar tu compensación',
       step1_t:'Cargás tu caso', step1_d:'Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.',
@@ -487,6 +508,27 @@ document.addEventListener('DOMContentLoaded', function () {
     en: {
       /* Nav */
       nav_cases:'Cases', nav_how:'How it works', nav_why:'Why choose us', nav_about:'About us', nav_faq:'FAQ',
+      /* Wizard */
+      wz1:'Your data', wz2:'Your case', wz3:'Submit',
+      form_sub:'We analyze your case for free and handle the process. Fill in these details and we\'ll check if your claim can proceed. If information is missing, we\'ll contact you.',
+      /* AI Scanner */
+      ai_txt:'Upload your travel documents to auto-fill with AI ⚡', ai_meta:'Select one or multiple files · JPG, PNG, PDF · Max 10MB each',
+      ai_loading:'AI is analyzing your documents...', ai_loading_sub:'Extracting combined data from all files',
+      ai_done:'Data extracted successfully', ai_retry:'Scan others', ai_err:'Could not analyze the files. Please fill in the fields manually.', ai_retry2:'Retry',
+      /* Form Step 1 */
+      f_personal_t:'Your personal details', f_personal_sub:'As they appear on your ID document.',
+      lbl_name:'Full name *', lbl_phone:'Phone *', lbl_email:'Email *', lbl_doctype:'Document type *', lbl_docnum:'Document number *',
+      btn_next2:'Continue to Step 2 →',
+      /* Form Step 2 */
+      f_flight_t:'Flight identification', f_flight_sub:'If you uploaded your ticket with AI, these fields are already filled. Review or edit as needed.',
+      lbl_airline:'Airline *', lbl_flight:'Flight number *', lbl_origin:'Origin *', lbl_dest:'Destination *', lbl_date:'Flight date *', lbl_pnr:'Booking code (PNR)',
+      f_incident_t:'Incident', lbl_incident:'Incident type *', lbl_delay:'Delay duration (hours)', lbl_notice:'Notification advance', lbl_refund:'Was a refund offered?',
+      f_cause_t:'Cause reported by the airline',
+      f_expenses_t:'Incurred expenses', f_expenses_sub:'If you had extra expenses due to the incident, detail them here.',
+      btn_back:'← Back', btn_next3:'Continue to Step 3 →',
+      /* Form Step 3 */
+      f_sign_t:'Sworn statement and electronic signature', f_sign_sub:'Read carefully before signing and submitting.',
+      btn_back2:'← Back to Step 2', btn_submit:'Submit claim', btn_note:'Free and instant analysis · No commitment',
       /* How it works */
       how_ey:'Process', how_title:'How it works', how_sub:'Four simple steps to recover your compensation',
       step1_t:'Upload your case', step1_d:'Upload your data and documents from your PC or phone. Our AI reads your ticket automatically.',
