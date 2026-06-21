@@ -338,7 +338,7 @@
       var airline=filterAirline.value;
       var status=filterStatus.value;
       filtered=claims.filter(function(c){
-        if(c.deleted_at)return false;
+        if(c.deleted_at||c.estado==='eliminado')return false;
         if(q&&!((c.ref_code||'').toLowerCase().indexOf(q)>-1||(c.nombre||'').toLowerCase().indexOf(q)>-1||(c.email||'').toLowerCase().indexOf(q)>-1))return false;
         if(airline&&c.aerolinea!==airline)return false;
         if(status&&c.estado!==status)return false;
@@ -565,7 +565,7 @@
       trashBody.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
       fetch('/api/get-claims').then(function(r){return r.json()}).then(function(json){
         if(!json.success)throw new Error(json.error||'Error');
-        var deleted=(json.claims||[]).filter(function(c){return!!c.deleted_at});
+        var deleted=(json.claims||[]).filter(function(c){return!!c.deleted_at||c.estado==='eliminado'});
         var countEl=document.getElementById('trash-count');
         if(countEl)countEl.textContent=deleted.length+' eliminados';
         if(!deleted.length){trashBody.innerHTML='<div class="state"><p class="state__txt" style="color:var(--t4)">La papelera está vacía.</p></div>';return}

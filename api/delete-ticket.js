@@ -1,11 +1,10 @@
 /**
  * POST /api/delete-ticket
  *
- * Soft Delete / Restore / Permanent Delete for claims.
- * Actions:
- *   - soft-delete: Sets deleted_at to current timestamp
- *   - restore: Sets deleted_at to NULL
- *   - permanent: Physical DELETE from database (requires confirmation)
+ * Manages claim lifecycle in the recycle bin:
+ *   - soft-delete: Sets deleted_at timestamp (logical deletion)
+ *   - restore: Clears deleted_at (returns to active list)
+ *   - permanent: Physical DELETE (irreversible)
  *
  * @param {string} req.body.id - Claim UUID
  * @param {string} req.body.action - "soft-delete" | "restore" | "permanent"
@@ -30,36 +29,98 @@ export default async function handler(req, res) {
     if (!id) return res.status(400).json({ error: 'ID requerido' });
 
     if (action === 'soft-delete') {
+      /* Logical deletion: set deleted_at to current timestamp */
+      /* First try updating estado to 'eliminado' as fallback if deleted_at column doesn't exist */
+      var patchBody = { deleted_at: new Date().toISOString() };
+
       var r = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
-        body: JSON.stringify({ deleted_at: new Date().toISOString() }),
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SB_KEY,
+          'Authorization': 'Bearer ' + SB_KEY,
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify(patchBody),
       });
-      if (!r.ok) return res.status(500).json({ error: 'Error al eliminar' });
+
+      var rText = await r.text();
+      console.log('[delete-ticket] soft-delete status:', r.status, 'body:', rText.substring(0, 200));
+
+      if (!r.ok) {
+        /* If deleted_at column doesn't exist, fallback to updating estado */
+        console.log('[delete-ticket] PATCH failed, trying estado fallback');
+        var r1b = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SB_KEY,
+            'Authorization': 'Bearer ' + SB_KEY,
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({ estado: 'eliminado' }),
+        });
+        var r1bText = await r1b.text();
+        console.log('[delete-ticket] fallback status:', r1b.status, 'body:', r1bText.substring(0, 200));
+        if (!r1b.ok) return res.status(500).json({ error: 'No se pudo eliminar. Verificá las políticas RLS y la columna deleted_at en Supabase.' });
+      }
+
       return res.status(200).json({ success: true, action: 'soft-delete' });
     }
 
     if (action === 'restore') {
+      /* Clear deleted_at and restore estado */
       var r2 = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
-        body: JSON.stringify({ deleted_at: null }),
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SB_KEY,
+          'Authorization': 'Bearer ' + SB_KEY,
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify({ deleted_at: null, estado: 'pendiente' }),
       });
-      if (!r2.ok) return res.status(500).json({ error: 'Error al restaurar' });
+
+      var r2Text = await r2.text();
+      console.log('[delete-ticket] restore status:', r2.status, 'body:', r2Text.substring(0, 200));
+
+      if (!r2.ok) {
+        /* Fallback: just update estado */
+        var r2b = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SB_KEY,
+            'Authorization': 'Bearer ' + SB_KEY,
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({ estado: 'pendiente' }),
+        });
+        if (!r2b.ok) return res.status(500).json({ error: 'No se pudo restaurar.' });
+      }
+
       return res.status(200).json({ success: true, action: 'restore' });
     }
 
     if (action === 'permanent') {
       var r3 = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'DELETE',
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+        headers: {
+          'apikey': SB_KEY,
+          'Authorization': 'Bearer ' + SB_KEY,
+        },
       });
-      if (!r3.ok) return res.status(500).json({ error: 'Error al eliminar permanentemente' });
+
+      var r3Text = await r3.text();
+      console.log('[delete-ticket] permanent status:', r3.status, 'body:', r3Text.substring(0, 200));
+
+      if (!r3.ok) return res.status(500).json({ error: 'No se pudo eliminar permanentemente.' });
       return res.status(200).json({ success: true, action: 'permanent' });
     }
 
     return res.status(400).json({ error: 'Acción no reconocida' });
   } catch (err) {
-    return res.status(500).json({ error: 'Error interno' });
+    console.error('[delete-ticket] Error:', err.message);
+    return res.status(500).json({ error: 'Error interno: ' + err.message });
   }
 }
