@@ -310,20 +310,26 @@ export default async function handler(req, res) {
     });
     contentParts.push({
       type: 'text',
-      text: 'Actuas como un extractor de datos de viaje ultra preciso de SolucionAir. Analiza EXHAUSTIVAMENTE cada archivo provisto arriba. Tu objetivo es armar un unico rompecabezas combinando la informacion dispersa en TODOS los documentos del lote.\n\n'
-        + 'INSTRUCCIONES ESTRICTAS DE EXTRACCION:\n\n'
-        + 'NOMBRE: Busca el nombre completo del pasajero tal como aparece en el pasaje o boarding pass. Incluye apellidos y sufijos (Sr, Jr, etc).\n\n'
-        + 'EMAIL Y TELEFONO: Revisa TODOS los documentos buscando direcciones de email y numeros de telefono. Pueden aparecer en confirmaciones de reserva, recibos de pago, facturas, detalles del itinerario, headers o footers, o datos de cuenta del pasajero. Si encontras un email, devolvelo en minusculas. Si NO encontras email ni telefono en NINGUNA de las imagenes, devuelve estrictamente "" (string vacio). NUNCA inventes, adivines ni generes datos de contacto ficticios.\n\n'
-        + 'NUMERO DE DOCUMENTO: Busca numeros de DNI o Pasaporte del pasajero. NO confundas con Tax ID, CUIT, CUIL, datos de AFIP, Tax Address, frequent flyer numbers ni numeros de tarjeta de credito. Si no encontras un documento de identidad real y claro, devuelve "".\n\n'
-        + 'CODIGO DE RESERVA (PNR): Busca combinaciones de exactamente 6 caracteres alfanumericos (letras mayusculas y numeros). NO confundas con codigos de tasas de impuestos (XR, AR, QO). Si no hay PNR claro, devuelve "".\n\n'
-        + 'NUMERO DE TICKET: Busca secuencias numericas de 10-13 digitos precedidas por "Ticket" o "eTicket".\n\n'
-        + 'ORIGEN Y DESTINO: ORIGEN = aeropuerto del PRIMER despegue. DESTINO = aeropuerto de LLEGADA FINAL del ultimo tramo. NUNCA repitas el mismo aeropuerto. Escalas intermedias van en "escalas".\n\n'
-        + 'GASTOS: Suma importes de "Charges", "Total Fare", tarifas visibles. Indica la moneda.\n\n'
-        + 'INCIDENCIA: Detecta alertas como "Cancelled", "Delayed", "Overbooked".\n\n'
-        + 'REGLA ANTI-FABRICACION: NUNCA inventes ni generes datos que no esten visiblemente escritos en los documentos. Si un dato no aparece en ninguna imagen, devuelve SIEMPRE "". NUNCA devuelvas "null", "N/A", "unknown" ni datos de ejemplo.\n\n'
-        + 'Devuelve OBLIGATORIAMENTE un unico objeto JSON con esta estructura exacta, sin markdown, sin backticks, sin texto extra:\n'
+      text: 'Actuas como un extractor de datos de viaje ultra preciso de SolucionAir. Analiza EXHAUSTIVAMENTE cada archivo provisto arriba.\n\n'
+        + 'CONTEXTO: Los documentos pueden contener un itinerario con MULTIPLES TRAMOS DE VUELO (ej: EZE→ATL→TUL ida, TUL→ATL→EZE vuelta). Tu trabajo es identificar el VUELO PRINCIPAL AFECTADO y extraer sus datos.\n\n'
+        + 'REGLAS DE ITINERARIO MULTI-TRAMO:\n'
+        + '- Si hay multiples vuelos, identifica cual tiene la incidencia (cancelacion, demora, etc).\n'
+        + '- vuelo_nro: Devuelve UN SOLO numero de vuelo, el del tramo afectado o el primer tramo de ida. NUNCA concatenes multiples numeros separados por comas. Ejemplo correcto: "DL 110". Ejemplo INCORRECTO: "110, 2754, 5164".\n'
+        + '- origen: El aeropuerto donde COMIENZA el viaje de ida. Formato: "EZE - Buenos Aires". Si el boleto dice "Buenos Aires" como ciudad de salida, el codigo IATA es EZE.\n'
+        + '- destino: El aeropuerto de LLEGADA FINAL del ultimo tramo de ida (NO el de vuelta). Si el viaje es EZE→ATL→TUL, el destino es "TUL - Tulsa". NUNCA devuelvas el mismo aeropuerto que el origen.\n'
+        + '- escalas: Aeropuertos intermedios. Ej: "ATL - Atlanta".\n\n'
+        + 'NOMBRE: Nombre completo del pasajero con apellidos y sufijos (Sr, Jr).\n\n'
+        + 'EMAIL: Busca en TODOS los documentos (confirmaciones, recibos, facturas, itinerarios, headers, datos de cuenta). Devolvelo en minusculas. Si no aparece en ninguna imagen, devuelve "".\n\n'
+        + 'TELEFONO: Solo numeros de telefono reales del pasajero visibles en los documentos. Si no hay, devuelve "".\n\n'
+        + 'DOCUMENTO: Solo DNI o Pasaporte real. NO Tax ID, CUIT, CUIL, AFIP, frequent flyer ni tarjetas de credito. Si no hay, devuelve "".\n\n'
+        + 'PNR: Exactamente 6 caracteres alfanumericos (ej: "GFE6IH"). NO codigos de impuestos. Si no hay, devuelve "".\n\n'
+        + 'TICKET: Secuencia de 10-13 digitos precedida por "Ticket" o "eTicket".\n\n'
+        + 'GASTOS: Suma importes visibles ("Charges", "Total Fare"). Indica moneda.\n\n'
+        + 'INCIDENCIA: Si algun documento muestra "Cancelled", "Delayed", "Overbooked", devuelve el tipo correspondiente: "cancelacion", "demora" o "overbooking".\n\n'
+        + 'REGLA ANTI-FABRICACION: NUNCA inventes datos. Si un campo no aparece visiblemente, devuelve "". NUNCA devuelvas "null", "N/A" ni "unknown".\n\n'
+        + 'JSON OBLIGATORIO (sin markdown, sin backticks):\n'
         + '{ "nombre": "", "email": "", "telefono": "", "doc_numero": "", "aerolinea": "", "vuelo_nro": "", "numero_ticket": "", "pnr": "", "origen": "", "destino": "", "escalas": "", "fecha_vuelo": "", "incidencia_detectada": "", "gastos_monto": "", "gastos_moneda": "" }\n\n'
-        + 'Rellena SOLO los campos que puedas confirmar visualmente en los documentos. Todo lo demas dejalo como "". Responde SOLO el JSON.',
+        + 'Rellena SOLO campos confirmados visualmente. Responde SOLO el JSON.',
     });
 
     var aiRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -377,17 +383,26 @@ export default async function handler(req, res) {
       return s;
     }
 
+    /* If vuelo_nro has commas (AI concatenated multiple flights), take only the first */
+    var rawFlight = clean(parsed.vuelo_nro);
+    if (rawFlight.indexOf(',') > -1) rawFlight = rawFlight.split(',')[0].trim();
+
+    /* If origen and destino are the same, clear destino so user fills manually */
+    var rawOrigen = clean(parsed.origen);
+    var rawDestino = clean(parsed.destino);
+    if (rawOrigen && rawDestino && rawOrigen.substring(0, 3).toUpperCase() === rawDestino.substring(0, 3).toUpperCase()) rawDestino = '';
+
     var data = {
       nombre: clean(parsed.nombre),
       email: clean(parsed.email).toLowerCase(),
       telefono: clean(parsed.telefono),
       doc_numero: clean(parsed.doc_numero),
       aerolinea: clean(parsed.aerolinea),
-      vuelo_nro: clean(parsed.vuelo_nro),
+      vuelo_nro: rawFlight,
       numero_ticket: clean(parsed.numero_ticket),
       pnr: clean(parsed.pnr),
-      origen: clean(parsed.origen),
-      destino: clean(parsed.destino),
+      origen: rawOrigen,
+      destino: rawDestino,
       escalas: clean(parsed.escalas),
       fecha_vuelo: clean(parsed.fecha_vuelo),
       incidencia_detectada: clean(parsed.incidencia_detectada),
