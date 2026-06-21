@@ -119,6 +119,31 @@
     .trash-panel.visible{display:block}
     .row-fade{transition:opacity .3s ease;opacity:0}
 
+    /* Confirm modal */
+    .cm-ov{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.35);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:24px}
+    .cm-ov.open{display:flex;animation:fadeIn .15s ease}
+    .cm{background:var(--w);border-radius:12px;padding:28px 24px;max-width:380px;width:100%;box-shadow:0 16px 48px rgba(0,0,0,.12);text-align:center;animation:modalPop .2s ease}
+    @keyframes modalPop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+    .cm__icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+    .cm__icon--warn{background:var(--warnbg);color:var(--warn)}
+    .cm__icon--danger{background:var(--errbg);color:var(--err)}
+    .cm__title{font-family:var(--fh);font-size:1rem;font-weight:700;color:var(--t1);margin-bottom:4px}
+    .cm__desc{font-size:.78rem;color:var(--t3);margin-bottom:18px;line-height:1.5}
+    .cm__btns{display:flex;gap:8px;justify-content:center}
+    .cm__btn{padding:8px 18px;border-radius:6px;font-family:var(--fh);font-size:.76rem;font-weight:700;cursor:pointer;border:none;transition:all .12s}
+    .cm__btn--cancel{background:var(--bg);color:var(--t2);border:1px solid var(--bd)}
+    .cm__btn--cancel:hover{background:var(--bgd)}
+    .cm__btn--confirm{background:var(--g);color:var(--w)}
+    .cm__btn--confirm:hover{background:var(--gl)}
+    .cm__btn--danger{background:var(--err);color:var(--w)}
+    .cm__btn--danger:hover{opacity:.9}
+    .cm__err{font-family:var(--fm);font-size:.68rem;color:var(--err);margin-top:10px;min-height:14px}
+
+    /* Toast notification */
+    .toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--g);color:var(--w);font-family:var(--fh);font-size:.78rem;font-weight:600;padding:12px 20px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);transform:translateY(80px);opacity:0;transition:all .3s ease;pointer-events:none}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast--error{background:var(--err)}
+
     /* Config panel */
     .config-panel{display:none;padding:24px 28px;overflow-y:auto}
     .config-panel.visible{display:block}
@@ -228,6 +253,23 @@
       </div><!-- /view-trash -->
 
     </div>
+
+    <!-- Confirm modal -->
+    <div class="cm-ov" id="cm-ov">
+      <div class="cm">
+        <div class="cm__icon" id="cm-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div>
+        <div class="cm__title" id="cm-title"></div>
+        <div class="cm__desc" id="cm-desc"></div>
+        <div class="cm__btns">
+          <button class="cm__btn cm__btn--cancel" id="cm-cancel">Cancelar</button>
+          <button class="cm__btn" id="cm-confirm">Confirmar</button>
+        </div>
+        <div class="cm__err" id="cm-err"></div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
 
     <div class="panel-overlay" id="panel-overlay"></div>
     <div class="detail" id="detail-panel">
@@ -452,20 +494,65 @@
     var btnRefresh=document.getElementById('btn-refresh');
     if(btnRefresh)btnRefresh.addEventListener('click',load);
 
+    /* ---- Confirm Modal & Toast ---- */
+    var cmOv=document.getElementById('cm-ov');
+    var cmTitle=document.getElementById('cm-title');
+    var cmDesc=document.getElementById('cm-desc');
+    var cmIcon=document.getElementById('cm-icon');
+    var cmConfirm=document.getElementById('cm-confirm');
+    var cmCancel=document.getElementById('cm-cancel');
+    var cmErr=document.getElementById('cm-err');
+    var toastEl=document.getElementById('toast');
+    var cmCallback=null;
+
+    function showModal(opts){
+      cmTitle.textContent=opts.title||'';
+      cmDesc.textContent=opts.desc||'';
+      cmIcon.className='cm__icon '+(opts.danger?'cm__icon--danger':'cm__icon--warn');
+      cmConfirm.className='cm__btn '+(opts.danger?'cm__btn--danger':'cm__btn--confirm');
+      cmConfirm.textContent=opts.confirmText||'Confirmar';
+      cmErr.textContent='';
+      cmCallback=opts.onConfirm||null;
+      cmOv.classList.add('open');
+    }
+
+    function closeModal(){cmOv.classList.remove('open');cmCallback=null;cmErr.textContent=''}
+
+    if(cmCancel)cmCancel.addEventListener('click',closeModal);
+    if(cmOv)cmOv.addEventListener('click',function(e){if(e.target===cmOv)closeModal()});
+    if(cmConfirm)cmConfirm.addEventListener('click',function(){if(cmCallback)cmCallback()});
+
+    function toast(msg,isError){
+      toastEl.textContent=msg;
+      toastEl.className='toast'+(isError?' toast--error':'');
+      setTimeout(function(){toastEl.classList.add('show')},10);
+      setTimeout(function(){toastEl.classList.remove('show')},3300);
+    }
+
+    function modalError(msg){cmErr.textContent=msg}
+
     /* ---- Soft Delete from main table ---- */
     function bindDeleteBtns(){
       tblBody.querySelectorAll('[data-del-id]').forEach(function(btn){
         btn.addEventListener('click',function(e){
           e.stopPropagation();
-          if(!confirm('¿Mover este reclamo a la papelera?'))return;
           var id=btn.getAttribute('data-del-id');
           var row=btn.closest('tr');
-          if(row)row.classList.add('row-fade');
-          fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'soft-delete'})})
-          .then(function(r){return r.json()}).then(function(d){
-            if(d.success){setTimeout(function(){load()},350)}
-            else{if(row)row.classList.remove('row-fade');alert(d.error||'Error')}
-          }).catch(function(){if(row)row.classList.remove('row-fade');alert('Error de conexión')});
+          showModal({
+            title:'Mover a la papelera',
+            desc:'¿Estás seguro de que deseas mover este reclamo a la papelera? Podrás restaurarlo después.',
+            confirmText:'Mover a papelera',
+            onConfirm:function(){
+              cmConfirm.disabled=true;cmConfirm.textContent='Eliminando...';
+              if(row)row.classList.add('row-fade');
+              fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'soft-delete'})})
+              .then(function(r){return r.json()}).then(function(d){
+                cmConfirm.disabled=false;
+                if(d.success){closeModal();toast('Reclamo movido a la papelera');setTimeout(function(){load()},350)}
+                else{if(row)row.classList.remove('row-fade');modalError(d.error||'Error al eliminar')}
+              }).catch(function(){cmConfirm.disabled=false;if(row)row.classList.remove('row-fade');modalError('Error de conexión')});
+            }
+          });
         });
       });
     }
@@ -499,15 +586,41 @@
 
         trashBody.querySelectorAll('[data-restore-id]').forEach(function(btn){
           btn.addEventListener('click',function(){
-            fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:btn.getAttribute('data-restore-id'),action:'restore'})})
-            .then(function(r){return r.json()}).then(function(d){if(d.success)loadTrash();else alert(d.error||'Error')}).catch(function(){alert('Error de conexión')});
+            var rid=btn.getAttribute('data-restore-id');
+            showModal({
+              title:'Restaurar reclamo',
+              desc:'¿Deseas restaurar este reclamo a la lista activa?',
+              confirmText:'Restaurar',
+              onConfirm:function(){
+                cmConfirm.disabled=true;cmConfirm.textContent='Restaurando...';
+                fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:rid,action:'restore'})})
+                .then(function(r){return r.json()}).then(function(d){
+                  cmConfirm.disabled=false;
+                  if(d.success){closeModal();toast('Reclamo restaurado correctamente');loadTrash()}
+                  else{modalError(d.error||'Error al restaurar')}
+                }).catch(function(){cmConfirm.disabled=false;modalError('Error de conexión')});
+              }
+            });
           });
         });
         trashBody.querySelectorAll('[data-perm-id]').forEach(function(btn){
           btn.addEventListener('click',function(){
-            if(!confirm('¿Eliminar PERMANENTEMENTE este reclamo? Esta acción no se puede deshacer.'))return;
-            fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:btn.getAttribute('data-perm-id'),action:'permanent'})})
-            .then(function(r){return r.json()}).then(function(d){if(d.success)loadTrash();else alert(d.error||'Error')}).catch(function(){alert('Error de conexión')});
+            var pid=btn.getAttribute('data-perm-id');
+            showModal({
+              title:'Eliminación permanente',
+              desc:'Esta acción eliminará el reclamo de forma irreversible. No se puede deshacer.',
+              confirmText:'Eliminar permanentemente',
+              danger:true,
+              onConfirm:function(){
+                cmConfirm.disabled=true;cmConfirm.textContent='Eliminando...';
+                fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:pid,action:'permanent'})})
+                .then(function(r){return r.json()}).then(function(d){
+                  cmConfirm.disabled=false;
+                  if(d.success){closeModal();toast('Reclamo eliminado permanentemente');loadTrash()}
+                  else{modalError(d.error||'Error al eliminar')}
+                }).catch(function(){cmConfirm.disabled=false;modalError('Error de conexión')});
+              }
+            });
           });
         });
       }).catch(function(err){trashBody.innerHTML='<div class="state"><p class="state__txt" style="color:#C0392B">Error: '+err.message+'</p></div>'});

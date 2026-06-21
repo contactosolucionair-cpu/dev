@@ -17,7 +17,10 @@ Panel administrativo en el Backoffice que permite controlar en tiempo real:
 - **Feature Flags**: Interruptores para activar/desactivar el procesamiento de imágenes con IA y el cálculo automático de tasa de éxito, almacenados en estructura JSONB.
 
 ### Módulo de Seguridad de Datos (Soft Delete)
-Sistema de papelera de reciclaje que implementa eliminación lógica (soft delete) mediante campo `deleted_at` en la tabla de reclamos. Los registros eliminados desaparecen de la vista principal con transición suave y se almacenan en una papelera accesible desde el Backoffice, desde donde pueden ser restaurados o eliminados permanentemente con doble confirmación. La consulta principal filtra automáticamente los registros con `deleted_at` no nulo.
+Sistema de papelera de reciclaje que implementa eliminación lógica (soft delete) mediante campo `deleted_at` en la tabla de reclamos. Los registros eliminados desaparecen de la vista principal con transición suave y se almacenan en una papelera accesible desde el Backoffice, desde donde pueden ser restaurados o eliminados permanentemente. La consulta principal filtra automáticamente los registros con `deleted_at` no nulo.
+
+### Sistema de Confirmaciones Dinámicas y Notificaciones
+Módulo de interfaz que reemplaza completamente los popups nativos del navegador (`alert`, `confirm`) por modales estilizados con backdrop blur y toast notifications animadas. Los modales adoptan la paleta de colores corporativa mediante CSS custom properties, soportan estados de carga durante operaciones asíncronas y muestran errores inline sin interrumpir el flujo de trabajo. Las notificaciones toast aparecen con animación y se auto-descartan a los 3 segundos.
 
 ### Cálculo Predictivo de Éxito
 Algoritmo predictivo basado en IA que analiza parámetros del vuelo (aerolínea, horas de retraso, causa informada, tipo de incidencia) cruzándolos con normativas internacionales para otorgar un porcentaje de viabilidad financiera:
