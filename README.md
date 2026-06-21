@@ -103,14 +103,13 @@ python3 -m http.server 8000
 npx vercel dev
 ```
 
-### Rutas limpias (Clean URLs)
+### Rutas 
 
-El proyecto usa `cleanUrls: true` en `vercel.json`, lo que elimina la extension `.html` de todas las rutas. El acceso a los modulos se realiza sin extension:
+El proyecto usa `cleanUrls: true` en `vercel.json`. El acceso a los modulos se realiza sin extension:
 
-- `/backoffice` en lugar de `/backoffice.html`
-- `/perfil` en lugar de `/perfil.html`
+- `/backoffice`
+- `/perfil` 
 
-Todos los enlaces internos y redirecciones del frontend ya apuntan a las rutas limpias.
 
 ### Produccion
 ```bash
