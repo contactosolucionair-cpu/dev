@@ -436,12 +436,12 @@ document.addEventListener('DOMContentLoaded', function () {
       ai_done:'Datos extraídos correctamente', ai_retry:'Escanear otros', ai_err:'No se pudieron analizar los archivos. Completá los campos manualmente.', ai_retry2:'Reintentar',
       /* Form Step 1 */
       f_personal_t:'Tus datos personales', f_personal_sub:'Tal como figuran en tu documento de identidad.',
-      lbl_name:'Nombre y Apellido *', lbl_phone:'Teléfono *', lbl_email:'Mail *', lbl_doctype:'Tipo de documento *', lbl_docnum:'Número de documento *',
+      lbl_name:'Nombre y Apellido', lbl_phone:'Teléfono', lbl_email:'Mail', lbl_doctype:'Tipo de documento', lbl_docnum:'Número de documento',
       btn_next2:'Continuar al Paso 2 →',
       /* Form Step 2 */
       f_flight_t:'Identificación del vuelo', f_flight_sub:'Si subiste tu pasaje con IA, estos campos ya están completos. Revisalos o corregí lo que haga falta.',
-      lbl_airline:'Aerolínea *', lbl_flight:'Número de vuelo *', lbl_origin:'Origen *', lbl_dest:'Destino *', lbl_date:'Fecha del vuelo *', lbl_pnr:'Código de reserva (PNR)',
-      f_incident_t:'Incidente', lbl_incident:'Tipo de incidencia *', lbl_delay:'Magnitud del retraso (horas)', lbl_notice:'Anticipación de notificación', lbl_refund:'¿Ofrecieron reembolso?',
+      lbl_airline:'Aerolínea', lbl_flight:'Número de vuelo', lbl_origin:'Origen', lbl_dest:'Destino', lbl_date:'Fecha del vuelo', lbl_pnr:'Código de reserva (PNR)',
+      f_incident_t:'Incidente', lbl_incident:'Tipo de incidencia', lbl_delay:'Magnitud del retraso (horas)', lbl_notice:'Anticipación de notificación', lbl_refund:'¿Ofrecieron reembolso?',
       f_cause_t:'Causa informada por la aerolínea',
       f_expenses_t:'Gastos incurridos', f_expenses_sub:'Si tuviste gastos extras por el incidente, detallalos acá.',
       btn_back:'← Volver', btn_next3:'Continuar al Paso 3 →',
@@ -517,12 +517,12 @@ document.addEventListener('DOMContentLoaded', function () {
       ai_done:'Data extracted successfully', ai_retry:'Scan others', ai_err:'Could not analyze the files. Please fill in the fields manually.', ai_retry2:'Retry',
       /* Form Step 1 */
       f_personal_t:'Your personal details', f_personal_sub:'As they appear on your ID document.',
-      lbl_name:'Full name *', lbl_phone:'Phone *', lbl_email:'Email *', lbl_doctype:'Document type *', lbl_docnum:'Document number *',
+      lbl_name:'First & Last Name', lbl_phone:'Phone Number', lbl_email:'Email Address', lbl_doctype:'ID Type', lbl_docnum:'ID Number',
       btn_next2:'Continue to Step 2 →',
       /* Form Step 2 */
       f_flight_t:'Flight identification', f_flight_sub:'If you uploaded your ticket with AI, these fields are already filled. Review or edit as needed.',
-      lbl_airline:'Airline *', lbl_flight:'Flight number *', lbl_origin:'Origin *', lbl_dest:'Destination *', lbl_date:'Flight date *', lbl_pnr:'Booking code (PNR)',
-      f_incident_t:'Incident', lbl_incident:'Incident type *', lbl_delay:'Delay duration (hours)', lbl_notice:'Notification advance', lbl_refund:'Was a refund offered?',
+      lbl_airline:'Airline', lbl_flight:'Flight Number', lbl_origin:'Origin', lbl_dest:'Destination', lbl_date:'Flight Date', lbl_pnr:'Booking Code (PNR)',
+      f_incident_t:'Incident', lbl_incident:'Incident Type', lbl_delay:'Delay duration (hours)', lbl_notice:'Notification advance', lbl_refund:'Was a refund offered?',
       f_cause_t:'Cause reported by the airline',
       f_expenses_t:'Incurred expenses', f_expenses_sub:'If you had extra expenses due to the incident, detail them here.',
       btn_back:'← Back', btn_next3:'Continue to Step 3 →',
@@ -603,13 +603,25 @@ document.addEventListener('DOMContentLoaded', function () {
     if (ctaText) document.querySelectorAll('.hero__cta').forEach(function (el) { var svg = el.querySelector('svg'); el.textContent = ctaText + ' '; if (svg) el.appendChild(svg); });
     if (formTitle) document.querySelectorAll('.claim__title').forEach(function (el) { el.textContent = formTitle; });
 
-    /* Apply all data-t elements from built-in dictionary */
+    /* Apply all data-t elements from built-in dictionary.
+       Preserves child elements like <span class="field__ast">*</span> inside labels. */
     var dict = DICT[lang] || DICT.es;
     var fallback = DICT.es;
     document.querySelectorAll('[data-t]').forEach(function (el) {
       var key = el.getAttribute('data-t');
       var text = dict[key] || fallback[key];
-      if (text) el.textContent = text;
+      if (!text) return;
+
+      /* Check if element has child elements to preserve (like the * asterisk) */
+      var preserved = el.querySelector('.field__ast, svg');
+      if (preserved) {
+        /* Replace only the text node, keep child elements */
+        var clone = preserved.cloneNode(true);
+        el.textContent = text.replace(/\s*\*\s*$/, '') + ' ';
+        el.appendChild(clone);
+      } else {
+        el.textContent = text;
+      }
     });
   }
 
