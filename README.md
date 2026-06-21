@@ -7,8 +7,14 @@ Plataforma LegalTech de nivel enterprise que automatiza la gestión integral de 
 ### Procesamiento Inteligente Multi-Archivo
 Motor avanzado de visión artificial (Google Gemini 2.5 Flash via OpenRouter) que extrae, unifica y sanitiza datos de múltiples pasajes, fotos de boarding passes y PDFs en una única sesión consolidada. El sistema implementa sanitización en tres capas (prompt, backend, frontend) para garantizar la integridad de los datos extraídos, incluyendo detección automática de códigos PNR, rutas de vuelo con escalas, importes de gastos y tipo de incidencia.
 
-### Módulo de Internacionalización Dinámica (i18n)
-Sistema centralizado que conmuta de forma fluida el 100% de la interfaz entre Español e Inglés. La traducción abarca el Hero, el proceso de 4 pasos, las secciones de asesoría legal, los tipos de cobertura, tarjetas de testimonios y el formulario completo de 3 pasos. Las traducciones se gestionan mediante un diccionario built-in con fallback automático y pueden ser sobreescritas dinámicamente desde la base de datos.
+### Módulo de Internacionalización Completa (i18n)
+Sistema de localización nativo con 135+ claves de traducción que conmuta de forma fluida el 100% de la interfaz entre Español e Inglés mediante atributos `data-t` declarativos. La cobertura abarca:
+- **Landing page**: Hero (título, subtítulo, CTA, enlace secundario, badges de confianza), trust bar (3 tarjetas), navegación principal y footer
+- **Secciones de contenido**: Cómo funciona (4 pasos), contingencia legal (4 sub-items), casos reclamables (6 tarjetas), ventajas (6 tarjetas), testimonios (3 reseñas), quiénes somos, FAQ (7 preguntas/respuestas)
+- **Formulario wizard**: Etiquetas de campos, placeholders, opciones de select (DNI/Pasaporte/ID), botones de navegación entre pasos, estados del scanner IA
+- **Modales y sistema**: Login, registro, confirmaciones, notificaciones
+
+El motor de traducción preserva elementos hijos del DOM (asteriscos de campos obligatorios, iconos SVG) durante el intercambio de idioma sin corromper la estructura HTML. Las traducciones pueden ser sobreescritas dinámicamente desde la tabla `site_config` de Supabase.
 
 ### Core de Configuración Dinámica (CMS & Feature Flags)
 Panel administrativo en el Backoffice que permite controlar en tiempo real:
