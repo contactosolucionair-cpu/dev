@@ -428,6 +428,8 @@ document.addEventListener('DOMContentLoaded', function () {
       /* Nav */
       nav_cases:'Casos', nav_how:'Cómo funciona', nav_why:'Por qué elegirnos', nav_about:'Quiénes somos', nav_faq:'FAQ',
       nav_cta:'Iniciá tu reclamo',
+      hero_link:'Ver si mi caso aplica →',
+      badge1:'✓ Evaluación inicial sin costo', badge2:'✓ Cubrimos todos los costos', badge3:'✓ Solo cobramos si ganás',
       /* Trust cards */
       trust1_t:'Respaldo jurídico real', trust1_d:'Abogados aeronáuticos certificados',
       trust2_t:'Visión IA que lee tu pasaje', trust2_d:'Subí una foto y completamos todo automáticamente',
@@ -516,6 +518,8 @@ document.addEventListener('DOMContentLoaded', function () {
       /* Nav */
       nav_cases:'Cases', nav_how:'How it works', nav_why:'Why choose us', nav_about:'About us', nav_faq:'FAQ',
       nav_cta:'Start your claim',
+      hero_link:'See if my case applies →',
+      badge1:'✓ Free initial evaluation', badge2:'✓ We cover all costs', badge3:'✓ No win, no fee',
       /* Trust cards */
       trust1_t:'Real Legal Support', trust1_d:'Certified aviation attorneys',
       trust2_t:'AI Vision Ticket Reader', trust2_d:'Upload a photo and we will autofill everything',
