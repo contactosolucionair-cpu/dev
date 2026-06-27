@@ -87,23 +87,23 @@ export async function generateAuthorizationPdf(d) {
   kv('Referencia SolucionAir:', d.refCode);
   kv('Tipo de reclamo:', 'Reclamo por vuelo');
   kv('Aerolinea / vuelo:', [d.aerolinea, d.vuelo].filter(Boolean).join('  ·  ') || '-');
-  kv('Ruta:', [d.origen, d.destino].filter(Boolean).join(' → ') || '-');
+  kv('Ruta:', [d.origen, d.destino].filter(Boolean).join(' > ') || '-');
   kv('Fecha del vuelo:', d.fechaVuelo || '-');
   if (d.pnr) kv('Codigo de reserva (PNR):', d.pnr);
 
   // ---- DOCUMENTS ----
   section('Documentos aceptados electronicamente');
-  txt('1.  Terminos y Condiciones del Servicio de SolucionAir — Version ' + (d.consentVersion || '-'), M, y, { sz: 7.5 });
+  txt('1.  Terminos y Condiciones del Servicio de SolucionAir - Version ' + (d.consentVersion || '-'), M, y, { sz: 7.5 });
   y -= 11;
-  txt('2.  Politica de Privacidad — Version ' + (d.consentVersion || '-'), M, y, { sz: 7.5 });
+  txt('2.  Politica de Privacidad - Version ' + (d.consentVersion || '-'), M, y, { sz: 7.5 });
   y -= 11;
-  txt('3.  Autorizacion y mandato para la gestion del reclamo — Version ' + (d.consentVersion || '-'), M, y, { sz: 7.5 });
+  txt('3.  Autorizacion y mandato para la gestion del reclamo - Version ' + (d.consentVersion || '-'), M, y, { sz: 7.5 });
   y -= 11;
   txt('Todos aceptados en un solo acto al momento de la presentacion del caso.', M, y, { sz: 7, col: C_GRAY });
   y -= 14;
 
   // ---- SIGNATURE RECORD ----
-  section('Constancia de firma electronica — Ley 25.506');
+  section('Constancia de firma electronica - Ley 25.506');
   const sigBoxH = 80;
   rect(M, y - sigBoxH + 10, W - M * 2, sigBoxH, C_CREAM, C_GOLD);
   y -= 4;
@@ -131,7 +131,7 @@ export async function generateAuthorizationPdf(d) {
   y -= 20;
 
   // ---- HASH ----
-  section('Verificacion de autenticidad — SHA-256');
+  section('Verificacion de autenticidad - SHA-256');
   txt('Huella digital del caso (primeros 32 caracteres):', M, y, { sz: 7.5, b: true });
   y -= 12;
   rect(M, y - 6, W - M * 2, 18, rgb(0.945, 0.945, 0.945));
@@ -146,7 +146,7 @@ export async function generateAuthorizationPdf(d) {
     'La aceptacion electronica prestada por el/la Solicitante constituye firma electronica en los terminos de los arts. 286 y 288',
     'del Codigo Civil y Comercial de la Nacion (Ley 26.994) y la Ley 25.506. La validez del presente instrumento esta sujeta a',
     'la identidad declarada por el/la firmante al momento de la presentacion.',
-    'SolucionAir — Juan Pablo Mario Adaniya (DNI 37.806.475) y Tomas Gregorio Dicranian (DNI 37.606.877).',
+    'SolucionAir - Juan Pablo Mario Adaniya (DNI 37.806.475) y Tomas Gregorio Dicranian (DNI 37.606.877).',
     'Caso referencia: ' + d.refCode + '.',
   ];
   for (const l of lines) { txt(l, M, y, { sz: 7, col: C_GRAY, mw: W - M * 2 }); y -= 10; }
