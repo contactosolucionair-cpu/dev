@@ -360,32 +360,42 @@ document.addEventListener('DOMContentLoaded', function () {
     /* Submitting claim */
     btnV.disabled = true; btnV.textContent = 'Enviando...';
 
+    var cd = window.consentData || {};
     fetch('/api/process-ticket', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        image: null,
-        manualSubmit: true,
-        email: userEmail,
-        password: '',
-        nombre: gv('f-name'),
-        telefono: gv('f-phone'),
-        doc_tipo: gv('f-doctype'),
-        doc_numero: gv('f-docnum'),
-        aerolinea: gv('f-airline'),
-        vuelo_nro: gv('f-flight'),
-        origen: gv('f-origin'),
-        destino: gv('f-destination'),
-        fecha_vuelo: gv('f-date'),
-        pnr: gv('f-pnr'),
-        tipo_incidente: gv('f-incident'),
-        delay_hours: gv('f-delay-hours'),
-        notificacion: gv('f-notice'),
-        reembolso: gv('f-refund'),
-        causa: gv('f-cause'),
-        moneda: gv('f-currency'),
-        gastos_monto: gv('f-expenses-amount'),
-        gastos_detalle: gv('f-expenses-detail')
+        manualSubmit:           true,
+        /* Identity */
+        email:                  userEmail,
+        nombre:                 gv('f-name'),
+        telefono:               gv('f-phone'),
+        documento_tipo:         gv('f-doctype'),
+        documento_numero:       gv('f-docnum'),
+        /* Flight */
+        aerolinea:              gv('f-airline'),
+        vuelo_nro:              gv('f-flight'),
+        origen:                 gv('f-origin'),
+        destino:                gv('f-destination'),
+        fecha_vuelo:            gv('f-date'),
+        pnr:                    gv('f-pnr'),
+        /* Incident */
+        tipo_incidencia:        gv('f-incident'),
+        horas_retraso:          gv('f-delay-hours'),
+        anticipacion_aviso:     gv('f-notice'),
+        ofrecimiento_aerolinea: gv('f-refund'),
+        causa_informada:        gv('f-cause'),
+        /* Expenses */
+        moneda_gastos:          gv('f-currency'),
+        monto_gastos:           gv('f-expenses-amount'),
+        gastos_detalle:         gv('f-expenses-detail'),
+        /* Consent / electronic signature (from terms modal) */
+        consent_version:        cd.consent_version  || null,
+        consent_tyc:            cd.consent_tyc      || false,
+        consent_autorizacion:   cd.consent_autorizacion || false,
+        firma_fecha:            cd.firma_fecha       || null,
+        firma_ts:               cd.firma_ts          || null,
+        user_agent:             cd.user_agent        || navigator.userAgent
       })
     }).then(function (r) { return r.json(); }).then(function (json) {
       /* Submit response received */

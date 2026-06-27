@@ -23,6 +23,9 @@
  * @returns {Object} {success, data, refCode}
  */
 
+import { computeClaimHash } from './utils/signing.js';
+import { generateAuthorizationPdf } from './utils/pdf-receipt.js';
+
 export const config = {
   api: {
     bodyParser: {
@@ -97,10 +100,10 @@ export default async function handler(req, res) {
             + '- Vuelo: ' + (body.vuelo_nro || 'N/A') + '\n'
             + '- Origen: ' + (body.origen || 'N/A') + '\n'
             + '- Destino: ' + (body.destino || 'N/A') + '\n'
-            + '- Tipo de incidencia: ' + (body.tipo_incidente || 'No especificado') + '\n'
-            + '- Horas de retraso: ' + (body.delay_hours || 'No especificado') + '\n'
-            + '- Causa informada: ' + (body.causa || 'No informada') + '\n'
-            + '- Ofrecieron reembolso: ' + (body.reembolso || 'No informado') + '\n\n'
+            + '- Tipo de incidencia: ' + (body.tipo_incidencia || 'No especificado') + '\n'
+            + '- Horas de retraso: ' + (body.horas_retraso || 'No especificado') + '\n'
+            + '- Causa informada: ' + (body.causa_informada || 'No informada') + '\n'
+            + '- Ofrecieron reembolso: ' + (body.ofrecimiento_aerolinea || 'No informado') + '\n\n'
             + 'Responde SOLO el numero (ej: 85). Sin texto, sin %, sin explicacion.';
 
           var aiCalcRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -139,33 +142,47 @@ export default async function handler(req, res) {
       }
 
       /* ---- Step 2: Insert reclamo ---- */
-      /* Core columns (guaranteed to exist in the original schema) */
+      var ip = (req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim() || null;
+
       var row = {
-        nombre: nombre,
-        telefono: body.telefono || null,
-        email: email,
-        aerolinea: body.aerolinea || null,
-        vuelo_nro: body.vuelo_nro || null,
-        fecha_vuelo: body.fecha_vuelo || null,
-        tipo_reclamo: body.tipo_incidente || 'vuelo',
-        estado: 'pendiente',
-        ref_code: refCode,
-        ai_raw: {
-          doc_tipo: body.doc_tipo || null,
-          doc_numero: body.doc_numero || null,
-          origen: body.origen || null,
-          destino: body.destino || null,
-          pnr: body.pnr || null,
-          incidencia: body.tipo_incidente || null,
-          delay_hours: body.delay_hours || null,
-          notificacion: body.notificacion || null,
-          reembolso: body.reembolso || null,
-          causa: body.causa || null,
-          moneda: body.moneda || null,
-          gastos_monto: body.gastos_monto || null,
-          gastos_detalle: body.gastos_detalle || null,
-          porcentaje_exito: porcentaje_exito,
-        },
+        /* Identity */
+        nombre:                nombre,
+        telefono:              body.telefono || null,
+        email:                 email,
+        documento_tipo:        body.documento_tipo || null,
+        documento_numero:      body.documento_numero || null,
+        /* Flight */
+        aerolinea:             body.aerolinea || null,
+        vuelo_nro:             body.vuelo_nro || null,
+        fecha_vuelo:           body.fecha_vuelo || null,
+        origen:                body.origen || null,
+        destino:               body.destino || null,
+        pnr:                   body.pnr || null,
+        /* Incident */
+        tipo_reclamo:          'vuelo',
+        tipo_incidencia:       body.tipo_incidencia || null,
+        horas_retraso:         body.horas_retraso ? parseInt(body.horas_retraso) || null : null,
+        anticipacion_aviso:    body.anticipacion_aviso || null,
+        ofrecimiento_aerolinea: body.ofrecimiento_aerolinea || null,
+        causa_informada:       body.causa_informada || null,
+        /* Expenses */
+        moneda_gastos:         body.moneda_gastos || null,
+        monto_gastos:          body.monto_gastos ? parseFloat(body.monto_gastos) || null : null,
+        gastos_detalle:        body.gastos_detalle || null,
+        /* Metadata */
+        fuente:                'Web',
+        estado:                'pendiente',
+        ref_code:              refCode,
+        /* Consent / electronic signature */
+        consent_version:       body.consent_version || null,
+        consent_tyc:           body.consent_tyc === true || body.consent_tyc === 'true' || false,
+        consent_autorizacion:  body.consent_autorizacion === true || body.consent_autorizacion === 'true' || false,
+        firma_fecha:           body.firma_fecha || null,
+        firma_ts:              body.firma_ts || null,
+        user_agent:            body.user_agent || null,
+        ip_firmante:           ip,
+        /* AI analysis — only internal scoring */
+        ai_raw: { porcentaje_exito: porcentaje_exito },
       };
 
       console.log('[process-ticket] Inserting row with ref:', refCode, 'email:', email);
@@ -192,6 +209,86 @@ export default async function handler(req, res) {
 
       var manualRecord = null;
       try { var p = JSON.parse(manualText); manualRecord = Array.isArray(p) ? p[0] : p; } catch(e) { console.error('[process-ticket] Parse error:', e.message); }
+
+      /* ---- Step 3: SHA-256 fingerprint + PDF authorization ---- */
+      var claimHash = computeClaimHash({
+        refCode,
+        nombre,
+        email,
+        docTipo:       body.documento_tipo  || '',
+        docNumero:     body.documento_numero || '',
+        pnr:           body.pnr             || '',
+        aerolinea:     body.aerolinea        || '',
+        vuelo:         body.vuelo_nro        || '',
+        origen:        body.origen           || '',
+        destino:       body.destino          || '',
+        fechaVuelo:    body.fecha_vuelo      || '',
+        tipoReclamo:   'vuelo',
+        firmaFecha:    body.firma_fecha      || '',
+        consentVersion: body.consent_version || '',
+      });
+
+      var pdfBuffer = null;
+      var pdfUrl    = null;
+      try {
+        pdfBuffer = await generateAuthorizationPdf({
+          refCode,
+          nombre,
+          docTipo:       body.documento_tipo  || '',
+          docNumero:     body.documento_numero || '',
+          email,
+          aerolinea:     body.aerolinea        || '',
+          vuelo:         body.vuelo_nro        || '',
+          origen:        body.origen           || '',
+          destino:       body.destino          || '',
+          fechaVuelo:    body.fecha_vuelo      || '',
+          pnr:           body.pnr              || '',
+          firmaFecha:    body.firma_fecha      || '',
+          consentVersion: body.consent_version || '',
+          ip:            ip,
+          userAgent:     body.user_agent       || '',
+          hash:          claimHash,
+        });
+      } catch (pdfErr) {
+        console.error('[process-ticket] PDF generation error:', pdfErr.message);
+      }
+
+      if (pdfBuffer) {
+        try {
+          var pdfPath = refCode + '/Autorizacion_' + refCode + '.pdf';
+          var storageRes = await fetch(SB_URL + '/storage/v1/object/reclamos/' + pdfPath, {
+            method: 'POST',
+            headers: {
+              'apikey':         SB_KEY,
+              'Authorization':  'Bearer ' + SB_KEY,
+              'Content-Type':   'application/pdf',
+              'x-upsert':       'true',
+            },
+            body: pdfBuffer,
+          });
+          if (storageRes.ok) {
+            pdfUrl = SB_URL + '/storage/v1/object/public/reclamos/' + pdfPath;
+            await fetch(SB_URL + '/rest/v1/reclamos?ref_code=eq.' + refCode, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type':  'application/json',
+                'apikey':        SB_KEY,
+                'Authorization': 'Bearer ' + SB_KEY,
+              },
+              body: JSON.stringify({
+                adjuntos: [{ tipo: 'autorizacion', url: pdfUrl, nombre: 'Autorizacion_' + refCode + '.pdf' }],
+                ai_raw:   { porcentaje_exito: porcentaje_exito, huella_sha256: claimHash },
+              }),
+            });
+            console.log('[process-ticket] PDF stored:', pdfUrl);
+          } else {
+            var stErr = await storageRes.text();
+            console.error('[process-ticket] Storage upload failed:', storageRes.status, stErr.substring(0, 200));
+          }
+        } catch (storageErr) {
+          console.error('[process-ticket] Storage error:', storageErr.message);
+        }
+      }
 
       /* ---- Send emails via Resend ---- */
       var RESEND_KEY = process.env.RESEND_API_KEY;
@@ -221,7 +318,7 @@ export default async function handler(req, res) {
                 + '<p><strong>Email del cliente:</strong> ' + email + '</p>'
                 + '<p><strong>Vuelo:</strong> ' + vuelo + ' (' + aerolinea + ')</p>'
                 + '<p><strong>Fecha vuelo:</strong> ' + (body.fecha_vuelo || 'N/A') + '</p>'
-                + '<p><strong>Tipo:</strong> ' + (body.tipo_incidente || 'vuelo') + '</p>'
+                + '<p><strong>Tipo:</strong> ' + (body.tipo_incidencia || 'vuelo') + '</p>'
                 + '<hr/><p style="color:#888;font-size:12px">Enviado automaticamente por SolucionAir</p>',
             }),
           });
@@ -232,51 +329,59 @@ export default async function handler(req, res) {
           console.error('[process-ticket] Resend internal error:', mailErr.message);
         }
 
-        /* 2. Confirmation to the client */
+        /* 2. Confirmation to the client — with PDF authorization attached */
         try {
+          var pdfNotice = pdfUrl
+            ? '<div style="background:#E8F0EC;border-left:3px solid #2D4A3E;padding:12px 16px;margin:20px 0;border-radius:0 4px 4px 0">'
+              + '<p style="margin:0;font-size:13px;color:#2D4A3E"><strong>Comprobante adjunto.</strong> El documento de autorizacion y firma electronica se adjunta a este correo. Guardalo para tus registros.</p>'
+              + '</div>'
+            : '';
+          var clientPayload = {
+            from:    senderFrom,
+            to:      email,
+            subject: 'SolucionAir — Reclamo ' + refCode + ' recibido',
+            html: '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#FFFFFF">'
+              + '<div style="background:#2D4A3E;padding:24px 28px;border-radius:8px 8px 0 0">'
+              + '<h1 style="color:#D4A853;font-size:20px;margin:0;font-weight:700">SolucionAir</h1>'
+              + '<p style="color:#C0D8C8;font-size:12px;margin:5px 0 0">Compensaciones por vuelos y equipaje</p>'
+              + '</div>'
+              + '<div style="padding:28px;border:1px solid #E0DCD4;border-top:none;border-radius:0 0 8px 8px">'
+              + '<h2 style="color:#2D4A3E;font-size:18px;margin:0 0 12px">Hola ' + nombre + ',</h2>'
+              + '<p style="color:#3A3A3A;font-size:14px;line-height:1.6;margin:0 0 16px">Recibimos tu reclamo y ya esta siendo revisado por nuestro equipo. A continuacion encontras el detalle y el comprobante de autorizacion firmado digitalmente.</p>'
+              + pdfNotice
+              + '<div style="background:#F7F5F0;border-radius:6px;padding:16px;margin:16px 0">'
+              + '<p style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px">Detalle del reclamo</p>'
+              + '<table style="width:100%;border-collapse:collapse">'
+              + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Referencia</td><td style="padding:6px 0;font-weight:700;font-size:14px;text-align:right;color:#2D4A3E">' + refCode + '</td></tr>'
+              + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Vuelo</td><td style="padding:6px 0;font-size:13px;text-align:right">' + vuelo + '</td></tr>'
+              + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Aerolinea</td><td style="padding:6px 0;font-size:13px;text-align:right">' + aerolinea + '</td></tr>'
+              + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Estado</td><td style="padding:6px 0;font-size:13px;text-align:right;color:#D4A853;font-weight:700">Pendiente de revision</td></tr>'
+              + '</table>'
+              + '</div>'
+              + '<p style="color:#6B6B6B;font-size:13px;line-height:1.7;margin:16px 0">Proximos pasos:<br/>'
+              + '<strong>1.</strong> Revision del caso por nuestro equipo (24-48 hs habilies)<br/>'
+              + '<strong>2.</strong> Comunicacion formal con la aerolinea<br/>'
+              + '<strong>3.</strong> Negociacion y resolucion<br/><br/>'
+              + 'Te mantendremos informado/a a este correo sobre cada avance.</p>'
+              + '<p style="margin-top:20px;font-size:13px">Saludos,<br/><strong style="color:#2D4A3E">Equipo SolucionAir</strong></p>'
+              + '<hr style="margin-top:24px;border:none;border-top:1px solid #E0DCD4"/>'
+              + '<p style="color:#999;font-size:11px;margin-top:12px">Correo automatico. Referencia: ' + refCode + '.</p>'
+              + '</div>'
+              + '</div>',
+          };
+          if (pdfBuffer) {
+            clientPayload.attachments = [{
+              filename: 'Autorizacion_SolucionAir_' + refCode + '.pdf',
+              content:  pdfBuffer.toString('base64'),
+            }];
+          }
           var clientRes = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
+              'Content-Type':  'application/json',
               'Authorization': 'Bearer ' + RESEND_KEY,
             },
-            body: JSON.stringify({
-              from: senderFrom,
-              to: email,
-              subject: 'Bienvenido a SolucionAir — Reclamo ' + refCode + ' en proceso',
-              html: '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#FFFFFF">'
-                + '<div style="background:#2D4A3E;padding:24px 28px;border-radius:8px 8px 0 0">'
-                + '<h1 style="color:#D4A853;font-size:20px;margin:0;font-weight:700">SolucionAir</h1>'
-                + '</div>'
-                + '<div style="padding:28px;border:1px solid #E0DCD4;border-top:none;border-radius:0 0 8px 8px">'
-                + '<h2 style="color:#2D4A3E;font-size:18px;margin:0 0 12px">Hola ' + nombre + ',</h2>'
-                + '<p style="color:#3A3A3A;font-size:14px;line-height:1.6;margin:0 0 16px">Tu cuenta fue creada con exito y tu reclamo ya esta siendo procesado por nuestro equipo legal y nuestra IA.</p>'
-                + '<div style="background:#F7F5F0;border-radius:6px;padding:16px;margin:16px 0">'
-                + '<p style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">Datos de tu cuenta</p>'
-                + '<table style="width:100%;border-collapse:collapse">'
-                + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Usuario</td><td style="padding:6px 0;font-weight:600;font-size:13px;text-align:right">' + email + '</td></tr>'
-                + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Contrasena</td><td style="padding:6px 0;font-size:13px;text-align:right;color:#6B6B6B">La que elegiste al registrarte</td></tr>'
-                + '</table>'
-                + '</div>'
-                + '<div style="background:#F7F5F0;border-radius:6px;padding:16px;margin:16px 0">'
-                + '<p style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px">Detalle del reclamo</p>'
-                + '<table style="width:100%;border-collapse:collapse">'
-                + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Referencia</td><td style="padding:6px 0;font-weight:700;font-size:13px;text-align:right;color:#2D4A3E">' + refCode + '</td></tr>'
-                + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Vuelo</td><td style="padding:6px 0;font-size:13px;text-align:right">' + vuelo + '</td></tr>'
-                + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Aerolinea</td><td style="padding:6px 0;font-size:13px;text-align:right">' + aerolinea + '</td></tr>'
-                + '<tr><td style="padding:6px 0;color:#6B6B6B;font-size:13px">Estado</td><td style="padding:6px 0;font-size:13px;text-align:right;color:#D4A853;font-weight:700">Pendiente de revision</td></tr>'
-                + '</table>'
-                + '</div>'
-                + '<div style="text-align:center;margin:24px 0">'
-                + '<a href="' + panelUrl + '" style="display:inline-block;background:#2D4A3E;color:#FFFFFF;padding:12px 28px;border-radius:6px;font-weight:700;font-size:14px;text-decoration:none">Ver Estado de mi Reclamo</a>'
-                + '</div>'
-                + '<p style="color:#6B6B6B;font-size:13px;line-height:1.6;margin:16px 0 0">Te mantendremos informado sobre el progreso de tu caso a este correo.</p>'
-                + '<p style="margin-top:20px;font-size:13px">Saludos,<br/><strong style="color:#2D4A3E">Equipo Legal — SolucionAir</strong></p>'
-                + '<hr style="margin-top:24px;border:none;border-top:1px solid #E0DCD4"/>'
-                + '<p style="color:#999;font-size:11px;margin-top:12px">Este es un correo automatico enviado por SolucionAir.</p>'
-                + '</div>'
-                + '</div>',
-            }),
+            body: JSON.stringify(clientPayload),
           });
           var clientText = await clientRes.text();
           console.log('[process-ticket] Resend client status:', clientRes.status, clientText.substring(0, 200));

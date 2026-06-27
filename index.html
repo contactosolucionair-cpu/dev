@@ -124,7 +124,36 @@
     .wz-panel.active{display:block;animation:fadeIn .2s ease}
     .wz-nav{display:flex;justify-content:space-between;gap:10px;margin-top:20px;flex-wrap:wrap}
 
-    @media(max-width:768px){.nav__center{display:none}.nav__hamburger{display:block}.nav__actions{gap:6px}.steps,.cgrid,.agrid,.tgrid{grid-template-columns:1fr}.ctg__g{grid-template-columns:1fr}.ft__grid{grid-template-columns:1fr;text-align:center}}
+    /* Terms modal */
+    .terms-ov{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.52);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:16px}
+    .terms-ov.visible{display:flex;animation:fadeIn .2s ease}
+    .terms-box{background:var(--w);border-radius:14px;max-width:740px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.18)}
+    .terms-hd{padding:20px 24px 14px;border-bottom:1px solid var(--bdl);flex-shrink:0}
+    .terms-hd__top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .terms-hd__title{font-family:var(--fh);font-size:.96rem;font-weight:800;color:var(--t1)}
+    .terms-hd__sub{font-size:.66rem;color:var(--t4);margin-top:3px}
+    .terms-hd__x{background:none;border:none;color:var(--t4);cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;transition:all .15s}
+    .terms-hd__x:hover{background:var(--bg);color:var(--t1)}
+    .terms-tabs{display:flex;gap:4px}
+    .terms-tab{padding:7px 15px;border-radius:7px;border:1px solid var(--bdl);background:none;font-family:var(--fh);font-size:.72rem;font-weight:700;color:var(--t3);cursor:pointer;transition:all .15s}
+    .terms-tab.active{background:var(--g);color:var(--w);border-color:var(--g)}
+    .terms-tab:not(.active):hover{border-color:var(--g);color:var(--g)}
+    .terms-body{overflow-y:auto;flex:1;padding:22px 24px;font-size:.76rem;color:var(--t2);line-height:1.72}
+    .terms-body h2{font-family:var(--fh);font-size:.78rem;font-weight:800;color:var(--g);margin:22px 0 8px;text-transform:uppercase;letter-spacing:.05em;padding-bottom:5px;border-bottom:1px solid var(--bdl)}
+    .terms-body h2:first-child{margin-top:0}
+    .tc-cl{margin-bottom:13px}
+    .tc-cl strong{color:var(--t1);font-weight:700}
+    .tc-def{padding:6px 0 6px 14px;border-left:2px solid var(--bdl);margin:4px 0 8px}
+    .tc-def b{color:var(--t1)}
+    .terms-ft{padding:14px 24px;border-top:1px solid var(--bdl);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg);border-radius:0 0 14px 14px}
+    .terms-ft__note{font-size:.66rem;color:var(--t4);line-height:1.45;max-width:320px}
+    .terms-ft__btn{padding:11px 22px;background:var(--g);color:var(--w);border:none;border-radius:8px;font-family:var(--fh);font-weight:700;font-size:.78rem;cursor:pointer;transition:background .15s;white-space:nowrap;flex-shrink:0}
+    .terms-ft__btn:hover{background:var(--gl)}
+    .terms-link-btn{background:none;border:none;padding:0;color:var(--g);font-weight:700;cursor:pointer;font-size:inherit;font-family:inherit;text-decoration:underline;text-underline-offset:2px}
+    .terms-link-btn:hover{opacity:.75}
+    .consent__meta{margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;font-family:var(--fm);font-size:.66rem;color:#166534;line-height:1.5}
+
+    @media(max-width:768px){.nav__center{display:none}.nav__hamburger{display:block}.nav__actions{gap:6px}.steps,.cgrid,.agrid,.tgrid{grid-template-columns:1fr}.ctg__g{grid-template-columns:1fr}.ft__grid{grid-template-columns:1fr;text-align:center}.terms-ft{flex-direction:column;align-items:stretch}.terms-ft__note{max-width:100%}.terms-ft__btn{text-align:center}}
     @media(max-width:640px){.sec{padding:40px 16px}}
   </style>
 </head>
@@ -308,7 +337,7 @@
           <p>Esta declaración constituye una firma electrónica válida en los términos de la Ley 25.506 de Firma Digital de la República Argentina.</p>
         </div>
 
-        <div class="consent" id="consent-flight"><label class="consent__row"><input type="checkbox" class="consent__cb" data-required="true" /><span class="consent__txt">Acepto los <strong>Términos y Condiciones</strong>, la <strong>Política de Privacidad</strong> y la declaración jurada precedente. Firmo digitalmente este reclamo autorizando a SolucionAir a actuar en mi representación.</span></label></div>
+        <div class="consent" id="consent-flight"><label class="consent__row"><input type="checkbox" class="consent__cb" id="consent-cb" data-required="true" /><span class="consent__txt">Acepto los <button type="button" class="terms-link-btn" data-open-tab="tyc">Términos y Condiciones</button>, la <button type="button" class="terms-link-btn" data-open-tab="privacy">Política de Privacidad</button> y la declaración jurada precedente. Firmo digitalmente este reclamo autorizando a SolucionAir a actuar en mi representación.</span></label><div class="consent__meta" id="consent-meta" style="display:none"></div></div>
       </div>
 
       <div class="wz-nav"><button class="btn-verify" id="wz-back-3" type="button" style="background:transparent;color:var(--t2);border:1px solid var(--bd)" data-t="btn_back2">&larr; Volver al Paso 2</button><button class="btn-verify" id="btn-verify" type="button" data-t="btn_submit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> Enviar reclamo</button>
@@ -432,11 +461,35 @@
     <div class="ft__grid">
       <div class="ft__col"><div class="ft__col-t">SolucionAir</div><p data-t="ft_tagline">Tu compensación siempre despega.</p><p data-t="ft_desc">Plataforma LegalTech con inteligencia artificial para reclamos aéreos.</p></div>
       <div class="ft__col"><div class="ft__col-t" data-t="ft_contact">Contacto</div><a href="mailto:contacto@solucionair.com">contacto@solucionair.com</a><a href="tel:+5491125578402">+54 9 11 2557-8402</a></div>
-      <div class="ft__col"><div class="ft__col-t" data-t="ft_legal">Legal</div><a href="#" data-t="ft_terms">Términos y Condiciones</a><a href="#" data-t="ft_privacy">Política de Privacidad</a></div>
+      <div class="ft__col"><div class="ft__col-t" data-t="ft_legal">Legal</div><a href="#" data-t="ft_terms" data-open-tab="tyc" class="terms-ft-link">Términos y Condiciones</a><a href="#" data-t="ft_privacy" data-open-tab="privacy" class="terms-ft-link">Política de Privacidad</a></div>
     </div>
     <div class="ft__tag">SolucionAir. Tu compensación siempre despega.</div>
     <div class="ft__cp">&copy; 2026 SolucionAir. Todos los derechos reservados.</div>
   </div></footer>
+
+  <!-- TERMS & PRIVACY MODAL -->
+  <div class="terms-ov" id="terms-ov" role="dialog" aria-modal="true" aria-labelledby="terms-modal-title">
+    <div class="terms-box">
+      <div class="terms-hd">
+        <div class="terms-hd__top">
+          <div>
+            <div class="terms-hd__title" id="terms-modal-title">Documentos legales — SolucionAir</div>
+            <div class="terms-hd__sub">Versión TYC-SA-v2.1-2026 · Firma electrónica · Ley 25.506 y Ley 25.326</div>
+          </div>
+          <button class="terms-hd__x" id="terms-close" type="button" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="terms-tabs">
+          <button class="terms-tab active" data-tab="tyc" type="button">Términos y Condiciones</button>
+          <button class="terms-tab" data-tab="privacy" type="button">Política de Privacidad</button>
+        </div>
+      </div>
+      <div class="terms-body" id="terms-body"></div>
+      <div class="terms-ft">
+        <div class="terms-ft__note">Al aceptar, confirmás haber leído ambos documentos. Tu aceptación queda registrada con fecha, hora y datos del dispositivo.</div>
+        <button class="terms-ft__btn" id="terms-accept" type="button">✓ Acepto y firmo digitalmente</button>
+      </div>
+    </div>
+  </div>
 
   <script src="src/js/app.js"></script>
   <script>
@@ -512,6 +565,247 @@
   document.getElementById('login-close').addEventListener('click',function(){loginOv.classList.remove('visible');loginErr.textContent=''});
   loginOv.addEventListener('click',function(e){if(e.target===loginOv){loginOv.classList.remove('visible');loginErr.textContent=''}});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&loginOv.classList.contains('visible')){loginOv.classList.remove('visible');loginErr.textContent=''}});
+  /* ======= TERMS & PRIVACY MODAL ======= */
+  (function(){
+    const CONSENT_VERSION = 'TYC-SA-v2.1-2026';
+
+    const TYC_HTML = `
+<h2>Términos y Condiciones del Servicio SolucionAir</h2>
+<div class="tc-cl"><strong>1. Partes y suscripción del Acuerdo</strong><br>
+1.1. El presente Acuerdo se celebra entre SolucionAir (en adelante, "SolucionAir" o "SA"), con domicilio en Malabia 2425, 7, Ciudad Autónoma de Buenos Aires, Argentina y el Solicitante identificado al momento de la suscripción electrónica.<br>
+1.2. A los efectos del presente, se entiende por "Solicitante" tanto al Pasajero que suscribe el Acuerdo en forma directa, como a la Agencia de viajes que lo suscribe en nombre y representación del Pasajero conforme la cláusula 18.<br>
+1.3. El presente Acuerdo se perfecciona con la aceptación electrónica del Solicitante en los términos de la cláusula 21 y rige el conjunto de servicios prestados por SA descriptos en este instrumento.</div>
+
+<div class="tc-cl"><strong>2. Definiciones</strong><br>
+A los fines del presente Acuerdo, los términos en mayúscula tendrán el siguiente significado:
+<div class="tc-def"><b>Pasajero:</b> persona física que ha sufrido una incidencia en un vuelo comercial respecto del cual se solicita el servicio de SA.<br>
+<b>Agencia:</b> persona jurídica habilitada para la comercialización de servicios turísticos que suscribe el presente Acuerdo en nombre y representación del Pasajero.<br>
+<b>Solicitante:</b> según lo definido en la cláusula 1.2.<br>
+<b>Caso:</b> conjunto de pretensiones derivadas de una incidencia concreta en un vuelo determinado del Pasajero, respecto del cual el Solicitante encomienda a SA su gestión bajo el presente Acuerdo.<br>
+<b>Compensación:</b> toda suma monetaria efectivamente percibida por el Solicitante o por el Pasajero como resultado de la gestión de SA, incluyendo compensaciones tarifadas, reintegros, indemnizaciones por daños, intereses y cualquier otro rubro de naturaleza monetaria, con la excepción expresa del reembolso de gastos de mediación recibido por el Solicitante.<br>
+<b>Reclamo Directo:</b> gestión administrativa o por vía Judicial Complementaria que SA dirige directamente a la aerolínea reclamada.<br>
+<b>Vía Administrativa o Judicial Complementaria:</b> vía adicional al Reclamo Directo que SA pueda emplear según la jurisdicción del Caso, incluyendo presentaciones ante organismos administrativos competentes y procesos judiciales de bajo monto de la Unión Europea, cuando estén disponibles.<br>
+<b>Red Profesional SolucionAir:</b> conjunto de abogados y abogadas matriculados que colaboran con SA bajo un marco de colaboración profesional autónomo.<br>
+<b>Profesional Designado:</b> abogado/a de la Red asignado/a para asumir el patrocinio del Caso en instancia de Mediación.<br>
+<b>Mediación:</b> instancia de mediación prejudicial obligatoria en Argentina, sustanciada por medios electrónicos, conforme la normativa aplicable.<br>
+<b>Acuerdo de Mediación:</b> acuerdo celebrado en el marco de la Mediación que ponga fin total o parcial al Caso.</div></div>
+
+<div class="tc-cl"><strong>3. Objeto y alcance del servicio</strong><br>
+3.1. SA presta al Solicitante un servicio integral de gestión de reclamos de pasajeros contra aerolíneas comerciales por incidencias tales como cancelaciones, demoras, denegaciones de embarque, equipaje extraviado o dañado, denegaciones de compensación y demás supuestos previstos en la normativa aplicable a cada Caso.<br>
+3.2. El servicio comprende: (i) evaluación inicial del Caso, sin costo para el Solicitante; (ii) gestión del Reclamo Directo del Caso conforme la cláusula 4; (iii) cuando el Caso lo amerite y se cumplan los presupuestos del párrafo 3.3, contacto y derivación al/la Profesional de la Red para la prosecución del Caso por Derivación.<br>
+3.3. La gestión del Caso en Reclamo Directo no se encuentra limitada por la ruta o jurisdicción del vuelo. La Derivación sólo se encuentra disponible respecto de vuelos con origen o destino en la República Argentina.<br>
+3.4. SA no garantiza resultado alguno, asumiendo únicamente una obligación de medios y no de resultados. SA se obliga a desplegar los medios técnicos y profesionales razonables conforme la normativa aplicable y la práctica del sector para que el Pasajero obtenga una justa Compensación.<br>
+3.5. SA informará al Solicitante el monto a reclamar conforme el análisis del Caso. La inclusión de un rubro en el reclamo no implica garantía de su procedencia ni de su cuantificación final.</div>
+
+<div class="tc-cl"><strong>4. Reclamo Directo y Derivación</strong><br>
+4.1. <em>Reclamo Directo y vías complementarias.</em> SA gestiona el Caso ante la aerolínea mediante Reclamo Directo. A su exclusivo criterio, y según la jurisdicción y características del Caso, SA podrá adicional o alternativamente recurrir a Vías Administrativas o Judiciales Complementarias disponibles en la jurisdicción aplicable. La elección de las herramientas es facultad de SA, sin que el Solicitante pueda exigir el empleo de una vía determinada.<br>
+4.2. <em>Derivación.</em> Cuando el Caso no se resuelva satisfactoriamente por Reclamo Directo y se trate de un vuelo con origen o destino en la República Argentina, SA podrá ofrecer al Solicitante la derivación del Caso a un/a Profesional de la Red para la prosecución del Caso en Mediación. La Derivación queda sujeta a la suscripción por el Solicitante del instrumento de designación de patrocinio y pacto de cuota litis con el/la Profesional, conforme la cláusula 8.<br>
+4.3. <em>Cierre del servicio.</em> Una vez concluido el Reclamo Directo y la Mediación (en caso de corresponder) en los términos de la cláusula 13, el servicio de SA se tendrá por finalizado.</div>
+
+<div class="tc-cl"><strong>5. Política comercial — Principio de cobro por resultado</strong><br>
+5.1. SolucionAir aplica una política comercial de cobro por resultado. El Solicitante no abona suma alguna a SA en concepto de comisiones, honorarios ni gastos si el Caso no concluye con la percepción de una Compensación.<br>
+5.2. En particular: (a) la evaluación inicial es sin costo; (b) la gestión del Reclamo Directo no genera obligación de pago para el Solicitante en ausencia de Compensación; (c) los costos asociados a la Mediación referidos en la cláusula 7 son afrontados por SA y sólo se reembolsan en el escenario de éxito previsto en dicha cláusula; (d) si la Derivación concluye sin Acuerdo de Mediación, SA no percibe comisión alguna ni reembolso de costos del Solicitante.</div>
+
+<div class="tc-cl"><strong>6. Honorarios y comisiones de SA</strong><br>
+6.1. En caso de Compensación obtenida por Reclamo Directo, el Solicitante abonará a SA una comisión equivalente al veinte por ciento (20%) sobre la Compensación efectivamente cobrada.<br>
+6.2. En caso de Compensación obtenida luego de una Derivación mediante Acuerdo de Mediación, el Solicitante abonará: (i) a SA, una comisión equivalente al quince por ciento (15%) sobre la Compensación efectivamente cobrada; y (ii) al/la Profesional Designado/a, en concepto de cuota litis, un cinco por ciento (5%) sobre la Compensación efectivamente cobrada, conforme el instrumento que se suscriba por separado entre el Solicitante y el/la Profesional.<br>
+6.3. La facturación de la comisión de SA y de la cuota litis del/la Profesional se realiza en forma separada y directa al Solicitante por cada uno.<br>
+6.4. <em>Base de cálculo.</em> La comisión de SA y la cuota litis del/la Profesional se calculan sobre la Compensación según se la define en la cláusula 2; esto es, sobre todo rubro monetario cobrado por el Solicitante o el Pasajero, incluyendo compensaciones tarifadas, reintegros, indemnizaciones por daños (incluyendo daño moral cuando proceda), intereses y todo otro rubro monetario obtenido. Se excluye expresamente de la base de cálculo el reembolso de gastos de mediación recibido por el Solicitante, si lo hubiera.</div>
+
+<div class="tc-cl"><strong>7. Costos asociados a la Mediación</strong><br>
+7.1. En caso de producirse una Derivación, como parte de su servicio de gestión, SA afronta por cuenta y orden del Solicitante los costos asociados a la sustanciación de la Mediación, incluyendo: (i) costo de cartas documento que correspondan; (ii) arancel de inicio de la Mediación; (iii) honorarios provisionales y, en su caso, definitivos del mediador conforme la escala aplicable cuando la Mediación concluya sin Acuerdo.<br>
+7.2. Si la etapa concluye con Acuerdo de Mediación y percepción efectiva de Compensación, el Solicitante reembolsará a SA los costos efectivamente incurridos según el párrafo 7.1, con un tope máximo de treinta mil pesos argentinos (ARS 30.000) por Caso. El reembolso es adicional a la comisión de SA y a la cuota litis del/la Profesional, y se liquida junto con ellas.<br>
+7.3. Por el contrario, si concluye sin Acuerdo de Mediación, SA absorbe íntegramente los costos referidos en el párrafo 7.1, sin derecho a reembolso ni reclamo alguno contra el Solicitante por dichos conceptos.<br>
+7.4. Los pagos referidos en el párrafo 7.1 se realizan en cuenta y orden del Solicitante y se documentan a su nombre, sin perjuicio de su pago por SA.</div>
+
+<div class="tc-cl"><strong>8. Derivación a la Red Profesional SolucionAir</strong><br>
+8.1. El Solicitante presta su conformidad anticipada con la mecánica de derivación a un/a Profesional de la Red para la prosecución del Caso en caso de que SA lo considere pertinente. La derivación efectiva se materializa con la designación de un/a Profesional concreto/a y la suscripción por el Solicitante del instrumento de designación de patrocinio letrado y pacto de cuota litis con dicho/a Profesional.<br>
+8.2. SA entregará al/la Profesional Designado/a el legajo del Caso a fin de habilitar el patrocinio. El Solicitante presta expresa conformidad con la transmisión de información y documentación necesaria a tales efectos.<br>
+8.3. El/la Profesional ejerce con plena autonomía profesional. SA no impartirá instrucciones técnicas al/la Profesional ni asume responsabilidad por las decisiones procesales que este/a adopte en el ejercicio de su patrocinio.<br>
+8.4. El Cliente autoriza al/la Abogado/a que asuma el patrocinio en la Mediación a comunicar a SolucionAir las novedades relevantes del Caso y a remitir copia de las actas, ofertas y demás instrumentos que se generen, a los fines operativos y administrativos del Caso bajo el presente Acuerdo. Esta autorización opera exclusivamente en favor de SolucionAir, sin afectar los deberes profesionales y de confidencialidad del/la Abogado/a respecto de terceros.</div>
+
+<div class="tc-cl"><strong>9. Honorarios del/la Profesional frente a la aerolínea</strong><br>
+9.1. Conforme la práctica profesional y como condición habitual de cierre del Acuerdo de Mediación, el/la Profesional Designado/a podrá requerir que la aerolínea regule sus honorarios profesionales como suma separada a su cargo.<br>
+9.2. Tales honorarios profesionales, cuando se acuerden a cargo de la aerolínea, constituyen sumas separadas. No se descuentan de la Compensación percibida por el Solicitante, no se descuentan de ninguna otra suma a su favor, y no integran la base de cálculo de la comisión de SA ni de la cuota litis del/la Profesional bajo este Acuerdo.</div>
+
+<div class="tc-cl"><strong>10. Decisión de cierre frente a la negativa de la aerolínea a regular honorarios al/la Profesional</strong><br>
+10.1. Si la aerolínea no aceptara regular honorarios separados al/la Profesional en los términos de la cláusula 9, el/la Profesional decidirá en uso de su autonomía profesional si firma igualmente el Acuerdo de Mediación o no lo firma.<br>
+10.2. Sin perjuicio de lo anterior, el Solicitante conserva el derecho de revocar el patrocinio del/la Profesional en cualquier momento conforme el instrumento que celebre con este/a.</div>
+
+<div class="tc-cl"><strong>11. Conducta de buena fe del Solicitante</strong><br>
+11.1. El Solicitante se compromete a considerar de buena fe las ofertas que el/la Profesional Designado/a le presente como razonables durante la Mediación.<br>
+11.2. Si el/la Profesional califica una oferta como razonable y el Solicitante opta por rechazarla, la circunstancia será documentada en el legajo del Caso, sin perjuicio del derecho del Solicitante a decidir libremente sobre la firma del Acuerdo de Mediación.</div>
+
+<div class="tc-cl"><strong>12. Información veraz y colaboración del Solicitante</strong><br>
+12.1. El Solicitante se obliga a aportar a SA toda la documentación e información necesaria para la gestión del Caso, de manera completa y veraz.<br>
+12.2. El Solicitante se obliga a notificar a SA, de manera inmediata, todo contacto directo recibido de la aerolínea respecto del Caso, así como toda oferta de compensación que la aerolínea le formule por cualquier vía.<br>
+12.3. Durante la vigencia del presente Acuerdo, el Solicitante no celebrará por su cuenta acuerdos directos con la aerolínea respecto del Caso sin notificación previa a SA. Si el Solicitante celebrare un acuerdo directo en infracción a esta cláusula y como consecuencia de la gestión previa de SA, regirán las comisiones de la cláusula 6 sobre la suma efectivamente percibida.<br>
+12.4. El Solicitante se obliga a mantener actualizados sus datos de contacto.<br>
+12.5. El Solicitante se obliga a no iniciar un reclamo paralelo contra la aerolínea mientras el Acuerdo se encuentre vigente.</div>
+
+<div class="tc-cl"><strong>13. Cierre del servicio</strong><br>
+13.1. El servicio de SA se tendrá por finalizado en cualquiera de los siguientes supuestos:<br>
+(a) Conclusión del Reclamo Directo con Compensación efectivamente percibida por el Solicitante.<br>
+(b) Conclusión del Reclamo Directo sin resultado favorable y sin Derivación, ya sea por no resultar el Caso elegible para Derivación o por decisión del Solicitante de no continuar.<br>
+(c) Conclusión de una Derivación con Acuerdo de Mediación y percepción efectiva de la Compensación.<br>
+(d) Conclusión de una Derivación por cierre de Mediación sin acuerdo.<br>
+13.2. En cualquiera de los supuestos del párrafo 13.1, SA no percibirá del Solicitante suma alguna por encima de las que correspondan conforme las cláusulas 6 y 7. En particular, en los supuestos (b) y (d), SA no percibirá comisión, honorario ni reembolso alguno del Solicitante.<br>
+13.3. Si el Solicitante decide avanzar con el Caso por vías ulteriores (incluyendo, sin limitación, la vía judicial), lo hace por sus propios medios. SA queda fuera del Caso y las condiciones que el Solicitante acuerde con terceros para tales instancias son ajenas a SA.<br>
+13.4. A título de colaboración y sin que ello implique extensión del servicio, SA podrá entregar el legajo del Caso al/la Profesional o al Solicitante para facilitar la continuidad.</div>
+
+<div class="tc-cl"><strong>14. Tratamiento de datos personales</strong><br>
+14.1. El tratamiento de los datos personales del Solicitante y del Pasajero por parte de SA se rige por la Política de Privacidad y Protección de Datos Personales de SolucionAir, que el Solicitante declara haber leído y aceptado al momento de la suscripción del presente Acuerdo, y que se integra al presente por referencia.<br>
+14.2. El Solicitante presta su consentimiento expreso para la transmisión de datos personales al/la Profesional Designado/a en el marco de la derivación, conforme la cláusula 8 y la Política referida.</div>
+
+<div class="tc-cl"><strong>15. Confidencialidad</strong><br>
+15.1. La información del Caso y la documentación aportada por el Solicitante serán tratadas con confidencialidad por SA y solo se compartirán con terceros en la medida necesaria para la prestación del servicio, en particular: el/la Profesional Designado/a, el mediador interviniente y, en su caso, la propia aerolínea o el organismo administrativo o judicial competente.<br>
+15.2. La obligación de confidencialidad subsiste con posterioridad a la finalización del servicio.</div>
+
+<div class="tc-cl"><strong>16. Derecho de revocación</strong><br>
+16.1. El Solicitante consumidor goza del derecho de revocar la aceptación del presente Acuerdo dentro de los diez (10) días corridos contados desde su celebración o desde la entrega del servicio, lo último que ocurra, conforme los artículos 34 y concordantes de la Ley 24.240. La revocación se ejerce notificando a SA por cualquier medio fehaciente, sin necesidad de invocar causa y sin penalidad alguna.</div>
+
+<div class="tc-cl"><strong>17. Comunicaciones</strong><br>
+17.1. Las comunicaciones entre las partes se realizarán por medios electrónicos. El Solicitante constituye como domicilio electrónico el correo electrónico declarado al momento de la suscripción, donde se tendrán por válidamente recibidas todas las comunicaciones que SA le dirija, salvo notificación de cambio.<br>
+17.2. SA constituye como domicilio electrónico contacto@solucionair.com.</div>
+
+<div class="tc-cl"><strong>18. Suscripción por Agencia en representación</strong><br>
+18.1. Cuando el presente Acuerdo sea suscripto por una Agencia, esta declara bajo su exclusiva responsabilidad que: (i) actúa en nombre y representación del Pasajero identificado en el formulario de alta; (ii) cuenta con autorización suficiente del Pasajero para suscribir el presente Acuerdo y comprometerlo en sus términos; (iii) ha informado al Pasajero del alcance del servicio y de las comisiones, honorarios y costos previstos en este Acuerdo.<br>
+18.2. El Pasajero será el destinatario final de la Compensación que se obtenga. La Agencia no es destinataria de la Compensación, salvo instrucción expresa del Pasajero recibida por SA.<br>
+18.3. La Agencia mantendrá indemne a SA frente a cualquier reclamo del Pasajero fundado en defectos de representación, falta de autorización o falsedad de las declaraciones del párrafo 18.1.<br>
+18.4. SA podrá, en cualquier momento, solicitar a la Agencia y/o al Pasajero documentación que acredite el mandato. La no acreditación dentro del plazo razonable que SA fije habilitará a SA a suspender o resolver el servicio sin responsabilidad.</div>
+
+<div class="tc-cl"><strong>19. Vigencia, modificaciones y resolución</strong><br>
+19.1. El presente Acuerdo entra en vigencia con su aceptación electrónica y se mantiene vigente hasta el cierre del servicio conforme la cláusula 13.<br>
+19.2. SA podrá modificar los términos del presente Acuerdo respecto de Casos nuevos. Las modificaciones no afectan a los Casos en curso bajo una versión anterior del Acuerdo, salvo aceptación expresa del Solicitante.<br>
+19.3. El Solicitante podrá resolver el presente Acuerdo en cualquier momento sin invocar causa. La resolución no obliga al Solicitante al pago de suma alguna respecto de Casos en que aún no se hubiera obtenido Compensación. Respecto de Casos en que la Compensación se hubiera obtenido o se obtuviere como consecuencia de la gestión previa de SA, regirán las comisiones de la cláusula 6.<br>
+19.4. SA podrá resolver el presente Acuerdo por incumplimiento del Solicitante de sus obligaciones de información veraz y colaboración (cláusula 12), previa intimación a regularizar el incumplimiento en plazo razonable.</div>
+
+<div class="tc-cl"><strong>20. Ley aplicable y jurisdicción</strong><br>
+20.1. El presente Acuerdo se rige por las leyes de la República Argentina.<br>
+20.2. Toda controversia derivada del presente se someterá a los tribunales ordinarios competentes en el domicilio real del Solicitante consumidor, jurisdicción irrenunciable conforme el artículo 36 de la Ley 24.240.</div>
+
+<div class="tc-cl"><strong>21. Firma electrónica</strong><br>
+21.1. El Solicitante acepta suscribir el presente Acuerdo mediante firma electrónica conforme los artículos 286 y 288 del Código Civil y Comercial y la Ley 25.506. La aceptación electrónica del presente, instrumentada por los medios que SA habilite, constituye manifestación válida y suficiente del consentimiento.<br>
+21.2. El Solicitante declara haber leído íntegramente el presente Acuerdo y la Política de Privacidad y Protección de Datos Personales antes de su aceptación, y declara comprender los efectos económicos y jurídicos de su contenido.</div>
+
+<div class="tc-cl"><strong>22. Persona Jurídica — SA</strong><br>
+A los efectos del presente, se deja constancia de que «SolucionAir» constituye una denominación comercial que identifica a Juan Pablo Mario Adaniya, DNI 37.806.475 y Tomás Gregorio Dicranian, DNI 37.606.877, quienes actúan en forma conjunta bajo dicha denominación, asumiendo solidariamente las obligaciones aquí contraídas.</div>`;
+
+    const PRIVACY_HTML = `
+<h2>Política de Privacidad y Protección de Datos Personales</h2>
+<div class="tc-cl" style="font-style:italic;color:var(--t3);margin-bottom:16px">Ley 25.326 de Protección de Datos Personales</div>
+
+<div class="tc-cl"><strong>1. Responsable del Tratamiento</strong><br>
+SolucionAir, correo electrónico de contacto: contacto@solucionair.com (en adelante, el "Responsable").</div>
+
+<div class="tc-cl"><strong>2. Alcance</strong><br>
+La presente política describe el tratamiento que el Responsable realiza sobre los datos personales de los pasajeros ("Pasajeros") que son provistos por agencias de viajes y turismo ("Agencias") o directamente por los propios Pasajeros, en el marco del servicio de gestión de reclamos ante aerolíneas (el "Servicio"). En adelante, se denominará "Solicitante" a quien interactúa con el Responsable para la carga y gestión del caso, sea la Agencia o el Pasajero que accede al Servicio de forma directa.<br>
+Los datos personales podrán ser provistos por la Agencia que actúa como intermediaria o directamente por el Pasajero que accede al Servicio sin intervención de una Agencia.</div>
+
+<div class="tc-cl"><strong>3. Datos Personales Tratados</strong><br>
+En el marco del Servicio, el Responsable podrá tratar las siguientes categorías de datos personales del Pasajero, según sean provistos por el Solicitante:
+<div class="tc-def">
+<b>Datos identificatorios:</b> nombre completo, número de documento de identidad o pasaporte, nacionalidad.<br>
+<b>Datos de contacto:</b> correo electrónico, teléfono, domicilio.<br>
+<b>Datos del vuelo e incidencia:</b> aerolínea, número de vuelo, fecha, ruta, código de reserva, tipo de incidencia.<br>
+<b>Documentación de respaldo:</b> tarjetas de embarque, comprobantes de gasto, comunicaciones previas con la aerolínea, u otra documentación vinculada al reclamo.
+</div></div>
+
+<div class="tc-cl"><strong>4. Finalidad del Tratamiento</strong><br>
+Los datos personales serán tratados exclusivamente para las siguientes finalidades: evaluación de admisibilidad del reclamo conforme la normativa aplicable; preparación, presentación y seguimiento del reclamo ante la aerolínea y, en su caso, ante el organismo regulador competente; comunicación con el Solicitante respecto del estado del reclamo; y análisis estadístico agregado y anonimizado con fines de evaluación interna del servicio.</div>
+
+<div class="tc-cl"><strong>5. Base Legal del Tratamiento</strong><br>
+El tratamiento de datos personales se funda en el consentimiento del Pasajero, conforme lo establecido en el artículo 5 de la Ley 25.326 de Protección de Datos Personales. Cuando el Pasajero accede al Servicio de forma directa, el consentimiento se presta al aceptar los Términos y Condiciones y la presente Política de Privacidad. Cuando el caso es derivado por una Agencia, el consentimiento es obtenido y gestionado por esta en el marco de su relación comercial con el Pasajero.<br>
+Cuando el caso es derivado por una Agencia, esta declara y garantiza que cuenta con las autorizaciones necesarias del Pasajero para compartir sus datos personales con el Responsable, para los fines específicos del servicio de gestión de reclamos. La Agencia asume la responsabilidad por la validez y vigencia de dicho consentimiento. En caso de que un Pasajero cuestione la existencia o alcance del consentimiento prestado, la Agencia mantendrá indemne al Responsable por cualquier reclamo o consecuencia derivada.</div>
+
+<div class="tc-cl"><strong>6. Compartición de Datos con Terceros</strong><br>
+Los datos personales del Pasajero podrán ser compartidos con: la aerolínea contra la cual se dirige el reclamo, en la medida necesaria para su gestión; organismos reguladores de aviación civil o protección al consumidor de la jurisdicción competente, cuando el Responsable lo considere procedente; y prestadores de servicios tecnológicos que operen en nombre del Responsable (alojamiento web, servicios de correo electrónico), quienes estarán sujetos a obligaciones de confidencialidad.<br>
+El Responsable no vende, cede ni comercializa datos personales a terceros con fines de marketing, publicidad ni ningún otro fin ajeno al Servicio.</div>
+
+<div class="tc-cl"><strong>7. Transferencia Internacional de Datos</strong><br>
+En virtud de la naturaleza del Servicio, los datos personales del Pasajero podrán ser transferidos a aerolíneas y/o autoridades regulatorias con sede en el exterior (Unión Europea, Estados Unidos, Brasil, entre otros), en la medida estrictamente necesaria para la gestión del reclamo.<br>
+Estas transferencias se realizan al amparo de las excepciones previstas en el artículo 12 de la Ley 25.326, en particular cuando la transferencia es necesaria para la ejecución de un servicio solicitado por el titular, o cuando el titular ha prestado su consentimiento expreso, ya sea directamente o a través de la Agencia.</div>
+
+<div class="tc-cl"><strong>8. Plazo de Conservación</strong><br>
+Los datos personales serán conservados durante la vigencia de la gestión del reclamo y por un plazo adicional de cinco (5) años contados desde la finalización de dicha gestión, a los efectos de atender eventuales consultas o requerimientos vinculados. Transcurrido ese plazo, los datos serán eliminados o anonimizados.</div>
+
+<div class="tc-cl"><strong>9. Derechos del Titular de los Datos</strong><br>
+El Pasajero tiene derecho a solicitar el acceso, rectificación, actualización, supresión y confidencialidad de sus datos personales, conforme lo establecido en los artículos 14 y 16 de la Ley 25.326.<br>
+El ejercicio de estos derechos podrá canalizarse directamente ante el Responsable, mediante comunicación al correo electrónico de contacto provisto, o a través de la Agencia cuando esta hubiera actuado como intermediaria.<br>
+La Dirección Nacional de Protección de Datos Personales, órgano de control de la Ley 25.326, tiene la atribución de atender denuncias y reclamos que se interpongan con relación al incumplimiento de las normas sobre protección de datos personales.</div>
+
+<div class="tc-cl"><strong>10. Medidas de Seguridad</strong><br>
+El Responsable adopta medidas técnicas y organizativas razonables para proteger los datos personales contra el acceso no autorizado, la alteración, la divulgación o la destrucción, conforme lo dispuesto por la Disposición 11/2006 de la Dirección Nacional de Protección de Datos Personales.</div>
+
+<div class="tc-cl"><strong>11. Cookies y Tecnologías de Rastreo</strong><br>
+El sitio web del Responsable podrá utilizar cookies funcionales y analíticas con el fin de mejorar la experiencia de navegación y obtener estadísticas de uso agregadas. No se utilizan cookies con fines publicitarios ni de perfilamiento. El usuario podrá configurar su navegador para rechazar cookies, lo cual no afectará el funcionamiento esencial del sitio.</div>
+
+<div class="tc-cl"><strong>12. Modificaciones</strong><br>
+El Responsable se reserva el derecho de actualizar la presente política. Las modificaciones serán publicadas en el sitio web y, en caso de cambios sustanciales, serán comunicadas a los Solicitantes con los que se mantenga relación vigente.</div>`;
+
+    const TAB_CONTENT = { tyc: TYC_HTML, privacy: PRIVACY_HTML };
+    const TEXT_TYC = 'Términos y Condiciones del Servicio SolucionAir — Versión ' + CONSENT_VERSION + ' — Leído y aceptado electrónicamente';
+    const TEXT_AUT = 'Autorización de gestión y mandato SolucionAir — Versión ' + CONSENT_VERSION + ' — Leído y aceptado electrónicamente';
+
+    const ov         = document.getElementById('terms-ov');
+    const bodyEl     = document.getElementById('terms-body');
+    const tabBtns    = document.querySelectorAll('.terms-tab');
+    const closeBtn   = document.getElementById('terms-close');
+    const acceptBtn  = document.getElementById('terms-accept');
+    const consentCb  = document.getElementById('consent-cb');
+    const consentMeta= document.getElementById('consent-meta');
+
+    function renderTab(tab) {
+      bodyEl.innerHTML = TAB_CONTENT[tab] || '';
+      bodyEl.scrollTop = 0;
+      tabBtns.forEach(function(t){ t.classList.toggle('active', t.dataset.tab === tab); });
+    }
+
+    function openModal(tab) {
+      renderTab(tab || 'tyc');
+      ov.classList.add('visible');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      ov.classList.remove('visible');
+      document.body.style.overflow = '';
+    }
+
+    tabBtns.forEach(function(t){ t.addEventListener('click', function(){ renderTab(t.dataset.tab); }); });
+    closeBtn.addEventListener('click', closeModal);
+    ov.addEventListener('click', function(e){ if(e.target === ov) closeModal(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape' && ov.classList.contains('visible')) closeModal(); });
+
+    acceptBtn.addEventListener('click', function(){
+      var now   = new Date();
+      var fecha = now.toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', dateStyle: 'full', timeStyle: 'medium' });
+      window.consentData = {
+        consent_version           : CONSENT_VERSION,
+        consent_tyc               : true,
+        consent_autorizacion      : true,
+        consent_texto_tyc         : TEXT_TYC,
+        consent_texto_autorizacion: TEXT_AUT,
+        firma_ts                  : now.toISOString(),
+        firma_fecha               : fecha,
+        user_agent                : navigator.userAgent
+      };
+      if(consentCb){ consentCb.checked = true; consentCb.dispatchEvent(new Event('change',{bubbles:true})); }
+      if(consentMeta){
+        consentMeta.style.display = 'block';
+        consentMeta.innerHTML = '&#10003; Aceptado el ' + fecha + ' &nbsp;·&nbsp; Versión ' + CONSENT_VERSION;
+      }
+      closeModal();
+    });
+
+    document.querySelectorAll('[data-open-tab]').forEach(function(el){
+      el.addEventListener('click', function(e){ e.preventDefault(); openModal(el.dataset.openTab); });
+    });
+
+    renderTab('tyc');
+  })();
+  /* ======= FIN TERMS MODAL ======= */
+
   loginForm.addEventListener('submit',function(e){
     e.preventDefault();loginErr.textContent='';
     var em=document.getElementById('login-email').value.trim(),pw=document.getElementById('login-pass').value;
