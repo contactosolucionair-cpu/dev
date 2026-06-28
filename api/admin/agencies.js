@@ -30,23 +30,32 @@ export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
       /* Listar agencias */
-      var agRes = await fetch(
+      var agRes  = await fetch(
         SB_URL + '/rest/v1/agencias?order=creado_en.desc&select=*',
         { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
       );
-      var agencias = JSON.parse(await agRes.text()) || [];
+      var agText = await agRes.text();
+      if (!agRes.ok) {
+        console.error('[admin/agencies] Supabase agencias error:', agText.substring(0, 300));
+        return res.status(500).json({ error: 'Error al consultar agencias. Verificá que la migración SQL fue ejecutada en Supabase.' });
+      }
+      var agencias = JSON.parse(agText);
+      if (!Array.isArray(agencias)) agencias = [];
 
-      /* Conteo de casos por agencia (una query, filtramos JS-side) */
+      /* Conteo de casos B2B por agencia */
+      var conteo = {};
       var countRes = await fetch(
         SB_URL + '/rest/v1/reclamos?canal=eq.B2B&deleted_at=is.null&select=agencia_id',
         { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
       );
-      var casosRows = JSON.parse(await countRes.text()) || [];
-
-      var conteo = {};
-      casosRows.forEach(function (r) {
-        if (r.agencia_id) conteo[r.agencia_id] = (conteo[r.agencia_id] || 0) + 1;
-      });
+      if (countRes.ok) {
+        var casosRows = JSON.parse(await countRes.text());
+        if (Array.isArray(casosRows)) {
+          casosRows.forEach(function (r) {
+            if (r.agencia_id) conteo[r.agencia_id] = (conteo[r.agencia_id] || 0) + 1;
+          });
+        }
+      }
 
       agencias = agencias.map(function (ag) {
         return Object.assign({}, ag, { num_casos: conteo[ag.id] || 0 });
