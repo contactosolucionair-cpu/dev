@@ -118,6 +118,8 @@ El proyecto utiliza `cleanUrls: true` en `vercel.json`, eliminando la extensión
 | `/` | Landing page con formulario de reclamos |
 | `/backoffice` | Panel de administración |
 | `/perfil` | Panel del cliente |
+| `/agencias` | Portal B2B — login / registro de agencias |
+| `/panel-agencia` | Panel de la agencia (dashboard, casos, cargar caso) |
 
 ## Configuración del Entorno
 
@@ -130,6 +132,7 @@ Variables requeridas en Vercel Dashboard > Settings > Environment Variables:
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key de Supabase con permisos de escritura |
 | `RESEND_API_KEY` | API key de Resend para emails transaccionales |
 | `NOTIFY_EMAIL` | Casilla interna para alertas de nuevos reclamos |
+| `ADMIN_PASSWORD` | Contraseña para acceder al backoffice admin (protege la vista de Agencias) |
 
 ## Despliegue
 
@@ -157,6 +160,15 @@ npx vercel logs --since 1h --expand
 | POST | `/api/login` | Autenticación de usuarios |
 | GET | `/api/get-config` | Lee configuración dinámica del sitio |
 | POST | `/api/save-config` | Guarda configuración dinámica |
+| **B2B Agencias** | | |
+| POST | `/api/agency/register` | Registro de nueva agencia (queda pendiente) |
+| POST | `/api/agency/login` | Login de agencia; devuelve estado si está pendiente |
+| GET | `/api/agency/claims` | Casos de la agencia autenticada (JWT-gated) |
+| POST | `/api/agency/submit-claim` | Carga nuevo caso B2B (JWT-gated) |
+| GET | `/api/agency/stats` | KPIs y comisión estimada de la agencia |
+| **Admin** | | |
+| GET | `/api/admin/agencies` | Lista agencias con conteo de casos (requiere `X-Admin-Password`) |
+| POST | `/api/admin/agencies` | Aprobar / suspender / reactivar agencia |
 
 ## Flujo del Sistema
 
