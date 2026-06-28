@@ -182,11 +182,17 @@ async function handleClaims(req, res, SB_URL, SB_KEY) {
   );
   var sbText = await sbRes.text();
   if (!sbRes.ok) {
-    console.error('[agency/claims] Supabase error:', sbText.substring(0, 300));
-    return res.status(500).json({ error: 'Error al consultar casos.' });
+    console.error('[agency/claims] Supabase error:', sbText.substring(0, 400));
+    var sbErr = '';
+    try { sbErr = JSON.parse(sbText).message || JSON.parse(sbText).error || ''; } catch (e) {}
+    var msg = sbErr.indexOf('does not exist') > -1
+      ? 'Faltan columnas en la tabla reclamos. Corré la migración SQL (ALTER TABLE) en Supabase.'
+      : 'Error al consultar casos: ' + (sbErr || sbRes.status);
+    return res.status(500).json({ error: msg });
   }
 
-  return res.status(200).json({ success: true, claims: JSON.parse(sbText) || [] });
+  var parsed = JSON.parse(sbText);
+  return res.status(200).json({ success: true, claims: Array.isArray(parsed) ? parsed : [] });
 }
 
 /* ------------------------------------------------------------------ */
