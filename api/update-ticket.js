@@ -104,6 +104,48 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, action: 'novedad' });
     }
 
+    /* ---- UPDATE ESTADO ---- */
+    if (body.action === 'update-estado') {
+      var newEstado = (body.estado || '').trim();
+      var validEstados = ['pendiente', 'en_gestion', 'aprobado', 'resuelto', 'rechazado', 'no_apto', 'cancelado'];
+      if (validEstados.indexOf(newEstado) === -1) return res.status(400).json({ error: 'Estado inválido' });
+      var updRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ estado: newEstado }),
+      });
+      if (!updRes.ok) return res.status(500).json({ error: 'Error al actualizar estado' });
+      return res.status(200).json({ success: true, action: 'update-estado', estado: newEstado });
+    }
+
+    /* ---- UPDATE FIRMA ESTADO ---- */
+    if (body.action === 'update-firma') {
+      var newFirma = (body.firma_estado || '').trim();
+      var validFirmas = ['no_aplica', 'pendiente_envio', 'enviada', 'firmada', 'rechazada'];
+      if (validFirmas.indexOf(newFirma) === -1) return res.status(400).json({ error: 'Estado de firma inválido' });
+      var firmaRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ firma_estado: newFirma }),
+      });
+      if (!firmaRes.ok) return res.status(500).json({ error: 'Error al actualizar autorización' });
+      return res.status(200).json({ success: true, action: 'update-firma', firma_estado: newFirma });
+    }
+
+    /* ---- UPDATE COMPENSACION ---- */
+    if (body.action === 'update-compensacion') {
+      var mv = body.monto_compensacion;
+      var montoNum = (mv !== null && mv !== undefined && mv !== '') ? parseFloat(mv) : null;
+      if (mv !== null && mv !== undefined && mv !== '' && isNaN(montoNum)) return res.status(400).json({ error: 'Monto inválido' });
+      var compRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ monto_compensacion: montoNum }),
+      });
+      if (!compRes.ok) return res.status(500).json({ error: 'Error al actualizar compensación' });
+      return res.status(200).json({ success: true, action: 'update-compensacion', monto_compensacion: montoNum });
+    }
+
     return res.status(400).json({ error: 'Acción no reconocida' });
 
   } catch (err) {

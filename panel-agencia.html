@@ -176,7 +176,7 @@
       <div class="stats">
         <div class="stat"><div class="stat__label">Total casos</div><div class="stat__val" id="st-total">—</div></div>
         <div class="stat"><div class="stat__label">Pendientes</div><div class="stat__val stat__val--warn" id="st-pend">—</div></div>
-        <div class="stat"><div class="stat__label">Tasa de éxito</div><div class="stat__val stat__val--ok" id="st-tasa">—</div></div>
+        <div class="stat"><div class="stat__label">Aprobados</div><div class="stat__val stat__val--ok" id="st-aprobados">—</div></div>
         <div class="stat"><div class="stat__label">Comisión estimada</div><div class="stat__val" id="st-comision">—</div></div>
       </div>
       <div class="tbl-wrap" style="max-width:340px">
@@ -479,7 +479,7 @@
       if (!d.success) return;
       document.getElementById('st-total').textContent    = d.total || 0;
       document.getElementById('st-pend').textContent     = (d.por_estado && d.por_estado.pendiente) || 0;
-      document.getElementById('st-tasa').textContent     = (d.tasa_exito !== null && d.tasa_exito !== undefined) ? d.tasa_exito + '%' : '—';
+      var aprobEl = document.getElementById('st-aprobados'); if(aprobEl) aprobEl.textContent = (d.por_estado && ((d.por_estado.aprobado||0)+(d.por_estado.resuelto||0))) || 0;
       var comision = d.comision_estimada;
       document.getElementById('st-comision').textContent = (comision !== null && comision !== undefined) ? '$' + Number(comision).toFixed(0) : '—';
 
@@ -531,12 +531,10 @@
     claimsCount.textContent = list.length + ' de ' + allClaims.length;
     if (!list.length) { claimsBody.innerHTML = '<div class="state"><p class="state__txt">Sin resultados.</p></div>'; return; }
 
-    var html = '<table><thead><tr><th>Ref</th><th>Pasajero</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha</th><th>Estado</th><th>Firma</th><th>% Éxito</th></tr></thead><tbody>';
+    var html = '<table><thead><tr><th>Ref</th><th>Pasajero</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha</th><th>Estado</th><th>Autorización</th></tr></thead><tbody>';
     list.forEach(function (c, i) {
       var bc  = badgeClass(c.estado || 'pendiente');
       var fe  = c.firma_estado || 'no_aplica';
-      var pct = c.ai_raw && c.ai_raw.porcentaje_exito != null ? c.ai_raw.porcentaje_exito : null;
-      var pctHtml = pct !== null ? '<span class="pct-badge pct-badge--' + (pct > 70 ? 'high' : pct >= 40 ? 'mid' : 'low') + '">' + pct + '%</span>' : '<span style="color:var(--t4)">&mdash;</span>';
       html += '<tr data-idx="' + i + '">'
         + '<td class="mono">' + esc(c.ref_code || '—') + '</td>'
         + '<td>' + esc(c.nombre || '—') + '</td>'
@@ -545,7 +543,6 @@
         + '<td class="mono">' + esc(c.fecha_vuelo || '—') + '</td>'
         + '<td><span class="badge ' + bc + '">' + esc(c.estado || 'pendiente') + '</span></td>'
         + '<td><span class="badge badge--' + esc(fe) + '">' + esc(fe.replace(/_/g,' ')) + '</span></td>'
-        + '<td>' + pctHtml + '</td>'
         + '</tr>';
     });
     html += '</tbody></table>';

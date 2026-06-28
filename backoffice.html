@@ -89,10 +89,14 @@
     .badge--aprobado{background:var(--okbg);color:var(--ok)}
     .badge--rechazado{background:var(--errbg);color:var(--err)}
     .badge--cancelado{background:#F0F0F0;color:#888}
-    .pct-badge{font-family:var(--fm);font-size:.64rem;font-weight:600;padding:2px 7px;border-radius:6px;display:inline-block}
-    .pct-badge--high{background:var(--okbg);color:var(--ok)}
-    .pct-badge--mid{background:var(--warnbg);color:var(--warn)}
-    .pct-badge--low{background:var(--errbg);color:var(--err)}
+    .badge--b2b{background:#EEF0FF;color:#6366F1}
+    .badge--b2c{background:var(--g05);color:var(--gl)}
+    .badge--equipaje{background:#FFF3E0;color:#E65100}
+    .badge--vuelo{background:#E8F4FD;color:#1565C0}
+    .badge--en_gestion{background:#E3F2FD;color:#1976D2}
+    .badge--no_apto{background:#F5F5F5;color:#757575}
+    .action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .action-field{display:flex;flex-direction:column;gap:3px}
     .toggle-wrap{display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--t3)}
     .toggle{position:relative;width:34px;height:18px;background:var(--bdl);border-radius:9px;cursor:pointer;transition:background .2s;display:inline-block;vertical-align:middle}
     .toggle.on{background:var(--g)}
@@ -218,15 +222,17 @@
     <div class="main">
       <!-- RECLAMOS VIEW -->
       <div id="view-reclamos">
-      <div class="main__header"><h1 class="main__title">Panel de Reclamos</h1><div style="display:flex;align-items:center;gap:14px"><div class="toggle-wrap"><span class="toggle" id="toggle-pct"></span><span>Mostrar % de éxito al usuario</span></div><button class="btn btn--primary" id="btn-refresh" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Actualizar</button></div></div>
-      <div class="stats"><div class="stat"><div class="stat__label">Total reclamos</div><div class="stat__val" id="st-total">—</div></div><div class="stat"><div class="stat__label">Pendientes</div><div class="stat__val stat__val--warn" id="st-pending">—</div></div><div class="stat"><div class="stat__label">Resueltos</div><div class="stat__val stat__val--ok" id="st-resolved">—</div></div></div>
+      <div class="main__header"><h1 class="main__title">Panel de Reclamos</h1><div style="display:flex;align-items:center;gap:14px"><button class="btn btn--primary" id="btn-refresh" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Actualizar</button></div></div>
+      <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><div class="stat__label">Total reclamos</div><div class="stat__val" id="st-total">—</div></div><div class="stat"><div class="stat__label">Pendientes</div><div class="stat__val stat__val--warn" id="st-pending">—</div></div><div class="stat"><div class="stat__label">Aprobados / Resueltos</div><div class="stat__val stat__val--ok" id="st-resolved">—</div></div><div class="stat"><div class="stat__label">Rechazados</div><div class="stat__val" style="color:var(--err)" id="st-rejected">—</div></div></div>
 
       <div class="tbl-wrap">
         <div class="tbl-bar"><span class="tbl-bar__title">Todos los reclamos</span><span class="tbl-bar__count" id="tbl-count"></span></div>
         <div class="filters">
           <input class="filters__input" id="filter-search" type="text" placeholder="Buscar por Ref, Pasajero o Email..." />
           <select class="filters__select" id="filter-airline"><option value="">Todas las aerolíneas</option></select>
-          <select class="filters__select" id="filter-status"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="resuelto">Resuelto</option><option value="rechazado">Rechazado</option><option value="cancelado">Cancelado</option></select>
+          <select class="filters__select" id="filter-status"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="en_gestion">En gestión</option><option value="aprobado">Aprobado</option><option value="resuelto">Resuelto</option><option value="rechazado">Rechazado</option><option value="no_apto">No apto</option><option value="cancelado">Cancelado</option></select>
+          <select class="filters__select" id="filter-canal"><option value="">Todos los canales</option><option value="B2C">B2C</option><option value="B2B">B2B</option></select>
+          <select class="filters__select" id="filter-tipo"><option value="">Todos los tipos</option><option value="vuelo">Vuelo</option><option value="equipaje">Equipaje</option></select>
         </div>
         <div class="tbl-scroll"><div id="tbl-body"><div class="state"><div class="state__spin"></div><p class="state__txt">Cargando reclamos...</p></div></div></div>
       </div>
@@ -239,7 +245,6 @@
         <div class="cfg-section">
           <div class="cfg-section__title"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Feature Flags</div>
           <div class="cfg-toggle"><div><div class="cfg-toggle__label">Procesamiento de imágenes con IA</div><div class="cfg-toggle__desc">Activa la extracción automática de datos de pasajes con Gemini 2.5 Flash</div></div><span class="toggle on" id="cfg-flag-ai"></span></div>
-          <div class="cfg-toggle"><div><div class="cfg-toggle__label">Cálculo automático de tasa de éxito</div><div class="cfg-toggle__desc">Evalúa el porcentaje de éxito del reclamo según normativas (ANAC, EU261, DOT)</div></div><span class="toggle on" id="cfg-flag-pct"></span></div>
         </div>
 
         <div class="cfg-section">
@@ -342,15 +347,6 @@
       'rechazado':'Estimado/a {nombre},\n\nLamentamos informarle que la aerolínea {aerolinea} ha rechazado el reclamo {ref} por el vuelo {vuelo}.\n\nNuestro equipo legal está evaluando si corresponde derivar su caso a mediación para obtener una resolución favorable. Le informaremos sobre los próximos pasos.\n\nEquipo Legal — SolucionAir'
     };
 
-    /* Safe number parser for porcentaje_exito — checks top-level and ai_raw */
-    function safePct(c){
-      var v=c.porcentaje_exito;
-      if((v===null||v===undefined||v==='')&&c.ai_raw&&c.ai_raw.porcentaje_exito!==undefined){v=c.ai_raw.porcentaje_exito}
-      if(v===null||v===undefined||v==='')return null;
-      var n=parseInt(v,10);
-      return(!isNaN(n)&&n>=0&&n<=100)?n:null;
-    }
-
     function load(){
       tblBody.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
       fetch('/api/get-claims').then(function(r){return r.json()}).then(function(json){
@@ -361,6 +357,7 @@
           document.getElementById('st-total').textContent=claims.length;
           document.getElementById('st-pending').textContent=claims.filter(function(c){return(c.estado||'')==='pendiente'}).length;
           document.getElementById('st-resolved').textContent=claims.filter(function(c){var e=c.estado||'';return e==='aprobado'||e==='resuelto'}).length;
+          var stRej=document.getElementById('st-rejected');if(stRej)stRej.textContent=claims.filter(function(c){return(c.estado||'')==='rechazado'}).length;
         }catch(e){console.error('[BO] Stats error:',e)}
 
         try{
@@ -379,11 +376,15 @@
       var q=(filterSearch.value||'').trim().toLowerCase();
       var airline=filterAirline.value;
       var status=filterStatus.value;
+      var canalEl=document.getElementById('filter-canal');var canal=canalEl?canalEl.value:'';
+      var tipoEl=document.getElementById('filter-tipo');var tipo=tipoEl?tipoEl.value:'';
       filtered=claims.filter(function(c){
         if(c.deleted_at||c.estado==='eliminado')return false;
         if(q&&!((c.ref_code||'').toLowerCase().indexOf(q)>-1||(c.nombre||'').toLowerCase().indexOf(q)>-1||(c.email||'').toLowerCase().indexOf(q)>-1))return false;
         if(airline&&c.aerolinea!==airline)return false;
         if(status&&c.estado!==status)return false;
+        if(canal&&(c.canal||'B2C')!==canal)return false;
+        if(tipo&&(c.tipo_reclamo||'vuelo')!==tipo)return false;
         return true;
       });
       renderTable();
@@ -392,27 +393,28 @@
     filterSearch.addEventListener('input',applyFilters);
     filterAirline.addEventListener('change',applyFilters);
     filterStatus.addEventListener('change',applyFilters);
+    var filterCanalEl=document.getElementById('filter-canal');if(filterCanalEl)filterCanalEl.addEventListener('change',applyFilters);
+    var filterTipoEl=document.getElementById('filter-tipo');if(filterTipoEl)filterTipoEl.addEventListener('change',applyFilters);
 
     function renderTable(){
       try{document.getElementById('tbl-count').textContent=filtered.length+' de '+claims.length}catch(e){}
       if(!filtered.length){tblBody.innerHTML='<div class="state"><p class="state__txt">Sin resultados.</p></div>';return}
 
-      var html='<table><thead><tr><th class="cb-cell"><input type="checkbox" id="cb-all"/></th><th>Ref</th><th>Pasajero</th><th>Email</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha</th><th>Estado</th><th>% Éxito</th><th></th></tr></thead><tbody>';
+      var html='<table><thead><tr><th class="cb-cell"><input type="checkbox" id="cb-all"/></th><th>Ref</th><th>Pasajero</th><th>Canal</th><th>Tipo</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>';
       filtered.forEach(function(c,i){
         var estado=c.estado||'pendiente';
-        var bc=estado==='aprobado'||estado==='resuelto'?'badge--aprobado':estado==='rechazado'?'badge--rechazado':estado==='cancelado'?'badge--cancelado':'badge--pendiente';
-        var pct=safePct(c);
-        var pctClass=pct!==null?(pct>70?'pct-badge--high':pct>=40?'pct-badge--mid':'pct-badge--low'):'';
-        var pctHtml=pct!==null?'<span class="pct-badge '+pctClass+'">'+pct+'%</span>':'<span style="color:var(--t4);font-family:var(--fm);font-size:.64rem">&mdash;</span>';
+        var bc=estado==='aprobado'||estado==='resuelto'?'badge--aprobado':estado==='rechazado'?'badge--rechazado':(estado==='cancelado'||estado==='no_apto')?'badge--cancelado':estado==='en_gestion'?'badge--en_gestion':'badge--pendiente';
+        var canalVal=c.canal||'B2C';
+        var tipoVal=c.tipo_reclamo||'vuelo';
         html+='<tr data-fidx="'+i+'"><td class="cb-cell"><input type="checkbox" class="cb-row"/></td>';
         html+='<td class="mono">'+(c.ref_code||'—')+'</td>';
         html+='<td>'+(c.nombre||'—')+'</td>';
-        html+='<td class="mono">'+(c.email||'—')+'</td>';
+        html+='<td><span class="badge badge--'+(canalVal==='B2B'?'b2b':'b2c')+'">'+canalVal+'</span></td>';
+        html+='<td><span class="badge badge--'+(tipoVal==='equipaje'?'equipaje':'vuelo')+'">'+tipoVal+'</span></td>';
         html+='<td class="mono">'+(c.vuelo_nro||'—')+'</td>';
         html+='<td>'+(c.aerolinea||'—')+'</td>';
         html+='<td class="mono">'+(c.fecha_vuelo||'—')+'</td>';
         html+='<td><span class="badge '+bc+'">'+estado+'</span></td>';
-        html+='<td>'+pctHtml+'</td>';
         html+='<td><button class="btn-del" data-del-id="'+c.id+'" title="Eliminar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>';
       });
       html+='</tbody></table>';
@@ -438,21 +440,82 @@
       var bc=estado==='aprobado'||estado==='resuelto'?'badge--aprobado':estado==='rechazado'?'badge--rechazado':estado==='cancelado'?'badge--cancelado':'badge--pendiente';
       var fecha=c.creado_en?new Date(c.creado_en).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 
+      var canalVal=c.canal||'B2C';
+      var tipoVal=c.tipo_reclamo||'vuelo';
+      var firmaVal=c.firma_estado||'no_aplica';
+
       var h='';
-      h+='<div class="detail__section"><div class="detail__label">Estado</div><div class="detail__value"><span class="badge '+bc+'">'+estado+'</span></div></div>';
-      h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Referencia</div><div class="detail__value mono">'+(c.ref_code||'—')+'</div></div><div class="detail__section"><div class="detail__label">Creado</div><div class="detail__value mono">'+fecha+'</div></div></div>';
+      /* Cabecera: ref + canal + fecha */
+      h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Referencia</div><div class="detail__value mono">'+(c.ref_code||'—')+'</div></div>';
+      h+='<div class="detail__section"><div class="detail__label">Canal</div><div class="detail__value"><span class="badge badge--'+(canalVal==='B2B'?'b2b':'b2c')+'">'+canalVal+'</span></div></div>';
+      h+='<div class="detail__section"><div class="detail__label">Ingresado</div><div class="detail__value mono">'+fecha+'</div></div></div>';
       h+='<div class="detail__divider"></div>';
-      h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">'+(c.nombre||'—')+'</div></div><div class="detail__section"><div class="detail__label">Email</div><div class="detail__value mono">'+(c.email||'—')+'</div></div><div class="detail__section"><div class="detail__label">Teléfono</div><div class="detail__value mono">'+(c.telefono||'—')+'</div></div><div class="detail__section"><div class="detail__label">Tipo</div><div class="detail__value">'+(c.tipo_reclamo||'—')+'</div></div></div>';
+
+      /* Pasajero */
+      h+='<div class="detail__grid">';
+      h+='<div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">'+(c.nombre||'—')+'</div></div>';
+      h+='<div class="detail__section"><div class="detail__label">Email</div><div class="detail__value mono">'+(c.email||'—')+'</div></div>';
+      h+='<div class="detail__section"><div class="detail__label">Teléfono</div><div class="detail__value mono">'+(c.telefono||'—')+'</div></div>';
+      h+='<div class="detail__section"><div class="detail__label">Tipo reclamo</div><div class="detail__value"><span class="badge badge--'+(tipoVal==='equipaje'?'equipaje':'vuelo')+'">'+tipoVal+'</span></div></div>';
+      h+='</div>';
       h+='<div class="detail__divider"></div>';
-      h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Vuelo</div><div class="detail__value mono">'+(c.vuelo_nro||'—')+'</div></div><div class="detail__section"><div class="detail__label">Aerolínea</div><div class="detail__value">'+(c.aerolinea||'—')+'</div></div><div class="detail__section"><div class="detail__label">Fecha vuelo</div><div class="detail__value mono">'+(c.fecha_vuelo||'—')+'</div></div></div>';
 
-      /* Porcentaje exito */
-      var detPct=safePct(c);
-      if(detPct!==null){var dpCls=detPct>70?'pct-badge--high':detPct>=40?'pct-badge--mid':'pct-badge--low';h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label">% Éxito estimado (IA)</div><div class="detail__value"><span class="pct-badge '+dpCls+'">'+detPct+'%</span></div></div>'}
-      else{h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label">% Éxito estimado (IA)</div><div class="detail__value" style="color:var(--t4)">&mdash;</div></div>'}
+      /* Vuelo */
+      h+='<div class="detail__grid">';
+      h+='<div class="detail__section"><div class="detail__label">Vuelo</div><div class="detail__value mono">'+(c.vuelo_nro||'—')+'</div></div>';
+      h+='<div class="detail__section"><div class="detail__label">Aerolínea</div><div class="detail__value">'+(c.aerolinea||'—')+'</div></div>';
+      h+='<div class="detail__section"><div class="detail__label">Fecha vuelo</div><div class="detail__value mono">'+(c.fecha_vuelo||'—')+'</div></div>';
+      if(c.pnr)h+='<div class="detail__section"><div class="detail__label">PNR</div><div class="detail__value mono">'+esc(c.pnr)+'</div></div>';
+      h+='</div>';
+      if(c.origen||c.destino){h+='<div class="detail__section" style="margin-top:6px"><div class="detail__label">Ruta</div><div class="detail__value mono">'+(c.origen||'?')+' → '+(c.destino||'?')+'</div></div>'}
 
-      /* Novedades */
-      if(c.novedades){h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label">Novedades del cliente</div><div class="detail__value" style="white-space:pre-wrap;font-size:.74rem;color:var(--t3)">'+esc(c.novedades)+'</div></div>'}
+      /* Incidencia */
+      if(c.tipo_incidencia||c.horas_retraso||c.causa_informada){
+        h+='<div class="detail__divider"></div><div class="detail__grid">';
+        if(c.tipo_incidencia)h+='<div class="detail__section"><div class="detail__label">Tipo incidencia</div><div class="detail__value">'+esc(c.tipo_incidencia)+'</div></div>';
+        if(c.horas_retraso!=null)h+='<div class="detail__section"><div class="detail__label">Horas retraso</div><div class="detail__value mono">'+esc(String(c.horas_retraso))+'h</div></div>';
+        if(c.causa_informada)h+='<div class="detail__section" style="grid-column:1/-1"><div class="detail__label">Causa informada</div><div class="detail__value">'+esc(c.causa_informada)+'</div></div>';
+        h+='</div>';
+      }
+
+      /* Agente (B2B) */
+      if(canalVal==='B2B'&&(c.agente_nombre||c.agente_email)){
+        h+='<div class="detail__divider"></div>';
+        h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Agente</div><div class="detail__value">'+esc(c.agente_nombre||'—')+'</div></div><div class="detail__section"><div class="detail__label">Email agente</div><div class="detail__value mono">'+esc(c.agente_email||'—')+'</div></div></div>';
+      }
+
+      /* Gestión del caso */
+      h+='<div class="detail__divider"></div>';
+      h+='<div class="detail__section"><div class="detail__label" style="margin-bottom:8px;font-size:.7rem">Gestión del caso</div>';
+      h+='<div class="action-row">';
+      /* Estado */
+      h+='<div class="action-field"><div class="detail__label">Estado</div>';
+      h+='<div style="display:flex;gap:5px"><select id="sel-estado" class="firma-select" style="flex:1">';
+      h+='<option value="pendiente"'+(estado==='pendiente'?' selected':'')+'>Pendiente</option>';
+      h+='<option value="en_gestion"'+(estado==='en_gestion'?' selected':'')+'>En gestión</option>';
+      h+='<option value="aprobado"'+(estado==='aprobado'?' selected':'')+'>Aprobado</option>';
+      h+='<option value="resuelto"'+(estado==='resuelto'?' selected':'')+'>Resuelto</option>';
+      h+='<option value="rechazado"'+(estado==='rechazado'?' selected':'')+'>Rechazado</option>';
+      h+='<option value="no_apto"'+(estado==='no_apto'?' selected':'')+'>No apto</option>';
+      h+='<option value="cancelado"'+(estado==='cancelado'?' selected':'')+'>Cancelado</option>';
+      h+='</select><button class="btn btn--primary" id="btn-save-estado" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
+      h+='<div id="msg-estado" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
+      /* Autorización */
+      h+='<div class="action-field"><div class="detail__label">Autorización cliente</div>';
+      h+='<div style="display:flex;gap:5px"><select id="sel-firma" class="firma-select" style="flex:1">';
+      h+='<option value="no_aplica"'+(firmaVal==='no_aplica'?' selected':'')+'>No aplica</option>';
+      h+='<option value="pendiente_envio"'+(firmaVal==='pendiente_envio'?' selected':'')+'>Pendiente envío</option>';
+      h+='<option value="enviada"'+(firmaVal==='enviada'?' selected':'')+'>Enviada por WA</option>';
+      h+='<option value="firmada"'+(firmaVal==='firmada'?' selected':'')+'>Firmada</option>';
+      h+='<option value="rechazada"'+(firmaVal==='rechazada'?' selected':'')+'>Rechazada</option>';
+      h+='</select><button class="btn btn--ghost" id="btn-save-firma" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
+      h+='<div id="msg-firma" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
+      h+='</div>'; /* action-row */
+      /* Compensación */
+      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Compensación obtenida (USD)</div>';
+      h+='<div style="display:flex;gap:5px;align-items:center"><input id="inp-monto" type="number" min="0" step="0.01" class="firma-select" style="flex:1;font-family:var(--fm)" placeholder="0.00" value="'+(c.monto_compensacion!=null?c.monto_compensacion:'')+'"><button class="btn btn--ghost" id="btn-save-monto" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
+      h+='<div id="msg-monto" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
+      h+='</div>'; /* section gestión */
 
       h+='<div class="detail__divider"></div>';
 
@@ -523,6 +586,63 @@
         var msg=document.getElementById('ai-output-msg');msg.style.color='#1B9B5A';msg.textContent='Copiado al portapapeles.';setTimeout(function(){msg.textContent=''},3000);
       });
 
+      /* --- Guardar estado --- */
+      var btnSaveEstado=document.getElementById('btn-save-estado');
+      var msgEstado=document.getElementById('msg-estado');
+      if(btnSaveEstado)btnSaveEstado.addEventListener('click',function(){
+        var newEstado=document.getElementById('sel-estado').value;
+        if(newEstado===c.estado){msgEstado.style.color='var(--t4)';msgEstado.textContent='Sin cambios.';return}
+        btnSaveEstado.disabled=true;btnSaveEstado.textContent='...';msgEstado.textContent='';
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'update-estado',estado:newEstado})})
+        .then(function(r){return r.json()}).then(function(d){
+          btnSaveEstado.disabled=false;btnSaveEstado.textContent='Guardar';
+          if(d.success){
+            c.estado=newEstado;
+            claims.forEach(function(cl){if(cl.id===c.id)cl.estado=newEstado});
+            applyFilters();
+            msgEstado.style.color='#1B9B5A';msgEstado.textContent='Estado actualizado.';
+            toast('Estado → '+newEstado);
+          }else{msgEstado.style.color='var(--err)';msgEstado.textContent=d.error||'Error.'}
+        }).catch(function(){btnSaveEstado.disabled=false;btnSaveEstado.textContent='Guardar';msgEstado.style.color='var(--err)';msgEstado.textContent='Error de conexión.'});
+      });
+
+      /* --- Guardar autorización --- */
+      var btnSaveFirma=document.getElementById('btn-save-firma');
+      var msgFirma=document.getElementById('msg-firma');
+      if(btnSaveFirma)btnSaveFirma.addEventListener('click',function(){
+        var newFirma=document.getElementById('sel-firma').value;
+        if(newFirma===(c.firma_estado||'no_aplica')){msgFirma.style.color='var(--t4)';msgFirma.textContent='Sin cambios.';return}
+        btnSaveFirma.disabled=true;btnSaveFirma.textContent='...';msgFirma.textContent='';
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'update-firma',firma_estado:newFirma})})
+        .then(function(r){return r.json()}).then(function(d){
+          btnSaveFirma.disabled=false;btnSaveFirma.textContent='Guardar';
+          if(d.success){
+            c.firma_estado=newFirma;
+            claims.forEach(function(cl){if(cl.id===c.id)cl.firma_estado=newFirma});
+            msgFirma.style.color='#1B9B5A';msgFirma.textContent='Autorización actualizada.';
+            toast('Autorización → '+newFirma);
+          }else{msgFirma.style.color='var(--err)';msgFirma.textContent=d.error||'Error.'}
+        }).catch(function(){btnSaveFirma.disabled=false;btnSaveFirma.textContent='Guardar';msgFirma.style.color='var(--err)';msgFirma.textContent='Error de conexión.'});
+      });
+
+      /* --- Guardar compensación --- */
+      var btnSaveMonto=document.getElementById('btn-save-monto');
+      var msgMonto=document.getElementById('msg-monto');
+      if(btnSaveMonto)btnSaveMonto.addEventListener('click',function(){
+        var mv=document.getElementById('inp-monto').value;
+        btnSaveMonto.disabled=true;btnSaveMonto.textContent='...';msgMonto.textContent='';
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'update-compensacion',monto_compensacion:mv===''?null:mv})})
+        .then(function(r){return r.json()}).then(function(d){
+          btnSaveMonto.disabled=false;btnSaveMonto.textContent='Guardar';
+          if(d.success){
+            c.monto_compensacion=d.monto_compensacion;
+            claims.forEach(function(cl){if(cl.id===c.id)cl.monto_compensacion=d.monto_compensacion});
+            msgMonto.style.color='#1B9B5A';msgMonto.textContent='Compensación guardada.';
+            toast('Compensación guardada.');
+          }else{msgMonto.style.color='var(--err)';msgMonto.textContent=d.error||'Error.'}
+        }).catch(function(){btnSaveMonto.disabled=false;btnSaveMonto.textContent='Guardar';msgMonto.style.color='var(--err)';msgMonto.textContent='Error de conexión.'});
+      });
+
       overlay.classList.add('open');panel.classList.add('open');
     }
 
@@ -530,9 +650,6 @@
     function esc(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML}
 
     /* Toggle switch */
-    var togglePct=document.getElementById('toggle-pct');
-    if(togglePct)togglePct.addEventListener('click',function(){togglePct.classList.toggle('on')});
-
     var btnRefresh=document.getElementById('btn-refresh');
     if(btnRefresh)btnRefresh.addEventListener('click',load);
 
@@ -714,9 +831,7 @@
         var en=(c.translations&&c.translations.en)||{};
 
         var flagAi=document.getElementById('cfg-flag-ai');
-        var flagPct=document.getElementById('cfg-flag-pct');
         if(flagAi)flagAi.classList.toggle('on',ff.ai_extraction!==false);
-        if(flagPct)flagPct.classList.toggle('on',ff.ai_success_pct!==false);
 
         cfgSet('cfg-es-hero-title',es.hero_title);
         cfgSet('cfg-es-hero-sub',es.hero_sub);
@@ -747,8 +862,7 @@
           text:cfgVal('cfg-c-text')
         },
         feature_flags:{
-          ai_extraction:document.getElementById('cfg-flag-ai').classList.contains('on'),
-          ai_success_pct:document.getElementById('cfg-flag-pct').classList.contains('on')
+          ai_extraction:document.getElementById('cfg-flag-ai').classList.contains('on')
         },
         translations:{
           es:{

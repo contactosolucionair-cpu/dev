@@ -316,8 +316,6 @@ async function handleStats(req, res, SB_URL, SB_KEY) {
     por_estado[e] = (por_estado[e] || 0) + 1;
   });
 
-  var exitosos   = (por_estado['aprobado'] || 0) + (por_estado['resuelto'] || 0);
-  var tasa_exito = total > 0 ? Math.round((exitosos / total) * 100) : null;
   var comision_pct = parseFloat(agencia.comision_pct) || 10;
   var comision_estimada = null;
   claims.forEach(function (c) {
@@ -328,5 +326,5 @@ async function handleStats(req, res, SB_URL, SB_KEY) {
   });
   if (comision_estimada !== null) comision_estimada = Math.round(comision_estimada * 100) / 100;
 
-  return res.status(200).json({ success: true, total: total, por_estado: por_estado, tasa_exito: tasa_exito, comision_estimada: comision_estimada });
+  return res.status(200).json({ success: true, total: total, por_estado: por_estado, comision_estimada: comision_estimada });
 }
