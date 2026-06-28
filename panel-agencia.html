@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SolucionAir — Panel de Agencia</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+    :root{--g:#2D4A3E;--gl:#3A6154;--gd:#1E332B;--g10:rgba(45,74,62,.10);--g05:rgba(45,74,62,.05);--au:#D4A853;--aul:#E0BE7A;--bg:#F5F3EE;--bgd:#EDE9E1;--w:#FFF;--t1:#111;--t2:#3A3A3A;--t3:#6B6B6B;--t4:#999;--bd:#E0DCD4;--bdl:#EDEAE4;--ok:#1B9B5A;--okbg:#EDF9F0;--err:#C0392B;--errbg:#FDF0EE;--warn:#D4A853;--warnbg:#FDF8EE;--f:'Inter',system-ui,sans-serif;--fh:'Plus Jakarta Sans','Inter',sans-serif;--fm:'JetBrains Mono',monospace;--ez:cubic-bezier(.4,0,.2,1)}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{font-size:15px}body{font-family:var(--f);color:var(--t1);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
+    .app{display:flex;min-height:100vh}
+
+    /* ---- Sidebar ---- */
+    .sidenav{width:210px;background:var(--gd);color:var(--w);padding:22px 14px;display:flex;flex-direction:column;gap:24px;flex-shrink:0}
+    .sidenav__brand{display:flex;align-items:center;gap:7px}
+    .sidenav__logo{width:26px;height:26px;background:var(--g);border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--au)}
+    .sidenav__name{font-family:var(--fh);font-weight:700;font-size:.9rem;color:var(--w)}
+    .sidenav__tag{font-family:var(--fm);font-size:.56rem;color:var(--au);background:rgba(212,168,83,.15);padding:1px 5px;border-radius:6px;margin-left:3px}
+    .sidenav__agname{font-family:var(--fm);font-size:.64rem;color:rgba(255,255,255,.4);padding:0 2px;margin-top:-16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sidenav__menu{display:flex;flex-direction:column;gap:2px}
+    .sidenav__item{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:5px;font-size:.76rem;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;transition:all .12s;text-decoration:none;background:none;border:none;width:100%;text-align:left}
+    .sidenav__item:hover,.sidenav__item.active{background:rgba(255,255,255,.07);color:var(--w)}
+    .sidenav__item.active{color:var(--au)}
+    .sidenav__bottom{margin-top:auto;font-size:.6rem;color:rgba(255,255,255,.2);text-align:center}
+
+    /* ---- Main ---- */
+    .main{flex:1;padding:24px 28px;overflow-y:auto}
+    .main__header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+    .main__title{font-family:var(--fh);font-size:1.2rem;font-weight:800;color:var(--t1)}
+
+    /* ---- Buttons ---- */
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:6px;font-family:var(--fh);font-size:.72rem;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+    .btn--primary{background:var(--g);color:var(--w)}.btn--primary:hover{background:var(--gl)}
+    .btn--ghost{background:var(--w);color:var(--t2);border:1px solid var(--bd)}.btn--ghost:hover{background:var(--bg)}
+    .btn--primary:disabled,.btn--ghost:disabled{opacity:.55;cursor:not-allowed}
+
+    /* ---- Stats ---- */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+    .stat{background:var(--w);border:1px solid var(--bdl);border-radius:8px;padding:15px 16px}
+    .stat__label{font-size:.66rem;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+    .stat__val{font-family:var(--fm);font-size:1.4rem;font-weight:600;color:var(--g)}
+    .stat__val--warn{color:var(--warn)}.stat__val--ok{color:var(--ok)}
+
+    /* ---- Table ---- */
+    .tbl-wrap{background:var(--w);border:1px solid var(--bdl);border-radius:10px;overflow:hidden}
+    .tbl-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bdl);flex-wrap:wrap;gap:8px}
+    .tbl-bar__title{font-family:var(--fh);font-size:.84rem;font-weight:700;color:var(--t1)}
+    .tbl-bar__count{font-family:var(--fm);font-size:.64rem;color:var(--t4)}
+    .tbl-scroll{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;min-width:700px}
+    thead{background:var(--bg)}
+    th{font-size:.64rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;white-space:nowrap}
+    td{font-size:.74rem;color:var(--t2);padding:9px 12px;border-top:1px solid var(--bdl);vertical-align:middle}
+    tbody tr{cursor:pointer;transition:background .08s}
+    tbody tr:hover td{background:var(--g05)}
+    .mono{font-family:var(--fm);font-size:.66rem;letter-spacing:.02em}
+
+    /* ---- Badges ---- */
+    .badge{display:inline-block;padding:2px 8px;border-radius:8px;font-family:var(--fm);font-size:.58rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+    .badge--pendiente{background:var(--warnbg);color:var(--warn)}
+    .badge--aprobado,.badge--resuelto{background:var(--okbg);color:var(--ok)}
+    .badge--rechazado{background:var(--errbg);color:var(--err)}
+    .badge--cancelado{background:#F0F0F0;color:#888}
+    .badge--pendiente_envio{background:#EEF0FF;color:#6366F1}
+    .badge--enviada{background:#E0F0FF;color:#2563EB}
+    .badge--firmada{background:var(--okbg);color:var(--ok)}
+    .badge--rechazada{background:var(--errbg);color:var(--err)}
+    .badge--no_aplica{background:#F0F0F0;color:#888}
+    .pct-badge{font-family:var(--fm);font-size:.64rem;font-weight:600;padding:2px 7px;border-radius:6px;display:inline-block}
+    .pct-badge--high{background:var(--okbg);color:var(--ok)}
+    .pct-badge--mid{background:var(--warnbg);color:var(--warn)}
+    .pct-badge--low{background:var(--errbg);color:var(--err)}
+
+    /* ---- Filters ---- */
+    .filters{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bdl);flex-wrap:wrap;align-items:center}
+    .filters__input,.filters__select{font-family:var(--f);font-size:.76rem;padding:6px 10px;border:1px solid var(--bd);border-radius:5px;background:var(--w);color:var(--t1)}
+    .filters__input{min-width:200px}.filters__select{cursor:pointer;min-width:130px}
+    .filters__input:focus,.filters__select:focus{outline:none;border-color:var(--g)}
+
+    /* ---- State ---- */
+    .state{padding:40px;text-align:center}
+    .state__spin{width:22px;height:22px;border:3px solid var(--bdl);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .state__txt{font-size:.78rem;color:var(--t3)}
+
+    /* ---- Detail panel ---- */
+    .panel-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.25);backdrop-filter:blur(5px)}
+    .panel-overlay.open{display:block;animation:fadeIn .15s ease}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .detail{position:fixed;top:0;right:-500px;width:480px;max-width:94vw;height:100vh;background:var(--w);z-index:310;box-shadow:-6px 0 30px rgba(0,0,0,.08);transition:right .25s var(--ez);display:flex;flex-direction:column}
+    .detail.open{right:0}
+    .detail__top{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bdl)}
+    .detail__title{font-family:var(--fh);font-size:.95rem;font-weight:700;color:var(--t1)}
+    .detail__close{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:none;background:none;cursor:pointer;color:var(--t4);transition:all .12s}
+    .detail__close:hover{background:var(--bg);color:var(--t1)}
+    .detail__body{flex:1;overflow-y:auto;padding:20px}
+    .detail__section{margin-bottom:14px}
+    .detail__label{font-size:.64rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+    .detail__value{font-size:.8rem;color:var(--t1);word-break:break-word}
+    .detail__value.mono{font-family:var(--fm);font-size:.74rem}
+    .detail__grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .detail__divider{height:1px;background:var(--bdl);margin:14px 0}
+
+    /* ---- Form (cargar caso) ---- */
+    .form-wrap{background:var(--w);border:1px solid var(--bdl);border-radius:10px;padding:24px;max-width:700px}
+    .form-section{margin-bottom:22px}
+    .form-section__title{font-family:var(--fh);font-size:.84rem;font-weight:700;color:var(--t1);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bdl)}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-group{display:flex;flex-direction:column;gap:4px}
+    .form-group label{font-size:.72rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.04em}
+    .form-group input,.form-group select,.form-group textarea{font-family:var(--f);font-size:.82rem;padding:8px 11px;border:1px solid var(--bd);border-radius:5px;background:var(--w);color:var(--t1);transition:border-color .15s}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--g);box-shadow:0 0 0 3px rgba(45,74,62,.07)}
+    .form-group textarea{resize:vertical;min-height:70px;line-height:1.5}
+    .form-group--full{grid-column:1/-1}
+    .form-msg{font-family:var(--fm);font-size:.72rem;margin-top:10px;min-height:16px}
+    .form-msg--ok{color:var(--ok)}.form-msg--err{color:var(--err)}
+
+    /* ---- Upload area ---- */
+    .upload-area{border:2px dashed var(--bd);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:all .15s}
+    .upload-area:hover,.upload-area.drag{border-color:var(--g);background:var(--g05)}
+    .upload-area__txt{font-size:.78rem;color:var(--t3);margin-top:6px}
+    .upload-list{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+    .upload-item{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg);border-radius:5px;font-size:.74rem;color:var(--t2)}
+    .upload-item__rm{background:none;border:none;cursor:pointer;color:var(--t4);padding:2px;border-radius:3px}
+    .upload-item__rm:hover{color:var(--err)}
+
+    /* ---- Checkbox agree ---- */
+    .agree-box{background:var(--warnbg);border:1px solid rgba(212,168,83,.3);border-radius:7px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-top:4px}
+    .agree-box input[type="checkbox"]{accent-color:var(--g);margin-top:2px;cursor:pointer;flex-shrink:0}
+    .agree-box__txt{font-size:.78rem;color:var(--t2);line-height:1.5}
+
+    /* ---- Scan banner ---- */
+    .scan-banner{background:#EEF0FF;border:1px solid rgba(99,102,241,.15);border-radius:8px;padding:12px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:.78rem;color:#4338CA}
+    .scan-banner svg{flex-shrink:0;color:#6366F1}
+
+    /* ---- Toast ---- */
+    .toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--g);color:var(--w);font-family:var(--fh);font-size:.78rem;font-weight:600;padding:12px 20px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);transform:translateY(80px);opacity:0;transition:all .3s ease;pointer-events:none}
+    .toast.show{transform:translateY(0);opacity:1}
+    .toast--error{background:var(--err)}
+
+    /* ---- Perfil ---- */
+    .perfil-card{background:var(--w);border:1px solid var(--bdl);border-radius:10px;padding:24px;max-width:420px}
+    .perfil-card__row{display:flex;flex-direction:column;gap:3px;margin-bottom:14px}
+    .perfil-card__label{font-size:.66rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.06em}
+    .perfil-card__val{font-size:.84rem;color:var(--t1)}
+    .perfil-card__val.mono{font-family:var(--fm);font-size:.78rem;color:var(--g)}
+
+    @media(max-width:768px){.sidenav{display:none}.stats{grid-template-columns:1fr 1fr}.main{padding:14px}.detail{width:100%}.form-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidenav">
+    <div class="sidenav__brand">
+      <div class="sidenav__logo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></div>
+      <span class="sidenav__name">SolucionAir</span><span class="sidenav__tag">Agencia</span>
+    </div>
+    <div class="sidenav__agname" id="sb-agname"></div>
+    <nav class="sidenav__menu">
+      <button class="sidenav__item active" id="nav-dashboard"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Dashboard</button>
+      <button class="sidenav__item" id="nav-casos"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Mis casos</button>
+      <button class="sidenav__item" id="nav-nuevo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Cargar caso</button>
+      <button class="sidenav__item" id="nav-perfil"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Perfil</button>
+      <button class="sidenav__item" id="nav-logout" style="margin-top:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Cerrar sesión</button>
+    </nav>
+    <div class="sidenav__bottom">&copy; 2026 SolucionAir</div>
+  </aside>
+
+  <div class="main" id="main-area">
+
+    <!-- ============ DASHBOARD ============ -->
+    <div id="view-dashboard">
+      <div class="main__header"><h1 class="main__title">Dashboard</h1><button class="btn btn--ghost" id="btn-refresh-stats" type="button">Actualizar</button></div>
+      <div class="stats">
+        <div class="stat"><div class="stat__label">Total casos</div><div class="stat__val" id="st-total">—</div></div>
+        <div class="stat"><div class="stat__label">Pendientes</div><div class="stat__val stat__val--warn" id="st-pend">—</div></div>
+        <div class="stat"><div class="stat__label">Tasa de éxito</div><div class="stat__val stat__val--ok" id="st-tasa">—</div></div>
+        <div class="stat"><div class="stat__label">Comisión estimada</div><div class="stat__val" id="st-comision">—</div></div>
+      </div>
+      <div class="tbl-wrap" style="max-width:340px">
+        <div class="tbl-bar"><span class="tbl-bar__title">Por estado</span></div>
+        <div id="st-breakdown" style="padding:16px;font-size:.78rem;color:var(--t3)">Cargando...</div>
+      </div>
+    </div>
+
+    <!-- ============ MIS CASOS ============ -->
+    <div id="view-casos" style="display:none">
+      <div class="main__header"><h1 class="main__title">Mis casos</h1><button class="btn btn--ghost" id="btn-refresh-claims" type="button">Actualizar</button></div>
+      <div class="tbl-wrap">
+        <div class="tbl-bar">
+          <span class="tbl-bar__title">Todos mis casos</span>
+          <span class="tbl-bar__count" id="claims-count"></span>
+        </div>
+        <div class="filters">
+          <input class="filters__input" id="filter-q" type="text" placeholder="Buscar por Ref, Pasajero..." />
+          <select class="filters__select" id="filter-estado"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="resuelto">Resuelto</option><option value="rechazado">Rechazado</option><option value="cancelado">Cancelado</option></select>
+        </div>
+        <div class="tbl-scroll"><div id="claims-body"><div class="state"><div class="state__spin"></div><p class="state__txt">Cargando casos...</p></div></div></div>
+      </div>
+    </div>
+
+    <!-- ============ CARGAR CASO ============ -->
+    <div id="view-nuevo" style="display:none">
+      <div class="main__header"><h1 class="main__title">Cargar caso</h1></div>
+
+      <div class="scan-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Podés adjuntar el pasaje para que la IA complete los datos automáticamente.
+      </div>
+
+      <div class="form-wrap">
+        <!-- Scan de documentos -->
+        <div class="form-section">
+          <div class="form-section__title">Documentos del pasaje (opcional)</div>
+          <div class="upload-area" id="upload-area">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div class="upload-area__txt">Arrastrá o hacé clic para subir imagen/PDF del pasaje</div>
+            <input type="file" id="file-input" accept="image/*,application/pdf" multiple style="display:none" />
+          </div>
+          <div class="upload-list" id="upload-list"></div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn btn--ghost" id="btn-scan" type="button" style="font-size:.72rem">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Completar con IA
+            </button>
+            <span id="scan-msg" style="font-family:var(--fm);font-size:.68rem;color:var(--t3);align-self:center"></span>
+          </div>
+        </div>
+
+        <!-- Datos del cliente -->
+        <div class="form-section">
+          <div class="form-section__title">Datos del cliente (pasajero)</div>
+          <div class="form-grid">
+            <div class="form-group form-group--full"><label>Nombre completo *</label><input type="text" id="f-nombre" placeholder="Nombre y apellido del pasajero" /></div>
+            <div class="form-group"><label>Email *</label><input type="email" id="f-email" placeholder="pasajero@ejemplo.com" /></div>
+            <div class="form-group"><label>Teléfono (WhatsApp)</label><input type="tel" id="f-telefono" placeholder="+54 9 11..." /></div>
+            <div class="form-group"><label>Tipo de documento</label>
+              <select id="f-doc-tipo"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option></select>
+            </div>
+            <div class="form-group"><label>Nro. de documento</label><input type="text" id="f-doc-num" /></div>
+          </div>
+        </div>
+
+        <!-- Tipo de reclamo -->
+        <div class="form-section">
+          <div class="form-section__title">Tipo de reclamo</div>
+          <div class="form-group" style="max-width:300px">
+            <label>Tipo *</label>
+            <select id="f-tipo-reclamo">
+              <option value="vuelo">Vuelo (demora / cancelación / overbooking)</option>
+              <option value="equipaje">Equipaje (pérdida / daño / demora)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sección vuelo -->
+        <div class="form-section" id="sec-vuelo">
+          <div class="form-section__title">Datos del vuelo</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Aerolínea</label><input type="text" id="f-aerolinea" /></div>
+            <div class="form-group"><label>Nro. de vuelo</label><input type="text" id="f-vuelo-nro" placeholder="AR 1234" /></div>
+            <div class="form-group"><label>Fecha del vuelo</label><input type="date" id="f-fecha-vuelo" /></div>
+            <div class="form-group"><label>PNR / Reserva</label><input type="text" id="f-pnr" /></div>
+            <div class="form-group"><label>Origen</label><input type="text" id="f-origen" placeholder="EZE - Buenos Aires" /></div>
+            <div class="form-group"><label>Destino</label><input type="text" id="f-destino" placeholder="MIA - Miami" /></div>
+            <div class="form-group"><label>Tipo de incidencia *</label>
+              <select id="f-incidencia">
+                <option value="">Seleccionar...</option>
+                <option value="demora">Demora</option>
+                <option value="cancelacion">Cancelación</option>
+                <option value="overbooking">Overbooking / denegación de embarque</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Horas de retraso</label><input type="number" id="f-horas" min="0" placeholder="ej: 4" /></div>
+            <div class="form-group"><label>Anticipación del aviso</label>
+              <select id="f-anticipacion">
+                <option value="">Sin información</option>
+                <option value="sin_aviso">Sin aviso previo</option>
+                <option value="menos_14">Menos de 14 días</option>
+                <option value="14_a_21">14 a 21 días</option>
+                <option value="mas_21">Más de 21 días</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Ofrecimiento de la aerolínea</label>
+              <select id="f-ofrecimiento">
+                <option value="">Sin información</option>
+                <option value="ninguno">Ninguno</option>
+                <option value="voucher">Voucher</option>
+                <option value="reembolso">Reembolso parcial</option>
+                <option value="reembolso_total">Reembolso total</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Causa informada</label><input type="text" id="f-causa" placeholder="ej: condiciones meteorológicas" /></div>
+            <div class="form-group"><label>Moneda gastos</label>
+              <select id="f-moneda"><option value="">Sin gastos</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
+            </div>
+            <div class="form-group"><label>Monto gastos</label><input type="number" id="f-monto-gastos" min="0" step="0.01" /></div>
+            <div class="form-group form-group--full"><label>Detalle de gastos</label><textarea id="f-gastos-detalle" rows="2" placeholder="Descripción de los gastos incurridos"></textarea></div>
+          </div>
+        </div>
+
+        <!-- Sección equipaje -->
+        <div class="form-section" id="sec-equipaje" style="display:none">
+          <div class="form-section__title">Datos del equipaje</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Aerolínea</label><input type="text" id="fe-aerolinea" /></div>
+            <div class="form-group"><label>Nro. de vuelo</label><input type="text" id="fe-vuelo-nro" /></div>
+            <div class="form-group"><label>Fecha del vuelo</label><input type="date" id="fe-fecha-vuelo" /></div>
+            <div class="form-group"><label>PNR / Reserva</label><input type="text" id="fe-pnr" /></div>
+            <div class="form-group"><label>Tipo de incidencia *</label>
+              <select id="fe-tipo-caso">
+                <option value="">Seleccionar...</option>
+                <option value="perdida">Pérdida de equipaje</option>
+                <option value="dano">Daño en equipaje</option>
+                <option value="demora">Demora en entrega</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Fecha de entrega (si aplica)</label><input type="date" id="fe-fecha-entrega" /></div>
+            <div class="form-group"><label>Valor del equipaje (USD)</label><input type="number" id="fe-valor" min="0" step="0.01" /></div>
+            <div class="form-group form-group--full"><label>Descripción</label><textarea id="fe-descripcion" rows="2" placeholder="Describe el contenido y la incidencia"></textarea></div>
+          </div>
+        </div>
+
+        <!-- Autorización -->
+        <div class="form-section">
+          <div class="form-section__title">Autorización del cliente</div>
+          <label class="agree-box" id="agree-box">
+            <input type="checkbox" id="f-autorizado" />
+            <span class="agree-box__txt">Declaro que cuento con la autorización del cliente para gestionar este reclamo en su nombre, y que los datos ingresados son correctos y verídicos.</span>
+          </label>
+        </div>
+
+        <button class="btn btn--primary" id="btn-submit-caso" type="button" style="width:100%;padding:11px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Cargar caso
+        </button>
+        <div class="form-msg" id="submit-msg"></div>
+      </div>
+    </div>
+
+    <!-- ============ PERFIL ============ -->
+    <div id="view-perfil" style="display:none">
+      <div class="main__header"><h1 class="main__title">Mi Perfil</h1></div>
+      <div class="perfil-card">
+        <div class="perfil-card__row"><div class="perfil-card__label">Nombre</div><div class="perfil-card__val" id="p-nombre">—</div></div>
+        <div class="perfil-card__row"><div class="perfil-card__label">Email</div><div class="perfil-card__val mono" id="p-email">—</div></div>
+        <div class="perfil-card__row"><div class="perfil-card__label">Tipo</div><div class="perfil-card__val" id="p-tipo">—</div></div>
+        <div class="perfil-card__row"><div class="perfil-card__label">Estado</div><div class="perfil-card__val" id="p-estado">—</div></div>
+        <div class="perfil-card__row"><div class="perfil-card__label">Comisión pactada</div><div class="perfil-card__val mono" id="p-comision">—</div></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Detail panel -->
+<div class="panel-overlay" id="panel-overlay"></div>
+<div class="detail" id="detail-panel">
+  <div class="detail__top"><span class="detail__title" id="detail-title">Detalle</span><button class="detail__close" id="detail-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="detail__body" id="detail-body"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  /* ---- Auth gate ---- */
+  var token  = localStorage.getItem('sa_ag_token');
+  var email  = localStorage.getItem('sa_ag_email');
+  var agData = null;
+  try { agData = JSON.parse(localStorage.getItem('sa_ag_data') || 'null'); } catch (e) {}
+
+  if (!token) { window.location.href = '/agencias'; return; }
+
+  /* ---- Populate sidebar ---- */
+  var sbName = document.getElementById('sb-agname');
+  if (sbName && agData && agData.nombre) sbName.textContent = agData.nombre;
+
+  /* ---- Auth header helper ---- */
+  function authHeaders(extra) {
+    var h = Object.assign({ 'Authorization': 'Bearer ' + token }, extra || {});
+    return h;
+  }
+
+  /* ---- Toast ---- */
+  var toastEl = document.getElementById('toast');
+  function toast(msg, isError) {
+    toastEl.textContent = msg;
+    toastEl.className = 'toast' + (isError ? ' toast--error' : '');
+    setTimeout(function () { toastEl.classList.add('show'); }, 10);
+    setTimeout(function () { toastEl.classList.remove('show'); }, 3300);
+  }
+
+  /* ---- Detail panel ---- */
+  var overlay     = document.getElementById('panel-overlay');
+  var detailPanel = document.getElementById('detail-panel');
+  var detailTitle = document.getElementById('detail-title');
+  var detailBody  = document.getElementById('detail-body');
+
+  document.getElementById('detail-close').addEventListener('click', closeDetail);
+  overlay.addEventListener('click', closeDetail);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDetail(); });
+  function closeDetail() { overlay.classList.remove('open'); detailPanel.classList.remove('open'); }
+  function openDetail(c) {
+    detailTitle.textContent = 'Reclamo ' + (c.ref_code || '');
+    var estado = c.estado || 'pendiente';
+    var bc = badgeClass(estado);
+    var firmaEstado = c.firma_estado || 'no_aplica';
+    var fecha = c.creado_en ? new Date(c.creado_en).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    var h = '';
+    h += '<div class="detail__section"><div class="detail__label">Estado</div><div class="detail__value"><span class="badge ' + bc + '">' + esc(estado) + '</span></div></div>';
+    h += '<div class="detail__grid"><div class="detail__section"><div class="detail__label">Referencia</div><div class="detail__value mono">' + esc(c.ref_code || '—') + '</div></div><div class="detail__section"><div class="detail__label">Creado</div><div class="detail__value mono">' + fecha + '</div></div></div>';
+    h += '<div class="detail__divider"></div>';
+    h += '<div class="detail__grid"><div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">' + esc(c.nombre || '—') + '</div></div><div class="detail__section"><div class="detail__label">Email</div><div class="detail__value mono">' + esc(c.email || '—') + '</div></div><div class="detail__section"><div class="detail__label">Teléfono</div><div class="detail__value mono">' + esc(c.telefono || '—') + '</div></div></div>';
+    h += '<div class="detail__divider"></div>';
+    h += '<div class="detail__grid"><div class="detail__section"><div class="detail__label">Vuelo</div><div class="detail__value mono">' + esc(c.vuelo_nro || '—') + '</div></div><div class="detail__section"><div class="detail__label">Aerolínea</div><div class="detail__value">' + esc(c.aerolinea || '—') + '</div></div><div class="detail__section"><div class="detail__label">Fecha vuelo</div><div class="detail__value mono">' + esc(c.fecha_vuelo || '—') + '</div></div><div class="detail__section"><div class="detail__label">Tipo</div><div class="detail__value">' + esc(c.tipo_reclamo || '—') + '</div></div></div>';
+    h += '<div class="detail__divider"></div>';
+    h += '<div class="detail__section"><div class="detail__label">Estado de firma</div><div class="detail__value"><span class="badge badge--' + esc(firmaEstado) + '">' + esc(firmaEstado.replace(/_/g,' ')) + '</span></div></div>';
+    if (firmaEstado === 'pendiente_envio') {
+      h += '<div style="margin-top:8px;background:var(--warnbg);border:1px solid rgba(212,168,83,.3);border-radius:6px;padding:10px 12px;font-size:.76rem;color:var(--t2)">Recordar enviar autorización por WhatsApp al pasajero: <strong>' + esc(c.telefono || c.email || '—') + '</strong></div>';
+    }
+    if (c.novedades) {
+      h += '<div class="detail__divider"></div><div class="detail__section"><div class="detail__label">Novedades</div><div class="detail__value" style="white-space:pre-wrap;font-size:.74rem;color:var(--t3)">' + esc(c.novedades) + '</div></div>';
+    }
+    detailBody.innerHTML = h;
+    overlay.classList.add('open'); detailPanel.classList.add('open');
+  }
+
+  function badgeClass(estado) {
+    if (estado === 'aprobado' || estado === 'resuelto') return 'badge--aprobado';
+    if (estado === 'rechazado') return 'badge--rechazado';
+    if (estado === 'cancelado') return 'badge--cancelado';
+    return 'badge--pendiente';
+  }
+  function esc(s) { var d = document.createElement('div'); d.textContent = String(s || ''); return d.innerHTML; }
+
+  /* ---- View switching ---- */
+  var views = {
+    dashboard: document.getElementById('view-dashboard'),
+    casos:     document.getElementById('view-casos'),
+    nuevo:     document.getElementById('view-nuevo'),
+    perfil:    document.getElementById('view-perfil'),
+  };
+  var navBtns = {
+    dashboard: document.getElementById('nav-dashboard'),
+    casos:     document.getElementById('nav-casos'),
+    nuevo:     document.getElementById('nav-nuevo'),
+    perfil:    document.getElementById('nav-perfil'),
+  };
+
+  function showView(name) {
+    Object.keys(views).forEach(function (k) {
+      views[k].style.display = k === name ? '' : 'none';
+      if (navBtns[k]) navBtns[k].classList.toggle('active', k === name);
+    });
+    if (name === 'dashboard') loadStats();
+    if (name === 'casos')     loadClaims();
+    if (name === 'perfil')    loadPerfil();
+  }
+
+  Object.keys(navBtns).forEach(function (k) {
+    if (navBtns[k]) navBtns[k].addEventListener('click', function () { showView(k); });
+  });
+
+  document.getElementById('nav-logout').addEventListener('click', function () {
+    localStorage.removeItem('sa_ag_token');
+    localStorage.removeItem('sa_ag_email');
+    localStorage.removeItem('sa_ag_data');
+    window.location.href = '/agencias';
+  });
+
+  /* ---- Dashboard / Stats ---- */
+  function loadStats() {
+    fetch('/api/agency/stats', { headers: authHeaders() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.success) return;
+      document.getElementById('st-total').textContent    = d.total || 0;
+      document.getElementById('st-pend').textContent     = (d.por_estado && d.por_estado.pendiente) || 0;
+      document.getElementById('st-tasa').textContent     = (d.tasa_exito !== null && d.tasa_exito !== undefined) ? d.tasa_exito + '%' : '—';
+      var comision = d.comision_estimada;
+      document.getElementById('st-comision').textContent = (comision !== null && comision !== undefined) ? '$' + Number(comision).toFixed(0) : '—';
+
+      if (d.por_estado) {
+        var breakdown = '';
+        Object.keys(d.por_estado).forEach(function (k) {
+          breakdown += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl)">'
+            + '<span>' + esc(k) + '</span>'
+            + '<span class="mono" style="color:var(--g)">' + d.por_estado[k] + '</span>'
+            + '</div>';
+        });
+        document.getElementById('st-breakdown').innerHTML = breakdown || '<span style="color:var(--t4)">Sin casos.</span>';
+      }
+    })
+    .catch(function () {});
+  }
+
+  document.getElementById('btn-refresh-stats').addEventListener('click', loadStats);
+
+  /* ---- Mis casos ---- */
+  var allClaims = [];
+  var filterQ     = document.getElementById('filter-q');
+  var filterEst   = document.getElementById('filter-estado');
+  var claimsBody  = document.getElementById('claims-body');
+  var claimsCount = document.getElementById('claims-count');
+
+  function loadClaims() {
+    claimsBody.innerHTML = '<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
+    fetch('/api/agency/claims', { headers: authHeaders() })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      if (!d.success) throw new Error(d.error || 'Error');
+      allClaims = d.claims || [];
+      renderClaims();
+    })
+    .catch(function (err) {
+      claimsBody.innerHTML = '<div class="state"><p class="state__txt" style="color:var(--err)">Error: ' + esc(err.message) + '</p></div>';
+    });
+  }
+
+  function renderClaims() {
+    var q  = (filterQ.value || '').trim().toLowerCase();
+    var es = filterEst.value;
+    var list = allClaims.filter(function (c) {
+      if (q && !((c.ref_code || '').toLowerCase().includes(q) || (c.nombre || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q))) return false;
+      if (es && c.estado !== es) return false;
+      return true;
+    });
+    claimsCount.textContent = list.length + ' de ' + allClaims.length;
+    if (!list.length) { claimsBody.innerHTML = '<div class="state"><p class="state__txt">Sin resultados.</p></div>'; return; }
+
+    var html = '<table><thead><tr><th>Ref</th><th>Pasajero</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha</th><th>Estado</th><th>Firma</th><th>% Éxito</th></tr></thead><tbody>';
+    list.forEach(function (c, i) {
+      var bc  = badgeClass(c.estado || 'pendiente');
+      var fe  = c.firma_estado || 'no_aplica';
+      var pct = c.ai_raw && c.ai_raw.porcentaje_exito != null ? c.ai_raw.porcentaje_exito : null;
+      var pctHtml = pct !== null ? '<span class="pct-badge pct-badge--' + (pct > 70 ? 'high' : pct >= 40 ? 'mid' : 'low') + '">' + pct + '%</span>' : '<span style="color:var(--t4)">&mdash;</span>';
+      html += '<tr data-idx="' + i + '">'
+        + '<td class="mono">' + esc(c.ref_code || '—') + '</td>'
+        + '<td>' + esc(c.nombre || '—') + '</td>'
+        + '<td class="mono">' + esc(c.vuelo_nro || '—') + '</td>'
+        + '<td>' + esc(c.aerolinea || '—') + '</td>'
+        + '<td class="mono">' + esc(c.fecha_vuelo || '—') + '</td>'
+        + '<td><span class="badge ' + bc + '">' + esc(c.estado || 'pendiente') + '</span></td>'
+        + '<td><span class="badge badge--' + esc(fe) + '">' + esc(fe.replace(/_/g,' ')) + '</span></td>'
+        + '<td>' + pctHtml + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    claimsBody.innerHTML = html;
+
+    claimsBody.querySelectorAll('tr[data-idx]').forEach(function (row) {
+      row.addEventListener('click', function () { openDetail(list[parseInt(row.getAttribute('data-idx'))]); });
+    });
+  }
+
+  filterQ.addEventListener('input', renderClaims);
+  filterEst.addEventListener('change', renderClaims);
+  document.getElementById('btn-refresh-claims').addEventListener('click', loadClaims);
+
+  /* ---- Cargar caso ---- */
+  var tipoSelect = document.getElementById('f-tipo-reclamo');
+  var secVuelo   = document.getElementById('sec-vuelo');
+  var secEqp     = document.getElementById('sec-equipaje');
+
+  tipoSelect.addEventListener('change', function () {
+    var isEqp = tipoSelect.value === 'equipaje';
+    secVuelo.style.display = isEqp ? 'none' : '';
+    secEqp.style.display   = isEqp ? '' : 'none';
+  });
+
+  /* Upload / scan */
+  var fileInput   = document.getElementById('file-input');
+  var uploadArea  = document.getElementById('upload-area');
+  var uploadList  = document.getElementById('upload-list');
+  var scannedFiles = [];
+
+  uploadArea.addEventListener('click', function () { fileInput.click(); });
+  uploadArea.addEventListener('dragover', function (e) { e.preventDefault(); uploadArea.classList.add('drag'); });
+  uploadArea.addEventListener('dragleave', function () { uploadArea.classList.remove('drag'); });
+  uploadArea.addEventListener('drop', function (e) { e.preventDefault(); uploadArea.classList.remove('drag'); handleFiles(e.dataTransfer.files); });
+  fileInput.addEventListener('change', function () { handleFiles(fileInput.files); fileInput.value = ''; });
+
+  function handleFiles(files) {
+    Array.from(files).forEach(function (f) {
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        var b64   = ev.target.result.split(',')[1];
+        var mime  = f.type || 'image/jpeg';
+        scannedFiles.push({ base64: b64, mimeType: mime, name: f.name });
+        renderUploadList();
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+
+  function renderUploadList() {
+    uploadList.innerHTML = '';
+    scannedFiles.forEach(function (sf, i) {
+      var item = document.createElement('div');
+      item.className = 'upload-item';
+      item.innerHTML = '<span>' + esc(sf.name) + '</span><button class="upload-item__rm" data-i="' + i + '" type="button"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>';
+      uploadList.appendChild(item);
+    });
+    uploadList.querySelectorAll('[data-i]').forEach(function (btn) {
+      btn.addEventListener('click', function () { scannedFiles.splice(parseInt(btn.getAttribute('data-i')), 1); renderUploadList(); });
+    });
+  }
+
+  document.getElementById('btn-scan').addEventListener('click', function () {
+    if (!scannedFiles.length) { document.getElementById('scan-msg').textContent = 'Agregá al menos un archivo primero.'; return; }
+    var btn = document.getElementById('btn-scan');
+    var msg = document.getElementById('scan-msg');
+    btn.disabled = true; btn.textContent = 'Analizando...'; msg.textContent = '';
+    fetch('/api/process-ticket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ images: scannedFiles }),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      btn.disabled = false; btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Completar con IA';
+      if (!d.success || !d.data) { msg.textContent = d.error || 'Error al analizar.'; return; }
+      var data = d.data;
+      function fill(id, val) { var el = document.getElementById(id); if (el && val) el.value = val; }
+      fill('f-nombre',    data.nombre);
+      fill('f-email',     data.email);
+      fill('f-telefono',  data.telefono);
+      fill('f-doc-num',   data.doc_numero);
+      fill('f-aerolinea', data.aerolinea);
+      fill('f-vuelo-nro', data.vuelo_nro);
+      fill('f-fecha-vuelo', data.fecha_vuelo);
+      fill('f-pnr',       data.pnr);
+      fill('f-origen',    data.origen);
+      fill('f-destino',   data.destino);
+      if (data.incidencia_detectada) fill('f-incidencia', data.incidencia_detectada);
+      if (data.gastos_monto)  fill('f-monto-gastos', data.gastos_monto);
+      if (data.gastos_moneda) fill('f-moneda', data.gastos_moneda);
+      msg.textContent = 'Datos completados. Revisalos antes de enviar.';
+    })
+    .catch(function () {
+      btn.disabled = false; msg.textContent = 'Error de conexión.';
+    });
+  });
+
+  /* Submit caso */
+  document.getElementById('btn-submit-caso').addEventListener('click', function () {
+    var btn = document.getElementById('btn-submit-caso');
+    var msg = document.getElementById('submit-msg');
+    msg.textContent = '';
+
+    var autorizado = document.getElementById('f-autorizado').checked;
+    if (!autorizado) { msg.className = 'form-msg form-msg--err'; msg.textContent = 'Debés declarar que tenés la autorización del cliente.'; return; }
+
+    var tipo = tipoSelect.value;
+    var nombre = document.getElementById('f-nombre').value.trim();
+    var email  = document.getElementById('f-email').value.trim();
+    if (!nombre || !email) { msg.className = 'form-msg form-msg--err'; msg.textContent = 'Nombre y email del cliente son obligatorios.'; return; }
+
+    var payload = {
+      tipo_reclamo:    tipo,
+      nombre:          nombre,
+      email:           email,
+      telefono:        document.getElementById('f-telefono').value.trim() || null,
+      documento_tipo:  document.getElementById('f-doc-tipo').value || null,
+      documento_numero: document.getElementById('f-doc-num').value.trim() || null,
+      cliente_autorizacion_declarada: true,
+      scanned_files: scannedFiles,
+    };
+
+    if (tipo === 'vuelo') {
+      Object.assign(payload, {
+        aerolinea:           document.getElementById('f-aerolinea').value.trim() || null,
+        vuelo_nro:           document.getElementById('f-vuelo-nro').value.trim() || null,
+        fecha_vuelo:         document.getElementById('f-fecha-vuelo').value || null,
+        pnr:                 document.getElementById('f-pnr').value.trim() || null,
+        origen:              document.getElementById('f-origen').value.trim() || null,
+        destino:             document.getElementById('f-destino').value.trim() || null,
+        tipo_incidencia:     document.getElementById('f-incidencia').value || null,
+        horas_retraso:       document.getElementById('f-horas').value || null,
+        anticipacion_aviso:  document.getElementById('f-anticipacion').value || null,
+        ofrecimiento_aerolinea: document.getElementById('f-ofrecimiento').value || null,
+        causa_informada:     document.getElementById('f-causa').value.trim() || null,
+        moneda_gastos:       document.getElementById('f-moneda').value || null,
+        monto_gastos:        document.getElementById('f-monto-gastos').value || null,
+        gastos_detalle:      document.getElementById('f-gastos-detalle').value.trim() || null,
+      });
+    } else {
+      Object.assign(payload, {
+        aerolinea:           document.getElementById('fe-aerolinea').value.trim() || null,
+        vuelo_nro:           document.getElementById('fe-vuelo-nro').value.trim() || null,
+        fecha_vuelo:         document.getElementById('fe-fecha-vuelo').value || null,
+        pnr:                 document.getElementById('fe-pnr').value.trim() || null,
+        tipo_caso_equipaje:  document.getElementById('fe-tipo-caso').value || null,
+        fecha_entrega_equipaje: document.getElementById('fe-fecha-entrega').value || null,
+        valor_equipaje:      document.getElementById('fe-valor').value || null,
+        descripcion_equipaje: document.getElementById('fe-descripcion').value.trim() || null,
+      });
+    }
+
+    btn.disabled = true; btn.textContent = 'Cargando caso...';
+    fetch('/api/agency/submit-claim', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+      body: JSON.stringify(payload),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Cargar caso';
+      if (d.success) {
+        msg.className = 'form-msg form-msg--ok';
+        msg.textContent = 'Caso cargado correctamente. Referencia: ' + d.refCode;
+        toast('Caso ' + d.refCode + ' cargado');
+        /* Reset form */
+        document.getElementById('f-nombre').value = '';
+        document.getElementById('f-email').value  = '';
+        document.getElementById('f-autorizado').checked = false;
+        scannedFiles = []; renderUploadList();
+      } else {
+        msg.className = 'form-msg form-msg--err';
+        msg.textContent = d.error || 'Error al cargar el caso.';
+      }
+    })
+    .catch(function () {
+      btn.disabled = false;
+      msg.className = 'form-msg form-msg--err'; msg.textContent = 'Error de conexión.';
+    });
+  });
+
+  /* ---- Perfil ---- */
+  function loadPerfil() {
+    var ag = agData || {};
+    document.getElementById('p-nombre').textContent  = ag.nombre || '—';
+    document.getElementById('p-email').textContent   = email || '—';
+    document.getElementById('p-tipo').textContent    = ag.tipo === 'individual' ? 'Agente individual' : 'Agencia';
+    document.getElementById('p-estado').textContent  = ag.estado || '—';
+    document.getElementById('p-comision').textContent = (ag.comision_pct || 10) + '%';
+  }
+
+  /* ---- Init ---- */
+  loadStats();
+})();
+</script>
+</body>
+</html>
