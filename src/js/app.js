@@ -450,7 +450,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var cd = window.consentData || {};
     var fg = window.firmaGoogle || {};
-    fetch('/api/process-ticket', {
+
+    /* Convert drop-zone files (step 2) to base64 and merge with AI-scanned files */
+    var dropKey = S.claimType === 'equipaje' ? 'baggage' : 'flight';
+    var dropFiles = S.files[dropKey] || [];
+
+    function filesToB64(files) {
+      return Promise.all(files.map(function(f) {
+        return new Promise(function(resolve) {
+          var r = new FileReader();
+          r.onload = function() {
+            var idx = r.result.indexOf(',');
+            resolve({ base64: r.result.substring(idx + 1), mimeType: f.type || 'application/octet-stream', name: f.name });
+          };
+          r.onerror = function() { resolve(null); };
+          r.readAsDataURL(f);
+        });
+      })).then(function(results) { return results.filter(Boolean); });
+    }
+
+    filesToB64(dropFiles).then(function(convertedDrop) {
+      var allFiles = (S.scannedFiles || []).concat(convertedDrop);
+      return fetch('/api/process-ticket', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -496,9 +517,10 @@ document.addEventListener('DOMContentLoaded', function () {
         firma_fecha:            cd.firma_fecha       || null,
         firma_ts:               cd.firma_ts          || null,
         user_agent:             cd.user_agent        || navigator.userAgent,
-        /* Scanned documents (uploaded by user for AI autocomplete) */
-        scanned_files:          S.scannedFiles       || []
+        /* All uploaded files: AI scan + drop zone */
+        scanned_files:          allFiles
       })
+    });
     }).then(function (r) { return r.json(); }).then(function (json) {
       /* Submit response received */
       btnV.disabled = false; btnV.textContent = 'Enviar reclamo';
