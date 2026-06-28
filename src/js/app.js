@@ -1,18 +1,76 @@
-/**
- * SolucionAir — Frontend Application Controller
- *
- * Orchestrates the claim submission wizard, AI-powered document extraction,
- * real-time form validation, dynamic internationalization (i18n) and
- * runtime configuration from Supabase.
- *
- * Architecture:
- * - 3-step wizard: Document upload → Flight details → Legal signature
- * - Multi-file AI scanner with base64 encoding and consolidated extraction
- * - Real-time validation with visual states (.field-ok, .field-error, .field-ai)
- * - Dynamic i18n via data-t attributes with built-in ES/EN dictionary
- * - Runtime color theming and feature flags from site_config table
- * - Sanitization layer that strips "null"/"undefined" strings from AI responses
- */
+/* ============ GOOGLE IDENTITY SERVICES (must be global) ============ */
+window.firmaGoogle = null;
+
+window.onGoogleLibraryLoad = function () {
+  if (typeof google === 'undefined' || !google.accounts) return;
+  google.accounts.id.initialize({
+    client_id: '883687663702-qu8hq4jlp5lsps77ouonmu2as58clu70.apps.googleusercontent.com',
+    callback: window.recibirLoginGoogle,
+    auto_select: false,
+    cancel_on_tap_outside: true
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('google-btn-container'),
+    { theme: 'outline', size: 'large', text: 'signin_with', locale: 'es' }
+  );
+};
+
+window.recibirLoginGoogle = function (response) {
+  try {
+    var parts = response.credential.split('.');
+    var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    var pad = b64.length % 4;
+    if (pad) b64 += '===='.slice(pad);
+    var payload = JSON.parse(atob(b64));
+
+    window.firmaGoogle = {
+      sub: payload.sub,
+      email_verified: payload.email_verified === true,
+      iss: payload.iss
+    };
+
+    var nombre = payload.name || '';
+    var email  = payload.email || '';
+
+    document.querySelectorAll('#f-name').forEach(function (el) { el.value = nombre; el.readOnly = true; });
+    document.querySelectorAll('#f-email').forEach(function (el) { el.value = email;  el.readOnly = true; });
+
+    var chipNombre = document.getElementById('chip-nombre');
+    var chipEmail  = document.getElementById('chip-email');
+    var chipAvatar = document.getElementById('chip-avatar');
+    if (chipNombre) chipNombre.textContent = nombre;
+    if (chipEmail)  chipEmail.textContent  = email;
+    if (chipAvatar && payload.picture) {
+      var img = document.createElement('img');
+      img.src = payload.picture; img.alt = nombre;
+      chipAvatar.innerHTML = ''; chipAvatar.appendChild(img);
+    }
+
+    var wall    = document.getElementById('google-login-wall');
+    var wrapper = document.getElementById('form-content-wrapper');
+    if (wall)    wall.style.display    = 'none';
+    if (wrapper) wrapper.style.display = '';
+  } catch (e) { console.error('[SA] Google login error:', e); }
+};
+
+window.cerrarSesionGoogle = function () {
+  window.firmaGoogle = null;
+  if (typeof google !== 'undefined' && google.accounts) google.accounts.id.disableAutoSelect();
+
+  var nameEl  = document.getElementById('f-name');
+  var emailEl = document.getElementById('f-email');
+  if (nameEl)  { nameEl.value  = ''; nameEl.readOnly  = false; }
+  if (emailEl) { emailEl.value = ''; emailEl.readOnly = false; }
+
+  var chipAvatar = document.getElementById('chip-avatar');
+  if (chipAvatar) chipAvatar.innerHTML = '';
+
+  var wall    = document.getElementById('google-login-wall');
+  var wrapper = document.getElementById('form-content-wrapper');
+  if (wall)    wall.style.display    = '';
+  if (wrapper) wrapper.style.display = 'none';
+};
+
 document.addEventListener('DOMContentLoaded', function () {
   'use strict';
 
@@ -21,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function $(s, c) { return (c || document).querySelector(s); }
   function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
 
-  var S = { lang: 'es', tab: 'flight', files: { flight: [], baggage: [] }, lastRef: null };
+  var S = { lang: 'es', tab: 'flight', claimType: 'vuelo', files: { flight: [], baggage: [] }, lastRef: null };
 
   /* ---- DOM ---- */
   var nav = document.querySelector('.nav');
@@ -83,8 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
   $$('.drop').forEach(function (z) {
     var inp = $('input[type="file"]', z);
     var list = $('.drop__list', z);
-    var panel = z.closest('.panel');
-    var type = panel && panel.id === 'panel-flight' ? 'flight' : 'baggage';
+    var type = z.id === 'drop-flight' ? 'flight' : 'baggage';
     z.addEventListener('click', function (e) { if (e.target !== inp) inp.click(); });
     z.addEventListener('dragover', function (e) { e.preventDefault(); });
     z.addEventListener('drop', function (e) { e.preventDefault(); addF(e.dataTransfer.files, type, list); });
@@ -106,10 +163,40 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  /* ============ CLAIM TYPE SWITCHER ============ */
+  function switchClaimType(type) {
+    S.claimType = type;
+    document.querySelectorAll('.ctype-btn').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-ctype') === type);
+    });
+    document.querySelectorAll('.ctype-sub').forEach(function (s) {
+      s.classList.toggle('active', s.id === 'sub-' + type);
+    });
+  }
+  document.querySelectorAll('.ctype-btn').forEach(function (b) {
+    b.addEventListener('click', function () { switchClaimType(b.getAttribute('data-ctype')); });
+  });
+
+  /* Show/hide delivery date for baggage demora */
+  var fbType = document.getElementById('fb-type');
+  if (fbType) {
+    fbType.addEventListener('change', function () {
+      var wrap = document.getElementById('fb-delivery-wrap');
+      if (wrap) wrap.style.display = fbType.value === 'demora' ? '' : 'none';
+    });
+  }
+
   /* ============ PROGRESS ============ */
   function getReq() {
-    var panel = document.getElementById('panel-' + S.tab);
-    return panel ? $$('[data-required="true"]', panel) : [];
+    var active = document.querySelector('.wz-panel.active');
+    if (!active) return [];
+    var result = [];
+    active.querySelectorAll('[data-required="true"]').forEach(function (f) {
+      var sub = f.closest('.ctype-sub');
+      if (sub && !sub.classList.contains('active')) return;
+      result.push(f);
+    });
+    return result;
   }
 
   function tick() {
@@ -167,6 +254,7 @@ document.addEventListener('DOMContentLoaded', function () {
     /* Convert all files to base64 */
     Promise.all(fileArray.map(readFileAsBase64))
       .then(function (results) {
+        S.scannedFiles = results;
         /* All files converted, sending to API */
         return fetch('/api/process-ticket', {
           method: 'POST',
@@ -361,11 +449,18 @@ document.addEventListener('DOMContentLoaded', function () {
     btnV.disabled = true; btnV.textContent = 'Enviando...';
 
     var cd = window.consentData || {};
+    var fg = window.firmaGoogle || {};
     fetch('/api/process-ticket', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         manualSubmit:           true,
+        /* Claim type */
+        tipo_reclamo:           S.claimType,
+        /* Google identity */
+        google_sub:             fg.sub             || null,
+        google_email_verified:  fg.email_verified  != null ? String(fg.email_verified) : null,
+        google_iss:             fg.iss             || null,
         /* Identity */
         email:                  userEmail,
         nombre:                 gv('f-name'),
@@ -379,23 +474,30 @@ document.addEventListener('DOMContentLoaded', function () {
         destino:                gv('f-destination'),
         fecha_vuelo:            gv('f-date'),
         pnr:                    gv('f-pnr'),
-        /* Incident */
+        /* Incident (vuelo) */
         tipo_incidencia:        gv('f-incident'),
         horas_retraso:          gv('f-delay-hours'),
         anticipacion_aviso:     gv('f-notice'),
         ofrecimiento_aerolinea: gv('f-refund'),
         causa_informada:        gv('f-cause'),
-        /* Expenses */
+        /* Expenses (vuelo) */
         moneda_gastos:          gv('f-currency'),
         monto_gastos:           gv('f-expenses-amount'),
         gastos_detalle:         gv('f-expenses-detail'),
+        /* Baggage fields */
+        tipo_caso_equipaje:     gv('fb-type'),
+        descripcion_equipaje:   gv('fb-description'),
+        valor_equipaje:         gv('fb-value'),
+        fecha_entrega_equipaje: gv('fb-delivery-date'),
         /* Consent / electronic signature (from terms modal) */
         consent_version:        cd.consent_version  || null,
         consent_tyc:            cd.consent_tyc      || false,
         consent_autorizacion:   cd.consent_autorizacion || false,
         firma_fecha:            cd.firma_fecha       || null,
         firma_ts:               cd.firma_ts          || null,
-        user_agent:             cd.user_agent        || navigator.userAgent
+        user_agent:             cd.user_agent        || navigator.userAgent,
+        /* Scanned documents (uploaded by user for AI autocomplete) */
+        scanned_files:          S.scannedFiles       || []
       })
     }).then(function (r) { return r.json(); }).then(function (json) {
       /* Submit response received */

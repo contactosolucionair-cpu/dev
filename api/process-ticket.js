@@ -158,17 +158,27 @@ export default async function handler(req, res) {
         destino:               body.destino || null,
         pnr:                   body.pnr || null,
         /* Incident */
-        tipo_reclamo:          'vuelo',
+        tipo_reclamo:          body.tipo_reclamo || 'vuelo',
         tipo_incidencia:       body.tipo_incidencia || null,
         horas_retraso:         body.horas_retraso ? parseInt(body.horas_retraso) || null : null,
         anticipacion_aviso:    body.anticipacion_aviso || null,
         ofrecimiento_aerolinea: body.ofrecimiento_aerolinea || null,
         causa_informada:       body.causa_informada || null,
-        /* Expenses */
+        /* Expenses (vuelo) */
         moneda_gastos:         body.moneda_gastos || null,
         monto_gastos:          body.monto_gastos ? parseFloat(body.monto_gastos) || null : null,
         gastos_detalle:        body.gastos_detalle || null,
+        /* Baggage fields */
+        tipo_caso_equipaje:    body.tipo_caso_equipaje    || null,
+        descripcion_equipaje:  body.descripcion_equipaje  || null,
+        valor_equipaje:        body.valor_equipaje ? parseFloat(body.valor_equipaje) || null : null,
+        fecha_entrega_equipaje: body.fecha_entrega_equipaje || null,
+        /* Google identity */
+        google_sub:            body.google_sub            || null,
+        google_email_verified: body.google_email_verified || null,
+        google_iss:            body.google_iss            || null,
         /* Metadata */
+        fecha_carga:           new Date().toISOString(),
         fuente:                'Web',
         estado:                'pendiente',
         ref_code:              refCode,
@@ -222,7 +232,7 @@ export default async function handler(req, res) {
         origen:        body.origen           || '',
         destino:       body.destino          || '',
         fechaVuelo:    body.fecha_vuelo      || '',
-        tipoReclamo:   'vuelo',
+        tipoReclamo:   body.tipo_reclamo      || 'vuelo',
         firmaFecha:    body.firma_fecha      || '',
         consentVersion: body.consent_version || '',
       });
@@ -243,6 +253,10 @@ export default async function handler(req, res) {
           destino:       body.destino          || '',
           fechaVuelo:    body.fecha_vuelo      || '',
           pnr:           body.pnr              || '',
+          tipoReclamo:   body.tipo_reclamo     || 'vuelo',
+          googleSub:     body.google_sub       || null,
+          googleEmailVerified: body.google_email_verified || null,
+          googleIss:     body.google_iss       || null,
           firmaFecha:    body.firma_fecha      || '',
           consentVersion: body.consent_version || '',
           ip:            ip,
@@ -268,18 +282,6 @@ export default async function handler(req, res) {
           });
           if (storageRes.ok) {
             pdfUrl = SB_URL + '/storage/v1/object/public/reclamos/' + pdfPath;
-            await fetch(SB_URL + '/rest/v1/reclamos?ref_code=eq.' + refCode, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type':  'application/json',
-                'apikey':        SB_KEY,
-                'Authorization': 'Bearer ' + SB_KEY,
-              },
-              body: JSON.stringify({
-                adjuntos: [{ tipo: 'autorizacion', url: pdfUrl, nombre: 'Autorizacion_' + refCode + '.pdf' }],
-                ai_raw:   { porcentaje_exito: porcentaje_exito, huella_sha256: claimHash },
-              }),
-            });
             console.log('[process-ticket] PDF stored:', pdfUrl);
           } else {
             var stErr = await storageRes.text();
@@ -287,6 +289,60 @@ export default async function handler(req, res) {
           }
         } catch (storageErr) {
           console.error('[process-ticket] Storage error:', storageErr.message);
+        }
+      }
+
+      /* ---- Upload scanned travel documents ---- */
+      var scannedDocs = Array.isArray(body.scanned_files) ? body.scanned_files : [];
+      var docUrls = [];
+      for (var di = 0; di < scannedDocs.length; di++) {
+        var sf = scannedDocs[di];
+        try {
+          var ext  = (sf.mimeType || 'image/jpeg').split('/')[1] || 'jpg';
+          var fname = 'doc_' + (di + 1) + '.' + ext;
+          var sfPath = refCode + '/' + fname;
+          var sfRes = await fetch(SB_URL + '/storage/v1/object/reclamos/' + sfPath, {
+            method: 'POST',
+            headers: {
+              'apikey':        SB_KEY,
+              'Authorization': 'Bearer ' + SB_KEY,
+              'Content-Type':  sf.mimeType || 'image/jpeg',
+              'x-upsert':      'true',
+            },
+            body: Buffer.from(sf.base64, 'base64'),
+          });
+          if (sfRes.ok) {
+            docUrls.push({ tipo: 'documento_viaje', url: SB_URL + '/storage/v1/object/public/reclamos/' + sfPath, nombre: sf.name || fname });
+            console.log('[process-ticket] Doc uploaded:', sfPath);
+          } else {
+            var sfErr = await sfRes.text();
+            console.error('[process-ticket] Doc upload failed:', sfRes.status, sfErr.substring(0, 150));
+          }
+        } catch (sfErr) {
+          console.error('[process-ticket] Doc upload error:', sfErr.message);
+        }
+      }
+
+      /* Persist final adjuntos list and hash in one PATCH */
+      var allAdjuntos = [];
+      if (pdfUrl) allAdjuntos.push({ tipo: 'autorizacion', url: pdfUrl, nombre: 'Autorizacion_' + refCode + '.pdf' });
+      allAdjuntos = allAdjuntos.concat(docUrls);
+      if (allAdjuntos.length) {
+        try {
+          await fetch(SB_URL + '/rest/v1/reclamos?ref_code=eq.' + refCode, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type':  'application/json',
+              'apikey':        SB_KEY,
+              'Authorization': 'Bearer ' + SB_KEY,
+            },
+            body: JSON.stringify({
+              adjuntos: allAdjuntos,
+              ai_raw:   { porcentaje_exito: porcentaje_exito, huella_sha256: claimHash },
+            }),
+          });
+        } catch (patchErr) {
+          console.error('[process-ticket] Adjuntos PATCH error:', patchErr.message);
         }
       }
 
@@ -311,7 +367,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({
               from: senderFrom,
               to: 'contacto.solucionair@gmail.com',
-              subject: 'Nuevo reclamo ' + refCode + ' — ' + nombre,
+              subject: 'Nuevo reclamo ' + refCode + ' - ' + nombre,
               html: '<h2>Nuevo reclamo recibido</h2>'
                 + '<p><strong>Referencia:</strong> ' + refCode + '</p>'
                 + '<p><strong>Pasajero:</strong> ' + nombre + '</p>'
@@ -319,7 +375,9 @@ export default async function handler(req, res) {
                 + '<p><strong>Vuelo:</strong> ' + vuelo + ' (' + aerolinea + ')</p>'
                 + '<p><strong>Fecha vuelo:</strong> ' + (body.fecha_vuelo || 'N/A') + '</p>'
                 + '<p><strong>Tipo:</strong> ' + (body.tipo_incidencia || 'vuelo') + '</p>'
+                + (pdfUrl ? '<p><strong>Autorizacion:</strong> <a href="' + pdfUrl + '">Ver PDF</a></p>' : '')
                 + '<hr/><p style="color:#888;font-size:12px">Enviado automaticamente por SolucionAir</p>',
+              attachments: pdfBuffer ? [{ filename: 'Autorizacion_' + refCode + '.pdf', content: pdfBuffer.toString('base64') }] : undefined,
             }),
           });
           var internalText = await internalRes.text();

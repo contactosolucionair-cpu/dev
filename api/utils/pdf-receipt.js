@@ -85,7 +85,7 @@ export async function generateAuthorizationPdf(d) {
   // ---- CASE DATA ----
   section('Datos del caso');
   kv('Referencia SolucionAir:', d.refCode);
-  kv('Tipo de reclamo:', 'Reclamo por vuelo');
+  kv('Tipo de reclamo:', d.tipoReclamo === 'equipaje' ? 'Reclamo por equipaje' : 'Reclamo por vuelo');
   kv('Aerolinea / vuelo:', [d.aerolinea, d.vuelo].filter(Boolean).join('  ·  ') || '-');
   kv('Ruta:', [d.origen, d.destino].filter(Boolean).join(' > ') || '-');
   kv('Fecha del vuelo:', d.fechaVuelo || '-');
@@ -104,7 +104,7 @@ export async function generateAuthorizationPdf(d) {
 
   // ---- SIGNATURE RECORD ----
   section('Constancia de firma electronica - Ley 25.506');
-  const sigBoxH = 80;
+  const sigBoxH = 93;
   rect(M, y - sigBoxH + 10, W - M * 2, sigBoxH, C_CREAM, C_GOLD);
   y -= 4;
   const SIG_V = M + 8;
@@ -112,6 +112,15 @@ export async function generateAuthorizationPdf(d) {
 
   txt('Identidad declarada:',  SIG_V, y, { sz: 7.5, b: true, col: C_GREEN });
   txt([d.nombre, (d.docTipo ? d.docTipo + ' ' + d.docNumero : null), d.email].filter(Boolean).join('  ·  '), SIG_L, y, { sz: 7, mw: W - SIG_L - M - 4 });
+  y -= 13;
+
+  txt('Verificacion de identidad:', SIG_V, y, { sz: 7.5, b: true, col: C_GREEN });
+  if (d.googleSub) {
+    var verTxt = 'Verificada por Google (OpenID Connect)' + (d.googleEmailVerified === 'true' ? ' - email verificado' : '');
+    txt(verTxt, SIG_L, y, { sz: 7, col: C_DARK });
+  } else {
+    txt('Identidad declarada por el firmante', SIG_L, y, { sz: 7, col: C_GRAY });
+  }
   y -= 13;
 
   txt('Fecha y hora (ART):', SIG_V, y, { sz: 7.5, b: true, col: C_GREEN });
