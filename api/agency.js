@@ -177,7 +177,7 @@ async function handleClaims(req, res, SB_URL, SB_KEY) {
   var fields = 'id,ref_code,nombre,email,telefono,aerolinea,vuelo_nro,fecha_vuelo,origen,destino,tipo_reclamo,tipo_incidencia,estado,firma_estado,agente_nombre,agente_email,creado_en,ai_raw';
 
   var sbRes = await fetch(
-    SB_URL + '/rest/v1/reclamos?agencia_id=eq.' + agencia.id + '&deleted_at=is.null&order=creado_en.desc&select=' + fields,
+    SB_URL + '/rest/v1/reclamos?agencia_id=eq.' + agencia.id + '&order=creado_en.desc&select=' + fields,
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
   );
   var sbText = await sbRes.text();
