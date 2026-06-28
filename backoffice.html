@@ -7,6 +7,38 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
     :root{--g:#2D4A3E;--gl:#3A6154;--gd:#1E332B;--g10:rgba(45,74,62,.10);--g05:rgba(45,74,62,.05);--au:#D4A853;--aul:#E0BE7A;--bg:#F5F3EE;--bgd:#EDE9E1;--w:#FFF;--t1:#111;--t2:#3A3A3A;--t3:#6B6B6B;--t4:#999;--bd:#E0DCD4;--bdl:#EDEAE4;--ok:#1B9B5A;--okbg:#EDF9F0;--err:#C0392B;--errbg:#FDF0EE;--warn:#D4A853;--warnbg:#FDF8EE;--ai:#6366F1;--aibg:#EEF0FF;--f:'Inter',system-ui,sans-serif;--fh:'Plus Jakarta Sans','Inter',sans-serif;--fm:'JetBrains Mono',monospace;--ez:cubic-bezier(.4,0,.2,1)}
+    /* Auth gate */
+    .auth-gate{display:none;position:fixed;inset:0;z-index:600;background:var(--gd);align-items:center;justify-content:center}
+    .auth-gate.open{display:flex}
+    .auth-card{background:var(--w);border-radius:14px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 16px 48px rgba(0,0,0,.2)}
+    .auth-card__title{font-family:var(--fh);font-size:1.2rem;font-weight:800;color:var(--g);margin-bottom:4px}
+    .auth-card__sub{font-size:.78rem;color:var(--t3);margin-bottom:22px}
+    .auth-card__input{font-family:var(--f);font-size:.88rem;padding:10px 12px;border:1px solid var(--bd);border-radius:6px;background:var(--w);color:var(--t1);width:100%;transition:border-color .15s;margin-bottom:12px}
+    .auth-card__input:focus{outline:none;border-color:var(--g);box-shadow:0 0 0 3px rgba(45,74,62,.08)}
+    .auth-card__btn{width:100%;padding:10px;border-radius:7px;background:var(--g);color:var(--w);font-family:var(--fh);font-size:.82rem;font-weight:700;border:none;cursor:pointer;transition:background .15s}
+    .auth-card__btn:hover{background:var(--gl)}
+    .auth-card__err{font-family:var(--fm);font-size:.68rem;color:var(--err);margin-top:8px;min-height:14px}
+    /* Agencias view */
+    .ag-view{display:none;padding:24px 28px;overflow-y:auto}
+    .ag-view.visible{display:block}
+    .ag-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-family:var(--fm);font-size:.58rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+    .ag-badge--pendiente{background:var(--warnbg);color:var(--warn)}
+    .ag-badge--activa{background:var(--okbg);color:var(--ok)}
+    .ag-badge--suspendida{background:var(--errbg);color:var(--err)}
+    .ag-badge--no_aplica{background:#F0F0F0;color:#888}
+    .ag-badge--pendiente_envio{background:#EEF0FF;color:#6366F1}
+    .ag-badge--enviada{background:#E0F0FF;color:#2563EB}
+    .ag-badge--firmada{background:var(--okbg);color:var(--ok)}
+    .btn-ag{padding:3px 10px;border-radius:4px;font-family:var(--fm);font-size:.62rem;font-weight:600;cursor:pointer;border:none;transition:all .12s;margin-right:4px}
+    .btn-ag--aprobar{background:var(--okbg);color:var(--ok);border:1px solid rgba(27,155,90,.2)}
+    .btn-ag--aprobar:hover{background:var(--ok);color:var(--w)}
+    .btn-ag--suspender{background:var(--errbg);color:var(--err);border:1px solid rgba(192,57,43,.2)}
+    .btn-ag--suspender:hover{background:var(--err);color:var(--w)}
+    .btn-ag--reactivar{background:var(--warnbg);color:var(--warn);border:1px solid rgba(212,168,83,.2)}
+    .btn-ag--reactivar:hover{background:var(--warn);color:var(--w)}
+    /* Firma select en detalle */
+    .firma-select{font-family:var(--f);font-size:.76rem;padding:5px 8px;border:1px solid var(--bd);border-radius:5px;background:var(--w);color:var(--t1);cursor:pointer}
+    .firma-select:focus{outline:none;border-color:var(--g)}
     *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
     html{font-size:15px}body{font-family:var(--f);color:var(--t1);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
     .app{display:flex;min-height:100vh}
@@ -176,6 +208,7 @@
       <nav class="sidenav__menu">
         <div class="sidenav__item active" id="nav-reclamos"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Reclamos</div>
         <div class="sidenav__item" id="nav-trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Papelera</div>
+        <div class="sidenav__item" id="nav-agencias"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Agencias</div>
         <div class="sidenav__item" id="nav-config"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Configuración</div>
         <a href="/" class="sidenav__item"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 00-1-1h-4a1 1 0 00-1 1v8"/><path d="M3 10a2 2 0 01.709-1.528l7-5.999a2 2 0 012.582 0l7 5.999A2 2 0 0121 10v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> Volver al sitio</a>
       </nav>
@@ -242,6 +275,15 @@
         <button class="btn btn--save" id="btn-save-config" type="button">Guardar configuración</button>
         <div class="cfg-msg" id="cfg-msg"></div>
       </div><!-- /view-config -->
+
+      <!-- AGENCIAS VIEW -->
+      <div id="view-agencias" class="ag-view">
+        <div class="main__header"><h1 class="main__title">Agencias B2B</h1><button class="btn btn--primary" id="btn-refresh-agencias" type="button">Actualizar</button></div>
+        <div class="tbl-wrap">
+          <div class="tbl-bar"><span class="tbl-bar__title">Todas las agencias</span><span class="tbl-bar__count" id="ag-count"></span></div>
+          <div class="tbl-scroll"><div id="ag-body"><div class="state"><p class="state__txt">Cargando...</p></div></div></div>
+        </div>
+      </div><!-- /view-agencias -->
 
       <!-- TRASH VIEW -->
       <div id="view-trash" class="trash-panel">
@@ -741,9 +783,146 @@
       if(c.text)r.setProperty('--t1',c.text);
     }).catch(function(){});
 
+    /* ---- AGENCIAS VIEW ---- */
+    var navAgencias  = document.getElementById('nav-agencias');
+    var viewAgencias = document.getElementById('view-agencias');
+    var agBody       = document.getElementById('ag-body');
+
+    function loadAgencias() {
+      if (!agBody) return;
+      agBody.innerHTML = '<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
+      fetch('/api/admin/agencies', { headers: { 'X-Admin-Password': adminPwd } })
+      .then(function (r) { return r.json(); })
+      .then(function (json) {
+        if (!json.success) throw new Error(json.error || 'Error');
+        var ags = json.agencias || [];
+        var countEl = document.getElementById('ag-count');
+        if (countEl) countEl.textContent = ags.length + ' agencias';
+        if (!ags.length) { agBody.innerHTML = '<div class="state"><p class="state__txt" style="color:var(--t4)">Sin agencias registradas.</p></div>'; return; }
+        var h = '<table><thead><tr><th>Nombre</th><th>Tipo</th><th>Email</th><th>CUIT/DNI</th><th>Estado</th><th>Casos</th><th>Comisión</th><th>Acciones</th></tr></thead><tbody>';
+        ags.forEach(function (ag) {
+          var bc = 'ag-badge--' + (ag.estado || 'pendiente');
+          h += '<tr>';
+          h += '<td>' + esc(ag.nombre || '—') + '</td>';
+          h += '<td>' + esc(ag.tipo || '—') + '</td>';
+          h += '<td class="mono">' + esc(ag.email || '—') + '</td>';
+          h += '<td class="mono">' + esc(ag.cuit_dni || '—') + '</td>';
+          h += '<td><span class="ag-badge ' + bc + '">' + esc(ag.estado || '—') + '</span></td>';
+          h += '<td class="mono">' + (ag.num_casos || 0) + '</td>';
+          h += '<td class="mono">' + (ag.comision_pct || 10) + '%</td>';
+          h += '<td>';
+          if (ag.estado === 'pendiente') h += '<button class="btn-ag btn-ag--aprobar" data-ag-id="' + ag.id + '" data-ag-action="aprobar">Aprobar</button>';
+          if (ag.estado === 'activa')    h += '<button class="btn-ag btn-ag--suspender" data-ag-id="' + ag.id + '" data-ag-action="suspender">Suspender</button>';
+          if (ag.estado === 'suspendida') h += '<button class="btn-ag btn-ag--reactivar" data-ag-id="' + ag.id + '" data-ag-action="reactivar">Reactivar</button>';
+          h += '</td></tr>';
+        });
+        h += '</tbody></table>';
+        agBody.innerHTML = h;
+        agBody.querySelectorAll('[data-ag-id]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var id     = btn.getAttribute('data-ag-id');
+            var action = btn.getAttribute('data-ag-action');
+            var label  = action === 'aprobar' ? 'Aprobar' : action === 'suspender' ? 'Suspender' : 'Reactivar';
+            showModal({
+              title: label + ' agencia',
+              desc: '¿Confirmar la acción "' + action + '"?',
+              confirmText: label,
+              danger: action === 'suspender',
+              onConfirm: function () {
+                cmConfirm.disabled = true; cmConfirm.textContent = 'Procesando...';
+                fetch('/api/admin/agencies', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPwd },
+                  body: JSON.stringify({ id: id, action: action }),
+                })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                  cmConfirm.disabled = false;
+                  if (d.success) { closeModal(); toast('Agencia ' + action + ' correctamente'); loadAgencias(); }
+                  else { modalError(d.error || 'Error'); }
+                })
+                .catch(function () { cmConfirm.disabled = false; modalError('Error de conexión'); });
+              },
+            });
+          });
+        });
+      })
+      .catch(function (err) { agBody.innerHTML = '<div class="state"><p class="state__txt" style="color:#C0392B">Error: ' + err.message + '</p></div>'; });
+    }
+
+    var btnRefreshAg = document.getElementById('btn-refresh-agencias');
+    if (btnRefreshAg) btnRefreshAg.addEventListener('click', loadAgencias);
+
+    /* Extend showView to include agencias */
+    var _showViewOrig = showView;
+    showView = function (view) {
+      if (viewAgencias) { viewAgencias.style.display = view === 'agencias' ? 'block' : 'none'; viewAgencias.classList.toggle('visible', view === 'agencias'); }
+      if (navAgencias)  navAgencias.classList.toggle('active', view === 'agencias');
+      if (view !== 'agencias') _showViewOrig(view);
+      if (view === 'agencias') {
+        /* deactivate other nav items */
+        ['nav-reclamos','nav-config','nav-trash'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.remove('active'); });
+        loadAgencias();
+      }
+    };
+    if (navAgencias) navAgencias.addEventListener('click', function () { showView('agencias'); });
+
+    /* ---- Admin password gate ---- */
+    var adminPwd = sessionStorage.getItem('bo_admin_pwd') || '';
+
+    function checkAdminGate() {
+      var ADMIN_PWD_SET = true; /* gate is always shown; server validates the actual password */
+      if (!ADMIN_PWD_SET) return;
+      if (adminPwd) return; /* already authenticated this session */
+      /* Show gate */
+      var gate = document.getElementById('admin-gate');
+      if (gate) gate.classList.add('open');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      checkAdminGate();
+      var gateBtn = document.getElementById('gate-btn');
+      var gateInput = document.getElementById('gate-input');
+      var gateErr = document.getElementById('gate-err');
+      if (!gateBtn) return;
+      function attemptLogin() {
+        var pwd = gateInput.value;
+        if (!pwd) { gateErr.textContent = 'Ingresá la contraseña.'; return; }
+        gateBtn.disabled = true; gateBtn.textContent = 'Verificando...';
+        /* Validate against server */
+        fetch('/api/admin/agencies', { headers: { 'X-Admin-Password': pwd } })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          gateBtn.disabled = false; gateBtn.textContent = 'Ingresar';
+          if (d.success || d.agencias) {
+            adminPwd = pwd;
+            sessionStorage.setItem('bo_admin_pwd', pwd);
+            var gate = document.getElementById('admin-gate');
+            if (gate) gate.classList.remove('open');
+          } else {
+            gateErr.textContent = d.error || 'Contraseña incorrecta.';
+          }
+        })
+        .catch(function () { gateBtn.disabled = false; gateBtn.textContent = 'Ingresar'; gateErr.textContent = 'Error de conexión.'; });
+      }
+      gateBtn.addEventListener('click', attemptLogin);
+      gateInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') attemptLogin(); });
+    });
+
     /* Init: load claims on startup */
     load();
   })();
   </script>
+
+  <!-- Admin auth gate overlay -->
+  <div class="auth-gate" id="admin-gate">
+    <div class="auth-card">
+      <div class="auth-card__title">SolucionAir Admin</div>
+      <div class="auth-card__sub">Ingresá la contraseña para acceder al backoffice</div>
+      <input class="auth-card__input" type="password" id="gate-input" placeholder="Contraseña" autocomplete="current-password" />
+      <button class="auth-card__btn" id="gate-btn" type="button">Ingresar</button>
+      <div class="auth-card__err" id="gate-err"></div>
+    </div>
+  </div>
 </body>
 </html>
