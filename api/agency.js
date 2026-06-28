@@ -11,7 +11,7 @@
  *   submit-claim  POST  Carga de nuevo caso B2B
  *   stats         GET   KPIs y comisión estimada
  */
-import { verifyAgency } from './utils/agency-auth.js';
+import { verifyAgency } from './_utils/agency-auth.js';
 
 export const config = {
   api: {

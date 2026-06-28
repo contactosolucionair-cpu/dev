@@ -23,7 +23,7 @@
  * @returns {Object} {success, data, refCode}
  */
 
-import { computeClaimHash } from './utils/signing.js';
+import { computeClaimHash } from './_utils/signing.js';
 
 export const config = {
   api: {
@@ -240,7 +240,7 @@ export default async function handler(req, res) {
       var pdfBuffer = null;
       var pdfUrl    = null;
       try {
-        var { generateAuthorizationPdf } = await import('./utils/pdf-receipt.js');
+        var { generateAuthorizationPdf } = await import('./_utils/pdf-receipt.js');
         pdfBuffer = await generateAuthorizationPdf({
           refCode,
           nombre,
