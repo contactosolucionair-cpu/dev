@@ -1,3 +1,6 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/api/agency/:action", "destination": "/api/agency?action=:action" }
+  ]
 }
