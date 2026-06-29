@@ -579,10 +579,9 @@
       detailBody.querySelectorAll('[data-path]').forEach(function(btn){
         btn.addEventListener('click',function(){
           btn.disabled=true;btn.style.opacity='.6';
-          fetch('/api/admin/signed-url',{
+          fetch('/api/admin/docs?action=sign&bucket='+encodeURIComponent(btn.dataset.bucket)+'&path='+encodeURIComponent(btn.dataset.path),{
             method:'POST',
-            headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
-            body:JSON.stringify({bucket:btn.dataset.bucket,path:btn.dataset.path})
+            headers:{'X-Admin-Password':adminPwd}
           }).then(function(r){return r.json()}).then(function(d){
             btn.disabled=false;btn.style.opacity='1';
             if(d.signedURL){window.open(d.signedURL,'_blank')}
@@ -603,7 +602,7 @@
           item.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="upload-item__name">'+esc(file.name)+'</span><span class="upload-item__status">Subiendo...</span>';
           adjList.appendChild(item);
 
-          var url='/api/admin/upload-doc?id='+encodeURIComponent(c.id)+'&filename='+encodeURIComponent(file.name)+'&tipo=documento&nombre='+encodeURIComponent(file.name);
+          var url='/api/admin/docs?action=upload&id='+encodeURIComponent(c.id)+'&filename='+encodeURIComponent(file.name)+'&tipo=documento&nombre='+encodeURIComponent(file.name);
           fetch(url,{
             method:'POST',
             headers:{'Content-Type':file.type||'application/octet-stream','X-Admin-Password':adminPwd},
