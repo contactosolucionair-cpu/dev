@@ -25,6 +25,8 @@
     .nav__btn-account:hover{background:var(--bg);border-color:var(--g);color:var(--g)}
     .nav__btn-cta{display:inline-flex;align-items:center;gap:4px;padding:7px 16px;background:var(--g);color:var(--w);font-family:var(--fh);font-weight:700;font-size:.74rem;border-radius:8px;transition:all .15s;text-decoration:none;white-space:nowrap}
     .nav__btn-cta:hover{background:var(--gl);color:var(--w)}
+    .nav__btn-agency{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;background:transparent;color:var(--t2);font-family:var(--f);font-weight:600;font-size:.74rem;border-radius:8px;border:1px solid var(--bd);transition:all .15s;text-decoration:none;white-space:nowrap}
+    .nav__btn-agency:hover{background:rgba(212,168,83,.08);border-color:var(--au);color:var(--au)}
     .nav__hamburger{display:none;background:none;border:none;color:var(--g);cursor:pointer}
 
     /* Hero extras */
@@ -205,6 +207,7 @@
       </ul>
       <div class="nav__actions">
         <div class="lang" role="group" aria-label="Idioma"><button class="lang__btn active" data-lang-btn="es" type="button">ES</button><button class="lang__btn" data-lang-btn="en" type="button">EN</button></div>
+        <a href="/agencias" class="nav__btn-agency">&#127970; Portal Agencias</a>
         <button class="nav__btn-account" id="btn-login-open" type="button">&#128100; Mi Cuenta</button>
         <a href="#claim" class="nav__btn-cta" data-t="nav_cta">Iniciá tu reclamo</a>
       </div>
