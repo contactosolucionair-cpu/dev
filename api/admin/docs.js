@@ -86,5 +86,31 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, adjunto: newAdj, adjuntos });
   }
 
-  return res.status(400).json({ error: 'action debe ser sign o upload' });
+  // --- action=remove: remove one adjunto from the array ---
+  if (action === 'remove') {
+    var rawBody = await getRawBody(req);
+    var body = JSON.parse(rawBody.toString() || '{}');
+    var { id, index } = body;
+    if (!id || index === undefined) return res.status(400).json({ error: 'id e index son requeridos' });
+
+    var caseResp = await fetch(`${SB_URL}/rest/v1/reclamos?id=eq.${id}&select=id,adjuntos`, {
+      headers: { 'Authorization': `Bearer ${SB_KEY}`, 'apikey': SB_KEY },
+    });
+    var cases = await caseResp.json();
+    if (!cases.length) return res.status(404).json({ error: 'Caso no encontrado' });
+    var claim = cases[0];
+
+    var adjuntos = Array.isArray(claim.adjuntos) ? [...claim.adjuntos] : [];
+    adjuntos.splice(index, 1);
+
+    var patchResp = await fetch(`${SB_URL}/rest/v1/reclamos?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${SB_KEY}`, 'apikey': SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ adjuntos }),
+    });
+    if (!patchResp.ok) return res.status(patchResp.status).json({ error: await patchResp.text() });
+    return res.status(200).json({ success: true, adjuntos });
+  }
+
+  return res.status(400).json({ error: 'action debe ser sign, upload o remove' });
 }

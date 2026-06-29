@@ -537,10 +537,11 @@
       h+='<div id="adj-list">';
       adjArr.forEach(function(a,ai){
         var icono=a.tipo==='carpeta_drive'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        var removeBtn='<button data-remove-idx="'+ai+'" type="button" title="Eliminar" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:2px 4px;flex-shrink:0;line-height:1" onmouseover="this.style.color=\'var(--err)\'" onmouseout="this.style.color=\'var(--t4)\'">✕</button>';
         if(a.path){
-          h+='<button data-bucket="'+esc(a.bucket||'reclamos')+'" data-path="'+esc(a.path)+'" type="button" class="upload-item" style="width:100%;cursor:pointer;background:none;text-align:left">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4);flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>';
+          h+='<div class="upload-item"><button data-bucket="'+esc(a.bucket||'reclamos')+'" data-path="'+esc(a.path)+'" type="button" style="display:flex;align-items:center;gap:7px;flex:1;background:none;border:none;cursor:pointer;text-align:left;min-width:0">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4);flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>'+removeBtn+'</div>';
         } else {
-          h+='<a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" class="upload-item" style="text-decoration:none">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4);flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
+          h+='<div class="upload-item"><a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:7px;flex:1;text-decoration:none;color:var(--t1);min-width:0">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4);flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>'+removeBtn+'</div>';
         }
       });
       if(!adjArr.length) h+='<p style="font-size:.72rem;color:var(--t4);margin:0 0 6px">Sin documentos cargados.</p>';
@@ -587,6 +588,24 @@
             if(d.signedURL){window.open(d.signedURL,'_blank')}
             else{alert('Error al obtener el documento: '+(d.error||'Error desconocido'))}
           }).catch(function(){btn.disabled=false;btn.style.opacity='1';alert('Error de red')});
+        });
+      });
+
+      /* Remove adjunto buttons */
+      detailBody.querySelectorAll('[data-remove-idx]').forEach(function(btn){
+        btn.addEventListener('click',function(e){
+          e.stopPropagation();
+          var idx=parseInt(btn.dataset.removeIdx);
+          if(!confirm('¿Eliminar este documento de la lista?'))return;
+          btn.disabled=true;
+          fetch('/api/admin/docs?action=remove',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
+            body:JSON.stringify({id:c.id,index:idx})
+          }).then(function(r){return r.json()}).then(function(d){
+            if(d.success){c.adjuntos=d.adjuntos;openDetail(c)}
+            else{alert('Error: '+(d.error||'desconocido'));btn.disabled=false}
+          }).catch(function(){alert('Error de red');btn.disabled=false});
         });
       });
 
