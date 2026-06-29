@@ -56,52 +56,24 @@ export default async function handler(req, res) {
     }
 
     /* ---- NOVEDAD ---- */
-    if (body.novedad) {
-      console.log('[update-ticket] Add novedad to:', id);
+    if (body.action === 'add-novedad') {
+      var texto = (body.texto || '').trim();
+      if (!texto) return res.status(400).json({ error: 'El texto no puede estar vacío' });
 
-      var timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
-      var novedadEntry = '[' + timestamp + '] ' + body.novedad;
-
-      /* Get current novedades */
       var getRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=novedades', {
-        method: 'GET',
-        headers: {
-          'apikey': SB_KEY,
-          'Authorization': 'Bearer ' + SB_KEY,
-        },
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
       });
-
-      var getText = await getRes.text();
-      var current = '';
-      if (getRes.ok) {
-        var rows = JSON.parse(getText);
-        if (rows.length > 0 && rows[0].novedades) {
-          current = rows[0].novedades;
-        }
-      }
-
-      var updated = current ? current + '\n---\n' + novedadEntry : novedadEntry;
+      var rows = await getRes.json();
+      var novedades = Array.isArray(rows[0]?.novedades) ? rows[0].novedades : [];
+      novedades.unshift({ fecha: new Date().toISOString(), texto });
 
       var patchRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SB_KEY,
-          'Authorization': 'Bearer ' + SB_KEY,
-          'Prefer': 'return=representation',
-        },
-        body: JSON.stringify({ novedades: updated }),
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ novedades }),
       });
-
-      var patchText = await patchRes.text();
-      console.log('[update-ticket] Novedad patch status:', patchRes.status);
-
-      if (!patchRes.ok) {
-        console.error('[update-ticket] Novedad error:', patchText.substring(0, 300));
-        return res.status(500).json({ error: 'Error al guardar la novedad' });
-      }
-
-      return res.status(200).json({ success: true, action: 'novedad' });
+      if (!patchRes.ok) return res.status(500).json({ error: 'Error al guardar la novedad' });
+      return res.status(200).json({ success: true, novedades });
     }
 
     /* ---- UPDATE ESTADO ---- */
