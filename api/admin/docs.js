@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
     var resp = await fetch(`${SB_URL}/storage/v1/object/sign/${bucket}/${path}`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${SB_KEY}`, 'apikey': SB_KEY, 'Content-Type': 'application/json' },
       body: JSON.stringify({ expiresIn: 3600 }),
     });
 
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
 
     var uploadResp = await fetch(`${SB_URL}/storage/v1/object/${bucket}/${path}`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': contentType, 'x-upsert': 'true' },
+      headers: { 'Authorization': `Bearer ${SB_KEY}`, 'apikey': SB_KEY, 'Content-Type': contentType, 'x-upsert': 'true' },
       body: rawBody,
     });
     if (!uploadResp.ok) return res.status(uploadResp.status).json({ error: await uploadResp.text() });
