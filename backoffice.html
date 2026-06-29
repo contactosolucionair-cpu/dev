@@ -525,9 +525,16 @@
       if(adjArr.length){
         h+='<div class="detail__section">';
         h+='<div class="detail__label" style="margin-bottom:8px">Documentos adjuntos</div>';
-        adjArr.forEach(function(a){
+        adjArr.forEach(function(a,ai){
           var icono=a.tipo==='carpeta_drive'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-          h+='<a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:7px;padding:8px 10px;margin-bottom:5px;border:1px solid var(--bdl);border-radius:6px;text-decoration:none;color:var(--t1);font-size:.78rem;transition:background .12s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'+icono+'<span style="flex:1">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4)"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
+          var btnId='adj-btn-'+ai;
+          if(a.path){
+            /* Supabase Storage — genera signed URL al hacer click */
+            h+='<button id="'+btnId+'" data-bucket="'+esc(a.bucket||'reclamos')+'" data-path="'+esc(a.path)+'" type="button" style="display:flex;align-items:center;gap:7px;padding:8px 10px;margin-bottom:5px;border:1px solid var(--bdl);border-radius:6px;background:none;cursor:pointer;color:var(--t1);font-size:.78rem;width:100%;text-align:left;transition:background .12s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'+icono+'<span style="flex:1">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4)"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>';
+          } else {
+            /* URL directa (Drive u otro) */
+            h+='<a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:7px;padding:8px 10px;margin-bottom:5px;border:1px solid var(--bdl);border-radius:6px;text-decoration:none;color:var(--t1);font-size:.78rem;transition:background .12s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'+icono+'<span style="flex:1">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4)"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
+          }
         });
         h+='</div>';
         h+='<div class="detail__divider"></div>';
@@ -557,6 +564,23 @@
       h+='</div>';
 
       detailBody.innerHTML=h;
+
+      /* Signed URL buttons (Supabase Storage) */
+      detailBody.querySelectorAll('[data-path]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var origHtml=btn.innerHTML;
+          btn.disabled=true;btn.style.opacity='.6';
+          fetch('/api/admin/signed-url',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
+            body:JSON.stringify({bucket:btn.dataset.bucket,path:btn.dataset.path})
+          }).then(function(r){return r.json()}).then(function(d){
+            btn.disabled=false;btn.style.opacity='1';
+            if(d.signedURL){window.open(d.signedURL,'_blank')}
+            else{alert('Error al obtener el documento: '+(d.error||'Error desconocido'))}
+          }).catch(function(){btn.disabled=false;btn.style.opacity='1';alert('Error de red')});
+        });
+      });
 
       /* Template select */
       var tplSelect=document.getElementById('tpl-select');
