@@ -37,7 +37,7 @@ body.lang-en [data-lang="en"]{display:revert}
 .nav.scrolled{box-shadow:var(--s2)}
 .nav__wrap{max-width:1060px;margin:0 auto;padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between}
 .nav__brand{display:flex;align-items:center}
-.nav__brand img{height:34px;width:auto;display:block}
+.nav__brand img{height:72px;width:auto;display:block}
 .nav__end{display:flex;align-items:center}
 .lang{display:flex;background:var(--bg);border-radius:18px;padding:2px;gap:2px;border:1px solid var(--bdl)}
 .lang__btn{padding:3px 12px;border-radius:14px;font-family:var(--fm);font-size:.68rem;font-weight:600;color:var(--t4);transition:all .2s var(--ez);letter-spacing:.05em}
