@@ -180,6 +180,15 @@
     .toast.show{transform:translateY(0);opacity:1}
     .toast--error{background:var(--err)}
 
+    /* Upload drop zone */
+    .upload-zone{border:2px dashed var(--bdl);border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;margin-top:8px;color:var(--t4);font-size:.75rem}
+    .upload-zone:hover,.upload-zone.drag{border-color:var(--g);background:rgba(26,188,97,.05);color:var(--g)}
+    .upload-zone svg{display:block;margin:0 auto 6px}
+    .upload-item{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--bdl);border-radius:6px;margin-bottom:4px;font-size:.75rem}
+    .upload-item__name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--t1)}
+    .upload-item__status{font-size:.68rem;color:var(--t4);white-space:nowrap}
+    .upload-item__status.ok{color:#1B9B5A}.upload-item__status.err{color:var(--err)}
+
     /* Config panel */
     .config-panel{display:none;padding:24px 28px;overflow-y:auto}
     .config-panel.visible{display:block}
@@ -522,23 +531,24 @@
       /* Adjuntos */
       var adjArr=[];
       try{if(c.adjuntos)adjArr=Array.isArray(c.adjuntos)?c.adjuntos:JSON.parse(c.adjuntos)}catch(e){}
-      if(adjArr.length){
-        h+='<div class="detail__section">';
-        h+='<div class="detail__label" style="margin-bottom:8px">Documentos adjuntos</div>';
-        adjArr.forEach(function(a,ai){
-          var icono=a.tipo==='carpeta_drive'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-          var btnId='adj-btn-'+ai;
-          if(a.path){
-            /* Supabase Storage — genera signed URL al hacer click */
-            h+='<button id="'+btnId+'" data-bucket="'+esc(a.bucket||'reclamos')+'" data-path="'+esc(a.path)+'" type="button" style="display:flex;align-items:center;gap:7px;padding:8px 10px;margin-bottom:5px;border:1px solid var(--bdl);border-radius:6px;background:none;cursor:pointer;color:var(--t1);font-size:.78rem;width:100%;text-align:left;transition:background .12s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'+icono+'<span style="flex:1">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4)"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>';
-          } else {
-            /* URL directa (Drive u otro) */
-            h+='<a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:7px;padding:8px 10px;margin-bottom:5px;border:1px solid var(--bdl);border-radius:6px;text-decoration:none;color:var(--t1);font-size:.78rem;transition:background .12s" onmouseover="this.style.background=\'var(--bg)\'" onmouseout="this.style.background=\'\'">'+icono+'<span style="flex:1">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4)"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
-          }
-        });
-        h+='</div>';
-        h+='<div class="detail__divider"></div>';
-      }
+      /* Adjuntos + upload zone (always shown) */
+      h+='<div class="detail__section">';
+      h+='<div class="detail__label" style="margin-bottom:8px">Documentos adjuntos</div>';
+      h+='<div id="adj-list">';
+      adjArr.forEach(function(a,ai){
+        var icono=a.tipo==='carpeta_drive'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+        if(a.path){
+          h+='<button data-bucket="'+esc(a.bucket||'reclamos')+'" data-path="'+esc(a.path)+'" type="button" class="upload-item" style="width:100%;cursor:pointer;background:none;text-align:left">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4);flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>';
+        } else {
+          h+='<a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" class="upload-item" style="text-decoration:none">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t4);flex-shrink:0"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
+        }
+      });
+      if(!adjArr.length) h+='<p style="font-size:.72rem;color:var(--t4);margin:0 0 6px">Sin documentos cargados.</p>';
+      h+='</div>';
+      h+='<div class="upload-zone" id="upload-zone"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Arrastrar archivos o hacer click para subir</div>';
+      h+='<input type="file" id="upload-inp" multiple style="display:none">';
+      h+='</div>';
+      h+='<div class="detail__divider"></div>';
 
       /* AI Copilot */
       h+='<div class="ai-box">';
@@ -568,7 +578,6 @@
       /* Signed URL buttons (Supabase Storage) */
       detailBody.querySelectorAll('[data-path]').forEach(function(btn){
         btn.addEventListener('click',function(){
-          var origHtml=btn.innerHTML;
           btn.disabled=true;btn.style.opacity='.6';
           fetch('/api/admin/signed-url',{
             method:'POST',
@@ -581,6 +590,44 @@
           }).catch(function(){btn.disabled=false;btn.style.opacity='1';alert('Error de red')});
         });
       });
+
+      /* Upload zone */
+      var uploadZone=detailBody.querySelector('#upload-zone');
+      var uploadInp=detailBody.querySelector('#upload-inp');
+      var adjList=detailBody.querySelector('#adj-list');
+
+      function uploadFiles(files){
+        Array.from(files).forEach(function(file){
+          var item=document.createElement('div');
+          item.className='upload-item';
+          item.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="upload-item__name">'+esc(file.name)+'</span><span class="upload-item__status">Subiendo...</span>';
+          adjList.appendChild(item);
+
+          var url='/api/admin/upload-doc?id='+encodeURIComponent(c.id)+'&filename='+encodeURIComponent(file.name)+'&tipo=documento&nombre='+encodeURIComponent(file.name);
+          fetch(url,{
+            method:'POST',
+            headers:{'Content-Type':file.type||'application/octet-stream','X-Admin-Password':adminPwd},
+            body:file
+          }).then(function(r){return r.json()}).then(function(d){
+            var statusEl=item.querySelector('.upload-item__status');
+            if(d.success){
+              statusEl.className='upload-item__status ok';statusEl.textContent='✓ Subido';
+              c.adjuntos=d.adjuntos;
+            } else {
+              statusEl.className='upload-item__status err';statusEl.textContent='Error: '+(d.error||'desconocido');
+            }
+          }).catch(function(){
+            item.querySelector('.upload-item__status').className='upload-item__status err';
+            item.querySelector('.upload-item__status').textContent='Error de red';
+          });
+        });
+      }
+
+      uploadZone.addEventListener('click',function(){uploadInp.click()});
+      uploadInp.addEventListener('change',function(){if(uploadInp.files.length)uploadFiles(uploadInp.files);uploadInp.value=''});
+      uploadZone.addEventListener('dragover',function(e){e.preventDefault();uploadZone.classList.add('drag')});
+      uploadZone.addEventListener('dragleave',function(){uploadZone.classList.remove('drag')});
+      uploadZone.addEventListener('drop',function(e){e.preventDefault();uploadZone.classList.remove('drag');if(e.dataTransfer.files.length)uploadFiles(e.dataTransfer.files)});
 
       /* Template select */
       var tplSelect=document.getElementById('tpl-select');
