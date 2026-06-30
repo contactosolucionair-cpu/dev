@@ -159,6 +159,17 @@
     .ctype-sub{display:none}
     .ctype-sub.active{display:block}
 
+    /* Acompañantes (pasajeros adicionales) */
+    .acomp-row{border:1px solid var(--bdl);border-radius:10px;padding:14px;margin-bottom:12px;background:var(--bg)}
+    .acomp-chk{display:flex;align-items:center;gap:7px;font-size:.8rem;color:var(--t2);cursor:pointer}
+    .acomp-chk input{width:16px;height:16px;cursor:pointer}
+    .acomp-remove{background:transparent;border:1px solid var(--bd);color:var(--t3);border-radius:7px;padding:5px 11px;font-family:var(--fh);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .15s}
+    .acomp-remove:hover{border-color:var(--err);color:var(--err)}
+    .btn-add-acomp{background:transparent;border:1.5px dashed var(--bd);color:var(--g);border-radius:9px;padding:10px 16px;font-family:var(--fh);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s;width:100%}
+    .btn-add-acomp:hover{border-color:var(--g);background:var(--g05,#eaf1ed)}
+    .combo-toggle{display:flex;align-items:center;gap:9px;font-size:.84rem;color:var(--t1);cursor:pointer;padding:6px 0}
+    .combo-toggle input{width:18px;height:18px;cursor:pointer}
+
     /* Terms modal */
     .terms-ov{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.52);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);align-items:center;justify-content:center;padding:16px}
     .terms-ov.visible{display:flex;animation:fadeIn .2s ease}
@@ -397,6 +408,29 @@
               <div class="drop" id="drop-flight"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple /><div class="drop__body"><svg class="drop__ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p class="drop__txt">Tickets y comprobantes de gastos</p><p class="drop__meta">PDF, JPG, PNG · Máx. 5 · 10MB c/u</p></div><div class="drop__list"></div></div>
             </div>
           </div>
+
+          <hr class="card__hr"/>
+          <!-- Combinado: problema de equipaje en el mismo vuelo -->
+          <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#129523;</span><div><h3 class="card__blk-title">¿Problema con tu equipaje en este vuelo?</h3><p class="card__blk-sub">Si además tuviste un inconveniente con tu equipaje en este mismo vuelo, sumalo acá.</p></div></div>
+            <label class="combo-toggle"><input type="checkbox" id="fv-bag-toggle" /> <span>Sí, también tuve un problema con mi equipaje en este vuelo</span></label>
+            <div id="fv-bag-fields" style="display:none;margin-top:12px">
+              <div class="g g2">
+                <div class="field"><label class="field__lbl">Tipo de incidencia</label><select class="field__in" id="fv-bag-type"><option value="">Seleccionar...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select><span class="field__msg"></span></div>
+                <div class="field" id="fv-bag-delivery-wrap" style="display:none"><label class="field__lbl">Fecha en que recibiste el equipaje</label><input class="field__in" type="date" id="fv-bag-delivery" /><span class="field__msg"></span></div>
+                <div class="field"><label class="field__lbl">Valor estimado del equipaje (USD)</label><input class="field__in" type="number" id="fv-bag-value" placeholder="500" min="0" /><span class="field__msg"></span></div>
+              </div>
+              <div class="g g1" style="margin-top:12px">
+                <div class="field"><label class="field__lbl">Descripción del incidente</label><textarea class="field__in field__ta" id="fv-bag-desc" rows="2" placeholder="Ej: Mi maleta llegó con la rueda rota. Presenté el formulario PIR en el aeropuerto."></textarea><span class="field__msg"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="card__hr"/>
+          <!-- Acompañantes (vuelo) -->
+          <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#128101;</span><div><h3 class="card__blk-title">Acompañantes</h3><p class="card__blk-sub">Si viajaste con otras personas afectadas por el mismo vuelo, agregá sus datos para reclamar también por ellas.</p></div></div>
+            <div id="acomp-vuelo-list"></div>
+            <button type="button" class="btn-add-acomp" id="acomp-vuelo-add">+ Agregar pasajero</button>
+          </div>
         </div>
 
         <!-- Sub-sección EQUIPAJE: detalles del daño/pérdida/demora -->
@@ -414,6 +448,13 @@
               <div class="drop" id="drop-baggage"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple /><div class="drop__body"><svg class="drop__ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p class="drop__txt">Fotos del daño, formulario PIR y comprobantes</p><p class="drop__meta">PDF, JPG, PNG · Máx. 5 · 10MB c/u</p></div><div class="drop__list"></div></div>
             </div>
           </div>
+
+          <hr class="card__hr"/>
+          <!-- Acompañantes (equipaje) -->
+          <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#128101;</span><div><h3 class="card__blk-title">Acompañantes</h3><p class="card__blk-sub">Si otra persona que viajaba con vos también tuvo un problema con su equipaje, agregá sus datos acá.</p></div></div>
+            <div id="acomp-equipaje-list"></div>
+            <button type="button" class="btn-add-acomp" id="acomp-equipaje-add">+ Agregar pasajero</button>
+          </div>
         </div>
 
         <div class="wz-nav"><button class="btn-verify" id="wz-back-2" type="button" style="background:transparent;color:var(--t2);border:1px solid var(--bd)" data-t="btn_back">&larr; Volver</button><button class="btn-verify" id="wz-next-2" type="button" data-t="btn_next3">Continuar al Paso 3 &rarr;</button></div>
@@ -429,6 +470,7 @@
               <li>Gestionar y presentar reclamos formales ante la aerolínea y/o autoridades competentes en mi nombre.</li>
               <li>Acceder, utilizar y compartir la documentación provista exclusivamente con fines de gestión del presente reclamo.</li>
               <li>Representarme en instancias de mediación privada online, si correspondiera.</li>
+              <li>Declaro estar autorizado/a a gestionar este reclamo en nombre de los acompañantes que haya incluido, y ser responsable legal o tutor/a de aquellos identificados como menores de edad.</li>
             </ul>
             <p style="margin-bottom:10px">Entiendo que SolucionAir opera bajo un esquema de honorarios por éxito: <strong>no se cobran costos iniciales</strong> y los honorarios equivalen al 20% de la compensación obtenida, más un reintegro de gastos administrativos de hasta USD 20, únicamente si el reclamo prospera.</p>
             <p>Esta declaración constituye una firma electrónica válida en los términos de la Ley 25.506 de Firma Digital de la República Argentina.</p>

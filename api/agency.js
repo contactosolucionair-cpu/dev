@@ -241,6 +241,7 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
     descripcion_equipaje:  body.descripcion_equipaje  || null,
     valor_equipaje:        body.valor_equipaje       ? parseFloat(body.valor_equipaje) || null : null,
     fecha_entrega_equipaje: body.fecha_entrega_equipaje || null,
+    acompanantes:          Array.isArray(body.acompanantes) ? body.acompanantes : [],
     ref_code: refCode, estado: 'pendiente', fecha_carga: new Date().toISOString(),
     ip_firmante: (req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim() || null,
   };

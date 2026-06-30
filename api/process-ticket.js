@@ -168,11 +168,13 @@ export default async function handler(req, res) {
         moneda_gastos:         body.moneda_gastos || null,
         monto_gastos:          body.monto_gastos ? parseFloat(body.monto_gastos) || null : null,
         gastos_detalle:        body.gastos_detalle || null,
-        /* Baggage fields */
+        /* Baggage fields (equipaje claim, or combined vuelo+equipaje) */
         tipo_caso_equipaje:    body.tipo_caso_equipaje    || null,
         descripcion_equipaje:  body.descripcion_equipaje  || null,
         valor_equipaje:        body.valor_equipaje ? parseFloat(body.valor_equipaje) || null : null,
         fecha_entrega_equipaje: body.fecha_entrega_equipaje || null,
+        /* Acompañantes (pasajeros adicionales) */
+        acompanantes:          Array.isArray(body.acompanantes) ? body.acompanantes : [],
         /* Google identity */
         google_sub:            body.google_sub            || null,
         google_email_verified: body.google_email_verified || null,
