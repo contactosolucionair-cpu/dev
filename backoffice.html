@@ -226,6 +226,7 @@
         <div class="sidenav__item" id="nav-alertas"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> Alertas <span id="nav-alertas-count" style="margin-left:auto;font-family:var(--fm);font-size:.6rem;background:var(--err);color:#fff;border-radius:8px;padding:0 6px;display:none"></span></div>
         <div class="sidenav__item" id="nav-trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Papelera</div>
         <div class="sidenav__item" id="nav-agencias"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Agencias</div>
+        <div class="sidenav__item" id="nav-abogados"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l9-4 9 4M4 10v8m16-8v8M3 18h18M12 6v.01"/><path d="M7 10l5-2 5 2"/></svg> Abogados</div>
         <div class="sidenav__item" id="nav-config"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Configuración</div>
         <a href="/" class="sidenav__item"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 00-1-1h-4a1 1 0 00-1 1v8"/><path d="M3 10a2 2 0 01.709-1.528l7-5.999a2 2 0 012.582 0l7 5.999A2 2 0 0121 10v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg> Volver al sitio</a>
       </nav>
@@ -235,7 +236,7 @@
     <div class="main">
       <!-- RECLAMOS VIEW -->
       <div id="view-reclamos">
-      <div class="main__header"><h1 class="main__title">Panel de Reclamos</h1><div style="display:flex;align-items:center;gap:14px"><button class="btn btn--primary" id="btn-refresh" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Actualizar</button></div></div>
+      <div class="main__header"><h1 class="main__title">Panel de Reclamos</h1><div style="display:flex;align-items:center;gap:14px"><button class="btn btn--ghost" id="btn-nuevo-caso" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo caso</button><button class="btn btn--primary" id="btn-refresh" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Actualizar</button></div></div>
       <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><div class="stat__label">Total reclamos</div><div class="stat__val" id="st-total">—</div></div><div class="stat"><div class="stat__label">Pendientes</div><div class="stat__val stat__val--warn" id="st-pending">—</div></div><div class="stat"><div class="stat__label">Aprobados / Resueltos</div><div class="stat__val stat__val--ok" id="st-resolved">—</div></div><div class="stat"><div class="stat__label">Rechazados</div><div class="stat__val" style="color:var(--err)" id="st-rejected">—</div></div></div>
 
       <div class="tbl-wrap">
@@ -309,6 +310,15 @@
         </div>
       </div><!-- /view-agencias -->
 
+      <!-- ABOGADOS VIEW -->
+      <div id="view-abogados" class="ag-view">
+        <div class="main__header"><h1 class="main__title">Abogados</h1><button class="btn btn--primary" id="btn-refresh-abogados" type="button">Actualizar</button></div>
+        <div class="tbl-wrap">
+          <div class="tbl-bar"><span class="tbl-bar__title">Todos los abogados</span><span class="tbl-bar__count" id="abo-count"></span></div>
+          <div class="tbl-scroll"><div id="abo-body"><div class="state"><p class="state__txt">Cargando...</p></div></div></div>
+        </div>
+      </div><!-- /view-abogados -->
+
       <!-- TRASH VIEW -->
       <div id="view-trash" class="trash-panel">
         <div class="main__header"><h1 class="main__title">Papelera de reciclaje</h1><div><button class="btn btn--primary" id="btn-refresh-trash" type="button">Actualizar</button></div></div>
@@ -336,6 +346,45 @@
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
+
+    <!-- Nuevo caso modal -->
+    <div class="cm-ov" id="nc-ov">
+      <div class="cm" style="max-width:640px;text-align:left;max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Nuevo caso</div>
+          <button class="detail__close" id="nc-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="detail__label" style="margin-bottom:6px">Pasajero</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <input id="nc-nombre" class="firma-select" placeholder="Nombre y apellido *">
+          <input id="nc-email" type="email" class="firma-select" placeholder="Email *">
+          <input id="nc-telefono" class="firma-select" placeholder="Teléfono">
+          <select id="nc-doctype" class="firma-select"><option value="">Tipo doc...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>
+          <input id="nc-docnum" class="firma-select" placeholder="Número de documento">
+        </div>
+        <div class="detail__label" style="margin-bottom:6px">Vuelo</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+          <input id="nc-aerolinea" class="firma-select" placeholder="Aerolínea">
+          <input id="nc-vuelo" class="firma-select" placeholder="Número de vuelo">
+          <input id="nc-origen" class="firma-select" placeholder="Origen">
+          <input id="nc-destino" class="firma-select" placeholder="Destino">
+          <input id="nc-fecha" type="date" class="firma-select">
+          <input id="nc-pnr" class="firma-select" placeholder="PNR">
+        </div>
+        <div class="detail__label" style="margin-bottom:6px">Caso</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+          <select id="nc-tipo" class="firma-select"><option value="vuelo">Vuelo</option><option value="equipaje">Equipaje</option><option value="vuelo_equipaje">Vuelo + Equipaje</option></select>
+          <input id="nc-incidencia" class="firma-select" placeholder="Tipo de incidencia (demora, cancelación...)">
+          <input id="nc-causa" class="firma-select" placeholder="Causa informada (opcional)">
+        </div>
+        <p style="font-size:.66rem;color:var(--t4);margin:8px 0 0">Se enviará un mail de confirmación al cliente con el número de caso.</p>
+        <div id="nc-msg" style="font-family:var(--fm);font-size:.66rem;min-height:14px;margin:6px 0 8px"></div>
+        <div class="cm__btns" style="justify-content:flex-end">
+          <button class="cm__btn cm__btn--cancel" id="nc-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="nc-save" type="button">Crear caso</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Administrar alertas modal -->
     <div class="cm-ov" id="alertas-admin-ov">
@@ -1098,29 +1147,35 @@
     var navConfig=document.getElementById('nav-config');
     var navTrash=document.getElementById('nav-trash');
     var navAlertas=document.getElementById('nav-alertas');
+    var navAbogados=document.getElementById('nav-abogados');
     var viewReclamos=document.getElementById('view-reclamos');
     var viewConfig=document.getElementById('view-config');
     var viewTrash=document.getElementById('view-trash');
     var viewAlertas=document.getElementById('view-alertas');
+    var viewAbogados=document.getElementById('view-abogados');
 
     function showView(view){
       if(viewReclamos)viewReclamos.style.display=view==='reclamos'?'':'none';
       if(viewConfig){viewConfig.style.display=view==='config'?'block':'none';viewConfig.classList.toggle('visible',view==='config')}
       if(viewTrash){viewTrash.style.display=view==='trash'?'block':'none';viewTrash.classList.toggle('visible',view==='trash')}
       if(viewAlertas)viewAlertas.style.display=view==='alertas'?'block':'none';
+      if(viewAbogados){viewAbogados.style.display=view==='abogados'?'block':'none';viewAbogados.classList.toggle('visible',view==='abogados')}
       if(navReclamos)navReclamos.classList.toggle('active',view==='reclamos');
       if(navConfig)navConfig.classList.toggle('active',view==='config');
       if(navTrash)navTrash.classList.toggle('active',view==='trash');
       if(navAlertas)navAlertas.classList.toggle('active',view==='alertas');
+      if(navAbogados)navAbogados.classList.toggle('active',view==='abogados');
       if(view==='config')loadConfig();
       if(view==='trash')loadTrash();
       if(view==='alertas')renderAlertas();
+      if(view==='abogados')loadAbogados();
     }
 
     if(navReclamos)navReclamos.addEventListener('click',function(){showView('reclamos')});
     if(navConfig)navConfig.addEventListener('click',function(){showView('config')});
     if(navTrash)navTrash.addEventListener('click',function(){showView('trash')});
     if(navAlertas)navAlertas.addEventListener('click',function(){showView('alertas')});
+    if(navAbogados)navAbogados.addEventListener('click',function(){showView('abogados')});
 
     /* ---- ALERTAS (feed único + reglas configurables + descarte manual) ---- */
     var DAY_MS=86400000;
@@ -1298,6 +1353,83 @@
       }).catch(function(){btnGuardarReglas.disabled=false;btnGuardarReglas.textContent='Guardar reglas';toast('Error de red',true)});
     });
 
+    /* ---- ABOGADOS (validación) ---- */
+    var aboBody=document.getElementById('abo-body');
+    function loadAbogados(){
+      if(!aboBody)return;
+      aboBody.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
+      fetch('/api/admin?action=abogados',{headers:{'X-Admin-Password':adminPwd}})
+      .then(function(r){return r.json()}).then(function(json){
+        if(!json.success)throw new Error(json.error||'Error');
+        var abos=json.abogados||[];
+        var countEl=document.getElementById('abo-count');if(countEl)countEl.textContent=abos.length+' abogados';
+        if(!abos.length){aboBody.innerHTML='<div class="state"><p class="state__txt" style="color:var(--t4)">Sin abogados registrados.</p></div>';return}
+        var h='<table><thead><tr><th>Nombre</th><th>Matrícula</th><th>Email</th><th>Teléfono</th><th>Estado</th><th>Casos</th><th>Acciones</th></tr></thead><tbody>';
+        abos.forEach(function(ab){
+          var bc='ag-badge--'+(ab.estado||'pendiente');
+          h+='<tr>';
+          h+='<td>'+esc(ab.nombre||'—')+'</td>';
+          h+='<td class="mono">'+esc(ab.matricula||'—')+'</td>';
+          h+='<td class="mono">'+esc(ab.email||'—')+'</td>';
+          h+='<td class="mono">'+esc(ab.telefono||'—')+'</td>';
+          h+='<td><span class="ag-badge '+bc+'">'+esc(ab.estado||'—')+'</span></td>';
+          h+='<td class="mono">'+(ab.num_casos||0)+'</td>';
+          h+='<td>';
+          if(ab.estado==='pendiente')h+='<button class="btn-ag btn-ag--aprobar" data-abo-id="'+ab.id+'" data-abo-action="aprobar">Aprobar</button>';
+          if(ab.estado==='activa')h+='<button class="btn-ag btn-ag--suspender" data-abo-id="'+ab.id+'" data-abo-action="suspender">Suspender</button>';
+          if(ab.estado==='suspendida')h+='<button class="btn-ag btn-ag--reactivar" data-abo-id="'+ab.id+'" data-abo-action="reactivar">Reactivar</button>';
+          h+='</td></tr>';
+        });
+        h+='</tbody></table>';
+        aboBody.innerHTML=h;
+        aboBody.querySelectorAll('[data-abo-id]').forEach(function(btn){
+          btn.addEventListener('click',function(){
+            var id=btn.getAttribute('data-abo-id');var action=btn.getAttribute('data-abo-action');
+            var label=action==='aprobar'?'Aprobar':action==='suspender'?'Suspender':'Reactivar';
+            showModal({title:label+' abogado',desc:'¿Confirmar la acción "'+action+'"?',confirmText:label,danger:action==='suspender',onConfirm:function(){
+              cmConfirm.disabled=true;cmConfirm.textContent='Procesando...';
+              fetch('/api/admin?action=abogado-accion',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:id,action:action})})
+              .then(function(r){return r.json()}).then(function(d){
+                cmConfirm.disabled=false;
+                if(d.success){closeModal();toast('Abogado '+action+' correctamente');loadAbogados()}
+                else{modalError(d.error||'Error')}
+              }).catch(function(){cmConfirm.disabled=false;modalError('Error de conexión')});
+            }});
+          });
+        });
+      }).catch(function(err){aboBody.innerHTML='<div class="state"><p class="state__txt" style="color:#C0392B">Error: '+err.message+'</p></div>'});
+    }
+    var btnRefreshAbo=document.getElementById('btn-refresh-abogados');
+    if(btnRefreshAbo)btnRefreshAbo.addEventListener('click',loadAbogados);
+
+    /* ---- NUEVO CASO ---- */
+    var ncOv=document.getElementById('nc-ov');
+    var btnNuevoCaso=document.getElementById('btn-nuevo-caso');
+    function ncVal(id){return (document.getElementById(id)||{}).value||''}
+    if(btnNuevoCaso)btnNuevoCaso.addEventListener('click',function(){if(ncOv)ncOv.classList.add('open')});
+    var ncClose=document.getElementById('nc-close');var ncCancel=document.getElementById('nc-cancel');
+    if(ncClose)ncClose.addEventListener('click',function(){ncOv.classList.remove('open')});
+    if(ncCancel)ncCancel.addEventListener('click',function(){ncOv.classList.remove('open')});
+    if(ncOv)ncOv.addEventListener('click',function(e){if(e.target===ncOv)ncOv.classList.remove('open')});
+    var ncSave=document.getElementById('nc-save');
+    if(ncSave)ncSave.addEventListener('click',function(){
+      var msg=document.getElementById('nc-msg');
+      var nombre=ncVal('nc-nombre').trim();var email=ncVal('nc-email').trim();
+      if(!nombre||!email){msg.style.color='var(--err)';msg.textContent='Nombre y email son obligatorios.';return}
+      ncSave.disabled=true;ncSave.textContent='Creando...';msg.textContent='';
+      var payload={nombre:nombre,email:email,telefono:ncVal('nc-telefono'),documento_tipo:ncVal('nc-doctype'),documento_numero:ncVal('nc-docnum'),aerolinea:ncVal('nc-aerolinea'),vuelo_nro:ncVal('nc-vuelo'),origen:ncVal('nc-origen'),destino:ncVal('nc-destino'),fecha_vuelo:ncVal('nc-fecha'),pnr:ncVal('nc-pnr'),tipo_reclamo:ncVal('nc-tipo')||'vuelo',tipo_incidencia:ncVal('nc-incidencia'),causa_informada:ncVal('nc-causa')};
+      fetch('/api/admin?action=create-case',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(payload)})
+      .then(function(r){return r.json()}).then(function(d){
+        ncSave.disabled=false;ncSave.textContent='Crear caso';
+        if(d.success){
+          toast('Caso '+(d.refCode||'')+' creado'+(d.emailSent?' · mail enviado':''));
+          ncOv.classList.remove('open');
+          ['nc-nombre','nc-email','nc-telefono','nc-docnum','nc-aerolinea','nc-vuelo','nc-origen','nc-destino','nc-fecha','nc-pnr','nc-incidencia','nc-causa'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
+          load();
+        }else{msg.style.color='var(--err)';msg.textContent=d.error||'Error al crear el caso.'}
+      }).catch(function(){ncSave.disabled=false;ncSave.textContent='Crear caso';msg.style.color='var(--err)';msg.textContent='Error de conexión.'});
+    });
+
     /* ---- CONFIG: Toggle clicks ---- */
     document.querySelectorAll('.cfg-toggle .toggle').forEach(function(t){
       t.addEventListener('click',function(){t.classList.toggle('on')});
@@ -1466,7 +1598,8 @@
         if(viewConfig)viewConfig.style.display='none';
         if(viewTrash)viewTrash.style.display='none';
         if(viewAlertas)viewAlertas.style.display='none';
-        ['nav-reclamos','nav-config','nav-trash','nav-alertas'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.remove('active'); });
+        if(viewAbogados)viewAbogados.style.display='none';
+        ['nav-reclamos','nav-config','nav-trash','nav-alertas','nav-abogados'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.remove('active'); });
         loadAgencias();
       }
     };
