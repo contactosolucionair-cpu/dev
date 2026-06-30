@@ -290,26 +290,31 @@ async function createCase(req, res, SB_URL, SB_KEY) {
     tipo_reclamo:     body.tipo_reclamo      || 'vuelo',
     tipo_incidencia:  body.tipo_incidencia   || null,
     horas_retraso:    body.horas_retraso ? parseInt(body.horas_retraso) || null : null,
+    anticipacion_aviso:     body.anticipacion_aviso     || null,
+    ofrecimiento_aerolinea: body.ofrecimiento_aerolinea || null,
     causa_informada:  body.causa_informada   || null,
     moneda_gastos:    body.moneda_gastos     || null,
     monto_gastos:     body.monto_gastos ? parseFloat(body.monto_gastos) || null : null,
     gastos_detalle:   body.gastos_detalle    || null,
-    tipo_caso_equipaje:   body.tipo_caso_equipaje   || null,
-    descripcion_equipaje: body.descripcion_equipaje || null,
-    valor_equipaje:       body.valor_equipaje ? parseFloat(body.valor_equipaje) || null : null,
+    tipo_caso_equipaje:    body.tipo_caso_equipaje    || null,
+    descripcion_equipaje:  body.descripcion_equipaje  || null,
+    valor_equipaje:        body.valor_equipaje ? parseFloat(body.valor_equipaje) || null : null,
+    fecha_entrega_equipaje: body.fecha_entrega_equipaje || null,
     ref_code: refCode, estado: 'pendiente', fecha_carga: nowIso,
     estado_historial: [{ estado: 'pendiente', fecha: nowIso, por: 'admin' }],
   };
 
   var insertRes = await fetch(SB_URL + '/rest/v1/reclamos', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=representation' },
     body: JSON.stringify(row),
   });
   if (!insertRes.ok) {
     console.error('[admin/create-case] INSERT error:', (await insertRes.text()).substring(0, 400));
     return res.status(500).json({ error: 'Error al guardar el caso.' });
   }
+  var insertedId = null;
+  try { var ins = JSON.parse(await insertRes.text()); insertedId = (Array.isArray(ins) ? ins[0] : ins).id; } catch (e) {}
 
   /* Mail de confirmación al cliente (Resend) */
   var RESEND_KEY = process.env.RESEND_API_KEY;
@@ -347,5 +352,5 @@ async function createCase(req, res, SB_URL, SB_KEY) {
     } catch (e) { console.error('[admin/create-case] Resend error:', e.message); }
   }
 
-  return res.status(200).json({ success: true, refCode: refCode, emailSent: emailSent });
+  return res.status(200).json({ success: true, refCode: refCode, id: insertedId, emailSent: emailSent });
 }

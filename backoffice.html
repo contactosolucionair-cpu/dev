@@ -349,21 +349,26 @@
 
     <!-- Nuevo caso modal -->
     <div class="cm-ov" id="nc-ov">
-      <div class="cm" style="max-width:640px;text-align:left;max-height:90vh;overflow-y:auto">
+      <div class="cm" style="max-width:680px;text-align:left;max-height:92vh;overflow-y:auto">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <div class="cm__title" style="margin:0">Nuevo caso</div>
           <button class="detail__close" id="nc-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
+
         <div class="detail__label" style="margin-bottom:6px">Pasajero</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
           <input id="nc-nombre" class="firma-select" placeholder="Nombre y apellido *">
           <input id="nc-email" type="email" class="firma-select" placeholder="Email *">
           <input id="nc-telefono" class="firma-select" placeholder="Teléfono">
-          <select id="nc-doctype" class="firma-select"><option value="">Tipo doc...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>
+          <select id="nc-doctype" class="firma-select"><option value="">Tipo de documento...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>
           <input id="nc-docnum" class="firma-select" placeholder="Número de documento">
         </div>
+
+        <div class="detail__label" style="margin-bottom:6px">Tipo de reclamo</div>
+        <select id="nc-tipo" class="firma-select" style="width:100%;margin-bottom:14px"><option value="vuelo">Reclamo por vuelo</option><option value="equipaje">Reclamo por equipaje</option><option value="vuelo_equipaje">Vuelo + Equipaje</option></select>
+
         <div class="detail__label" style="margin-bottom:6px">Vuelo</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
           <input id="nc-aerolinea" class="firma-select" placeholder="Aerolínea">
           <input id="nc-vuelo" class="firma-select" placeholder="Número de vuelo">
           <input id="nc-origen" class="firma-select" placeholder="Origen">
@@ -371,13 +376,40 @@
           <input id="nc-fecha" type="date" class="firma-select">
           <input id="nc-pnr" class="firma-select" placeholder="PNR">
         </div>
-        <div class="detail__label" style="margin-bottom:6px">Caso</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-          <select id="nc-tipo" class="firma-select"><option value="vuelo">Vuelo</option><option value="equipaje">Equipaje</option><option value="vuelo_equipaje">Vuelo + Equipaje</option></select>
-          <input id="nc-incidencia" class="firma-select" placeholder="Tipo de incidencia (demora, cancelación...)">
-          <input id="nc-causa" class="firma-select" placeholder="Causa informada (opcional)">
+
+        <div id="nc-sec-vuelo">
+          <div class="detail__label" style="margin-bottom:6px">Incidencia</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+            <select id="nc-incidencia" class="firma-select"><option value="">Tipo de incidencia...</option><option value="cancelacion">Cancelación</option><option value="demora">Demora</option><option value="overbooking">Overbooking</option><option value="reprogramacion">Reprogramación</option><option value="denegacion">Denegación de embarque</option></select>
+            <input id="nc-delay" type="number" min="0" class="firma-select" placeholder="Horas de retraso">
+            <input id="nc-notice" class="firma-select" placeholder="Anticipación de notificación">
+            <select id="nc-refund" class="firma-select"><option value="">¿Ofrecieron reembolso?</option><option value="si">Sí</option><option value="no">No</option></select>
+            <select id="nc-causa" class="firma-select"><option value="">Causa informada...</option><option value="operativa">Operativa</option><option value="tecnica">Técnica</option><option value="climatica">Climática</option><option value="atc">ATC</option><option value="otra">Otra</option><option value="no_informada">No informada</option></select>
+          </div>
+          <div class="detail__label" style="margin-bottom:6px">Gastos</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <select id="nc-moneda" class="firma-select"><option value="ARS">ARS (Peso argentino)</option><option value="USD">USD (Dólar)</option><option value="EUR">EUR (Euro)</option><option value="BRL">BRL (Real)</option></select>
+            <input id="nc-monto" type="number" min="0" step="0.01" class="firma-select" placeholder="Monto total">
+          </div>
+          <textarea id="nc-gastos-detalle" class="firma-select" rows="2" style="width:100%;margin-bottom:14px;resize:vertical" placeholder="Detalle de gastos"></textarea>
         </div>
-        <p style="font-size:.66rem;color:var(--t4);margin:8px 0 0">Se enviará un mail de confirmación al cliente con el número de caso.</p>
+
+        <div id="nc-sec-equipaje">
+          <div class="detail__label" style="margin-bottom:6px">Equipaje</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <select id="nc-bag-type" class="firma-select"><option value="">Tipo de incidencia...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select>
+            <input id="nc-bag-delivery" type="date" class="firma-select" style="display:none">
+            <input id="nc-bag-value" type="number" min="0" class="firma-select" placeholder="Valor estimado (USD)">
+          </div>
+          <textarea id="nc-bag-desc" class="firma-select" rows="2" style="width:100%;margin-bottom:14px;resize:vertical" placeholder="Descripción del incidente"></textarea>
+        </div>
+
+        <div class="detail__label" style="margin-bottom:6px">Adjuntos</div>
+        <div class="upload-zone" id="nc-upload-zone" style="margin-top:0">Arrastrar archivos o hacer click para adjuntar</div>
+        <input type="file" id="nc-files" multiple style="display:none">
+        <div id="nc-files-list" style="margin-top:6px"></div>
+
+        <p style="font-size:.66rem;color:var(--t4);margin:12px 0 0">Se enviará un mail de confirmación al cliente con el número de caso.</p>
         <div id="nc-msg" style="font-family:var(--fm);font-size:.66rem;min-height:14px;margin:6px 0 8px"></div>
         <div class="cm__btns" style="justify-content:flex-end">
           <button class="cm__btn cm__btn--cancel" id="nc-cancel" type="button">Cancelar</button>
@@ -1405,28 +1437,73 @@
     /* ---- NUEVO CASO ---- */
     var ncOv=document.getElementById('nc-ov');
     var btnNuevoCaso=document.getElementById('btn-nuevo-caso');
+    var ncFiles=[];
     function ncVal(id){return (document.getElementById(id)||{}).value||''}
-    if(btnNuevoCaso)btnNuevoCaso.addEventListener('click',function(){if(ncOv)ncOv.classList.add('open')});
+    function ncToggleSecciones(){
+      var t=ncVal('nc-tipo')||'vuelo';
+      var secV=document.getElementById('nc-sec-vuelo');var secE=document.getElementById('nc-sec-equipaje');
+      if(secV)secV.style.display=(t==='vuelo'||t==='vuelo_equipaje')?'':'none';
+      if(secE)secE.style.display=(t==='equipaje'||t==='vuelo_equipaje')?'':'none';
+    }
+    function ncRenderFiles(){
+      var el=document.getElementById('nc-files-list');if(!el)return;
+      el.innerHTML=ncFiles.map(function(f,i){return '<div class="upload-item"><span class="upload-item__name">'+esc(f.name)+'</span><button data-ncf="'+i+'" type="button" class="btn-del" title="Quitar">✕</button></div>'}).join('');
+      el.querySelectorAll('[data-ncf]').forEach(function(b){b.addEventListener('click',function(){ncFiles.splice(parseInt(b.getAttribute('data-ncf')),1);ncRenderFiles()})});
+    }
+    function ncReset(){
+      ['nc-nombre','nc-email','nc-telefono','nc-docnum','nc-aerolinea','nc-vuelo','nc-origen','nc-destino','nc-fecha','nc-pnr','nc-delay','nc-notice','nc-monto','nc-gastos-detalle','nc-bag-value','nc-bag-desc','nc-bag-delivery'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
+      ['nc-doctype','nc-incidencia','nc-refund','nc-causa','nc-bag-type'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
+      var t=document.getElementById('nc-tipo');if(t)t.value='vuelo';
+      var m=document.getElementById('nc-moneda');if(m)m.value='ARS';
+      ncFiles=[];ncRenderFiles();ncToggleSecciones();
+      var bd=document.getElementById('nc-bag-delivery');if(bd)bd.style.display='none';
+    }
+    if(btnNuevoCaso)btnNuevoCaso.addEventListener('click',function(){if(ncOv){ncReset();ncOv.classList.add('open')}});
+    var ncTipo=document.getElementById('nc-tipo');if(ncTipo)ncTipo.addEventListener('change',ncToggleSecciones);
+    var ncBagType=document.getElementById('nc-bag-type');if(ncBagType)ncBagType.addEventListener('change',function(){var bd=document.getElementById('nc-bag-delivery');if(bd)bd.style.display=ncBagType.value==='demora'?'':'none'});
     var ncClose=document.getElementById('nc-close');var ncCancel=document.getElementById('nc-cancel');
     if(ncClose)ncClose.addEventListener('click',function(){ncOv.classList.remove('open')});
     if(ncCancel)ncCancel.addEventListener('click',function(){ncOv.classList.remove('open')});
     if(ncOv)ncOv.addEventListener('click',function(e){if(e.target===ncOv)ncOv.classList.remove('open')});
+    var ncZone=document.getElementById('nc-upload-zone');var ncInp=document.getElementById('nc-files');
+    if(ncZone&&ncInp){
+      ncZone.addEventListener('click',function(){ncInp.click()});
+      ncInp.addEventListener('change',function(){Array.from(ncInp.files).forEach(function(f){ncFiles.push(f)});ncInp.value='';ncRenderFiles()});
+      ncZone.addEventListener('dragover',function(e){e.preventDefault();ncZone.classList.add('drag')});
+      ncZone.addEventListener('dragleave',function(){ncZone.classList.remove('drag')});
+      ncZone.addEventListener('drop',function(e){e.preventDefault();ncZone.classList.remove('drag');Array.from(e.dataTransfer.files).forEach(function(f){ncFiles.push(f)});ncRenderFiles()});
+    }
+    function ncUploadAll(caseId,cb){
+      if(!ncFiles.length||!caseId){cb();return}
+      var done=0,n=ncFiles.length;
+      ncFiles.forEach(function(file){
+        var url='/api/admin?action=upload&id='+encodeURIComponent(caseId)+'&filename='+encodeURIComponent(file.name)+'&tipo=documento&nombre='+encodeURIComponent(file.name);
+        fetch(url,{method:'POST',headers:{'Content-Type':file.type||'application/octet-stream','X-Admin-Password':adminPwd},body:file})
+        .then(function(){done++;if(done===n)cb()}).catch(function(){done++;if(done===n)cb()});
+      });
+    }
     var ncSave=document.getElementById('nc-save');
     if(ncSave)ncSave.addEventListener('click',function(){
       var msg=document.getElementById('nc-msg');
       var nombre=ncVal('nc-nombre').trim();var email=ncVal('nc-email').trim();
       if(!nombre||!email){msg.style.color='var(--err)';msg.textContent='Nombre y email son obligatorios.';return}
       ncSave.disabled=true;ncSave.textContent='Creando...';msg.textContent='';
-      var payload={nombre:nombre,email:email,telefono:ncVal('nc-telefono'),documento_tipo:ncVal('nc-doctype'),documento_numero:ncVal('nc-docnum'),aerolinea:ncVal('nc-aerolinea'),vuelo_nro:ncVal('nc-vuelo'),origen:ncVal('nc-origen'),destino:ncVal('nc-destino'),fecha_vuelo:ncVal('nc-fecha'),pnr:ncVal('nc-pnr'),tipo_reclamo:ncVal('nc-tipo')||'vuelo',tipo_incidencia:ncVal('nc-incidencia'),causa_informada:ncVal('nc-causa')};
+      var tipo=ncVal('nc-tipo')||'vuelo';
+      var payload={nombre:nombre,email:email,telefono:ncVal('nc-telefono'),documento_tipo:ncVal('nc-doctype'),documento_numero:ncVal('nc-docnum'),
+        aerolinea:ncVal('nc-aerolinea'),vuelo_nro:ncVal('nc-vuelo'),origen:ncVal('nc-origen'),destino:ncVal('nc-destino'),fecha_vuelo:ncVal('nc-fecha'),pnr:ncVal('nc-pnr'),
+        tipo_reclamo:tipo,
+        tipo_incidencia:ncVal('nc-incidencia'),horas_retraso:ncVal('nc-delay'),anticipacion_aviso:ncVal('nc-notice'),ofrecimiento_aerolinea:ncVal('nc-refund'),causa_informada:ncVal('nc-causa'),
+        moneda_gastos:ncVal('nc-moneda'),monto_gastos:ncVal('nc-monto'),gastos_detalle:ncVal('nc-gastos-detalle'),
+        tipo_caso_equipaje:ncVal('nc-bag-type'),descripcion_equipaje:ncVal('nc-bag-desc'),valor_equipaje:ncVal('nc-bag-value'),fecha_entrega_equipaje:ncVal('nc-bag-delivery')};
       fetch('/api/admin?action=create-case',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(payload)})
       .then(function(r){return r.json()}).then(function(d){
-        ncSave.disabled=false;ncSave.textContent='Crear caso';
-        if(d.success){
+        if(!d.success){ncSave.disabled=false;ncSave.textContent='Crear caso';msg.style.color='var(--err)';msg.textContent=d.error||'Error al crear el caso.';return}
+        msg.style.color='var(--t4)';msg.textContent='Subiendo adjuntos...';
+        ncUploadAll(d.id,function(){
+          ncSave.disabled=false;ncSave.textContent='Crear caso';
           toast('Caso '+(d.refCode||'')+' creado'+(d.emailSent?' · mail enviado':''));
-          ncOv.classList.remove('open');
-          ['nc-nombre','nc-email','nc-telefono','nc-docnum','nc-aerolinea','nc-vuelo','nc-origen','nc-destino','nc-fecha','nc-pnr','nc-incidencia','nc-causa'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
-          load();
-        }else{msg.style.color='var(--err)';msg.textContent=d.error||'Error al crear el caso.'}
+          ncOv.classList.remove('open');ncReset();load();
+        });
       }).catch(function(){ncSave.disabled=false;ncSave.textContent='Crear caso';msg.style.color='var(--err)';msg.textContent='Error de conexión.'});
     });
 
