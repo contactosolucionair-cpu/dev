@@ -253,7 +253,7 @@
 
       <!-- ALERTAS VIEW -->
       <div id="view-alertas" style="display:none">
-        <div class="main__header"><h1 class="main__title">Alertas</h1><button class="btn btn--primary" id="btn-refresh-alertas" type="button">Actualizar</button></div>
+        <div class="main__header"><h1 class="main__title">Alertas</h1><div style="display:flex;gap:8px"><button class="btn btn--ghost" id="btn-admin-alertas" type="button">Administrar alertas</button><button class="btn btn--primary" id="btn-refresh-alertas" type="button">Actualizar</button></div></div>
         <div id="alertas-body"><div class="state"><p class="state__txt">Cargando...</p></div></div>
       </div><!-- /view-alertas -->
 
@@ -336,6 +336,31 @@
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
+
+    <!-- Administrar alertas modal -->
+    <div class="cm-ov" id="alertas-admin-ov">
+      <div class="cm" style="max-width:580px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Administrar alertas</div>
+          <button class="detail__close" id="alertas-admin-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div id="alertas-admin-list" style="margin-bottom:16px"></div>
+        <div style="border-top:1px solid var(--bdl);padding-top:14px">
+          <div class="detail__label" style="margin-bottom:8px">Nueva alerta — caso en un estado por más de N días</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <input id="nueva-label" type="text" class="firma-select" placeholder="Nombre de la alerta" style="flex:1;min-width:150px">
+            <select id="nueva-estado" class="firma-select" style="flex:1;min-width:150px"><option value="">Estado...</option></select>
+            <input id="nueva-dias" type="number" min="1" class="firma-select" placeholder="Días" style="width:80px;font-family:var(--fm)">
+            <button class="btn btn--ghost" id="btn-nueva-alerta" type="button">+ Agregar</button>
+          </div>
+          <div id="nueva-alerta-msg" style="font-family:var(--fm);font-size:.66rem;min-height:14px;margin-top:6px"></div>
+        </div>
+        <div class="cm__btns" style="margin-top:16px;justify-content:flex-end">
+          <button class="cm__btn cm__btn--cancel" id="alertas-admin-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="btn-guardar-reglas" type="button">Guardar reglas</button>
+        </div>
+      </div>
+    </div>
 
     <div class="panel-overlay" id="panel-overlay"></div>
     <div class="detail" id="detail-panel">
@@ -1097,65 +1122,180 @@
     if(navTrash)navTrash.addEventListener('click',function(){showView('trash')});
     if(navAlertas)navAlertas.addEventListener('click',function(){showView('alertas')});
 
-    /* ---- ALERTAS ---- */
+    /* ---- ALERTAS (feed único + reglas configurables + descarte manual) ---- */
     var DAY_MS=86400000;
     var TERMINAL=['cerrado','rechazado','no_apto','cancelado','resuelto','aprobado'];
+    var DEFAULT_REGLAS=[
+      {id:'pendiente',label:'Pendiente sin avanzar',tipo:'estado_dias',estado:'pendiente',dias:2,enabled:true,builtin:true},
+      {id:'reclamado',label:'Reclamado a aerolínea',tipo:'estado_dias',estado:'reclamado_aerolinea',dias:7,enabled:true,builtin:true},
+      {id:'mediacion',label:'Mediación próxima',tipo:'mediacion',dias:1,enabled:true,builtin:true},
+      {id:'sin_update',label:'Sin update al cliente',tipo:'sin_update',dias:7,enabled:true,builtin:true}
+    ];
+    var alertRules=DEFAULT_REGLAS.map(function(r){return Object.assign({},r)});
+    var alertRulesLoaded=false;
+    function ensureRules(cb){
+      if(alertRulesLoaded||!adminPwd){if(cb)cb();return}
+      fetch('/api/admin?action=alertas-get',{headers:{'X-Admin-Password':adminPwd}})
+      .then(function(r){return r.json()}).then(function(d){
+        alertRulesLoaded=true;
+        if(d&&d.reglas&&d.reglas.length)alertRules=d.reglas;
+        if(cb)cb();
+      }).catch(function(){alertRulesLoaded=true;if(cb)cb()});
+    }
     function _estadoFecha(c,est){var hh=Array.isArray(c.estado_historial)?c.estado_historial:[];for(var i=hh.length-1;i>=0;i--){if(hh[i].estado===est&&hh[i].fecha)return new Date(hh[i].fecha)}return null}
     function _diasDesde(d){return d?Math.floor((Date.now()-new Date(d).getTime())/DAY_MS):null}
-    function computeAlertas(){
-      var act=claims.filter(function(c){return !c.deleted_at&&c.estado!=='eliminado'});
-      var A={pendientes:[],reclamados:[],mediaciones:[],sinUpdate:[]};
-      act.forEach(function(c){
-        var est=c.estado||'pendiente';
-        if(est==='pendiente'){var dd=_diasDesde(c.creado_en);if(dd!=null&&dd>=2)A.pendientes.push({c:c,dias:dd})}
-        if(est==='reclamado_aerolinea'){var f=_estadoFecha(c,'reclamado_aerolinea')||(c.creado_en?new Date(c.creado_en):null);var dd2=_diasDesde(f);if(dd2!=null&&dd2>=7){A.reclamados.push({c:c,dias:dd2,hito:dd2>=21?21:dd2>=14?14:7})}}
-        if(c.fecha_mediacion&&TERMINAL.indexOf(est)===-1){var diff=new Date(c.fecha_mediacion).getTime()-Date.now();if(diff<=DAY_MS&&diff>=-DAY_MS)A.mediaciones.push({c:c,diff:diff})}
-        if(TERMINAL.indexOf(est)===-1){var dd3=_diasDesde(c.ultimo_update_cliente||c.creado_en);if(dd3!=null&&dd3>=7)A.sinUpdate.push({c:c,dias:dd3})}
-      });
-      return A;
+    function _descartada(c,reglaId,ref){
+      var da=Array.isArray(c.alertas_descartadas)?c.alertas_descartadas:[];
+      for(var i=0;i<da.length;i++){if(da[i].regla===reglaId&&da[i].fecha&&ref&&new Date(da[i].fecha).getTime()>=new Date(ref).getTime())return true}
+      return false;
     }
-    function _alertRow(it,extra,withBtn){
-      var c=it.c;
-      var h='<div class="upload-item" style="cursor:pointer;justify-content:space-between" data-alert-id="'+c.id+'">';
-      h+='<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:.78rem;color:var(--t1)"><span class="mono">'+(c.ref_code||'—')+'</span> · '+esc(c.nombre||'—')+'</span><span style="font-size:.68rem;color:var(--t4)">'+extra+'</span></div>';
-      if(withBtn)h+='<button class="btn btn--ghost" data-update-id="'+c.id+'" type="button" style="font-size:.66rem;white-space:nowrap">Confirmé update</button>';
-      h+='</div>';return h;
+    function evalRegla(regla,c){
+      var est=c.estado||'pendiente';
+      if(regla.tipo==='estado_dias'){
+        if(est!==regla.estado)return null;
+        var ref=_estadoFecha(c,regla.estado)||(c.creado_en?new Date(c.creado_en):null);
+        var dd=_diasDesde(ref);if(dd==null||dd<(regla.dias||0))return null;
+        return {ref:ref,texto:'En "'+estadoLabel(regla.estado)+'" hace '+dd+' días'};
+      }
+      if(regla.tipo==='mediacion'){
+        if(!c.fecha_mediacion||TERMINAL.indexOf(est)!==-1)return null;
+        var diff=new Date(c.fecha_mediacion).getTime()-Date.now();
+        if(diff>(regla.dias||1)*DAY_MS||diff< -DAY_MS)return null;
+        return {ref:new Date(c.fecha_mediacion),texto:'Mediación: '+fmtFechaHora(c.fecha_mediacion)};
+      }
+      if(regla.tipo==='sin_update'){
+        if(TERMINAL.indexOf(est)!==-1)return null;
+        var refU=c.ultimo_update_cliente||c.creado_en;
+        var ddU=_diasDesde(refU);if(ddU==null||ddU<(regla.dias||0))return null;
+        return {ref:refU?new Date(refU):null,texto:'Último update hace '+ddU+' días',accionUpdate:true};
+      }
+      return null;
+    }
+    function computeAlertas(){
+      var out=[];
+      var act=claims.filter(function(c){return !c.deleted_at&&c.estado!=='eliminado'});
+      alertRules.forEach(function(regla){
+        if(regla.enabled===false)return;
+        act.forEach(function(c){
+          var hit=evalRegla(regla,c);
+          if(!hit)return;
+          if(_descartada(c,regla.id,hit.ref))return;
+          out.push({regla:regla,c:c,ref:hit.ref,texto:hit.texto,accionUpdate:hit.accionUpdate});
+        });
+      });
+      out.sort(function(a,b){return (a.ref?new Date(a.ref).getTime():0)-(b.ref?new Date(b.ref).getTime():0)});
+      return out;
     }
     function renderAlertas(){
       var body=document.getElementById('alertas-body');if(!body)return;
-      var A=computeAlertas();
-      var total=A.pendientes.length+A.reclamados.length+A.mediaciones.length+A.sinUpdate.length;
-      var cnt=document.getElementById('nav-alertas-count');
-      if(cnt){if(total>0){cnt.textContent=total;cnt.style.display=''}else{cnt.style.display='none'}}
-      function group(titulo,arr,render){
-        var h='<div class="tbl-wrap" style="margin-bottom:16px"><div class="tbl-bar"><span class="tbl-bar__title">'+titulo+'</span><span class="tbl-bar__count">'+arr.length+'</span></div><div style="padding:10px 16px">';
-        if(!arr.length)h+='<p style="font-size:.74rem;color:var(--t4);margin:0">Sin alertas.</p>';else arr.forEach(function(it){h+=render(it)});
-        h+='</div></div>';return h;
-      }
-      var html='';
-      html+=group('Pendientes hace +2 días',A.pendientes,function(it){return _alertRow(it,'Pendiente hace '+it.dias+' días',false)});
-      html+=group('Reclamados a la aerolínea (7 / 14 / 21 días)',A.reclamados,function(it){return _alertRow(it,'Reclamado hace '+it.dias+' días — hito '+it.hito,false)});
-      html+=group('Mediación próxima (±1 día)',A.mediaciones,function(it){return _alertRow(it,'Mediación: '+fmtFechaHora(it.c.fecha_mediacion),false)});
-      html+=group('Sin update al cliente hace +7 días',A.sinUpdate,function(it){return _alertRow(it,'Último update hace '+it.dias+' días',true)});
-      body.innerHTML=html;
-      body.querySelectorAll('[data-alert-id]').forEach(function(row){
-        row.addEventListener('click',function(e){if(e.target.closest('[data-update-id]'))return;var id=row.getAttribute('data-alert-id');var c=null;claims.forEach(function(cl){if(cl.id===id)c=cl});if(c)openDetail(c)});
-      });
-      body.querySelectorAll('[data-update-id]').forEach(function(btn){
-        btn.addEventListener('click',function(e){
-          e.stopPropagation();var id=btn.getAttribute('data-update-id');btn.disabled=true;btn.textContent='...';
-          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'confirm-update-cliente'})})
-          .then(function(r){return r.json()}).then(function(d){
-            if(d.success){claims.forEach(function(cl){if(cl.id===id){cl.ultimo_update_cliente=d.ultimo_update_cliente;cl.novedades=d.novedades}});toast('Update registrado');renderAlertas()}
-            else{btn.disabled=false;btn.textContent='Confirmé update';toast(d.error||'Error',true)}
-          }).catch(function(){btn.disabled=false;btn.textContent='Confirmé update';toast('Error de red',true)});
+      ensureRules(function(){
+        var items=computeAlertas();
+        var cnt=document.getElementById('nav-alertas-count');
+        if(cnt){if(items.length>0){cnt.textContent=items.length;cnt.style.display=''}else{cnt.style.display='none'}}
+        var h='<div class="tbl-wrap"><div class="tbl-bar"><span class="tbl-bar__title">Alertas activas</span><span class="tbl-bar__count">'+items.length+'</span></div><div style="padding:10px 16px">';
+        if(!items.length){h+='<p style="font-size:.74rem;color:var(--t4);margin:0">No hay alertas activas. 🎉</p>'}
+        else items.forEach(function(it){
+          h+='<div class="upload-item" style="cursor:pointer;justify-content:space-between;gap:10px" data-alert-id="'+it.c.id+'">';
+          h+='<div style="display:flex;flex-direction:column;gap:3px;min-width:0">';
+          h+='<span><span class="badge badge--pendiente">'+esc(it.regla.label)+'</span></span>';
+          h+='<span style="font-size:.78rem;color:var(--t1)"><span class="mono">'+(it.c.ref_code||'—')+'</span> · '+esc(it.c.nombre||'—')+'</span>';
+          h+='<span style="font-size:.68rem;color:var(--t4)">'+esc(it.texto)+'</span></div>';
+          h+='<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">';
+          if(it.accionUpdate)h+='<button class="btn btn--ghost" data-update-id="'+it.c.id+'" type="button" style="font-size:.66rem;white-space:nowrap">Confirmé update</button>';
+          h+='<button class="btn btn--ghost" data-dismiss-id="'+it.c.id+'" data-dismiss-regla="'+esc(it.regla.id)+'" type="button" title="Eliminar alerta" style="font-size:.66rem;padding:4px 8px">✕</button>';
+          h+='</div></div>';
+        });
+        h+='</div></div>';
+        body.innerHTML=h;
+        body.querySelectorAll('[data-alert-id]').forEach(function(row){
+          row.addEventListener('click',function(e){if(e.target.closest('button'))return;var id=row.getAttribute('data-alert-id');var c=null;claims.forEach(function(cl){if(cl.id===id)c=cl});if(c)openDetail(c)});
+        });
+        body.querySelectorAll('[data-update-id]').forEach(function(btn){
+          btn.addEventListener('click',function(e){
+            e.stopPropagation();var id=btn.getAttribute('data-update-id');btn.disabled=true;btn.textContent='...';
+            fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'confirm-update-cliente'})})
+            .then(function(r){return r.json()}).then(function(d){
+              if(d.success){claims.forEach(function(cl){if(cl.id===id){cl.ultimo_update_cliente=d.ultimo_update_cliente;cl.novedades=d.novedades}});toast('Update registrado');renderAlertas()}
+              else{btn.disabled=false;btn.textContent='Confirmé update';toast(d.error||'Error',true)}
+            }).catch(function(){btn.disabled=false;btn.textContent='Confirmé update';toast('Error de red',true)});
+          });
+        });
+        body.querySelectorAll('[data-dismiss-id]').forEach(function(btn){
+          btn.addEventListener('click',function(e){
+            e.stopPropagation();
+            if(!confirm('¿Eliminar esta alerta? Reaparecerá solo si la condición se vuelve a gatillar más adelante.'))return;
+            var id=btn.getAttribute('data-dismiss-id');var regla=btn.getAttribute('data-dismiss-regla');btn.disabled=true;
+            fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'dismiss-alerta',regla:regla})})
+            .then(function(r){return r.json()}).then(function(d){
+              if(d.success){claims.forEach(function(cl){if(cl.id===id)cl.alertas_descartadas=d.alertas_descartadas});toast('Alerta eliminada');renderAlertas()}
+              else{btn.disabled=false;toast(d.error||'Error',true)}
+            }).catch(function(){btn.disabled=false;toast('Error de red',true)});
+          });
         });
       });
     }
     var btnRefreshAlertas=document.getElementById('btn-refresh-alertas');
     if(btnRefreshAlertas)btnRefreshAlertas.addEventListener('click',function(){
       var body=document.getElementById('alertas-body');if(body)body.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Actualizando...</p></div>';
+      alertRulesLoaded=false;
       fetch('/api/get-claims').then(function(r){return r.json()}).then(function(j){if(j.success){claims=j.claims||[];applyFilters()}renderAlertas()}).catch(function(){renderAlertas()});
+    });
+
+    /* ---- Administrar alertas (reglas) ---- */
+    function renderReglasAdmin(){
+      var cont=document.getElementById('alertas-admin-list');if(!cont)return;
+      var h='';
+      alertRules.forEach(function(regla,idx){
+        var desc=regla.tipo==='estado_dias'?('Estado "'+estadoLabel(regla.estado)+'" por más de N días'):regla.tipo==='mediacion'?('Mediación dentro de N día(s)'):('Sin update al cliente por más de N días');
+        h+='<div class="upload-item" style="justify-content:space-between;gap:10px">';
+        h+='<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:.8rem;color:var(--t1)">'+esc(regla.label)+'</span><span style="font-size:.66rem;color:var(--t4)">'+esc(desc)+'</span></div>';
+        h+='<div style="display:flex;gap:8px;align-items:center;flex-shrink:0">';
+        h+='<input type="number" min="1" class="firma-select" data-regla-dias="'+idx+'" value="'+regla.dias+'" style="width:64px;font-family:var(--fm)" title="Días">';
+        h+='<span class="toggle'+(regla.enabled!==false?' on':'')+'" data-regla-toggle="'+idx+'"></span>';
+        if(!regla.builtin)h+='<button class="btn-del" data-regla-del="'+idx+'" type="button" title="Eliminar regla">✕</button>';
+        h+='</div></div>';
+      });
+      cont.innerHTML=h;
+      cont.querySelectorAll('[data-regla-toggle]').forEach(function(t){t.addEventListener('click',function(){var i=parseInt(t.getAttribute('data-regla-toggle'));alertRules[i].enabled=!(alertRules[i].enabled!==false);t.classList.toggle('on',alertRules[i].enabled)})});
+      cont.querySelectorAll('[data-regla-dias]').forEach(function(inp){inp.addEventListener('change',function(){var i=parseInt(inp.getAttribute('data-regla-dias'));alertRules[i].dias=parseInt(inp.value)||1})});
+      cont.querySelectorAll('[data-regla-del]').forEach(function(b){b.addEventListener('click',function(){var i=parseInt(b.getAttribute('data-regla-del'));alertRules.splice(i,1);renderReglasAdmin()})});
+    }
+    var aAdminOv=document.getElementById('alertas-admin-ov');
+    var btnAdminAlertas=document.getElementById('btn-admin-alertas');
+    if(btnAdminAlertas)btnAdminAlertas.addEventListener('click',function(){
+      ensureRules(function(){
+        renderReglasAdmin();
+        var ne=document.getElementById('nueva-estado');
+        if(ne)ne.innerHTML='<option value="">Estado...</option>'+ESTADO_GROUPS.reduce(function(acc,g){return acc+g[1].map(function(v){return '<option value="'+v+'">'+estadoLabel(v)+'</option>'}).join('')},'');
+        if(aAdminOv)aAdminOv.classList.add('open');
+      });
+    });
+    var aAdminClose=document.getElementById('alertas-admin-close');
+    var aAdminCancel=document.getElementById('alertas-admin-cancel');
+    if(aAdminClose)aAdminClose.addEventListener('click',function(){aAdminOv.classList.remove('open')});
+    if(aAdminCancel)aAdminCancel.addEventListener('click',function(){aAdminOv.classList.remove('open')});
+    if(aAdminOv)aAdminOv.addEventListener('click',function(e){if(e.target===aAdminOv)aAdminOv.classList.remove('open')});
+    var btnNuevaAlerta=document.getElementById('btn-nueva-alerta');
+    if(btnNuevaAlerta)btnNuevaAlerta.addEventListener('click',function(){
+      var label=(document.getElementById('nueva-label')||{}).value||'';
+      var estadoN=(document.getElementById('nueva-estado')||{}).value||'';
+      var diasN=parseInt((document.getElementById('nueva-dias')||{}).value)||0;
+      var msg=document.getElementById('nueva-alerta-msg');
+      if(!label.trim()||!estadoN||!diasN){if(msg){msg.style.color='var(--err)';msg.textContent='Completá nombre, estado y días.'}return}
+      alertRules.push({id:'r'+Date.now(),label:label.trim(),tipo:'estado_dias',estado:estadoN,dias:diasN,enabled:true,builtin:false});
+      document.getElementById('nueva-label').value='';document.getElementById('nueva-dias').value='';
+      if(msg){msg.style.color='';msg.textContent=''}
+      renderReglasAdmin();
+    });
+    var btnGuardarReglas=document.getElementById('btn-guardar-reglas');
+    if(btnGuardarReglas)btnGuardarReglas.addEventListener('click',function(){
+      btnGuardarReglas.disabled=true;btnGuardarReglas.textContent='Guardando...';
+      fetch('/api/admin?action=alertas-save',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({reglas:alertRules})})
+      .then(function(r){return r.json()}).then(function(d){
+        btnGuardarReglas.disabled=false;btnGuardarReglas.textContent='Guardar reglas';
+        if(d.success){toast('Reglas guardadas');if(aAdminOv)aAdminOv.classList.remove('open');renderAlertas()}
+        else{toast(d.error||'Error',true)}
+      }).catch(function(){btnGuardarReglas.disabled=false;btnGuardarReglas.textContent='Guardar reglas';toast('Error de red',true)});
     });
 
     /* ---- CONFIG: Toggle clicks ---- */

@@ -171,6 +171,27 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, action: 'confirm-update-cliente', ultimo_update_cliente: nowTs, novedades: cuNov });
     }
 
+    /* ---- DESCARTAR ALERTA (manual) ---- */
+    if (body.action === 'dismiss-alerta') {
+      var regla = (body.regla || '').trim();
+      if (!regla) return res.status(400).json({ error: 'regla requerida' });
+      var daRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=alertas_descartadas', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      });
+      var daRows = await daRes.json();
+      var descartadas = Array.isArray(daRows[0]?.alertas_descartadas) ? daRows[0].alertas_descartadas : [];
+      /* Reemplaza descarte previo de la misma regla con la fecha actual */
+      descartadas = descartadas.filter(function (d) { return d.regla !== regla; });
+      descartadas.push({ regla: regla, fecha: new Date().toISOString() });
+      var daPatch = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ alertas_descartadas: descartadas }),
+      });
+      if (!daPatch.ok) return res.status(500).json({ error: 'Error al descartar la alerta' });
+      return res.status(200).json({ success: true, action: 'dismiss-alerta', alertas_descartadas: descartadas });
+    }
+
     return res.status(400).json({ error: 'Acción no reconocida' });
 
   } catch (err) {

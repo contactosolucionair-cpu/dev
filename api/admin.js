@@ -59,6 +59,8 @@ export default async function handler(req, res) {
     if (action === 'abogados')         return await listEntidades(res, SB_URL, SB_KEY, 'abogados');
     if (action === 'abogado-accion')   return await accionEntidad(req, res, SB_URL, SB_KEY, 'abogados');
     if (action === 'abogados-activos') return await abogadosActivos(res, SB_URL, SB_KEY);
+    if (action === 'alertas-get')      return await alertasGet(res, SB_URL, SB_KEY);
+    if (action === 'alertas-save')     return await alertasSave(req, res, SB_URL, SB_KEY);
     if (action === 'sign')             return await signUrl(req, res, SB_URL, SB_KEY);
     if (action === 'upload')           return await uploadDoc(req, res, SB_URL, SB_KEY);
     if (action === 'remove')           return await removeAdj(req, res, SB_URL, SB_KEY);
@@ -139,6 +141,34 @@ async function abogadosActivos(res, SB_URL, SB_KEY) {
   if (!r.ok) return res.status(500).json({ error: 'Error al consultar abogados.' });
   var rows = JSON.parse(await r.text());
   return res.status(200).json({ success: true, abogados: Array.isArray(rows) ? rows : [] });
+}
+
+/* ------------------------------------------------------------------ */
+/* Reglas de alerta (config global)                                    */
+/* ------------------------------------------------------------------ */
+async function alertasGet(res, SB_URL, SB_KEY) {
+  var r = await fetch(SB_URL + '/rest/v1/site_config?id=eq.global&select=alertas_reglas&limit=1',
+    { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+  if (!r.ok) return res.status(200).json({ success: true, reglas: null });
+  var rows = JSON.parse(await r.text());
+  var reglas = (rows && rows.length) ? rows[0].alertas_reglas : null;
+  return res.status(200).json({ success: true, reglas: reglas || null });
+}
+
+async function alertasSave(req, res, SB_URL, SB_KEY) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  var body = await getJson(req);
+  var reglas = Array.isArray(body.reglas) ? body.reglas : [];
+  var r = await fetch(SB_URL + '/rest/v1/site_config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ id: 'global', alertas_reglas: reglas, updated_at: new Date().toISOString() }),
+  });
+  if (!r.ok) {
+    console.error('[admin/alertas-save] error:', (await r.text()).substring(0, 300));
+    return res.status(500).json({ error: 'Error al guardar reglas de alerta' });
+  }
+  return res.status(200).json({ success: true, reglas: reglas });
 }
 
 /* ------------------------------------------------------------------ */
