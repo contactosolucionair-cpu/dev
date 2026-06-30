@@ -155,7 +155,10 @@ async function signUrl(req, res, SB_URL, SB_KEY) {
   });
   if (!resp.ok) return res.status(resp.status).json({ error: await resp.text() });
   var data = await resp.json();
-  return res.status(200).json({ signedURL: SB_URL + data.signedURL });
+  /* Supabase devuelve signedURL relativo (/object/sign/...). Hay que prefijar /storage/v1. */
+  var rel = data.signedURL || data.signedUrl || '';
+  var full = rel.indexOf('/storage/v1') === 0 ? (SB_URL + rel) : (SB_URL + '/storage/v1' + rel);
+  return res.status(200).json({ signedURL: full });
 }
 
 /* ------------------------------------------------------------------ */
