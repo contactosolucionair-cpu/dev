@@ -223,6 +223,7 @@
       <div class="sidenav__brand"><img src="/src/img/logo.png" alt="SolucionAir" style="height:60px;width:auto;filter:brightness(0) invert(1)" /><span class="sidenav__tag">Admin</span></div>
       <nav class="sidenav__menu">
         <div class="sidenav__item active" id="nav-reclamos"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Reclamos</div>
+        <div class="sidenav__item" id="nav-alertas"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> Alertas <span id="nav-alertas-count" style="margin-left:auto;font-family:var(--fm);font-size:.6rem;background:var(--err);color:#fff;border-radius:8px;padding:0 6px;display:none"></span></div>
         <div class="sidenav__item" id="nav-trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Papelera</div>
         <div class="sidenav__item" id="nav-agencias"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Agencias</div>
         <div class="sidenav__item" id="nav-config"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Configuración</div>
@@ -249,6 +250,12 @@
         <div class="tbl-scroll"><div id="tbl-body"><div class="state"><div class="state__spin"></div><p class="state__txt">Cargando reclamos...</p></div></div></div>
       </div>
       </div><!-- /view-reclamos -->
+
+      <!-- ALERTAS VIEW -->
+      <div id="view-alertas" style="display:none">
+        <div class="main__header"><h1 class="main__title">Alertas</h1><button class="btn btn--primary" id="btn-refresh-alertas" type="button">Actualizar</button></div>
+        <div id="alertas-body"><div class="state"><p class="state__txt">Cargando...</p></div></div>
+      </div><!-- /view-alertas -->
 
       <!-- CONFIG VIEW -->
       <div id="view-config" class="config-panel">
@@ -366,6 +373,8 @@
     function tipoLabel(t){return t==='vuelo_equipaje'?'Vuelo + Equipaje':t==='equipaje'?'Equipaje':'Vuelo'}
     function tipoBadge(t){return t==='equipaje'?'badge--equipaje':t==='vuelo_equipaje'?'badge--combo':'badge--vuelo'}
     function fmtFecha(d){if(!d)return '—';try{return new Date(d).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}catch(e){return '—'}}
+    function fmtFechaHora(d){if(!d)return '—';try{return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return '—'}}
+    function toLocalInput(d){if(!d)return '';var dt=new Date(d);if(isNaN(dt.getTime()))return '';var p=function(n){return String(n).padStart(2,'0')};return dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate())+'T'+p(dt.getHours())+':'+p(dt.getMinutes())}
     var tblBody=document.getElementById('tbl-body');
     var overlay=document.getElementById('panel-overlay');
     var panel=document.getElementById('detail-panel');
@@ -405,6 +414,7 @@
         }catch(e){console.error('[BO] Airlines filter error:',e)}
 
         applyFilters();
+        try{renderAlertas()}catch(e){}
       }).catch(function(err){
         tblBody.innerHTML='<div class="state"><p class="state__txt" style="color:#C0392B">Error: '+err.message+'</p></div>';
       });
@@ -544,10 +554,23 @@
       h+='</select><button class="btn btn--ghost" id="btn-save-firma" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
       h+='<div id="msg-firma" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       h+='</div>'; /* action-row */
+      /* Derivación a mediación (visible solo si estado = derivado_mediacion) */
+      var tieneDeriv=(Array.isArray(c.adjuntos)?c.adjuntos:[]).some(function(a){return a.tipo==='derivacion'});
+      h+='<div id="deriv-box" style="margin-top:10px;padding:12px;border:1px solid var(--bdl);border-radius:8px;background:var(--g05);display:'+(estado==='derivado_mediacion'?'block':'none')+'">';
+      h+='<div class="detail__label" style="margin-bottom:8px">Derivación a mediación</div>';
+      h+='<div class="action-field" style="margin-bottom:8px"><div class="detail__label">Abogado asignado</div><select id="sel-abogado" class="firma-select"><option value="">Cargando abogados...</option></select></div>';
+      h+='<div class="action-field"><div class="detail__label">Documento de derivación</div>';
+      h+='<div id="deriv-doc-status" style="font-size:.74rem;margin-bottom:6px;color:'+(tieneDeriv?'var(--ok)':'var(--t3)')+'">'+(tieneDeriv?'✓ Documento de derivación cargado':'Sin documento de derivación')+'</div>';
+      h+='<div class="upload-zone" id="deriv-upload-zone" style="padding:10px">Subir documento de derivación (resumen del caso)</div><input type="file" id="deriv-upload-inp" style="display:none"></div>';
+      h+='</div>';
       /* Compensación */
       h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Compensación obtenida (USD)</div>';
       h+='<div style="display:flex;gap:5px;align-items:center"><input id="inp-monto" type="number" min="0" step="0.01" class="firma-select" style="flex:1;font-family:var(--fm)" placeholder="0.00" value="'+(c.monto_compensacion!=null?c.monto_compensacion:'')+'"><button class="btn btn--ghost" id="btn-save-monto" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
       h+='<div id="msg-monto" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
+      /* Fecha de mediación */
+      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Fecha de mediación</div>';
+      h+='<div style="display:flex;gap:5px;align-items:center"><input id="inp-fmediacion" type="datetime-local" class="firma-select" style="flex:1;font-family:var(--fm)" value="'+toLocalInput(c.fecha_mediacion)+'"><button class="btn btn--ghost" id="btn-save-fmediacion" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
+      h+='<div id="msg-fmediacion" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       h+='</div>'; /* section gestión */
 
       /* Historial de estados (timestamps) */
@@ -682,14 +705,15 @@
       var uploadInp=detailBody.querySelector('#upload-inp');
       var adjList=detailBody.querySelector('#adj-list');
 
-      function uploadFiles(files){
+      function uploadFiles(files,tipo){
+        tipo=tipo||'documento';
         Array.from(files).forEach(function(file){
           var item=document.createElement('div');
           item.className='upload-item';
           item.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="upload-item__name">'+esc(file.name)+'</span><span class="upload-item__status">Subiendo...</span>';
           adjList.appendChild(item);
 
-          var url='/api/admin?action=upload&id='+encodeURIComponent(c.id)+'&filename='+encodeURIComponent(file.name)+'&tipo=documento&nombre='+encodeURIComponent(file.name);
+          var url='/api/admin?action=upload&id='+encodeURIComponent(c.id)+'&filename='+encodeURIComponent(file.name)+'&tipo='+encodeURIComponent(tipo)+'&nombre='+encodeURIComponent(file.name);
           fetch(url,{
             method:'POST',
             headers:{'Content-Type':file.type||'application/octet-stream','X-Admin-Password':adminPwd},
@@ -699,6 +723,7 @@
             if(d.success){
               statusEl.className='upload-item__status ok';statusEl.textContent='✓ Subido';
               c.adjuntos=d.adjuntos;
+              if(tipo==='derivacion'){var ds=document.getElementById('deriv-doc-status');if(ds){ds.textContent='✓ Documento de derivación cargado';ds.style.color='var(--ok)'}}
             } else {
               statusEl.className='upload-item__status err';statusEl.textContent='Error: '+(d.error||'desconocido');
             }
@@ -714,6 +739,33 @@
       uploadZone.addEventListener('dragover',function(e){e.preventDefault();uploadZone.classList.add('drag')});
       uploadZone.addEventListener('dragleave',function(){uploadZone.classList.remove('drag')});
       uploadZone.addEventListener('drop',function(e){e.preventDefault();uploadZone.classList.remove('drag');if(e.dataTransfer.files.length)uploadFiles(e.dataTransfer.files)});
+
+      /* Derivación a mediación: select de abogado + upload del documento */
+      var selEstadoEl=document.getElementById('sel-estado');
+      var derivBox=document.getElementById('deriv-box');
+      var selAbogado=document.getElementById('sel-abogado');
+      var abogadosLoaded=false;
+      function loadAbogadosSelect(){
+        if(abogadosLoaded||!selAbogado)return;abogadosLoaded=true;
+        fetch('/api/admin?action=abogados-activos',{headers:{'X-Admin-Password':adminPwd}})
+        .then(function(r){return r.json()}).then(function(d){
+          var list=(d&&d.abogados)||[];
+          if(!list.length){selAbogado.innerHTML='<option value="">No hay abogados activos</option>';return}
+          selAbogado.innerHTML='<option value="">Seleccionar abogado...</option>'+list.map(function(a){return '<option value="'+a.id+'"'+(a.id===c.abogado_id?' selected':'')+'>'+esc(a.nombre||'—')+(a.matricula?' ('+esc(a.matricula)+')':'')+'</option>'}).join('');
+        }).catch(function(){selAbogado.innerHTML='<option value="">Error al cargar</option>'});
+      }
+      if(selEstadoEl)selEstadoEl.addEventListener('change',function(){
+        var dm=selEstadoEl.value==='derivado_mediacion';
+        if(derivBox)derivBox.style.display=dm?'block':'none';
+        if(dm)loadAbogadosSelect();
+      });
+      if(estado==='derivado_mediacion')loadAbogadosSelect();
+      var derivZone=document.getElementById('deriv-upload-zone');
+      var derivInp=document.getElementById('deriv-upload-inp');
+      if(derivZone&&derivInp){
+        derivZone.addEventListener('click',function(){derivInp.click()});
+        derivInp.addEventListener('change',function(){if(derivInp.files.length)uploadFiles(derivInp.files,'derivacion');derivInp.value=''});
+      }
 
       /* Bitácora — agregar novedad */
       var novInput=detailBody.querySelector('#nov-input');
@@ -792,18 +844,46 @@
       if(btnSaveEstado)btnSaveEstado.addEventListener('click',function(){
         var newEstado=document.getElementById('sel-estado').value;
         if(newEstado===c.estado){msgEstado.style.color='var(--t4)';msgEstado.textContent='Sin cambios.';return}
+        var body={id:c.id,action:'update-estado',estado:newEstado};
+        /* Gating de derivación a mediación: exige abogado + documento de derivación */
+        if(newEstado==='derivado_mediacion'){
+          var abogadoId=(document.getElementById('sel-abogado')||{}).value||'';
+          var tieneDocDeriv=(Array.isArray(c.adjuntos)?c.adjuntos:[]).some(function(a){return a.tipo==='derivacion'});
+          if(!abogadoId){msgEstado.style.color='var(--err)';msgEstado.textContent='Elegí un abogado para derivar.';return}
+          if(!tieneDocDeriv){msgEstado.style.color='var(--err)';msgEstado.textContent='Subí el documento de derivación primero.';return}
+          body.abogado_id=abogadoId;
+        }
         btnSaveEstado.disabled=true;btnSaveEstado.textContent='...';msgEstado.textContent='';
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'update-estado',estado:newEstado})})
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
         .then(function(r){return r.json()}).then(function(d){
           btnSaveEstado.disabled=false;btnSaveEstado.textContent='Guardar';
           if(d.success){
             c.estado=newEstado;
-            claims.forEach(function(cl){if(cl.id===c.id)cl.estado=newEstado});
+            if(d.estado_historial)c.estado_historial=d.estado_historial;
+            if(body.abogado_id)c.abogado_id=body.abogado_id;
+            claims.forEach(function(cl){if(cl.id===c.id){cl.estado=newEstado;if(d.estado_historial)cl.estado_historial=d.estado_historial;if(body.abogado_id)cl.abogado_id=body.abogado_id}});
             applyFilters();
-            msgEstado.style.color='#1B9B5A';msgEstado.textContent='Estado actualizado.';
-            toast('Estado → '+newEstado);
+            toast('Estado → '+estadoLabel(newEstado));
+            openDetail(c); /* refresca historial + caja de derivación */
           }else{msgEstado.style.color='var(--err)';msgEstado.textContent=d.error||'Error.'}
         }).catch(function(){btnSaveEstado.disabled=false;btnSaveEstado.textContent='Guardar';msgEstado.style.color='var(--err)';msgEstado.textContent='Error de conexión.'});
+      });
+
+      /* --- Guardar fecha de mediación --- */
+      var btnSaveFmed=document.getElementById('btn-save-fmediacion');
+      var msgFmed=document.getElementById('msg-fmediacion');
+      if(btnSaveFmed)btnSaveFmed.addEventListener('click',function(){
+        var fv=(document.getElementById('inp-fmediacion')||{}).value||'';
+        btnSaveFmed.disabled=true;btnSaveFmed.textContent='...';msgFmed.textContent='';
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-fecha-mediacion',fecha_mediacion:fv||null})})
+        .then(function(r){return r.json()}).then(function(d){
+          btnSaveFmed.disabled=false;btnSaveFmed.textContent='Guardar';
+          if(d.success){
+            c.fecha_mediacion=d.fecha_mediacion;
+            claims.forEach(function(cl){if(cl.id===c.id)cl.fecha_mediacion=d.fecha_mediacion});
+            msgFmed.style.color='#1B9B5A';msgFmed.textContent='Fecha de mediación guardada.';
+          }else{msgFmed.style.color='var(--err)';msgFmed.textContent=d.error||'Error.'}
+        }).catch(function(){btnSaveFmed.disabled=false;btnSaveFmed.textContent='Guardar';msgFmed.style.color='var(--err)';msgFmed.textContent='Error de conexión.'});
       });
 
       /* --- Guardar autorización --- */
@@ -992,24 +1072,91 @@
     var navReclamos=document.getElementById('nav-reclamos');
     var navConfig=document.getElementById('nav-config');
     var navTrash=document.getElementById('nav-trash');
+    var navAlertas=document.getElementById('nav-alertas');
     var viewReclamos=document.getElementById('view-reclamos');
     var viewConfig=document.getElementById('view-config');
     var viewTrash=document.getElementById('view-trash');
+    var viewAlertas=document.getElementById('view-alertas');
 
     function showView(view){
       if(viewReclamos)viewReclamos.style.display=view==='reclamos'?'':'none';
       if(viewConfig){viewConfig.style.display=view==='config'?'block':'none';viewConfig.classList.toggle('visible',view==='config')}
       if(viewTrash){viewTrash.style.display=view==='trash'?'block':'none';viewTrash.classList.toggle('visible',view==='trash')}
+      if(viewAlertas)viewAlertas.style.display=view==='alertas'?'block':'none';
       if(navReclamos)navReclamos.classList.toggle('active',view==='reclamos');
       if(navConfig)navConfig.classList.toggle('active',view==='config');
       if(navTrash)navTrash.classList.toggle('active',view==='trash');
+      if(navAlertas)navAlertas.classList.toggle('active',view==='alertas');
       if(view==='config')loadConfig();
       if(view==='trash')loadTrash();
+      if(view==='alertas')renderAlertas();
     }
 
     if(navReclamos)navReclamos.addEventListener('click',function(){showView('reclamos')});
     if(navConfig)navConfig.addEventListener('click',function(){showView('config')});
     if(navTrash)navTrash.addEventListener('click',function(){showView('trash')});
+    if(navAlertas)navAlertas.addEventListener('click',function(){showView('alertas')});
+
+    /* ---- ALERTAS ---- */
+    var DAY_MS=86400000;
+    var TERMINAL=['cerrado','rechazado','no_apto','cancelado','resuelto','aprobado'];
+    function _estadoFecha(c,est){var hh=Array.isArray(c.estado_historial)?c.estado_historial:[];for(var i=hh.length-1;i>=0;i--){if(hh[i].estado===est&&hh[i].fecha)return new Date(hh[i].fecha)}return null}
+    function _diasDesde(d){return d?Math.floor((Date.now()-new Date(d).getTime())/DAY_MS):null}
+    function computeAlertas(){
+      var act=claims.filter(function(c){return !c.deleted_at&&c.estado!=='eliminado'});
+      var A={pendientes:[],reclamados:[],mediaciones:[],sinUpdate:[]};
+      act.forEach(function(c){
+        var est=c.estado||'pendiente';
+        if(est==='pendiente'){var dd=_diasDesde(c.creado_en);if(dd!=null&&dd>=2)A.pendientes.push({c:c,dias:dd})}
+        if(est==='reclamado_aerolinea'){var f=_estadoFecha(c,'reclamado_aerolinea')||(c.creado_en?new Date(c.creado_en):null);var dd2=_diasDesde(f);if(dd2!=null&&dd2>=7){A.reclamados.push({c:c,dias:dd2,hito:dd2>=21?21:dd2>=14?14:7})}}
+        if(c.fecha_mediacion&&TERMINAL.indexOf(est)===-1){var diff=new Date(c.fecha_mediacion).getTime()-Date.now();if(diff<=DAY_MS&&diff>=-DAY_MS)A.mediaciones.push({c:c,diff:diff})}
+        if(TERMINAL.indexOf(est)===-1){var dd3=_diasDesde(c.ultimo_update_cliente||c.creado_en);if(dd3!=null&&dd3>=7)A.sinUpdate.push({c:c,dias:dd3})}
+      });
+      return A;
+    }
+    function _alertRow(it,extra,withBtn){
+      var c=it.c;
+      var h='<div class="upload-item" style="cursor:pointer;justify-content:space-between" data-alert-id="'+c.id+'">';
+      h+='<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:.78rem;color:var(--t1)"><span class="mono">'+(c.ref_code||'—')+'</span> · '+esc(c.nombre||'—')+'</span><span style="font-size:.68rem;color:var(--t4)">'+extra+'</span></div>';
+      if(withBtn)h+='<button class="btn btn--ghost" data-update-id="'+c.id+'" type="button" style="font-size:.66rem;white-space:nowrap">Confirmé update</button>';
+      h+='</div>';return h;
+    }
+    function renderAlertas(){
+      var body=document.getElementById('alertas-body');if(!body)return;
+      var A=computeAlertas();
+      var total=A.pendientes.length+A.reclamados.length+A.mediaciones.length+A.sinUpdate.length;
+      var cnt=document.getElementById('nav-alertas-count');
+      if(cnt){if(total>0){cnt.textContent=total;cnt.style.display=''}else{cnt.style.display='none'}}
+      function group(titulo,arr,render){
+        var h='<div class="tbl-wrap" style="margin-bottom:16px"><div class="tbl-bar"><span class="tbl-bar__title">'+titulo+'</span><span class="tbl-bar__count">'+arr.length+'</span></div><div style="padding:10px 16px">';
+        if(!arr.length)h+='<p style="font-size:.74rem;color:var(--t4);margin:0">Sin alertas.</p>';else arr.forEach(function(it){h+=render(it)});
+        h+='</div></div>';return h;
+      }
+      var html='';
+      html+=group('Pendientes hace +2 días',A.pendientes,function(it){return _alertRow(it,'Pendiente hace '+it.dias+' días',false)});
+      html+=group('Reclamados a la aerolínea (7 / 14 / 21 días)',A.reclamados,function(it){return _alertRow(it,'Reclamado hace '+it.dias+' días — hito '+it.hito,false)});
+      html+=group('Mediación próxima (±1 día)',A.mediaciones,function(it){return _alertRow(it,'Mediación: '+fmtFechaHora(it.c.fecha_mediacion),false)});
+      html+=group('Sin update al cliente hace +7 días',A.sinUpdate,function(it){return _alertRow(it,'Último update hace '+it.dias+' días',true)});
+      body.innerHTML=html;
+      body.querySelectorAll('[data-alert-id]').forEach(function(row){
+        row.addEventListener('click',function(e){if(e.target.closest('[data-update-id]'))return;var id=row.getAttribute('data-alert-id');var c=null;claims.forEach(function(cl){if(cl.id===id)c=cl});if(c)openDetail(c)});
+      });
+      body.querySelectorAll('[data-update-id]').forEach(function(btn){
+        btn.addEventListener('click',function(e){
+          e.stopPropagation();var id=btn.getAttribute('data-update-id');btn.disabled=true;btn.textContent='...';
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'confirm-update-cliente'})})
+          .then(function(r){return r.json()}).then(function(d){
+            if(d.success){claims.forEach(function(cl){if(cl.id===id){cl.ultimo_update_cliente=d.ultimo_update_cliente;cl.novedades=d.novedades}});toast('Update registrado');renderAlertas()}
+            else{btn.disabled=false;btn.textContent='Confirmé update';toast(d.error||'Error',true)}
+          }).catch(function(){btn.disabled=false;btn.textContent='Confirmé update';toast('Error de red',true)});
+        });
+      });
+    }
+    var btnRefreshAlertas=document.getElementById('btn-refresh-alertas');
+    if(btnRefreshAlertas)btnRefreshAlertas.addEventListener('click',function(){
+      var body=document.getElementById('alertas-body');if(body)body.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Actualizando...</p></div>';
+      fetch('/api/get-claims').then(function(r){return r.json()}).then(function(j){if(j.success){claims=j.claims||[];applyFilters()}renderAlertas()}).catch(function(){renderAlertas()});
+    });
 
     /* ---- CONFIG: Toggle clicks ---- */
     document.querySelectorAll('.cfg-toggle .toggle').forEach(function(t){
@@ -1174,8 +1321,12 @@
       if (navAgencias)  navAgencias.classList.toggle('active', view === 'agencias');
       if (view !== 'agencias') _showViewOrig(view);
       if (view === 'agencias') {
-        /* deactivate other nav items */
-        ['nav-reclamos','nav-config','nav-trash'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.remove('active'); });
+        /* hide other views + deactivate other nav items */
+        if(viewReclamos)viewReclamos.style.display='none';
+        if(viewConfig)viewConfig.style.display='none';
+        if(viewTrash)viewTrash.style.display='none';
+        if(viewAlertas)viewAlertas.style.display='none';
+        ['nav-reclamos','nav-config','nav-trash','nav-alertas'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.remove('active'); });
         loadAgencias();
       }
     };

@@ -139,6 +139,38 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, action: 'update-compensacion', monto_compensacion: montoNum });
     }
 
+    /* ---- SET FECHA MEDIACION ---- */
+    if (body.action === 'set-fecha-mediacion') {
+      var fm = body.fecha_mediacion;
+      var fmVal = (fm === null || fm === undefined || fm === '') ? null : new Date(fm).toISOString();
+      if (fm && fmVal && isNaN(new Date(fm).getTime())) return res.status(400).json({ error: 'Fecha inválida' });
+      var fmRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ fecha_mediacion: fmVal }),
+      });
+      if (!fmRes.ok) return res.status(500).json({ error: 'Error al guardar la fecha de mediación' });
+      return res.status(200).json({ success: true, action: 'set-fecha-mediacion', fecha_mediacion: fmVal });
+    }
+
+    /* ---- CONFIRM UPDATE AL CLIENTE (+ bitácora) ---- */
+    if (body.action === 'confirm-update-cliente') {
+      var nowTs = new Date().toISOString();
+      var cuRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=novedades', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      });
+      var cuRows = await cuRes.json();
+      var cuNov = Array.isArray(cuRows[0]?.novedades) ? cuRows[0].novedades : [];
+      cuNov.unshift({ fecha: nowTs, texto: '✓ Update enviado al cliente' });
+      var cuPatch = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ ultimo_update_cliente: nowTs, novedades: cuNov }),
+      });
+      if (!cuPatch.ok) return res.status(500).json({ error: 'Error al registrar el update' });
+      return res.status(200).json({ success: true, action: 'confirm-update-cliente', ultimo_update_cliente: nowTs, novedades: cuNov });
+    }
+
     return res.status(400).json({ error: 'Acción no reconocida' });
 
   } catch (err) {
