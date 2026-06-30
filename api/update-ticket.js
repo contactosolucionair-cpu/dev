@@ -76,18 +76,39 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, novedades });
     }
 
-    /* ---- UPDATE ESTADO ---- */
+    /* ---- UPDATE ESTADO (con historial de timestamps) ---- */
     if (body.action === 'update-estado') {
       var newEstado = (body.estado || '').trim();
-      var validEstados = ['pendiente', 'en_gestion', 'aprobado', 'resuelto', 'rechazado', 'no_apto', 'cancelado'];
+      var validEstados = [
+        /* pipeline */
+        'pendiente', 'en_revision', 'esperando_info', 'autorizacion_pendiente',
+        'reclamado_aerolinea', 'negociacion', 'derivado_mediacion', 'mediacion_notificada',
+        'en_mediacion', 'acuerdo', 'cobro_pasajero_pendiente', 'cobro_comision_pendiente', 'cerrado',
+        /* salidas */
+        'rechazado', 'no_apto', 'cancelado',
+        /* legacy (compatibilidad con datos existentes) */
+        'en_gestion', 'aprobado', 'resuelto'
+      ];
       if (validEstados.indexOf(newEstado) === -1) return res.status(400).json({ error: 'Estado inválido' });
+
+      /* Leer historial actual y appendear el cambio */
+      var hgRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=estado_historial', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      });
+      var hgRows = await hgRes.json();
+      var historial = Array.isArray(hgRows[0]?.estado_historial) ? hgRows[0].estado_historial : [];
+      historial.push({ estado: newEstado, fecha: new Date().toISOString(), por: body.por || 'admin' });
+
+      var patch = { estado: newEstado, estado_historial: historial };
+      if (body.abogado_id) patch.abogado_id = body.abogado_id;
+
       var updRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ estado: newEstado }),
+        body: JSON.stringify(patch),
       });
       if (!updRes.ok) return res.status(500).json({ error: 'Error al actualizar estado' });
-      return res.status(200).json({ success: true, action: 'update-estado', estado: newEstado });
+      return res.status(200).json({ success: true, action: 'update-estado', estado: newEstado, estado_historial: historial });
     }
 
     /* ---- UPDATE FIRMA ESTADO ---- */

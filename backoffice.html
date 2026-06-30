@@ -95,6 +95,9 @@
     .badge--vuelo{background:#E8F4FD;color:#1565C0}
     .badge--en_gestion{background:#E3F2FD;color:#1976D2}
     .badge--no_apto{background:#F5F5F5;color:#757575}
+    .badge--mediacion{background:#EDE7F6;color:#5E35B1}
+    .badge--cobro{background:#FFF8E1;color:#B8860B}
+    .badge--combo{background:#E0F2F1;color:#00796B}
     .action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .action-field{display:flex;flex-direction:column;gap:3px}
     .toggle-wrap{display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--t3)}
@@ -239,7 +242,7 @@
         <div class="filters">
           <input class="filters__input" id="filter-search" type="text" placeholder="Buscar por Ref, Pasajero o Email..." />
           <select class="filters__select" id="filter-airline"><option value="">Todas las aerolíneas</option></select>
-          <select class="filters__select" id="filter-status"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="en_gestion">En gestión</option><option value="aprobado">Aprobado</option><option value="resuelto">Resuelto</option><option value="rechazado">Rechazado</option><option value="no_apto">No apto</option><option value="cancelado">Cancelado</option></select>
+          <select class="filters__select" id="filter-status"><option value="">Todos los estados</option><optgroup label="Ingreso"><option value="pendiente">Pendiente</option><option value="en_revision">En revisión</option><option value="esperando_info">Esperando información</option><option value="autorizacion_pendiente">Autorización pendiente</option></optgroup><optgroup label="Gestión"><option value="reclamado_aerolinea">Reclamado a aerolínea</option><option value="negociacion">En negociación</option></optgroup><optgroup label="Mediación"><option value="derivado_mediacion">Derivado a mediación</option><option value="mediacion_notificada">Mediación notificada</option><option value="en_mediacion">En mediación</option></optgroup><optgroup label="Cierre"><option value="acuerdo">Acuerdo alcanzado</option><option value="cobro_pasajero_pendiente">Cobro pasajero pendiente</option><option value="cobro_comision_pendiente">Cobro comisión pendiente</option><option value="cerrado">Cerrado / Cobrado</option></optgroup><optgroup label="Salidas"><option value="rechazado">Rechazado</option><option value="no_apto">No apto</option><option value="cancelado">Cancelado</option></optgroup><optgroup label="Anteriores"><option value="en_gestion">En gestión</option><option value="aprobado">Aprobado</option><option value="resuelto">Resuelto</option></optgroup></select>
           <select class="filters__select" id="filter-canal"><option value="">Todos los canales</option><option value="B2C">B2C</option><option value="B2B">B2B</option></select>
           <select class="filters__select" id="filter-tipo"><option value="">Todos los tipos</option><option value="vuelo">Vuelo</option><option value="equipaje">Equipaje</option></select>
         </div>
@@ -337,6 +340,32 @@
   <script>
   (function(){
     var claims=[],filtered=[];
+
+    /* ---- Estados (pipeline plano con etiquetas + badges) ---- */
+    var ESTADO_LABELS={pendiente:'Pendiente',en_revision:'En revisión',esperando_info:'Esperando información',autorizacion_pendiente:'Autorización pendiente',reclamado_aerolinea:'Reclamado a aerolínea',negociacion:'En negociación',derivado_mediacion:'Derivado a mediación',mediacion_notificada:'Mediación notificada',en_mediacion:'En mediación',acuerdo:'Acuerdo alcanzado',cobro_pasajero_pendiente:'Cobro pasajero pendiente',cobro_comision_pendiente:'Cobro comisión pendiente',cerrado:'Cerrado / Cobrado',rechazado:'Rechazado',no_apto:'No apto',cancelado:'Cancelado',en_gestion:'En gestión',aprobado:'Aprobado',resuelto:'Resuelto'};
+    var ESTADO_GROUPS=[['Ingreso',['pendiente','en_revision','esperando_info','autorizacion_pendiente']],['Gestión',['reclamado_aerolinea','negociacion']],['Mediación',['derivado_mediacion','mediacion_notificada','en_mediacion']],['Cierre',['acuerdo','cobro_pasajero_pendiente','cobro_comision_pendiente','cerrado']],['Salidas',['rechazado','no_apto','cancelado']],['Anteriores',['en_gestion','aprobado','resuelto']]];
+    function estadoLabel(e){return ESTADO_LABELS[e]||e||'pendiente'}
+    function estadoBadge(e){
+      if(e==='aprobado'||e==='resuelto'||e==='acuerdo'||e==='cerrado')return 'badge--aprobado';
+      if(e==='rechazado')return 'badge--rechazado';
+      if(e==='cancelado'||e==='no_apto')return 'badge--cancelado';
+      if(e==='derivado_mediacion'||e==='mediacion_notificada'||e==='en_mediacion')return 'badge--mediacion';
+      if(e==='cobro_pasajero_pendiente'||e==='cobro_comision_pendiente')return 'badge--cobro';
+      if(e==='pendiente')return 'badge--pendiente';
+      return 'badge--en_gestion';
+    }
+    function buildEstadoOptions(sel){
+      var h='';
+      ESTADO_GROUPS.forEach(function(g){
+        h+='<optgroup label="'+g[0]+'">';
+        g[1].forEach(function(v){h+='<option value="'+v+'"'+(v===sel?' selected':'')+'>'+estadoLabel(v)+'</option>'});
+        h+='</optgroup>';
+      });
+      return h;
+    }
+    function tipoLabel(t){return t==='vuelo_equipaje'?'Vuelo + Equipaje':t==='equipaje'?'Equipaje':'Vuelo'}
+    function tipoBadge(t){return t==='equipaje'?'badge--equipaje':t==='vuelo_equipaje'?'badge--combo':'badge--vuelo'}
+    function fmtFecha(d){if(!d)return '—';try{return new Date(d).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}catch(e){return '—'}}
     var tblBody=document.getElementById('tbl-body');
     var overlay=document.getElementById('panel-overlay');
     var panel=document.getElementById('detail-panel');
@@ -365,7 +394,7 @@
         try{
           document.getElementById('st-total').textContent=claims.length;
           document.getElementById('st-pending').textContent=claims.filter(function(c){return(c.estado||'')==='pendiente'}).length;
-          document.getElementById('st-resolved').textContent=claims.filter(function(c){var e=c.estado||'';return e==='aprobado'||e==='resuelto'}).length;
+          document.getElementById('st-resolved').textContent=claims.filter(function(c){var e=c.estado||'';return e==='aprobado'||e==='resuelto'||e==='acuerdo'||e==='cerrado'}).length;
           var stRej=document.getElementById('st-rejected');if(stRej)stRej.textContent=claims.filter(function(c){return(c.estado||'')==='rechazado'}).length;
         }catch(e){console.error('[BO] Stats error:',e)}
 
@@ -409,21 +438,22 @@
       try{document.getElementById('tbl-count').textContent=filtered.length+' de '+claims.length}catch(e){}
       if(!filtered.length){tblBody.innerHTML='<div class="state"><p class="state__txt">Sin resultados.</p></div>';return}
 
-      var html='<table><thead><tr><th class="cb-cell"><input type="checkbox" id="cb-all"/></th><th>Ref</th><th>Pasajero</th><th>Canal</th><th>Tipo</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha</th><th>Estado</th><th></th></tr></thead><tbody>';
+      var html='<table><thead><tr><th class="cb-cell"><input type="checkbox" id="cb-all"/></th><th>Ref</th><th>Pasajero</th><th>Canal</th><th>Tipo</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha vuelo</th><th>Ingreso</th><th>Estado</th><th></th></tr></thead><tbody>';
       filtered.forEach(function(c,i){
         var estado=c.estado||'pendiente';
-        var bc=estado==='aprobado'||estado==='resuelto'?'badge--aprobado':estado==='rechazado'?'badge--rechazado':(estado==='cancelado'||estado==='no_apto')?'badge--cancelado':estado==='en_gestion'?'badge--en_gestion':'badge--pendiente';
+        var bc=estadoBadge(estado);
         var canalVal=c.canal||'B2C';
         var tipoVal=c.tipo_reclamo||'vuelo';
         html+='<tr data-fidx="'+i+'"><td class="cb-cell"><input type="checkbox" class="cb-row"/></td>';
         html+='<td class="mono">'+(c.ref_code||'—')+'</td>';
         html+='<td>'+(c.nombre||'—')+'</td>';
         html+='<td><span class="badge badge--'+(canalVal==='B2B'?'b2b':'b2c')+'">'+canalVal+'</span></td>';
-        html+='<td><span class="badge badge--'+(tipoVal==='equipaje'?'equipaje':'vuelo')+'">'+tipoVal+'</span></td>';
+        html+='<td><span class="badge '+tipoBadge(tipoVal)+'">'+tipoLabel(tipoVal)+'</span></td>';
         html+='<td class="mono">'+(c.vuelo_nro||'—')+'</td>';
         html+='<td>'+(c.aerolinea||'—')+'</td>';
         html+='<td class="mono">'+(c.fecha_vuelo||'—')+'</td>';
-        html+='<td><span class="badge '+bc+'">'+estado+'</span></td>';
+        html+='<td class="mono">'+fmtFecha(c.creado_en)+'</td>';
+        html+='<td><span class="badge '+bc+'">'+estadoLabel(estado)+'</span></td>';
         html+='<td><button class="btn-del" data-del-id="'+c.id+'" title="Eliminar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>';
       });
       html+='</tbody></table>';
@@ -446,7 +476,7 @@
     function openDetail(c){
       detailTitle.textContent='Reclamo '+(c.ref_code||'');
       var estado=c.estado||'pendiente';
-      var bc=estado==='aprobado'||estado==='resuelto'?'badge--aprobado':estado==='rechazado'?'badge--rechazado':estado==='cancelado'?'badge--cancelado':'badge--pendiente';
+      var bc=estadoBadge(estado);
       var fecha=c.creado_en?new Date(c.creado_en).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 
       var canalVal=c.canal||'B2C';
@@ -465,7 +495,7 @@
       h+='<div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">'+(c.nombre||'—')+'</div></div>';
       h+='<div class="detail__section"><div class="detail__label">Email</div><div class="detail__value mono">'+(c.email||'—')+'</div></div>';
       h+='<div class="detail__section"><div class="detail__label">Teléfono</div><div class="detail__value mono">'+(c.telefono||'—')+'</div></div>';
-      h+='<div class="detail__section"><div class="detail__label">Tipo reclamo</div><div class="detail__value"><span class="badge badge--'+(tipoVal==='equipaje'?'equipaje':'vuelo')+'">'+tipoVal+'</span></div></div>';
+      h+='<div class="detail__section"><div class="detail__label">Tipo reclamo</div><div class="detail__value"><span class="badge '+tipoBadge(tipoVal)+'">'+tipoLabel(tipoVal)+'</span></div></div>';
       h+='</div>';
       h+='<div class="detail__divider"></div>';
 
@@ -500,13 +530,7 @@
       /* Estado */
       h+='<div class="action-field"><div class="detail__label">Estado</div>';
       h+='<div style="display:flex;gap:5px"><select id="sel-estado" class="firma-select" style="flex:1">';
-      h+='<option value="pendiente"'+(estado==='pendiente'?' selected':'')+'>Pendiente</option>';
-      h+='<option value="en_gestion"'+(estado==='en_gestion'?' selected':'')+'>En gestión</option>';
-      h+='<option value="aprobado"'+(estado==='aprobado'?' selected':'')+'>Aprobado</option>';
-      h+='<option value="resuelto"'+(estado==='resuelto'?' selected':'')+'>Resuelto</option>';
-      h+='<option value="rechazado"'+(estado==='rechazado'?' selected':'')+'>Rechazado</option>';
-      h+='<option value="no_apto"'+(estado==='no_apto'?' selected':'')+'>No apto</option>';
-      h+='<option value="cancelado"'+(estado==='cancelado'?' selected':'')+'>Cancelado</option>';
+      h+=buildEstadoOptions(estado);
       h+='</select><button class="btn btn--primary" id="btn-save-estado" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
       h+='<div id="msg-estado" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       /* Autorización */
@@ -525,6 +549,18 @@
       h+='<div style="display:flex;gap:5px;align-items:center"><input id="inp-monto" type="number" min="0" step="0.01" class="firma-select" style="flex:1;font-family:var(--fm)" placeholder="0.00" value="'+(c.monto_compensacion!=null?c.monto_compensacion:'')+'"><button class="btn btn--ghost" id="btn-save-monto" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
       h+='<div id="msg-monto" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       h+='</div>'; /* section gestión */
+
+      /* Historial de estados (timestamps) */
+      var hist=Array.isArray(c.estado_historial)?c.estado_historial:[];
+      if(hist.length){
+        h+='<div class="detail__divider"></div>';
+        h+='<div class="detail__section"><div class="detail__label" style="margin-bottom:8px">Historial de estados</div><div id="hist-list">';
+        hist.slice().reverse().forEach(function(ev){
+          var fd=ev.fecha?new Date(ev.fecha).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+          h+='<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--bdl)"><span style="font-family:var(--fm);font-size:.66rem;color:var(--t4);white-space:nowrap;padding-top:2px">'+fd+'</span><span style="font-size:.76rem;color:var(--t1)"><span class="badge '+estadoBadge(ev.estado)+'">'+estadoLabel(ev.estado)+'</span>'+(ev.por?' <span style="color:var(--t4);font-size:.7rem">('+esc(ev.por)+')</span>':'')+'</span></div>';
+        });
+        h+='</div></div>';
+      }
 
       h+='<div class="detail__divider"></div>';
 
@@ -600,7 +636,7 @@
       detailBody.querySelectorAll('[data-path]').forEach(function(btn){
         btn.addEventListener('click',function(){
           btn.disabled=true;btn.style.opacity='.6';
-          fetch('/api/admin/docs?action=sign&bucket='+encodeURIComponent(btn.dataset.bucket)+'&path='+encodeURIComponent(btn.dataset.path),{
+          fetch('/api/admin?action=sign&bucket='+encodeURIComponent(btn.dataset.bucket)+'&path='+encodeURIComponent(btn.dataset.path),{
             method:'POST',
             headers:{'X-Admin-Password':adminPwd}
           }).then(function(r){return r.json()}).then(function(d){
@@ -618,7 +654,7 @@
           var idx=parseInt(btn.dataset.removeIdx);
           if(!confirm('¿Eliminar este documento de la lista?'))return;
           btn.disabled=true;
-          fetch('/api/admin/docs?action=remove',{
+          fetch('/api/admin?action=remove',{
             method:'POST',
             headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
             body:JSON.stringify({id:c.id,index:idx})
@@ -641,7 +677,7 @@
           item.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span class="upload-item__name">'+esc(file.name)+'</span><span class="upload-item__status">Subiendo...</span>';
           adjList.appendChild(item);
 
-          var url='/api/admin/docs?action=upload&id='+encodeURIComponent(c.id)+'&filename='+encodeURIComponent(file.name)+'&tipo=documento&nombre='+encodeURIComponent(file.name);
+          var url='/api/admin?action=upload&id='+encodeURIComponent(c.id)+'&filename='+encodeURIComponent(file.name)+'&tipo=documento&nombre='+encodeURIComponent(file.name);
           fetch(url,{
             method:'POST',
             headers:{'Content-Type':file.type||'application/octet-stream','X-Admin-Password':adminPwd},
@@ -1057,7 +1093,7 @@
     function loadAgencias() {
       if (!agBody) return;
       agBody.innerHTML = '<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
-      fetch('/api/admin/agencies', { headers: { 'X-Admin-Password': adminPwd } })
+      fetch('/api/admin?action=agencias', { headers: { 'X-Admin-Password': adminPwd } })
       .then(function (r) { return r.json(); })
       .then(function (json) {
         if (!json.success) throw new Error(json.error || 'Error');
@@ -1096,7 +1132,7 @@
               danger: action === 'suspender',
               onConfirm: function () {
                 cmConfirm.disabled = true; cmConfirm.textContent = 'Procesando...';
-                fetch('/api/admin/agencies', {
+                fetch('/api/admin?action=agencia-accion', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPwd },
                   body: JSON.stringify({ id: id, action: action }),
@@ -1156,7 +1192,7 @@
         if (!pwd) { gateErr.textContent = 'Ingresá la contraseña.'; return; }
         gateBtn.disabled = true; gateBtn.textContent = 'Verificando...';
         /* Validate against server */
-        fetch('/api/admin/agencies', { headers: { 'X-Admin-Password': pwd } })
+        fetch('/api/admin?action=agencias', { headers: { 'X-Admin-Password': pwd } })
         .then(function (r) { return r.json(); })
         .then(function (d) {
           gateBtn.disabled = false; gateBtn.textContent = 'Ingresar';
