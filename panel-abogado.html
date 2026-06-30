@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>SolucionAir — Panel de Abogado</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+    :root{--g:#2D4A3E;--gl:#3A6154;--gd:#1E332B;--g05:rgba(45,74,62,.05);--au:#D4A853;--bg:#F5F3EE;--bgd:#EDE9E1;--w:#FFF;--t1:#111;--t2:#3A3A3A;--t3:#6B6B6B;--t4:#999;--bd:#E0DCD4;--bdl:#EDEAE4;--ok:#1B9B5A;--okbg:#EDF9F0;--err:#C0392B;--errbg:#FDF0EE;--warn:#D4A853;--warnbg:#FDF8EE;--f:'Inter',system-ui,sans-serif;--fh:'Plus Jakarta Sans','Inter',sans-serif;--fm:'JetBrains Mono',monospace;--ez:cubic-bezier(.4,0,.2,1)}
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    html{font-size:15px}body{font-family:var(--f);color:var(--t1);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
+    .app{display:flex;min-height:100vh}
+    .sidenav{width:210px;background:var(--gd);color:var(--w);padding:22px 14px;display:flex;flex-direction:column;gap:24px;flex-shrink:0}
+    .sidenav__brand{display:flex;align-items:center;gap:7px}
+    .sidenav__tag{font-family:var(--fm);font-size:.56rem;color:var(--au);background:rgba(212,168,83,.15);padding:1px 5px;border-radius:6px;margin-left:3px}
+    .sidenav__name{font-family:var(--fm);font-size:.64rem;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sidenav__menu{display:flex;flex-direction:column;gap:2px}
+    .sidenav__item{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:5px;font-size:.76rem;font-weight:500;color:rgba(255,255,255,.5);cursor:pointer;transition:all .12s;text-decoration:none;background:none;border:none;width:100%;text-align:left}
+    .sidenav__item:hover,.sidenav__item.active{background:rgba(255,255,255,.07);color:var(--w)}
+    .sidenav__item.active{color:var(--au)}
+    .sidenav__bottom{margin-top:auto;font-size:.6rem;color:rgba(255,255,255,.2);text-align:center}
+    .main{flex:1;padding:24px 28px;overflow-y:auto}
+    .main__header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+    .main__title{font-family:var(--fh);font-size:1.2rem;font-weight:800;color:var(--t1)}
+    .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:6px;font-family:var(--fh);font-size:.72rem;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+    .btn--primary{background:var(--g);color:var(--w)}.btn--primary:hover{background:var(--gl)}
+    .btn--ghost{background:var(--w);color:var(--t2);border:1px solid var(--bd)}.btn--ghost:hover{background:var(--bg)}
+    .tbl-wrap{background:var(--w);border:1px solid var(--bdl);border-radius:10px;overflow:hidden}
+    .tbl-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--bdl)}
+    .tbl-bar__title{font-family:var(--fh);font-size:.84rem;font-weight:700}
+    .tbl-bar__count{font-family:var(--fm);font-size:.64rem;color:var(--t4)}
+    .tbl-scroll{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;min-width:680px}
+    thead{background:var(--bg)}
+    th{font-size:.64rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;white-space:nowrap}
+    td{font-size:.74rem;color:var(--t2);padding:9px 12px;border-top:1px solid var(--bdl)}
+    tbody tr{cursor:pointer;transition:background .08s}tbody tr:hover td{background:var(--g05)}
+    .mono{font-family:var(--fm);font-size:.66rem;letter-spacing:.02em}
+    .badge{display:inline-block;padding:2px 8px;border-radius:8px;font-family:var(--fm);font-size:.58rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+    .badge--mediacion{background:#EDE7F6;color:#5E35B1}.badge--aprobado{background:var(--okbg);color:var(--ok)}.badge--pendiente{background:var(--warnbg);color:var(--warn)}
+    .state{padding:40px;text-align:center}
+    .state__spin{width:22px;height:22px;border:3px solid var(--bdl);border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .state__txt{font-size:.78rem;color:var(--t3)}
+    .panel-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.25);backdrop-filter:blur(5px)}
+    .panel-overlay.open{display:block}
+    .detail{position:fixed;top:0;right:-520px;width:500px;max-width:94vw;height:100vh;background:var(--w);z-index:310;box-shadow:-6px 0 30px rgba(0,0,0,.08);transition:right .25s var(--ez);display:flex;flex-direction:column}
+    .detail.open{right:0}
+    .detail__top{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bdl)}
+    .detail__title{font-family:var(--fh);font-size:.95rem;font-weight:700}
+    .detail__close{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:none;background:none;cursor:pointer;color:var(--t4)}
+    .detail__close:hover{background:var(--bg);color:var(--t1)}
+    .detail__body{flex:1;overflow-y:auto;padding:20px}
+    .detail__section{margin-bottom:16px}
+    .detail__label{font-size:.64rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+    .detail__value{font-size:.8rem;color:var(--t1);word-break:break-word}
+    .detail__value.mono{font-family:var(--fm);font-size:.74rem}
+    .detail__grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .detail__divider{height:1px;background:var(--bdl);margin:16px 0}
+    .doc-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--bdl);border-radius:6px;margin-bottom:6px;font-size:.76rem;cursor:pointer;background:none;width:100%;text-align:left}
+    .doc-item:hover{background:var(--bg)}
+    .doc-item--deriv{border-color:rgba(94,53,177,.4);background:#F6F3FB}
+    .sel{font-family:var(--f);font-size:.8rem;padding:8px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--w);color:var(--t1);width:100%}
+    .sel:focus{outline:none;border-color:var(--g)}
+    .patro{background:var(--okbg);border:1px solid rgba(27,155,90,.25);border-radius:8px;padding:12px 14px;font-size:.78rem;color:var(--t2);line-height:1.5}
+    .msg{font-family:var(--fm);font-size:.66rem;min-height:14px;margin-top:6px}
+    .toast{position:fixed;bottom:24px;right:24px;z-index:500;background:var(--g);color:var(--w);font-family:var(--fh);font-size:.78rem;font-weight:600;padding:12px 20px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.15);transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none}
+    .toast.show{transform:translateY(0);opacity:1}.toast--error{background:var(--err)}
+    @media(max-width:768px){.sidenav{display:none}.main{padding:14px}.detail{width:100%}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidenav">
+      <div class="sidenav__brand"><img src="/src/img/logo.png" alt="SolucionAir" style="height:54px;width:auto;filter:brightness(0) invert(1)" /><span class="sidenav__tag">Abogados</span></div>
+      <div class="sidenav__name" id="ab-name">—</div>
+      <nav class="sidenav__menu">
+        <div class="sidenav__item active">Mis casos</div>
+        <button class="sidenav__item" id="btn-logout" type="button">Cerrar sesión</button>
+      </nav>
+      <div class="sidenav__bottom">&copy; 2026 SolucionAir</div>
+    </aside>
+
+    <div class="main">
+      <div class="main__header"><h1 class="main__title">Casos asignados</h1><button class="btn btn--primary" id="btn-refresh" type="button">Actualizar</button></div>
+      <div class="tbl-wrap">
+        <div class="tbl-bar"><span class="tbl-bar__title">Casos en mediación</span><span class="tbl-bar__count" id="tbl-count"></span></div>
+        <div class="tbl-scroll"><div id="tbl-body"><div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div></div></div>
+      </div>
+    </div>
+
+    <div class="panel-overlay" id="panel-overlay"></div>
+    <div class="detail" id="detail-panel">
+      <div class="detail__top"><span class="detail__title" id="detail-title">Caso</span><button class="detail__close" id="detail-close" type="button">✕</button></div>
+      <div class="detail__body" id="detail-body"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  var token = localStorage.getItem('sa_ab_token');
+  if(!token){ location.href='/abogados'; return; }
+  var abData = {};
+  try{ abData = JSON.parse(localStorage.getItem('sa_ab_data')||'{}'); }catch(e){}
+  document.getElementById('ab-name').textContent = abData.nombre || localStorage.getItem('sa_ab_email') || '';
+
+  var claims=[];
+  var tblBody=document.getElementById('tbl-body');
+  var overlay=document.getElementById('panel-overlay');
+  var panel=document.getElementById('detail-panel');
+  var detailTitle=document.getElementById('detail-title');
+  var detailBody=document.getElementById('detail-body');
+
+  var ESTADO_LABELS={derivado_mediacion:'Derivado a mediación',mediacion_notificada:'Mediación notificada',en_mediacion:'En mediación',acuerdo:'Acuerdo alcanzado',cobro_pasajero_pendiente:'Cobro pasajero pendiente',cobro_comision_pendiente:'Cobro comisión pendiente',cerrado:'Cerrado',rechazado:'Rechazado'};
+  var MED_OPCIONES=['derivado_mediacion','mediacion_notificada','en_mediacion','acuerdo'];
+  function estadoLabel(e){return ESTADO_LABELS[e]||e||'—'}
+  function estadoBadge(e){return e==='acuerdo'||e==='cerrado'?'badge--aprobado':'badge--mediacion'}
+  function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
+  function fmtFechaHora(d){if(!d)return '—';try{return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return '—'}}
+
+  function authFetch(url,opts){opts=opts||{};opts.headers=opts.headers||{};opts.headers['Authorization']='Bearer '+token;return fetch(url,opts);}
+  function logout(){localStorage.removeItem('sa_ab_token');localStorage.removeItem('sa_ab_email');localStorage.removeItem('sa_ab_data');location.href='/abogados';}
+  document.getElementById('btn-logout').addEventListener('click',logout);
+
+  var toastEl=document.getElementById('toast');
+  function toast(m,err){toastEl.textContent=m;toastEl.className='toast'+(err?' toast--error':'');setTimeout(function(){toastEl.classList.add('show')},10);setTimeout(function(){toastEl.classList.remove('show')},3000);}
+
+  function load(){
+    tblBody.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
+    authFetch('/api/abogados/claims').then(function(r){if(r.status===401){logout();throw new Error('401')}return r.json()}).then(function(j){
+      if(!j.success)throw new Error(j.error||'Error');
+      claims=j.claims||[];
+      document.getElementById('tbl-count').textContent=claims.length+' casos';
+      if(!claims.length){tblBody.innerHTML='<div class="state"><p class="state__txt" style="color:var(--t4)">No tenés casos asignados todavía.</p></div>';return}
+      var h='<table><thead><tr><th>Ref</th><th>Pasajero</th><th>Vuelo</th><th>Aerolínea</th><th>Estado</th><th>Mediación</th></tr></thead><tbody>';
+      claims.forEach(function(c,i){
+        h+='<tr data-i="'+i+'">';
+        h+='<td class="mono">'+(c.ref_code||'—')+'</td>';
+        h+='<td>'+esc(c.nombre||'—')+'</td>';
+        h+='<td class="mono">'+(c.vuelo_nro||'—')+'</td>';
+        h+='<td>'+esc(c.aerolinea||'—')+'</td>';
+        h+='<td><span class="badge '+estadoBadge(c.estado)+'">'+estadoLabel(c.estado)+'</span></td>';
+        h+='<td class="mono">'+(c.fecha_mediacion?fmtFechaHora(c.fecha_mediacion):'—')+'</td>';
+        h+='</tr>';
+      });
+      h+='</tbody></table>';tblBody.innerHTML=h;
+      tblBody.querySelectorAll('tr[data-i]').forEach(function(row){row.addEventListener('click',function(){openDetail(claims[parseInt(row.getAttribute('data-i'))])})});
+    }).catch(function(err){if(err.message!=='401')tblBody.innerHTML='<div class="state"><p class="state__txt" style="color:#C0392B">Error: '+err.message+'</p></div>'});
+  }
+
+  function signAndOpen(bucket,path,btn){
+    btn.disabled=true;var old=btn.style.opacity;btn.style.opacity='.6';
+    authFetch('/api/abogados/sign?bucket='+encodeURIComponent(bucket)+'&path='+encodeURIComponent(path))
+    .then(function(r){return r.json()}).then(function(d){btn.disabled=false;btn.style.opacity=old;if(d.signedURL)window.open(d.signedURL,'_blank');else toast(d.error||'Error al abrir',true)})
+    .catch(function(){btn.disabled=false;btn.style.opacity=old;toast('Error de red',true)});
+  }
+
+  function openDetail(c){
+    detailTitle.textContent='Caso '+(c.ref_code||'');
+    var h='';
+    h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Referencia</div><div class="detail__value mono">'+(c.ref_code||'—')+'</div></div>';
+    h+='<div class="detail__section"><div class="detail__label">Estado</div><div class="detail__value"><span class="badge '+estadoBadge(c.estado)+'">'+estadoLabel(c.estado)+'</span></div></div></div>';
+    h+='<div class="detail__divider"></div>';
+    h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">'+esc(c.nombre||'—')+'</div></div>';
+    h+='<div class="detail__section"><div class="detail__label">Email</div><div class="detail__value mono">'+esc(c.email||'—')+'</div></div>';
+    h+='<div class="detail__section"><div class="detail__label">Teléfono</div><div class="detail__value mono">'+esc(c.telefono||'—')+'</div></div>';
+    h+='<div class="detail__section"><div class="detail__label">Vuelo</div><div class="detail__value mono">'+(c.vuelo_nro||'—')+' · '+esc(c.aerolinea||'—')+'</div></div></div>';
+    if(c.origen||c.destino)h+='<div class="detail__section"><div class="detail__label">Ruta</div><div class="detail__value mono">'+esc(c.origen||'?')+' → '+esc(c.destino||'?')+'</div></div>';
+    if(c.tipo_incidencia||c.causa_informada){
+      h+='<div class="detail__grid">';
+      if(c.tipo_incidencia)h+='<div class="detail__section"><div class="detail__label">Incidencia</div><div class="detail__value">'+esc(c.tipo_incidencia)+'</div></div>';
+      if(c.causa_informada)h+='<div class="detail__section"><div class="detail__label">Causa informada</div><div class="detail__value">'+esc(c.causa_informada)+'</div></div>';
+      h+='</div>';
+    }
+    if(c.fecha_mediacion)h+='<div class="detail__section"><div class="detail__label">Fecha de mediación</div><div class="detail__value mono">'+fmtFechaHora(c.fecha_mediacion)+'</div></div>';
+
+    /* Patrocinio */
+    h+='<div class="detail__divider"></div><div class="patro">La designación de patrocinio letrado de este caso ya fue gestionada por SolucionAir.</div>';
+
+    /* Documentos */
+    h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label" style="margin-bottom:8px">Documento de derivación y respaldo</div><div id="abo-docs"></div></div>';
+
+    /* Avance de mediación */
+    h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label" style="margin-bottom:6px">Avance de la mediación</div>';
+    h+='<div style="display:flex;gap:6px"><select id="sel-med" class="sel" style="flex:1">';
+    MED_OPCIONES.forEach(function(v){h+='<option value="'+v+'"'+(v===c.estado?' selected':'')+'>'+estadoLabel(v)+'</option>'});
+    h+='</select><button class="btn btn--primary" id="btn-med" type="button">Guardar</button></div>';
+    h+='<div class="msg" id="msg-med"></div></div>';
+
+    /* Historial */
+    var hist=Array.isArray(c.estado_historial)?c.estado_historial:[];
+    if(hist.length){
+      h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label" style="margin-bottom:8px">Historial</div>';
+      hist.slice().reverse().forEach(function(ev){h+='<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--bdl)"><span class="mono" style="font-size:.64rem;color:var(--t4);white-space:nowrap">'+fmtFechaHora(ev.fecha)+'</span><span style="font-size:.74rem">'+estadoLabel(ev.estado)+(ev.por?' <span style="color:var(--t4)">('+esc(ev.por)+')</span>':'')+'</span></div>'});
+      h+='</div>';
+    }
+
+    detailBody.innerHTML=h;
+
+    /* Render docs (derivación primero) */
+    var docsEl=document.getElementById('abo-docs');
+    var adj=Array.isArray(c.adjuntos)?c.adjuntos:[];
+    if(!adj.length){docsEl.innerHTML='<p style="font-size:.74rem;color:var(--t4)">Sin documentos.</p>';}
+    else{
+      var ordered=adj.slice().sort(function(a,b){return (b.tipo==='derivacion'?1:0)-(a.tipo==='derivacion'?1:0)});
+      ordered.forEach(function(a){
+        var bucket=a.bucket||'reclamos',path=a.path||null;
+        if(!path&&a.url){var mk=a.url.indexOf('/object/public/');if(mk>-1){var rest=a.url.substring(mk+15);var sl=rest.indexOf('/');if(sl>-1){bucket=rest.substring(0,sl);path=decodeURIComponent(rest.substring(sl+1))}}}
+        var esDeriv=a.tipo==='derivacion';
+        var nombre=esDeriv?('📄 Documento de derivación'+(a.nombre?' — '+a.nombre:'')):(a.nombre||a.tipo||'Documento');
+        var btn=document.createElement('button');
+        btn.type='button';btn.className='doc-item'+(esDeriv?' doc-item--deriv':'');
+        btn.textContent=nombre;
+        if(path){(function(bk,pt){btn.addEventListener('click',function(){signAndOpen(bk,pt,btn)})})(bucket,path);}
+        else if(a.url){btn.addEventListener('click',function(){window.open(a.url,'_blank')});}
+        docsEl.appendChild(btn);
+      });
+    }
+
+    /* Guardar estado de mediación */
+    var btnMed=document.getElementById('btn-med');var msgMed=document.getElementById('msg-med');
+    btnMed.addEventListener('click',function(){
+      var nuevo=document.getElementById('sel-med').value;
+      if(nuevo===c.estado){msgMed.style.color='var(--t4)';msgMed.textContent='Sin cambios.';return}
+      btnMed.disabled=true;btnMed.textContent='...';msgMed.textContent='';
+      authFetch('/api/abogados/update-estado',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,estado:nuevo})})
+      .then(function(r){return r.json()}).then(function(d){
+        btnMed.disabled=false;btnMed.textContent='Guardar';
+        if(d.success){c.estado=nuevo;if(d.estado_historial)c.estado_historial=d.estado_historial;claims.forEach(function(cl){if(cl.id===c.id){cl.estado=nuevo;cl.estado_historial=c.estado_historial}});toast('Estado actualizado');load();openDetail(c);}
+        else{msgMed.style.color='var(--err)';msgMed.textContent=d.error||'Error.'}
+      }).catch(function(){btnMed.disabled=false;btnMed.textContent='Guardar';msgMed.style.color='var(--err)';msgMed.textContent='Error de conexión.'});
+    });
+
+    overlay.classList.add('open');panel.classList.add('open');
+  }
+  function closeDetail(){overlay.classList.remove('open');panel.classList.remove('open')}
+  document.getElementById('detail-close').addEventListener('click',closeDetail);
+  overlay.addEventListener('click',closeDetail);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDetail()});
+  document.getElementById('btn-refresh').addEventListener('click',load);
+
+  load();
+})();
+</script>
+</body>
+</html>
