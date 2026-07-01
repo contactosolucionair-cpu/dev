@@ -109,6 +109,9 @@
     .ft__col-t{font-family:var(--fh);font-size:.74rem;font-weight:700;color:var(--aul);margin-bottom:5px}
     .ft__col p,.ft__col a{font-size:.7rem;color:rgba(255,255,255,.4);line-height:1.6;display:block;text-decoration:none}
     .ft__col a:hover{color:var(--aul)}
+    .ft__contact{display:flex;align-items:center;gap:8px}
+    .ft__contact svg{flex-shrink:0;opacity:.7}
+    @media(max-width:768px){.ft__contact{justify-content:center}}
     .ft__tag{font-size:.76rem;color:rgba(255,255,255,.28);margin-top:10px}
     .ft__cp{font-size:.66rem;color:rgba(255,255,255,.18);margin-top:6px}
 
@@ -219,7 +222,6 @@
       <div class="nav__actions">
         <div class="lang" role="group" aria-label="Idioma"><button class="lang__btn active" data-lang-btn="es" type="button">ES</button><button class="lang__btn" data-lang-btn="en" type="button">EN</button></div>
         <a href="/agencias" class="nav__btn-agency">&#127970; Portal Agencias</a>
-        <button class="nav__btn-account" id="btn-login-open" type="button">&#128100; Mi Cuenta</button>
         <a href="#claim" class="nav__btn-cta" data-t="nav_cta">Iniciá tu reclamo</a>
       </div>
       <button class="nav__hamburger" aria-label="Menú"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
@@ -230,25 +232,18 @@
   <header class="hero">
     <div class="hero__wrap">
       <span class="hero__pill"><span class="hero__pill-icon">&#9889;</span><span data-lang="es">Evaluación inicial sin costo</span><span data-lang="en">Free initial evaluation</span></span>
-      <h1 class="hero__h1">Compensaciones aéreas.<br/>Tu vuelo falló. Nosotros reclamamos por vos.</h1>
-      <p class="hero__sub">Gestionamos reclamos por vuelos demorados, cancelados, sobreventa o problemas con equipaje. Sin costo inicial: cobramos solo si conseguís compensación.</p>
+      <h1 class="hero__h1">PLATAFORMA DE RECLAMOS AÉREOS.<br/>HACEMOS EL RECLAMO POR VOS</h1>
+      <p class="hero__sub">Gestionamos reclamos por vuelos demorados, cancelados, sobreventa o problemas con equipaje. Sin costo inicial: cobramos solo si ganás.</p>
       <a href="#claim" class="hero__cta">Iniciá tu reclamo gratis <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></a>
       <a href="#casos" class="hero__link" data-t="hero_link">Ver si mi caso aplica &rarr;</a>
       <div class="hero__badges"><span class="hero__bi" data-t="badge1">&#10003; Evaluación inicial sin costo</span><span class="hero__bi" data-t="badge2">&#10003; Cubrimos todos los costos</span><span class="hero__bi" data-t="badge3">&#10003; Solo cobramos si ganás</span></div>
-      <div class="hero__kpis">
-        <div class="hero__kpi"><span class="hero__kpi-num">12,500+</span><span class="hero__kpi-txt" data-lang="es">Reclamos gestionados</span><span class="hero__kpi-txt" data-lang="en">Claims managed</span></div>
-        <span class="hero__kpi-div"></span>
-        <div class="hero__kpi"><span class="hero__kpi-num">94%</span><span class="hero__kpi-txt" data-lang="es">Tasa de éxito</span><span class="hero__kpi-txt" data-lang="en">Success rate</span></div>
-        <span class="hero__kpi-div"></span>
-        <div class="hero__kpi"><span class="hero__kpi-num">$8.2M</span><span class="hero__kpi-txt" data-lang="es">Recuperados</span><span class="hero__kpi-txt" data-lang="en">Recovered</span></div>
-      </div>
     </div>
   </header>
 
   <!-- TRUST -->
   <section class="trust"><div class="trust__wrap">
     <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><strong data-t="trust1_t">Reclamamos por vos</strong><p data-t="trust1_d">Cubrimos todos los costos del proceso</p></div></div>
-    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div><strong data-t="trust2_t">Visión IA que lee tu pasaje</strong><p data-t="trust2_d">Subí una foto y completamos todo automáticamente</p></div></div>
+    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div><strong data-t="trust2_t">Visión IA que lee tu pasaje</strong><p data-t="trust2_d">Subí una foto y eficientizamos el proceso</p></div></div>
     <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><strong data-t="trust3_t">100% gratuito hasta ganar</strong><p data-t="trust3_d">Sin costos iniciales ni ocultos</p></div></div>
   </div></section>
 
@@ -256,19 +251,19 @@
   <section class="sec" id="como-funciona"><div class="sec__c"><p class="sec__ey" data-t="how_ey">Proceso</p><h2 class="sec__h" style="text-align:center" data-t="how_title">Cómo funciona</h2><p class="sec__p sec__p--c" data-t="how_sub">Cuatro pasos simples para recuperar tu compensación</p></div>
     <div class="steps">
       <div class="stp"><span class="stp__n">01</span><h3 class="stp__t" data-t="step1_t">Cargás tu caso</h3><p class="stp__d" data-t="step1_d">Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.</p></div>
-      <div class="stp"><span class="stp__n">02</span><h3 class="stp__t" data-t="step2_t">SolucionAir reclama por vos</h3><p class="stp__d" data-t="step2_d">Analizamos tu caso, identificamos tus derechos y presentamos el reclamo formal. 100% gratis.</p></div>
-      <div class="stp"><span class="stp__n">03</span><h3 class="stp__t" data-t="step3_t">Se resuelve tu caso</h3><p class="stp__d" data-t="step3_d">La aerolínea responde con un acuerdo o derivamos a mediación online profesional.</p></div>
-      <div class="stp"><span class="stp__n">04</span><h3 class="stp__t" data-t="step4_t">Cobrás tu compensación</h3><p class="stp__d" data-t="step4_d">Recibís el dinero y recién ahí pagamos nuestros honorarios sobre lo percibido.</p></div>
+      <div class="stp"><span class="stp__n">02</span><h3 class="stp__t" data-t="step2_t">Hacemos el reclamo por vos</h3><p class="stp__d" data-t="step2_d">Te mantenemos informado y cubrimos todos los costos del proceso.</p></div>
+      <div class="stp"><span class="stp__n">03</span><h3 class="stp__t" data-t="step3_t">Obtenés tu compensación</h3><p class="stp__d" data-t="step3_d">La aerolínea responde con un acuerdo o derivamos a mediación online profesional.</p></div>
+      <div class="stp"><span class="stp__n">04</span><h3 class="stp__t" data-t="step4_t">Pagás 20% por el servicio</h3><p class="stp__d" data-t="step4_d">Si no ganás, no pagás.</p></div>
     </div>
   </section>
 
   <!-- SIN RESPUESTA -->
   <section class="sec" id="derivacion"><div class="sec__c"><p class="sec__ey">Mediación</p><h2 class="sec__h" style="text-align:center">¿Sin respuesta de la aerolínea?</h2><p class="sec__p sec__p--c" data-t="ctg_desc">Derivamos tu caso a nuestra Red de Profesionales: mediación privada y 100% online, sin tribunales.</p></div>
     <div class="steps">
-      <div class="stp"><span class="stp__n">01</span><h3 class="stp__t">Abogado especializado</h3><p class="stp__d">Un profesional en derechos del pasajero toma tu caso. No necesitás buscar representación por tu cuenta.</p></div>
-      <div class="stp"><span class="stp__n">02</span><h3 class="stp__t">Estrategia legal</h3><p class="stp__d">El abogado analiza la documentación, define la estrategia y convoca a la aerolínea. SolucionAir se hace cargo de los costos.</p></div>
-      <div class="stp"><span class="stp__n">03</span><h3 class="stp__t">Mediación por videollamada</h3><p class="stp__d">La reunión es 100% online entre el abogado, la aerolínea y vos. Sin viajes ni presentaciones presenciales.</p></div>
-      <div class="stp"><span class="stp__n">04</span><h3 class="stp__t">Solo si ganás</h3><p class="stp__d" data-t="ctg4_d">Comisión del 20% sobre el monto cobrado más hasta USD 20 de gastos del proceso. Si no hay acuerdo, no pagás nada.</p></div>
+      <div class="stp"><span class="stp__n">01</span><h3 class="stp__t">Derivamos tu caso</h3><p class="stp__d">Un abogado especializado en derechos del pasajero se encarga de todo el proceso.</p></div>
+      <div class="stp"><span class="stp__n">02</span><h3 class="stp__t">Mediación 100% online</h3><p class="stp__d">Desde tu casa, entre el abogado, la aerolínea y vos. Cubrimos todos los costos.</p></div>
+      <div class="stp"><span class="stp__n">03</span><h3 class="stp__t">Llegás a un acuerdo y obtenés tu compensación</h3><p class="stp__d"></p></div>
+      <div class="stp"><span class="stp__n">04</span><h3 class="stp__t">Pagás 20% por el servicio</h3><p class="stp__d" data-t="ctg4_d">Si no ganás, no pagás.</p></div>
     </div>
     <p style="text-align:center;font-family:var(--fm);font-size:.72rem;color:var(--au);margin-top:20px;font-weight:600" data-t="ctg_note">Sin riesgo para vos. Si no hay compensación, no pagás nada.</p>
   </section>
@@ -462,6 +457,10 @@
 
       <!-- PASO 3: FIRMA Y ENVÍO -->
       <div class="card wz-panel" id="wz-3">
+        <div style="display:flex;gap:12px;align-items:flex-start;background:var(--g05,#eaf1ed);border:1px solid var(--bdl);border-left:3px solid var(--g);border-radius:10px;padding:16px 18px;margin-bottom:18px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M12 2L3 7v6c0 5 3.5 8 9 9 5.5-1 9-4 9-9V7l-9-5z"/><path d="M9 12l2 2 4-4"/></svg>
+          <p style="margin:0;font-size:.8rem;color:var(--t2);line-height:1.6"><strong style="color:var(--g)">SolucionAir opera bajo un esquema de honorarios por éxito:</strong> no se cobran costos iniciales y los honorarios equivalen al 20% de la compensación obtenida.</p>
+        </div>
         <div class="card__blk"><div class="card__blk-head"><span class="badge-step">03</span><div><h3 class="card__blk-title" data-t="f_sign_t">Declaración jurada y firma electrónica</h3><p class="card__blk-sub" data-t="f_sign_sub">Leé atentamente antes de firmar y enviar.</p></div></div>
 
           <div style="background:var(--bg);border:1px solid var(--bdl);border-radius:8px;padding:16px;margin-bottom:16px;font-size:.76rem;color:var(--t2);line-height:1.65">
@@ -472,7 +471,7 @@
               <li>Representarme en instancias de mediación privada online, si correspondiera.</li>
               <li>Declaro estar autorizado/a a gestionar este reclamo en nombre de los acompañantes que haya incluido, y ser responsable legal o tutor/a de aquellos identificados como menores de edad.</li>
             </ul>
-            <p style="margin-bottom:10px">Entiendo que SolucionAir opera bajo un esquema de honorarios por éxito: <strong>no se cobran costos iniciales</strong> y los honorarios equivalen al 20% de la compensación obtenida, más un reintegro de gastos administrativos de hasta USD 20, únicamente si el reclamo prospera.</p>
+            <p style="margin-bottom:10px">Entiendo que SolucionAir opera bajo un esquema de honorarios por éxito: <strong>no se cobran costos iniciales</strong> y los honorarios equivalen al 20% de la compensación obtenida, únicamente si el reclamo prospera.</p>
             <p>Esta declaración constituye una firma electrónica válida en los términos de la Ley 25.506 de Firma Digital de la República Argentina.</p>
           </div>
 
@@ -502,12 +501,12 @@
   <!-- CASOS -->
   <section class="sec" id="casos"><div class="sec__c"><p class="sec__ey" data-t="cases_ey">Cobertura</p><h2 class="sec__h" style="text-align:center" data-t="cases_title">Casos que podés reclamar</h2></div>
     <div class="cgrid">
-      <div class="ccard"><div class="ccard__ic">&#9201;</div><h3 class="ccard__t" data-t="case1_t">Vuelo demorado</h3><p class="ccard__d" data-t="case1_d">Si llegaste significativamente tarde a destino por culpa de la aerolínea.</p></div>
+      <div class="ccard"><div class="ccard__ic">&#9201;</div><h3 class="ccard__t" data-t="case1_t">Vuelo demorado</h3><p class="ccard__d" data-t="case1_d">Si llegaste tarde a destino por culpa de la aerolínea.</p></div>
       <div class="ccard"><div class="ccard__ic">&#9992;</div><h3 class="ccard__t" data-t="case2_t">Vuelo cancelado</h3><p class="ccard__d" data-t="case2_d">Si la aerolínea canceló tu vuelo sin causa de fuerza mayor.</p></div>
       <div class="ccard"><div class="ccard__ic">&#128683;</div><h3 class="ccard__t" data-t="case3_t">Sobreventa</h3><p class="ccard__d" data-t="case3_d">Si te denegaron el embarque por venta de más asientos de los disponibles.</p></div>
+      <div class="ccard"><div class="ccard__ic">&#128230;</div><h3 class="ccard__t" data-t="case6_t">Equipaje entregado tarde</h3><p class="ccard__d" data-t="case6_d">Si tu equipaje llegó días después que vos y tuviste gastos por eso.</p></div>
       <div class="ccard"><div class="ccard__ic">&#129523;</div><h3 class="ccard__t" data-t="case4_t">Equipaje perdido</h3><p class="ccard__d" data-t="case4_d">Si tu equipaje no llegó y pasaron más de 21 días sin ser localizado.</p></div>
       <div class="ccard"><div class="ccard__ic">&#128295;</div><h3 class="ccard__t" data-t="case5_t">Equipaje dañado</h3><p class="ccard__d" data-t="case5_d">Si tu maleta llegó rota, rajada o con daños visibles causados durante el vuelo.</p></div>
-      <div class="ccard"><div class="ccard__ic">&#128230;</div><h3 class="ccard__t" data-t="case6_t">Equipaje entregado tarde</h3><p class="ccard__d" data-t="case6_d">Si tu equipaje llegó días después que vos y tuviste gastos por eso.</p></div>
     </div>
   </section>
 
@@ -517,7 +516,7 @@
       <div class="acard"><div class="acard__ic">&#128176;</div><h3 class="acard__t" data-t="adv1_t">Sin costos iniciales</h3><p class="acard__d" data-t="adv1_d">No pagás nada por adelantado. Nosotros cubrimos todos los gastos del proceso.</p></div>
       <div class="acard"><div class="acard__ic">&#127942;</div><h3 class="acard__t" data-t="adv2_t">Solo cobramos si ganás</h3><p class="acard__d" data-t="adv2_d">Nuestros honorarios se aplican únicamente si conseguimos tu compensación.</p></div>
       <div class="acard"><div class="acard__ic">&#128170;</div><h3 class="acard__t" data-t="adv3_t">No tenés que pelearte con la aerolínea</h3><p class="acard__d" data-t="adv3_d">Nos encargamos de todo el proceso. Vos solo nos contás qué pasó y nosotros nos ocupamos del resto.</p></div>
-      <div class="acard"><div class="acard__ic">&#128231;</div><h3 class="acard__t" data-t="adv4_t">Te mantenemos informado</h3><p class="acard__d" data-t="adv4_d">Recibís actualizaciones por email en cada etapa del proceso.</p></div>
+      <div class="acard"><div class="acard__ic">&#128231;</div><h3 class="acard__t" data-t="adv4_t">Te mantenemos informado</h3><p class="acard__d" data-t="adv4_d">Recibís actualizaciones en cada etapa del proceso.</p></div>
       <div class="acard"><div class="acard__ic">&#128269;</div><h3 class="acard__t" data-t="adv5_t">Revisamos tu caso antes de avanzar</h3><p class="acard__d" data-t="adv5_d">Analizamos la viabilidad antes de iniciar. Si el reclamo no tiene posibilidades reales, te lo decimos sin vueltas.</p></div>
       <div class="acard"><div class="acard__ic">&#128101;</div><h3 class="acard__t" data-t="adv6_t">Equipo especializado</h3><p class="acard__d" data-t="adv6_d">Conocemos las normativas de cada aerolínea y jurisdicción. Tu reclamo está en manos de quienes saben cómo avanzar.</p></div>
     </div>
@@ -540,12 +539,12 @@
   <!-- FAQ -->
   <section class="sec" id="faq"><div class="sec__c"><p class="sec__ey" data-t="faq_ey">Ayuda</p><h2 class="sec__h" style="text-align:center" data-t="faq_title">Preguntas frecuentes</h2></div>
     <div class="faq">
-      <div class="fq"><button class="fq__q" type="button" data-t="faq1_q">¿Cuánto cuesta usar SolucionAir?</button><div class="fq__a"><div class="fq__ai" data-t="faq1_a">Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión sobre la compensación obtenida si el reclamo es exitoso.</div></div></div>
+      <div class="fq"><button class="fq__q" type="button" data-t="faq1_q">¿Cuánto cuesta usar SolucionAir?</button><div class="fq__a"><div class="fq__ai" data-t="faq1_a">Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión del 20% sobre la compensación obtenida si el reclamo es exitoso.</div></div></div>
       <div class="fq"><button class="fq__q" type="button" data-t="faq2_q">¿Cuándo cobran sus honorarios?</button><div class="fq__a"><div class="fq__ai" data-t="faq2_a">Únicamente cuando vos cobrás tu compensación. Si no se consigue nada, no nos debés nada.</div></div></div>
       <div class="fq"><button class="fq__q" type="button" data-t="faq3_q">¿Qué pasa si mi reclamo no prospera?</button><div class="fq__a"><div class="fq__ai" data-t="faq3_a">No pagás absolutamente nada. Nosotros asumimos el riesgo y los costos del proceso completo.</div></div></div>
       <div class="fq"><button class="fq__q" type="button" data-t="faq4_q">¿Cuánto tarda el proceso?</button><div class="fq__a"><div class="fq__ai" data-t="faq4_a">Depende de la aerolínea y el tipo de reclamo. Los casos simples pueden resolverse en semanas, mientras que los que van a mediación pueden tomar algunos meses.</div></div></div>
       <div class="fq"><button class="fq__q" type="button" data-t="faq5_q">¿Qué documentación necesito?</button><div class="fq__a"><div class="fq__ai" data-t="faq5_a">Lo mínimo es tu pasaje, boarding pass o reserva. Si tenés fotos, emails de la aerolínea o recibos de gastos adicionales, también nos sirven. Nuestra IA puede extraer los datos de una captura de pantalla.</div></div></div>
-      <div class="fq"><button class="fq__q" type="button" data-t="faq6_q">¿Mis datos están protegidos?</button><div class="fq__a"><div class="fq__ai" data-t="faq6_a">Sí. Toda la información que compartís está protegida con encriptación y solo se usa para gestionar tu reclamo. No vendemos ni compartimos tus datos con terceros.</div></div></div>
+      <div class="fq"><button class="fq__q" type="button" data-t="faq6_q">¿Mis datos están protegidos?</button><div class="fq__a"><div class="fq__ai" data-t="faq6_a">Sí. Toda la información que compartís está protegida y solo se usa para gestionar tu reclamo. No vendemos ni compartimos tus datos con terceros.</div></div></div>
       <div class="fq"><button class="fq__q" type="button" data-t="faq7_q">¿Qué casos se pueden reclamar?</button><div class="fq__a"><div class="fq__ai" data-t="faq7_a">Vuelos demorados (más de 3 horas), cancelaciones, sobreventa (overbooking), denegación de embarque, downgrades de clase, equipaje perdido, dañado o entregado con demora.</div></div></div>
     </div>
   </section>
@@ -597,11 +596,15 @@
   <!-- FOOTER -->
   <footer class="ft"><div class="ft__wrap">
     <div class="ft__grid">
-      <div class="ft__col"><div class="ft__col-t">SolucionAir</div><p data-t="ft_tagline">Tu compensación siempre despega.</p><p data-t="ft_desc">Plataforma LegalTech con inteligencia artificial para reclamos aéreos.</p></div>
-      <div class="ft__col"><div class="ft__col-t" data-t="ft_contact">Contacto</div><a href="mailto:contacto@solucionair.com">contacto@solucionair.com</a><a href="tel:+5491125578402">+54 9 11 2557-8402</a></div>
+      <div class="ft__col"><div class="ft__col-t">SolucionAir</div><p data-t="ft_desc">Plataforma LegalTech con inteligencia artificial para reclamos aéreos.</p></div>
+      <div class="ft__col"><div class="ft__col-t" data-t="ft_contact">Contacto</div>
+        <a href="mailto:contacto@solucionair.com" class="ft__contact"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>contacto@solucionair.com</a>
+        <a href="tel:+5491125578402" class="ft__contact"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>+54 9 11 2557-8402</a>
+        <a href="https://instagram.com/solucion_air" target="_blank" rel="noopener noreferrer" class="ft__contact"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>@solucion_air</a>
+        <a href="https://twitter.com/solcionair" target="_blank" rel="noopener noreferrer" class="ft__contact"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>@solcionair</a>
+      </div>
       <div class="ft__col"><div class="ft__col-t" data-t="ft_legal">Legal</div><a href="#" data-t="ft_terms" data-open-tab="tyc" class="terms-ft-link">Términos y Condiciones</a><a href="#" data-t="ft_privacy" data-open-tab="privacy" class="terms-ft-link">Política de Privacidad</a></div>
     </div>
-    <div class="ft__tag">SolucionAir. Tu compensación siempre despega.</div>
     <div class="ft__cp">&copy; 2026 SolucionAir. Todos los derechos reservados.</div>
   </div></footer>
 
@@ -612,7 +615,7 @@
         <div class="terms-hd__top">
           <div>
             <div class="terms-hd__title" id="terms-modal-title">Documentos legales — SolucionAir</div>
-            <div class="terms-hd__sub">Versión TYC-SA-v2.1-2026 · Firma electrónica · Ley 25.506 y Ley 25.326</div>
+            <div class="terms-hd__sub">Versión TYC-SA-v2.2-2026 · Firma electrónica · Ley 25.506 y Ley 25.326</div>
           </div>
           <button class="terms-hd__x" id="terms-close" type="button" aria-label="Cerrar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
@@ -716,13 +719,14 @@
   if(b3)b3.addEventListener('click',function(){goToStep(2)});
   /* Login modal */
   var loginOv=document.getElementById('login-overlay'),loginForm=document.getElementById('login-form'),loginErr=document.getElementById('login-err');
-  document.getElementById('btn-login-open').addEventListener('click',function(){loginOv.classList.add('visible')});
+  var btnLoginOpen=document.getElementById('btn-login-open');
+  if(btnLoginOpen)btnLoginOpen.addEventListener('click',function(){loginOv.classList.add('visible')});
   document.getElementById('login-close').addEventListener('click',function(){loginOv.classList.remove('visible');loginErr.textContent=''});
   loginOv.addEventListener('click',function(e){if(e.target===loginOv){loginOv.classList.remove('visible');loginErr.textContent=''}});
   document.addEventListener('keydown',function(e){if(e.key==='Escape'&&loginOv.classList.contains('visible')){loginOv.classList.remove('visible');loginErr.textContent=''}});
   /* ======= TERMS & PRIVACY MODAL ======= */
   (function(){
-    const CONSENT_VERSION = 'TYC-SA-v2.1-2026';
+    const CONSENT_VERSION = 'TYC-SA-v2.2-2026';
 
     const TYC_HTML = `
 <h2>Términos y Condiciones del Servicio SolucionAir</h2>
@@ -737,7 +741,7 @@ A los fines del presente Acuerdo, los términos en mayúscula tendrán el siguie
 <b>Agencia:</b> persona jurídica habilitada para la comercialización de servicios turísticos que suscribe el presente Acuerdo en nombre y representación del Pasajero.<br>
 <b>Solicitante:</b> según lo definido en la cláusula 1.2.<br>
 <b>Caso:</b> conjunto de pretensiones derivadas de una incidencia concreta en un vuelo determinado del Pasajero, respecto del cual el Solicitante encomienda a SA su gestión bajo el presente Acuerdo.<br>
-<b>Compensación:</b> toda suma monetaria efectivamente percibida por el Solicitante o por el Pasajero como resultado de la gestión de SA, incluyendo compensaciones tarifadas, reintegros, indemnizaciones por daños, intereses y cualquier otro rubro de naturaleza monetaria, con la excepción expresa del reembolso de gastos de mediación recibido por el Solicitante.<br>
+<b>Compensación:</b> toda suma monetaria efectivamente percibida por el Solicitante o por el Pasajero como resultado de la gestión de SA, incluyendo compensaciones tarifadas, reintegros, indemnizaciones por daños, intereses y cualquier otro rubro de naturaleza monetaria.<br>
 <b>Reclamo Directo:</b> gestión administrativa o por vía Judicial Complementaria que SA dirige directamente a la aerolínea reclamada.<br>
 <b>Vía Administrativa o Judicial Complementaria:</b> vía adicional al Reclamo Directo que SA pueda emplear según la jurisdicción del Caso, incluyendo presentaciones ante organismos administrativos competentes y procesos judiciales de bajo monto de la Unión Europea, cuando estén disponibles.<br>
 <b>Red Profesional SolucionAir:</b> conjunto de abogados y abogadas matriculados que colaboran con SA bajo un marco de colaboración profesional autónomo.<br>
@@ -759,19 +763,17 @@ A los fines del presente Acuerdo, los términos en mayúscula tendrán el siguie
 
 <div class="tc-cl"><strong>5. Política comercial — Principio de cobro por resultado</strong><br>
 5.1. SolucionAir aplica una política comercial de cobro por resultado. El Solicitante no abona suma alguna a SA en concepto de comisiones, honorarios ni gastos si el Caso no concluye con la percepción de una Compensación.<br>
-5.2. En particular: (a) la evaluación inicial es sin costo; (b) la gestión del Reclamo Directo no genera obligación de pago para el Solicitante en ausencia de Compensación; (c) los costos asociados a la Mediación referidos en la cláusula 7 son afrontados por SA y sólo se reembolsan en el escenario de éxito previsto en dicha cláusula; (d) si la Derivación concluye sin Acuerdo de Mediación, SA no percibe comisión alguna ni reembolso de costos del Solicitante.</div>
+5.2. En particular: (a) la evaluación inicial es sin costo; (b) la gestión del Reclamo Directo no genera obligación de pago para el Solicitante en ausencia de Compensación; (c) los costos asociados a la Mediación referidos en la cláusula 7 son afrontados íntegramente por SA, sin reembolso a cargo del Solicitante; (d) si la Derivación concluye sin Acuerdo de Mediación, SA no percibe comisión alguna del Solicitante.</div>
 
 <div class="tc-cl"><strong>6. Honorarios y comisiones de SA</strong><br>
 6.1. En caso de Compensación obtenida por Reclamo Directo, el Solicitante abonará a SA una comisión equivalente al veinte por ciento (20%) sobre la Compensación efectivamente cobrada.<br>
 6.2. En caso de Compensación obtenida luego de una Derivación mediante Acuerdo de Mediación, el Solicitante abonará: (i) a SA, una comisión equivalente al quince por ciento (15%) sobre la Compensación efectivamente cobrada; y (ii) al/la Profesional Designado/a, en concepto de cuota litis, un cinco por ciento (5%) sobre la Compensación efectivamente cobrada, conforme el instrumento que se suscriba por separado entre el Solicitante y el/la Profesional.<br>
 6.3. La facturación de la comisión de SA y de la cuota litis del/la Profesional se realiza en forma separada y directa al Solicitante por cada uno.<br>
-6.4. <em>Base de cálculo.</em> La comisión de SA y la cuota litis del/la Profesional se calculan sobre la Compensación según se la define en la cláusula 2; esto es, sobre todo rubro monetario cobrado por el Solicitante o el Pasajero, incluyendo compensaciones tarifadas, reintegros, indemnizaciones por daños (incluyendo daño moral cuando proceda), intereses y todo otro rubro monetario obtenido. Se excluye expresamente de la base de cálculo el reembolso de gastos de mediación recibido por el Solicitante, si lo hubiera.</div>
+6.4. <em>Base de cálculo.</em> La comisión de SA y la cuota litis del/la Profesional se calculan sobre la Compensación según se la define en la cláusula 2; esto es, sobre todo rubro monetario cobrado por el Solicitante o el Pasajero, incluyendo compensaciones tarifadas, reintegros, indemnizaciones por daños (incluyendo daño moral cuando proceda), intereses y todo otro rubro monetario obtenido.</div>
 
 <div class="tc-cl"><strong>7. Costos asociados a la Mediación</strong><br>
-7.1. En caso de producirse una Derivación, como parte de su servicio de gestión, SA afronta por cuenta y orden del Solicitante los costos asociados a la sustanciación de la Mediación, incluyendo: (i) costo de cartas documento que correspondan; (ii) arancel de inicio de la Mediación; (iii) honorarios provisionales y, en su caso, definitivos del mediador conforme la escala aplicable cuando la Mediación concluya sin Acuerdo.<br>
-7.2. Si la etapa concluye con Acuerdo de Mediación y percepción efectiva de Compensación, el Solicitante reembolsará a SA los costos efectivamente incurridos según el párrafo 7.1, con un tope máximo de treinta mil pesos argentinos (ARS 30.000) por Caso. El reembolso es adicional a la comisión de SA y a la cuota litis del/la Profesional, y se liquida junto con ellas.<br>
-7.3. Por el contrario, si concluye sin Acuerdo de Mediación, SA absorbe íntegramente los costos referidos en el párrafo 7.1, sin derecho a reembolso ni reclamo alguno contra el Solicitante por dichos conceptos.<br>
-7.4. Los pagos referidos en el párrafo 7.1 se realizan en cuenta y orden del Solicitante y se documentan a su nombre, sin perjuicio de su pago por SA.</div>
+7.1. En caso de producirse una Derivación, como parte de su servicio de gestión, SA afronta a su exclusivo cargo los costos asociados a la sustanciación de la Mediación, incluyendo: (i) costo de cartas documento que correspondan; (ii) arancel de inicio de la Mediación; (iii) honorarios provisionales y, en su caso, definitivos del mediador conforme la escala aplicable cuando la Mediación concluya sin Acuerdo.<br>
+7.2. SA absorbe íntegramente los costos referidos en el párrafo 7.1, cualquiera sea el resultado de la Mediación, sin derecho a reembolso ni reclamo alguno contra el Solicitante por dichos conceptos.</div>
 
 <div class="tc-cl"><strong>8. Derivación a la Red Profesional SolucionAir</strong><br>
 8.1. El Solicitante presta su conformidad anticipada con la mecánica de derivación a un/a Profesional de la Red para la prosecución del Caso en caso de que SA lo considere pertinente. La derivación efectiva se materializa con la designación de un/a Profesional concreto/a y la suscripción por el Solicitante del instrumento de designación de patrocinio letrado y pacto de cuota litis con dicho/a Profesional.<br>
@@ -977,7 +979,7 @@ El Responsable se reserva el derecho de actualizar la presente política. Las mo
   </script>
 
   <!-- WHATSAPP FLOATING BUTTON -->
-  <a href="https://wa.me/5491125578402" target="_blank" rel="noopener noreferrer" aria-label="Contactar por WhatsApp" style="position:fixed;bottom:24px;left:24px;z-index:999;width:56px;height:56px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(37,211,102,.45);transition:transform .2s,box-shadow .2s;text-decoration:none" onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 6px 24px rgba(37,211,102,.6)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 16px rgba(37,211,102,.45)'">
+  <a href="https://wa.me/5491125578402" target="_blank" rel="noopener noreferrer" aria-label="Contactar por WhatsApp" style="position:fixed;bottom:24px;right:24px;z-index:999;width:56px;height:56px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(37,211,102,.45);transition:transform .2s,box-shadow .2s;text-decoration:none" onmouseover="this.style.transform='scale(1.1)';this.style.boxShadow='0 6px 24px rgba(37,211,102,.6)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 16px rgba(37,211,102,.45)'">
     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
   </a>
 

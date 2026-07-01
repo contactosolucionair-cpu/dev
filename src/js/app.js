@@ -657,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function () {
       badge1:'✓ Evaluación inicial sin costo', badge2:'✓ Cubrimos todos los costos', badge3:'✓ Solo cobramos si ganás',
       /* Trust cards */
       trust1_t:'Reclamamos por vos', trust1_d:'Cubrimos todos los costos del proceso',
-      trust2_t:'Visión IA que lee tu pasaje', trust2_d:'Subí una foto y completamos todo automáticamente',
+      trust2_t:'Visión IA que lee tu pasaje', trust2_d:'Subí una foto y eficientizamos el proceso',
       trust3_t:'100% gratuito hasta ganar', trust3_d:'Sin costos iniciales ni ocultos',
       /* Select options */
       opt_select:'Seleccionar...', opt_dni:'DNI', opt_passport:'Pasaporte', opt_id:'ID / Cédula',
@@ -685,19 +685,19 @@ document.addEventListener('DOMContentLoaded', function () {
       /* How it works */
       how_ey:'Proceso', how_title:'Cómo funciona', how_sub:'Cuatro pasos simples para recuperar tu compensación',
       step1_t:'Cargás tu caso', step1_d:'Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.',
-      step2_t:'SolucionAir reclama por vos', step2_d:'Analizamos tu caso, identificamos tus derechos y presentamos el reclamo formal. 100% gratis.',
-      step3_t:'Se resuelve tu caso', step3_d:'La aerolínea responde con un acuerdo o derivamos a mediación online profesional.',
-      step4_t:'Cobrás tu compensación', step4_d:'Recibís el dinero y recién ahí pagamos nuestros honorarios sobre lo percibido.',
+      step2_t:'Hacemos el reclamo por vos', step2_d:'Te mantenemos informado y cubrimos todos los costos del proceso.',
+      step3_t:'Obtenés tu compensación', step3_d:'La aerolínea responde con un acuerdo o derivamos a mediación online profesional.',
+      step4_t:'Pagás 20% por el servicio', step4_d:'Si no ganás, no pagás.',
       /* Contingency */
       ctg_title:'¿Sin respuesta de la aerolínea?', ctg_desc:'Derivamos tu caso a nuestra Red de Profesionales: una mediación privada y 100% online, sin necesidad de tribunales.',
       ctg1_t:'Abogado especializado', ctg1_d:'Un abogado de nuestra Red de Profesionales, especializado en derechos del pasajero.',
       ctg2_t:'Estrategia legal', ctg2_d:'Armamos la mejor estrategia basada en normativa vigente y jurisprudencia.',
       ctg3_t:'Mediación por videollamada', ctg3_d:'Resolución 100% online, sin necesidad de trasladarte a ningún tribunal.',
-      ctg4_t:'Solo si ganás', ctg4_d:'Comisión del 20% más reintegro de gastos de hasta USD 20. Solo si se gana.',
+      ctg4_t:'Pagás 20% por el servicio', ctg4_d:'Si no ganás, no pagás.',
       ctg_note:'Sin riesgo para vos. Si no hay compensación, no pagás nada.',
       /* Cases */
       cases_ey:'Cobertura', cases_title:'Casos que podés reclamar',
-      case1_t:'Vuelo demorado', case1_d:'Si llegaste significativamente tarde a destino por culpa de la aerolínea.',
+      case1_t:'Vuelo demorado', case1_d:'Si llegaste tarde a destino por culpa de la aerolínea.',
       case2_t:'Vuelo cancelado', case2_d:'Si la aerolínea canceló tu vuelo sin causa de fuerza mayor.',
       case3_t:'Sobreventa', case3_d:'Si te denegaron el embarque por venta de más asientos de los disponibles.',
       case4_t:'Equipaje perdido', case4_d:'Si tu equipaje no llegó y pasaron más de 21 días sin ser localizado.',
@@ -708,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function () {
       adv1_t:'Sin costos iniciales', adv1_d:'No pagás nada por adelantado. Nosotros cubrimos todos los gastos del proceso.',
       adv2_t:'Solo cobramos si ganás', adv2_d:'Nuestros honorarios se aplican únicamente si conseguimos tu compensación.',
       adv3_t:'No tenés que pelearte con la aerolínea', adv3_d:'Nos encargamos de todo el proceso. Vos solo nos contás qué pasó y nosotros nos ocupamos del resto.',
-      adv4_t:'Te mantenemos informado', adv4_d:'Recibís actualizaciones por email en cada etapa del proceso.',
+      adv4_t:'Te mantenemos informado', adv4_d:'Recibís actualizaciones en cada etapa del proceso.',
       adv5_t:'Revisamos tu caso antes de avanzar', adv5_d:'Analizamos la viabilidad antes de iniciar. Si el reclamo no tiene posibilidades reales, te lo decimos sin vueltas.',
       adv6_t:'Equipo especializado', adv6_d:'Conocemos las normativas de cada aerolínea y jurisdicción. Tu reclamo está en manos de quienes saben cómo avanzar.',
       /* Testimonials */
@@ -726,12 +726,12 @@ document.addEventListener('DOMContentLoaded', function () {
       about_p3:'¿Tenés alguna consulta? Escribinos a contacto@solucionair.com',
       /* FAQ */
       faq_ey:'Ayuda', faq_title:'Preguntas frecuentes',
-      faq1_q:'¿Cuánto cuesta usar SolucionAir?', faq1_a:'Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión sobre la compensación obtenida si el reclamo es exitoso.',
+      faq1_q:'¿Cuánto cuesta usar SolucionAir?', faq1_a:'Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión del 20% sobre la compensación obtenida si el reclamo es exitoso.',
       faq2_q:'¿Cuándo cobran sus honorarios?', faq2_a:'Únicamente cuando vos cobrás tu compensación. Si no se consigue nada, no nos debés nada.',
       faq3_q:'¿Qué pasa si mi reclamo no prospera?', faq3_a:'No pagás absolutamente nada. Nosotros asumimos el riesgo y los costos del proceso completo.',
       faq4_q:'¿Cuánto tarda el proceso?', faq4_a:'Depende de la aerolínea y el tipo de reclamo. Los casos simples pueden resolverse en semanas, mientras que los que van a mediación pueden tomar algunos meses.',
       faq5_q:'¿Qué documentación necesito?', faq5_a:'Lo mínimo es tu pasaje, boarding pass o reserva. Si tenés fotos, emails de la aerolínea o recibos de gastos adicionales, también nos sirven. Nuestra IA puede extraer los datos de una captura de pantalla.',
-      faq6_q:'¿Mis datos están protegidos?', faq6_a:'Sí. Toda la información que compartís está protegida con encriptación y solo se usa para gestionar tu reclamo. No vendemos ni compartimos tus datos con terceros.',
+      faq6_q:'¿Mis datos están protegidos?', faq6_a:'Sí. Toda la información que compartís está protegida y solo se usa para gestionar tu reclamo. No vendemos ni compartimos tus datos con terceros.',
       faq7_q:'¿Qué casos se pueden reclamar?', faq7_a:'Vuelos demorados (más de 3 horas), cancelaciones, sobreventa (overbooking), denegación de embarque, downgrades de clase, equipaje perdido, dañado o entregado con demora.',
       /* Login */
       login_title:'Ingresá a tu panel', login_desc:'Usá el email y contraseña con los que registraste tu reclamo.',
@@ -747,7 +747,7 @@ document.addEventListener('DOMContentLoaded', function () {
       badge1:'✓ Free initial evaluation', badge2:'✓ We cover all costs', badge3:'✓ No win, no fee',
       /* Trust cards */
       trust1_t:'We claim for you', trust1_d:'We cover all claim costs',
-      trust2_t:'AI Vision Ticket Reader', trust2_d:'Upload a photo and we will autofill everything',
+      trust2_t:'AI Vision Ticket Reader', trust2_d:'Upload a photo and we streamline the process',
       trust3_t:'100% Free Until We Win', trust3_d:'No upfront or hidden fees',
       /* Select options */
       opt_select:'Select...', opt_dni:'National ID', opt_passport:'Passport', opt_id:'ID Card',
@@ -775,19 +775,19 @@ document.addEventListener('DOMContentLoaded', function () {
       /* How it works */
       how_ey:'Process', how_title:'How it works', how_sub:'Four simple steps to recover your compensation',
       step1_t:'Upload your case', step1_d:'Upload your data and documents from your PC or phone. Our AI reads your ticket automatically.',
-      step2_t:'SolucionAir claims for you', step2_d:'We analyze your case, identify your rights and file the formal claim. 100% free.',
-      step3_t:'Your case is resolved', step3_d:'The airline responds with an agreement or we refer to professional online mediation.',
-      step4_t:'You receive your compensation', step4_d:'You get the money and only then we charge our fee on the amount received.',
+      step2_t:'We claim for you', step2_d:'We keep you informed and cover all process costs.',
+      step3_t:'You get your compensation', step3_d:'The airline responds with an agreement or we refer to professional online mediation.',
+      step4_t:'You pay 20% for the service', step4_d:'If you don\'t win, you don\'t pay.',
       /* Contingency */
       ctg_title:'No response from the airline?', ctg_desc:'We refer your case to our Professional Network: private and 100% online mediation, no courts needed.',
       ctg1_t:'Specialized attorney', ctg1_d:'A lawyer from our Professional Network, specialised in passenger rights.',
       ctg2_t:'Legal strategy', ctg2_d:'We build the best strategy based on current regulations and case law.',
       ctg3_t:'Video call mediation', ctg3_d:'100% online resolution, no need to travel to any court.',
-      ctg4_t:'Only if you win', ctg4_d:'20% commission plus expense reimbursement up to USD 20. Only if the case is won.',
+      ctg4_t:'You pay 20% for the service', ctg4_d:'If you don\'t win, you don\'t pay.',
       ctg_note:'No risk for you. If there is no compensation, you pay nothing.',
       /* Cases */
       cases_ey:'Coverage', cases_title:'Cases you can claim',
-      case1_t:'Delayed flight', case1_d:'If you arrived significantly late at your destination due to the airline\'s fault.',
+      case1_t:'Delayed flight', case1_d:'If you arrived late at your destination due to the airline\'s fault.',
       case2_t:'Cancelled flight', case2_d:'If the airline cancelled your flight without extraordinary circumstances.',
       case3_t:'Overbooking', case3_d:'If you were denied boarding because the airline oversold the flight.',
       case4_t:'Lost baggage', case4_d:'If your luggage didn\'t arrive and more than 21 days passed without being found.',
@@ -798,7 +798,7 @@ document.addEventListener('DOMContentLoaded', function () {
       adv1_t:'No upfront costs', adv1_d:'You pay nothing in advance. We cover all process expenses.',
       adv2_t:'We only charge if you win', adv2_d:'Our fees apply only if we secure your compensation.',
       adv3_t:'No fighting with the airline', adv3_d:'We handle the entire process. You just tell us what happened and we take care of the rest.',
-      adv4_t:'We keep you informed', adv4_d:'You receive email updates at every stage of the process.',
+      adv4_t:'We keep you informed', adv4_d:'You receive updates at every stage of the process.',
       adv5_t:'We review your case before proceeding', adv5_d:'We assess viability before starting. If the claim has no real chance, we tell you straight.',
       adv6_t:'Specialized team', adv6_d:'We know the regulations of each airline and jurisdiction. Your claim is in the hands of those who know how to move it forward.',
       /* Testimonials */
@@ -816,12 +816,12 @@ document.addEventListener('DOMContentLoaded', function () {
       about_p3:'Have a question? Write to us at contacto@solucionair.com',
       /* FAQ */
       faq_ey:'Help', faq_title:'Frequently asked questions',
-      faq1_q:'How much does SolucionAir cost?', faq1_a:'Nothing upfront. The initial service is 100% free. We only charge a commission on the compensation obtained if the claim is successful.',
+      faq1_q:'How much does SolucionAir cost?', faq1_a:'Nothing upfront. The initial service is 100% free. We only charge a 20% commission on the compensation obtained if the claim is successful.',
       faq2_q:'When do you charge your fees?', faq2_a:'Only when you receive your compensation. If nothing is obtained, you owe us nothing.',
       faq3_q:'What happens if my claim doesn\'t succeed?', faq3_a:'You pay absolutely nothing. We assume the risk and costs of the entire process.',
       faq4_q:'How long does the process take?', faq4_a:'It depends on the airline and type of claim. Simple cases can be resolved in weeks, while those going to mediation may take a few months.',
       faq5_q:'What documentation do I need?', faq5_a:'At minimum, your ticket, boarding pass or booking. If you have photos, airline emails or receipts for additional expenses, those help too. Our AI can extract data from a screenshot.',
-      faq6_q:'Is my data protected?', faq6_a:'Yes. All information you share is encrypted and used solely to manage your claim. We do not sell or share your data with third parties.',
+      faq6_q:'Is my data protected?', faq6_a:'Yes. All information you share is protected and used solely to manage your claim. We do not sell or share your data with third parties.',
       faq7_q:'What cases can be claimed?', faq7_a:'Delayed flights (over 3 hours), cancellations, overbooking, denied boarding, class downgrades, lost, damaged or delayed baggage.',
       /* Login */
       login_title:'Access your panel', login_desc:'Use the email and password you registered your claim with.',
