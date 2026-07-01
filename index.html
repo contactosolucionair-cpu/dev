@@ -637,19 +637,7 @@
 
   <script src="src/js/app.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer
-    onload="typeof onGoogleLibraryLoad==='function' && onGoogleLibraryLoad()"
-    onerror="(function(){var w=document.getElementById('google-login-wall'),f=document.getElementById('form-content-wrapper');if(w)w.style.display='none';if(f)f.style.display=''})()">
-  </script>
-  <script>
-  /* If GSI doesn't call onGoogleLibraryLoad within 8s (offline/blocked), unlock the form */
-  setTimeout(function(){
-    var wall=document.getElementById('google-login-wall');
-    if(wall&&wall.style.display!=='none'){
-      wall.style.display='none';
-      var f=document.getElementById('form-content-wrapper');
-      if(f)f.style.display='';
-    }
-  }, 8000);
+    onload="typeof onGoogleLibraryLoad==='function' && onGoogleLibraryLoad()">
   </script>
   <script>
   /* FAQ accordion */
