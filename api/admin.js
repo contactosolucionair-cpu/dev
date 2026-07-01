@@ -89,7 +89,7 @@ async function listEntidades(res, SB_URL, SB_KEY, tabla) {
   /* Conteo de casos por entidad */
   var campo  = tabla === 'agencias' ? 'agencia_id' : 'abogado_id';
   var conteo = {};
-  var countRes = await fetch(SB_URL + '/rest/v1/reclamos?deleted_at=is.null&select=' + campo,
+  var countRes = await fetch(SB_URL + '/rest/v1/reclamos?estado=neq.eliminado&select=' + campo,
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
   if (countRes.ok) {
     var rows = JSON.parse(await countRes.text());

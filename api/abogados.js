@@ -59,17 +59,20 @@ async function handleRegister(req, res, SB_URL, SB_KEY) {
   if (!nombre || !email || !password)
     return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios.' });
 
-  var signupRes = await fetch(SB_URL + '/auth/v1/signup', {
+  /* Alta vía endpoint admin (service role) con email ya confirmado: evita el paso de
+     confirmación por email y la ofuscación del signup para emails ya existentes. */
+  var signupRes = await fetch(SB_URL + '/auth/v1/admin/users', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY },
-    body: JSON.stringify({ email: email, password: password }),
+    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+    body: JSON.stringify({ email: email, password: password, email_confirm: true }),
   });
   var signupText = await signupRes.text();
   var signupJson;
   try { signupJson = JSON.parse(signupText); } catch (e) { return res.status(500).json({ error: 'Error al crear usuario.' }); }
 
   if (!signupRes.ok) {
-    if (signupText.indexOf('already registered') > -1 || signupText.indexOf('already exists') > -1)
+    var low = signupText.toLowerCase();
+    if (signupRes.status === 422 || low.indexOf('already') > -1 || low.indexOf('exists') > -1 || low.indexOf('registered') > -1)
       return res.status(409).json({ error: 'Ya existe una cuenta con ese email.' });
     return res.status(400).json({ error: signupJson.msg || signupJson.message || 'Error al registrar usuario.' });
   }
@@ -165,7 +168,7 @@ async function handleClaims(req, res, SB_URL, SB_KEY) {
     + 'estado,estado_historial,fecha_mediacion,adjuntos,creado_en';
 
   var sbRes = await fetch(
-    SB_URL + '/rest/v1/reclamos?abogado_id=eq.' + abogado.id + '&deleted_at=is.null&order=creado_en.desc&select=' + fields,
+    SB_URL + '/rest/v1/reclamos?abogado_id=eq.' + abogado.id + '&estado=neq.eliminado&order=creado_en.desc&select=' + fields,
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
   );
   var sbText = await sbRes.text();
