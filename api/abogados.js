@@ -120,6 +120,23 @@ async function handleLogin(req, res, SB_URL, SB_KEY) {
   });
   var rows;
   try { rows = JSON.parse(await agRes.text()); } catch (e) { rows = []; }
+
+  /* Fallback: si el email ya existía en Supabase Auth al registrarse, el signup se
+     ofusca y la fila pudo quedar con un auth_user_id distinto del real. Buscar por
+     email y reparar el vínculo para que verifyAbogado (por auth_user_id) funcione. */
+  if (!rows || !rows.length) {
+    var byEmailRes = await fetch(SB_URL + '/rest/v1/abogados?email=eq.' + encodeURIComponent(email) + '&limit=1', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+    });
+    try { rows = JSON.parse(await byEmailRes.text()); } catch (e) { rows = []; }
+    if (rows && rows.length && rows[0].auth_user_id !== userId) {
+      await fetch(SB_URL + '/rest/v1/abogados?id=eq.' + rows[0].id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ auth_user_id: userId }),
+      });
+    }
+  }
   if (!rows || !rows.length) return res.status(403).json({ error: 'No existe una cuenta de abogado asociada a este email.' });
 
   var ab = rows[0];
