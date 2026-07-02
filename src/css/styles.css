@@ -126,6 +126,17 @@ select.field__in{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg 
 .field.field-ai .field__msg{color:var(--ai)}
 @keyframes aiPulse{0%{box-shadow:0 0 0 0 var(--ai10)}50%{box-shadow:0 0 0 6px var(--ai10)}100%{box-shadow:0 0 0 0 transparent}}
 
+/* ==== AIRPORT AUTOCOMPLETE ==== */
+.ac-wrap{position:relative;width:100%}
+.ac-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;background:var(--w);border:1.5px solid var(--bd);border-radius:var(--r4);box-shadow:var(--s3);max-height:264px;overflow-y:auto;padding:4px}
+.ac-menu.open{display:block;animation:acIn .14s var(--ez)}
+@keyframes acIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.ac-opt{display:flex;flex-direction:column;gap:1px;padding:7px 10px;border-radius:var(--r2);cursor:pointer}
+.ac-opt:hover,.ac-opt.active{background:var(--g05)}
+.ac-opt__main{font-size:.82rem;font-weight:600;color:var(--t1);display:flex;align-items:center;gap:7px}
+.ac-code{font-family:var(--fm);font-size:.66rem;font-weight:600;color:var(--g);background:var(--g05);border:1px solid var(--g10);border-radius:var(--r2);padding:1px 5px;letter-spacing:.04em}
+.ac-opt__sub{font-size:.7rem;color:var(--t3);line-height:1.2}
+
 /* ==== AI SCANNER ==== */
 .ai-scan{border:2px solid var(--bdl);border-radius:var(--r12);overflow:hidden;transition:border-color .3s var(--ez)}
 .ai-scan:hover{border-color:var(--ai)}

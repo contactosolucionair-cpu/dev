@@ -366,8 +366,8 @@
           <div class="g g2">
             <div class="field"><label class="field__lbl" data-t="lbl_airline">Aerolínea <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-airline" data-required="true" placeholder="Aerolíneas Argentinas" /><span class="field__msg"></span></div>
             <div class="field"><label class="field__lbl" data-t="lbl_flight">Número de vuelo <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-flight" data-required="true" placeholder="AR1234" /><span class="field__msg"></span></div>
-            <div class="field"><label class="field__lbl" data-t="lbl_origin">Origen <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-origin" data-required="true" placeholder="Buenos Aires (EZE)" /><span class="field__msg"></span></div>
-            <div class="field"><label class="field__lbl" data-t="lbl_dest">Destino <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-destination" data-required="true" placeholder="Madrid (MAD)" /><span class="field__msg"></span></div>
+            <div class="field"><label class="field__lbl" data-t="lbl_origin">Origen <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-origin" data-required="true" data-airport="true" autocomplete="off" placeholder="Buenos Aires (EZE)" /><span class="field__msg"></span></div>
+            <div class="field"><label class="field__lbl" data-t="lbl_dest">Destino <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-destination" data-required="true" data-airport="true" autocomplete="off" placeholder="Madrid (MAD)" /><span class="field__msg"></span></div>
             <div class="field"><label class="field__lbl" data-t="lbl_date">Fecha del vuelo <span class="field__ast">*</span></label><input class="field__in" type="date" id="f-date" data-required="true" /><span class="field__msg"></span></div>
             <div class="field"><label class="field__lbl" data-t="lbl_pnr">Código de reserva (PNR)</label><input class="field__in" type="text" id="f-pnr" placeholder="ABC123" /><span class="field__msg"></span></div>
           </div>
@@ -635,6 +635,7 @@
     </div>
   </div>
 
+  <script src="src/js/airport-select.js"></script>
   <script src="src/js/app.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer
     onload="typeof onGoogleLibraryLoad==='function' && onGoogleLibraryLoad()">

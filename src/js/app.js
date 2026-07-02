@@ -281,6 +281,7 @@ document.addEventListener('DOMContentLoaded', function () {
     flds.forEach(function (f) {
       if (f.type === 'checkbox') { if (f.checked) n++; }
       else if (f.tagName === 'SELECT') { if (f.value) n++; }
+      else if (f.hasAttribute('data-airport')) { if (f.getAttribute('data-iata')) n++; }
       else { if (f.value.trim()) n++; }
     });
     var pct = Math.round(n / flds.length * 100);
@@ -356,8 +357,8 @@ document.addEventListener('DOMContentLoaded', function () {
         /* Paso 2 fields */
         fillField('f-airline', d.aerolinea);
         fillField('f-flight', d.vuelo_nro);
-        fillField('f-origin', d.origen);
-        fillField('f-destination', d.destino);
+        fillAirport('f-origin', d.origen);
+        fillAirport('f-destination', d.destino);
         fillField('f-date', d.fecha_vuelo);
         fillField('f-pnr', d.pnr);
         /* Gastos */
@@ -403,6 +404,31 @@ document.addEventListener('DOMContentLoaded', function () {
       if (msg) msg.textContent = 'Completado por IA';
       setTimeout(function () { field.classList.remove('field-ai'); field.classList.add('field-ok'); if (msg) msg.textContent = ''; }, 4000);
     }
+  }
+
+  /* Autofill para campos de aeropuerto: resuelve el texto de la IA al IATA real. */
+  function fillAirport(id, raw) {
+    if (!raw || raw === 'null' || raw === 'undefined' || raw === 'N/A') return;
+    var el = document.getElementById(id);
+    if (!el || el.value) return;
+    if (!window.AirportSelect) { fillField(id, raw); return; }
+    window.AirportSelect.setFromText(el, raw).then(function (a) {
+      /* 'change' (no 'input') para no gatillar el listener del combobox que limpia data-iata */
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      var field = el.closest('.field');
+      if (field) {
+        field.classList.remove('field-ok', 'field-error');
+        field.classList.add('field-ai');
+        var msg = $('.field__msg', field);
+        if (msg) msg.textContent = a ? 'Completado por IA'
+          : (S.lang === 'en' ? 'Confirm the airport' : 'Confirmá el aeropuerto');
+        setTimeout(function () {
+          field.classList.remove('field-ai');
+          if (a) { field.classList.add('field-ok'); if (msg) msg.textContent = ''; }
+        }, 4000);
+      }
+      tick();
+    });
   }
 
   /* ---- Wire up #ai-file (multi) ---- */
@@ -464,6 +490,11 @@ document.addEventListener('DOMContentLoaded', function () {
         var filled = 0;
         docFields.forEach(function (pair) {
           if (!pair[1]) return;
+          if (pair[0] === 'f-origin' || pair[0] === 'f-destination') {
+            var ael = document.getElementById(pair[0]);
+            if (ael && !ael.value) { fillAirport(pair[0], pair[1]); filled++; }
+            return;
+          }
           var el = document.getElementById(pair[0]);
           if (!el || el.value) return;
           el.value = pair[1];
@@ -506,6 +537,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var g = f.closest('.field'), m = $('.field__msg', g);
       var filled = f.tagName === 'SELECT' ? !!f.value : !!f.value.trim();
       if (!filled) { g.classList.add('field-error'); g.classList.remove('field-ok'); if (m) m.textContent = en ? 'Required' : 'Obligatorio'; ok = false; }
+      else if (f.hasAttribute('data-airport') && !f.getAttribute('data-iata')) { g.classList.add('field-error'); g.classList.remove('field-ok'); if (m) m.textContent = en ? 'Pick an airport from the list' : 'Elegí un aeropuerto de la lista'; ok = false; }
       else if (f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.value.trim())) { g.classList.add('field-error'); g.classList.remove('field-ok'); if (m) m.textContent = en ? 'Invalid email' : 'Email invalido'; ok = false; }
       else { g.classList.add('field-ok'); g.classList.remove('field-error'); if (m) m.textContent = ''; }
     });
