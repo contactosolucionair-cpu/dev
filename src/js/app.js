@@ -676,21 +676,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /* ============ DYNAMIC CONFIG FROM SUPABASE ============ */
-  var siteConfig = null;
-
-  /* Built-in fallback translations for all data-t keys */
+  /* Built-in translations for all data-t keys */
   var DICT = {
     es: {
       /* Nav */
       nav_cases:'Casos', nav_how:'Cómo funciona', nav_why:'Por qué elegirnos', nav_about:'Quiénes somos', nav_faq:'FAQ',
       nav_cta:'Iniciá tu reclamo',
-      hero_link:'Ver si mi caso aplica →',
-      badge1:'✓ Evaluación inicial sin costo', badge2:'✓ Cubrimos todos los costos', badge3:'✓ Solo cobramos si ganás',
-      /* Trust cards */
-      trust1_t:'Reclamamos por vos', trust1_d:'Cubrimos todos los costos del proceso',
-      trust2_t:'Visión IA que lee tu pasaje', trust2_d:'Subí una foto y eficientizamos el proceso',
-      trust3_t:'100% gratuito hasta ganar', trust3_d:'Sin costos iniciales ni ocultos',
+      hero_title:'Plataforma de reclamos aéreos', hero_cta:'Iniciá gratis tu reclamo',
+      badge1:'✓ Solo cobramos si ganás', badge2:'✓ Cubrimos todos los costos', badge3:'✓ Sin riesgo',
+      form_title:'Comenzá tu reclamo',
       /* Select options */
       opt_select:'Seleccionar...', opt_dni:'DNI', opt_passport:'Pasaporte', opt_id:'ID / Cédula',
       /* Wizard */
@@ -775,12 +769,9 @@ document.addEventListener('DOMContentLoaded', function () {
       /* Nav */
       nav_cases:'Cases', nav_how:'How it works', nav_why:'Why choose us', nav_about:'About us', nav_faq:'FAQ',
       nav_cta:'Start your claim',
-      hero_link:'See if my case applies →',
-      badge1:'✓ Free initial evaluation', badge2:'✓ We cover all costs', badge3:'✓ No win, no fee',
-      /* Trust cards */
-      trust1_t:'We claim for you', trust1_d:'We cover all claim costs',
-      trust2_t:'AI Vision Ticket Reader', trust2_d:'Upload a photo and we streamline the process',
-      trust3_t:'100% Free Until We Win', trust3_d:'No upfront or hidden fees',
+      hero_title:'Flight claims platform', hero_cta:'Start your free claim',
+      badge1:'✓ No win, no fee', badge2:'✓ We cover all costs', badge3:'✓ No risk',
+      form_title:'Start your claim',
       /* Select options */
       opt_select:'Select...', opt_dni:'National ID', opt_passport:'Passport', opt_id:'ID Card',
       /* Wizard */
@@ -864,21 +855,7 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   function applyTexts(lang) {
-    /* Apply hero/CTA from Supabase config if available */
-    var cfgT = (siteConfig && siteConfig.translations && siteConfig.translations[lang]) || {};
-    var cfgFb = (siteConfig && siteConfig.translations && siteConfig.translations.es) || {};
-
-    var heroTitle = cfgT.hero_title || cfgFb.hero_title;
-    var heroSub = cfgT.hero_sub || cfgFb.hero_sub;
-    var ctaText = cfgT.cta_text || cfgFb.cta_text;
-    var formTitle = cfgT.form_title || cfgFb.form_title;
-
-    if (heroTitle) document.querySelectorAll('.hero__h1').forEach(function (el) { el.innerHTML = heroTitle.replace(/\n/g, '<br/>'); });
-    if (heroSub) document.querySelectorAll('.hero__sub').forEach(function (el) { el.textContent = heroSub; });
-    if (ctaText) document.querySelectorAll('.hero__cta').forEach(function (el) { var svg = el.querySelector('svg'); el.textContent = ctaText + ' '; if (svg) el.appendChild(svg); });
-    if (formTitle) document.querySelectorAll('.claim__title').forEach(function (el) { el.textContent = formTitle; });
-
-    /* Apply all data-t elements from built-in dictionary.
+    /* Apply all data-t elements from the built-in dictionary.
        Preserves child elements like <span class="field__ast">*</span> inside labels. */
     var dict = DICT[lang] || DICT.es;
     var fallback = DICT.es;
@@ -900,51 +877,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  function applyColors() {
-    if (!siteConfig || !siteConfig.colors) return;
-    var c = siteConfig.colors;
-    var r = document.documentElement.style;
-    if (c.primary) {
-      r.setProperty('--au', c.primary);
-      r.setProperty('--aul', c.primary);
-      r.setProperty('--aud', c.primary);
-    }
-    if (c.secondary) {
-      r.setProperty('--g', c.secondary);
-      r.setProperty('--gl', c.secondary);
-      r.setProperty('--gd', c.secondary);
-    }
-    if (c.bg) {
-      r.setProperty('--bg', c.bg);
-      r.setProperty('--bgd', c.bg);
-    }
-    if (c.text) {
-      r.setProperty('--t1', c.text);
-    }
-  }
-
-  function applyFlags() {
-    if (!siteConfig || !siteConfig.feature_flags) return;
-    var ff = siteConfig.feature_flags;
-    var aiScan = document.getElementById('ai-scan');
-    if (aiScan && ff.ai_extraction === false) {
-      aiScan.style.display = 'none';
-      var hr = aiScan.nextElementSibling;
-      if (hr && hr.tagName === 'HR') hr.style.display = 'none';
-    }
-  }
-
-  function loadSiteConfig() {
-    fetch('/api/get-config').then(function (r) { return r.json(); }).then(function (json) {
-      if (!json.success || !json.config) return;
-      siteConfig = json.config;
-      window.__SA_CONFIG = siteConfig;
-      applyColors();
-      applyFlags();
-      applyTexts(S.lang);
-    }).catch(function () { /* Fallback: hardcoded defaults in HTML remain */ });
-  }
-
   /* Override setLang to also apply translated texts */
   var originalSetLang = setLang;
   setLang = function (l) {
@@ -955,5 +887,4 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ============ INIT ============ */
   setLang('es');
   setTab('flight');
-  loadSiteConfig();
 });

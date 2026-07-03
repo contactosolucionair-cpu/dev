@@ -30,10 +30,8 @@
     .nav__hamburger{display:none;background:none;border:none;color:var(--g);cursor:pointer}
 
     /* Hero extras */
-    .hero__badges{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
-    .hero__bi{display:inline-flex;align-items:center;gap:4px;font-family:var(--fm);font-size:.64rem;color:rgba(255,255,255,.48);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);padding:4px 11px;border-radius:14px}
-    .hero__link{display:inline-flex;align-items:center;gap:4px;color:var(--aul);font-size:.82rem;font-weight:500;margin-top:12px;text-decoration:none;transition:color .2s}
-    .hero__link:hover{color:#fff}
+    .hero__badges{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:32px}
+    .hero__bi{display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:.76rem;font-weight:600;color:var(--aul);background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);padding:8px 16px;border-radius:16px}
 
     /* Steps */
     .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:28px}
@@ -232,21 +230,11 @@
   <!-- HERO -->
   <header class="hero">
     <div class="hero__wrap">
-      <span class="hero__pill"><span class="hero__pill-icon">&#9889;</span><span data-lang="es">Evaluación inicial sin costo</span><span data-lang="en">Free initial evaluation</span></span>
-      <h1 class="hero__h1">PLATAFORMA DE RECLAMOS AÉREOS.<br/>HACEMOS EL RECLAMO POR VOS</h1>
-      <p class="hero__sub">Gestionamos reclamos por vuelos demorados, cancelados, sobreventa o problemas con equipaje. Sin costo inicial: cobramos solo si ganás.</p>
-      <a href="#claim" class="hero__cta">Iniciá tu reclamo gratis <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></a>
-      <a href="#casos" class="hero__link" data-t="hero_link">Ver si mi caso aplica &rarr;</a>
-      <div class="hero__badges"><span class="hero__bi" data-t="badge1">&#10003; Evaluación inicial sin costo</span><span class="hero__bi" data-t="badge2">&#10003; Cubrimos todos los costos</span><span class="hero__bi" data-t="badge3">&#10003; Solo cobramos si ganás</span></div>
+      <h1 class="hero__h1" data-t="hero_title">Plataforma de reclamos aéreos</h1>
+      <a href="#claim" class="hero__cta" data-t="hero_cta">Iniciá gratis tu reclamo <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></a>
+      <div class="hero__badges"><span class="hero__bi" data-t="badge1">&#10003; Solo cobramos si ganás</span><span class="hero__bi" data-t="badge2">&#10003; Cubrimos todos los costos</span><span class="hero__bi" data-t="badge3">&#10003; Sin riesgo</span></div>
     </div>
   </header>
-
-  <!-- TRUST -->
-  <section class="trust"><div class="trust__wrap">
-    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div><strong data-t="trust1_t">Reclamamos por vos</strong><p data-t="trust1_d">Cubrimos todos los costos del proceso</p></div></div>
-    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><div><strong data-t="trust2_t">Visión IA que lee tu pasaje</strong><p data-t="trust2_d">Subí una foto y eficientizamos el proceso</p></div></div>
-    <div class="trust__col"><div class="trust__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><div><strong data-t="trust3_t">100% gratuito hasta ganar</strong><p data-t="trust3_d">Sin costos iniciales ni ocultos</p></div></div>
-  </div></section>
 
   <!-- CÓMO FUNCIONA -->
   <section class="sec" id="como-funciona"><div class="sec__c"><p class="sec__ey" data-t="how_ey">Proceso</p><h2 class="sec__h" style="text-align:center" data-t="how_title">Cómo funciona</h2><p class="sec__p sec__p--c" data-t="how_sub">Cuatro pasos simples para recuperar tu compensación</p></div>
