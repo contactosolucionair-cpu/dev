@@ -8,9 +8,10 @@
   <link rel="stylesheet" href="src/css/styles.css" />
   <style>
     .sec{max-width:1060px;margin:0 auto;padding:60px 24px}
-    .sec--alt{background:var(--w)}
     .sec__ey{font-family:var(--fm);font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--au);margin-bottom:8px}
     .sec__h{font-family:var(--fh);font-size:1.55rem;font-weight:800;color:var(--g);letter-spacing:-.02em;margin-bottom:6px}
+    .sec__h--solo{font-size:2.1rem;margin-bottom:0;position:relative;padding-bottom:20px}
+    .sec__h--solo::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:48px;height:3px;border-radius:2px;background:var(--au)}
     .sec__p{font-size:.86rem;color:var(--t3);max-width:520px;line-height:1.65}
     .sec__c{text-align:center;margin-bottom:36px}
     .sec__p--c{text-align:center;margin:0 auto}
@@ -25,8 +26,6 @@
     .nav__btn-account:hover{background:rgba(255,255,255,.08);border-color:#fff;color:#fff}
     .nav__btn-cta{display:inline-flex;align-items:center;gap:4px;padding:11px 24px;background:var(--au);color:var(--gd);font-family:var(--fh);font-weight:700;font-size:.88rem;border-radius:9px;transition:all .15s;text-decoration:none;white-space:nowrap}
     .nav__btn-cta:hover{background:var(--aul);color:var(--gd)}
-    .nav__btn-agency{display:inline-flex;align-items:center;gap:5px;padding:11px 22px;background:transparent;color:rgba(255,255,255,.85);font-family:var(--f);font-weight:600;font-size:.88rem;border-radius:9px;border:1px solid rgba(255,255,255,.28);transition:all .15s;text-decoration:none;white-space:nowrap}
-    .nav__btn-agency:hover{background:rgba(212,168,83,.12);border-color:var(--au);color:var(--au)}
     .nav__hamburger{display:none;background:none;border:none;color:#fff;cursor:pointer}
 
     /* Hero extras */
@@ -103,12 +102,12 @@
     .login-modal__err{font-family:var(--fm);font-size:.7rem;color:var(--err);margin-top:8px;min-height:16px}
 
     /* Footer grid */
-    .ft__grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;text-align:left;margin-bottom:18px}
+    .ft__grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:24px;text-align:left;margin-bottom:18px}
     .ft__col-t{font-family:var(--fh);font-size:.74rem;font-weight:700;color:var(--aul);margin-bottom:5px}
     .ft__col p,.ft__col a{font-size:.7rem;color:rgba(255,255,255,.4);line-height:1.6;display:block;text-decoration:none}
     .ft__col a:hover{color:var(--aul)}
-    .ft__contacts{display:flex;flex-direction:column;gap:11px;margin-top:9px}
-    .ft__contact{display:flex;align-items:center;gap:9px;line-height:1.3}
+    .ft__contacts{display:flex;flex-direction:column;gap:7px;margin-top:9px}
+    .ft__contact{display:flex;align-items:center;gap:20px;line-height:1.3}
     .ft__contact svg{flex-shrink:0;opacity:.7}
     @media(max-width:768px){.ft__contacts{width:fit-content;margin-left:auto;margin-right:auto}}
     .ft__tag{font-size:.76rem;color:rgba(255,255,255,.28);margin-top:10px}
@@ -220,7 +219,6 @@
       </ul>
       <div class="nav__actions">
         <div class="lang" role="group" aria-label="Idioma"><button class="lang__btn active" data-lang-btn="es" type="button">ES</button><button class="lang__btn" data-lang-btn="en" type="button">EN</button></div>
-        <a href="/agencias" class="nav__btn-agency">&#127970; Portal Agencias</a>
         <a href="#claim" class="nav__btn-cta" data-t="nav_cta">Iniciá tu reclamo</a>
       </div>
       <button class="nav__hamburger" aria-label="Menú"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
@@ -245,7 +243,7 @@
   </header>
 
   <!-- CÓMO FUNCIONA -->
-  <section class="sec" id="como-funciona"><div class="sec__c"><p class="sec__ey" data-t="how_ey">Proceso</p><h2 class="sec__h" style="text-align:center" data-t="how_title">Cómo funciona</h2><p class="sec__p sec__p--c" data-t="how_sub">Cuatro pasos simples para recuperar tu compensación</p></div>
+  <section class="sec" id="como-funciona"><div class="sec__c"><h2 class="sec__h sec__h--solo" style="text-align:center" data-t="how_title">Cómo funciona</h2></div>
     <div class="steps">
       <div class="stp"><span class="stp__n">01</span><h3 class="stp__t" data-t="step1_t">Cargás tu caso</h3><p class="stp__d" data-t="step1_d">Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.</p></div>
       <div class="stp"><span class="stp__n">02</span><h3 class="stp__t" data-t="step2_t">Hacemos el reclamo por vos</h3><p class="stp__d" data-t="step2_d">Te mantenemos informado y cubrimos todos los costos del proceso.</p></div>
@@ -255,7 +253,7 @@
   </section>
 
   <!-- SIN RESPUESTA -->
-  <section class="sec" id="derivacion"><div class="sec__c"><p class="sec__ey">Mediación</p><h2 class="sec__h" style="text-align:center">¿Sin respuesta de la aerolínea?</h2><p class="sec__p sec__p--c" data-t="ctg_desc">Derivamos tu caso a nuestra Red de Profesionales: mediación privada y 100% online, sin tribunales.</p></div>
+  <section class="sec" id="derivacion"><div class="sec__c"><h2 class="sec__h sec__h--solo" style="text-align:center" data-t="ctg_title">¿Sin respuesta de la aerolínea?</h2></div>
     <div class="steps">
       <div class="stp"><span class="stp__n">01</span><h3 class="stp__t">Derivamos tu caso</h3><p class="stp__d">Un abogado especializado en derechos del pasajero se encarga de todo el proceso.</p></div>
       <div class="stp"><span class="stp__n">02</span><h3 class="stp__t">Mediación 100% online</h3><p class="stp__d">Desde tu casa, entre el abogado, la aerolínea y vos. Cubrimos todos los costos.</p></div>
@@ -496,7 +494,7 @@
   </section>
 
   <!-- CASOS -->
-  <section class="sec" id="casos"><div class="sec__c"><p class="sec__ey" data-t="cases_ey">Cobertura</p><h2 class="sec__h" style="text-align:center" data-t="cases_title">Casos que podés reclamar</h2></div>
+  <section class="sec" id="casos"><div class="sec__c"><h2 class="sec__h" style="text-align:center" data-t="cases_title">Casos que podés reclamar</h2></div>
     <div class="cgrid">
       <div class="ccard"><div class="ccard__ic">&#9201;</div><h3 class="ccard__t" data-t="case1_t">Vuelo demorado</h3><p class="ccard__d" data-t="case1_d">Si llegaste tarde a destino por culpa de la aerolínea.</p></div>
       <div class="ccard"><div class="ccard__ic">&#9992;</div><h3 class="ccard__t" data-t="case2_t">Vuelo cancelado</h3><p class="ccard__d" data-t="case2_d">Si la aerolínea canceló tu vuelo sin causa de fuerza mayor.</p></div>
@@ -508,7 +506,7 @@
   </section>
 
   <!-- VENTAJAS -->
-  <section class="sec sec--alt" id="ventajas"><div class="sec__c"><p class="sec__ey" data-t="adv_ey">Beneficios</p><h2 class="sec__h" style="text-align:center" data-t="adv_title">Por qué elegirnos</h2></div>
+  <section class="sec" id="ventajas"><div class="sec__c"><h2 class="sec__h" style="text-align:center" data-t="adv_title">Por qué elegirnos</h2></div>
     <div class="agrid">
       <div class="acard"><div class="acard__ic">&#128176;</div><h3 class="acard__t" data-t="adv1_t">Sin costos iniciales</h3><p class="acard__d" data-t="adv1_d">No pagás nada por adelantado. Nosotros cubrimos todos los gastos del proceso.</p></div>
       <div class="acard"><div class="acard__ic">&#127942;</div><h3 class="acard__t" data-t="adv2_t">Solo cobramos si ganás</h3><p class="acard__d" data-t="adv2_d">Nuestros honorarios se aplican únicamente si conseguimos tu compensación.</p></div>
@@ -520,7 +518,7 @@
   </section>
 
   <!-- TESTIMONIOS -->
-  <section class="sec"><div class="sec__c"><p class="sec__ey" data-t="test_ey">Testimonios</p><h2 class="sec__h" style="text-align:center" data-t="test_title">Lo que dicen nuestros clientes</h2></div>
+  <section class="sec"><div class="sec__c"><h2 class="sec__h" style="text-align:center" data-t="test_title">Lo que dicen nuestros clientes</h2></div>
     <div class="tgrid">
       <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q" data-t="test1_q">"Pensé que era imposible reclamar, pero SolucionAir se encargó de todo. En pocas semanas tenía mi compensación acreditada."</p><div class="tcard__n">Martina R.</div><div class="tcard__m" data-t="test1_m">Buenos Aires · Vuelo demorado · USD 600 recuperados</div></div>
       <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q" data-t="test2_q">"Me cancelaron el vuelo y no sabía qué hacer. Subí mi pasaje, la IA completó todo y a los días ya tenía respuesta."</p><div class="tcard__n">Jorge L.</div><div class="tcard__m" data-t="test2_m">Córdoba · Vuelo cancelado · USD 320 recuperados</div></div>
@@ -529,12 +527,12 @@
   </section>
 
   <!-- QUIÉNES SOMOS -->
-  <section class="sec sec--alt" id="quienes-somos"><div class="sec__c"><p class="sec__ey" data-t="about_ey">Equipo</p><h2 class="sec__h" style="text-align:center" data-t="about_title">Quién está detrás de SolucionAir</h2></div>
+  <section class="sec" id="quienes-somos"><div class="sec__c"><h2 class="sec__h" style="text-align:center" data-t="about_title">Quién está detrás de SolucionAir</h2></div>
     <div class="abox"><p data-t="about_p1">SolucionAir nace para simplificar un proceso que suele ser confuso, lento y frustrante para los pasajeros. Combinamos gestión, análisis de casos y seguimiento personalizado para ayudarte a reclamar lo que te corresponde sin que tengas que ocuparte de todo el trámite.</p><p data-t="about_p2">Somos un equipo especializado en gestión de reclamos ante aerolíneas. Cada caso recibe atención directa, con seguimiento real y comunicación clara en cada etapa.</p><p data-t="about_p3">¿Tenés alguna consulta? Escribinos a <a href="mailto:contacto@solucionair.com">contacto@solucionair.com</a></p></div>
   </section>
 
   <!-- FAQ -->
-  <section class="sec" id="faq"><div class="sec__c"><p class="sec__ey" data-t="faq_ey">Ayuda</p><h2 class="sec__h" style="text-align:center" data-t="faq_title">Preguntas frecuentes</h2></div>
+  <section class="sec" id="faq"><div class="sec__c"><h2 class="sec__h" style="text-align:center" data-t="faq_title">Preguntas frecuentes</h2></div>
     <div class="faq">
       <div class="fq"><button class="fq__q" type="button" data-t="faq1_q">¿Cuánto cuesta usar SolucionAir?</button><div class="fq__a"><div class="fq__ai" data-t="faq1_a">Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión del 20% sobre la compensación obtenida si el reclamo es exitoso.</div></div></div>
       <div class="fq"><button class="fq__q" type="button" data-t="faq2_q">¿Cuándo cobran sus honorarios?</button><div class="fq__a"><div class="fq__ai" data-t="faq2_a">Únicamente cuando vos cobrás tu compensación. Si no se consigue nada, no nos debés nada.</div></div></div>
@@ -602,6 +600,7 @@
           <a href="https://twitter.com/solcionair" target="_blank" rel="noopener noreferrer" class="ft__contact"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>@solcionair</a>
         </div>
       </div>
+      <div class="ft__col"><div class="ft__col-t" data-t="ft_portals">Portales</div><a href="/agencias" data-t="ft_agencies">Portal Agencias</a><a href="/abogados" data-t="ft_lawyers">Portal Abogados</a></div>
       <div class="ft__col"><div class="ft__col-t" data-t="ft_legal">Legal</div><a href="#" data-t="ft_terms" data-open-tab="tyc" class="terms-ft-link">Términos y Condiciones</a><a href="#" data-t="ft_privacy" data-open-tab="privacy" class="terms-ft-link">Política de Privacidad</a></div>
     </div>
     <div class="ft__cp">&copy; 2026 SolucionAir. Todos los derechos reservados.</div>
