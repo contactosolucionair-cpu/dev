@@ -52,7 +52,7 @@
 
     /* Cases */
     .cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}
-    .ccard{background:var(--bg);border:1px solid var(--bdl);border-radius:12px;padding:20px;transition:box-shadow .2s}
+    .ccard{background:var(--w);border:1px solid var(--bdl);border-radius:12px;padding:20px;transition:box-shadow .2s}
     .ccard:hover{box-shadow:0 4px 20px rgba(0,0,0,.05)}
     .ccard__ic{font-size:1.3rem;margin-bottom:6px}
     .ccard__t{font-family:var(--fh);font-size:.84rem;font-weight:700;color:var(--t1);margin-bottom:3px}
@@ -60,7 +60,7 @@
 
     /* Advantages */
     .agrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}
-    .acard{background:var(--bg);border:1px solid var(--bdl);border-radius:10px;padding:18px}
+    .acard{background:var(--w);border:1px solid var(--bdl);border-radius:10px;padding:18px}
     .acard__ic{font-size:1.1rem;margin-bottom:5px}
     .acard__t{font-family:var(--fh);font-size:.8rem;font-weight:700;color:var(--t1);margin-bottom:2px}
     .acard__d{font-size:.73rem;color:var(--t3);line-height:1.4}
@@ -128,13 +128,14 @@
     .wz-nav{display:flex;justify-content:space-between;gap:10px;margin-top:20px;flex-wrap:wrap}
 
     /* Google login wall */
-    #google-login-wall{text-align:center}
-    .gwall{padding:48px 24px;text-align:center;max-width:520px;margin:0 auto}
-    .gwall__ey{font-family:var(--fm);font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:var(--au);margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:10px}
-    .gwall__ey::before,.gwall__ey::after{content:'';display:block;width:24px;height:2px;background:var(--au)}
-    .gwall__title{font-family:var(--fh);font-size:1.4rem;font-weight:800;color:var(--t1);margin-bottom:10px;letter-spacing:-.01em}
-    .gwall__desc{font-size:.84rem;color:var(--t3);font-weight:300;margin-bottom:28px;line-height:1.65;max-width:380px;margin-left:auto;margin-right:auto}
-    .gwall__note{font-size:.74rem;color:var(--t4);margin-top:14px;font-weight:300}
+    #google-login-wall{text-align:center;padding:8px 0 12px}
+    .gwall{padding:64px 48px;text-align:center;max-width:640px;margin:0 auto;background:linear-gradient(135deg,var(--gd) 0%,var(--g) 65%,var(--gl) 100%);border-radius:var(--r16);box-shadow:0 20px 60px rgba(30,51,43,.30);position:relative;overflow:hidden}
+    .gwall::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--au),var(--aul),var(--au))}
+    .gwall__icon{width:68px;height:68px;border-radius:50%;background:rgba(212,168,83,.14);border:1px solid rgba(212,168,83,.35);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;color:var(--au);position:relative;z-index:1}
+    .gwall__title{font-family:var(--fh);font-size:clamp(1.7rem,3.2vw,2.15rem);font-weight:800;color:#fff;margin-bottom:14px;letter-spacing:-.02em;position:relative;z-index:1}
+    .gwall__desc{font-size:.94rem;color:rgba(255,255,255,.72);font-weight:300;margin-bottom:34px;line-height:1.65;max-width:420px;margin-left:auto;margin-right:auto;position:relative;z-index:1}
+    .gwall__note{font-size:.78rem;color:rgba(255,255,255,.85);margin-top:20px;font-weight:500;display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.08);padding:9px 18px;border-radius:20px;border:1px solid rgba(255,255,255,.14);position:relative;z-index:1}
+    #google-btn-container{position:relative;z-index:1}
     /* User chip */
     #google-user-chip{display:none;margin-bottom:16px}
     #google-user-chip.visible{display:block}
@@ -201,7 +202,7 @@
     .consent__meta{margin-top:8px;padding:8px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;font-family:var(--fm);font-size:.66rem;color:#166534;line-height:1.5}
 
     @media(max-width:768px){.nav__center{display:none}.nav__hamburger{display:block}.nav__actions{gap:6px}.steps,.cgrid,.agrid,.tgrid{grid-template-columns:1fr}.ctg__g{grid-template-columns:1fr}.ft__grid{grid-template-columns:1fr;text-align:center}.terms-ft{flex-direction:column;align-items:stretch}.terms-ft__note{max-width:100%}.terms-ft__btn{text-align:center}}
-    @media(max-width:640px){.sec{padding:40px 16px}}
+    @media(max-width:640px){.sec{padding:40px 16px}.gwall{padding:40px 24px}.gwall__title{font-size:1.5rem}}
   </style>
 </head>
 <body>
@@ -245,22 +246,21 @@
   <!-- CÓMO FUNCIONA -->
   <section class="sec" id="como-funciona"><div class="sec__c"><h2 class="sec__h sec__h--solo" style="text-align:center" data-t="how_title">Cómo funciona</h2></div>
     <div class="steps">
-      <div class="stp"><span class="stp__n">01</span><h3 class="stp__t" data-t="step1_t">Cargás tu caso</h3><p class="stp__d" data-t="step1_d">Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.</p></div>
-      <div class="stp"><span class="stp__n">02</span><h3 class="stp__t" data-t="step2_t">Hacemos el reclamo por vos</h3><p class="stp__d" data-t="step2_d">Te mantenemos informado y cubrimos todos los costos del proceso.</p></div>
-      <div class="stp"><span class="stp__n">03</span><h3 class="stp__t" data-t="step3_t">Obtenés tu compensación</h3></div>
-      <div class="stp"><span class="stp__n">04</span><h3 class="stp__t" data-t="step4_t">Pagás 20% por el servicio</h3><p class="stp__d" data-t="step4_d">Si no ganás, no pagás.</p></div>
+      <div class="stp"><span class="stp__n">1</span><h3 class="stp__t" data-t="step1_t">Cargás tu caso</h3><p class="stp__d" data-t="step1_d">Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.</p></div>
+      <div class="stp"><span class="stp__n">2</span><h3 class="stp__t" data-t="step2_t">Hacemos el reclamo por vos</h3><p class="stp__d" data-t="step2_d">Te mantenemos informado y cubrimos todos los costos del proceso.</p></div>
+      <div class="stp"><span class="stp__n">3</span><h3 class="stp__t" data-t="step3_t">Obtenés tu compensación</h3></div>
+      <div class="stp"><span class="stp__n">4</span><h3 class="stp__t" data-t="step4_t">Pagás 20% por el servicio</h3><p class="stp__d" data-t="step4_d">Si no ganás, no pagás.</p></div>
     </div>
   </section>
 
   <!-- SIN RESPUESTA -->
   <section class="sec" id="derivacion"><div class="sec__c"><h2 class="sec__h sec__h--solo" style="text-align:center" data-t="ctg_title">¿Sin respuesta de la aerolínea?</h2></div>
     <div class="steps">
-      <div class="stp"><span class="stp__n">01</span><h3 class="stp__t">Derivamos tu caso</h3><p class="stp__d">Un abogado especializado en derechos del pasajero se encarga de todo el proceso.</p></div>
-      <div class="stp"><span class="stp__n">02</span><h3 class="stp__t">Mediación 100% online</h3><p class="stp__d">Desde tu casa, entre el abogado, la aerolínea y vos. Cubrimos todos los costos.</p></div>
-      <div class="stp"><span class="stp__n">03</span><h3 class="stp__t">Llegás a un acuerdo y obtenés tu compensación</h3><p class="stp__d"></p></div>
-      <div class="stp"><span class="stp__n">04</span><h3 class="stp__t">Pagás 20% por el servicio</h3><p class="stp__d" data-t="ctg4_d">Si no ganás, no pagás.</p></div>
+      <div class="stp"><span class="stp__n">1</span><h3 class="stp__t">Derivamos tu caso</h3><p class="stp__d">Un abogado especializado en derechos del pasajero se encarga de todo el proceso.</p></div>
+      <div class="stp"><span class="stp__n">2</span><h3 class="stp__t">Mediación 100% online</h3><p class="stp__d">Desde tu casa, entre el abogado, la aerolínea y vos. Cubrimos todos los costos.</p></div>
+      <div class="stp"><span class="stp__n">3</span><h3 class="stp__t">Llegás a un acuerdo y obtenés tu compensación</h3><p class="stp__d"></p></div>
+      <div class="stp"><span class="stp__n">4</span><h3 class="stp__t">Pagás 20% por el servicio</h3><p class="stp__d" data-t="ctg4_d">Si no ganás, no pagás.</p></div>
     </div>
-    <p style="text-align:center;font-family:var(--fm);font-size:.72rem;color:var(--au);margin-top:20px;font-weight:600" data-t="ctg_note">Sin riesgo para vos. Si no hay compensación, no pagás nada.</p>
   </section>
 
   <!-- CLAIM / FORM — 3 PASOS -->
@@ -274,8 +274,8 @@
           data-callback="recibirLoginGoogle"
           data-auto_prompt="false">
         </div>
-        <div class="gwall__ey">Paso previo</div>
-        <h3 class="gwall__title">Identificate para iniciar tu reclamo</h3>
+        <div class="gwall__icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div>
+        <h3 class="gwall__title">Iniciá tu reclamo</h3>
         <p class="gwall__desc">Usamos tu cuenta de Google para verificar tu identidad y firmar electrónicamente tu autorización. No guardamos ni accedemos a tu contraseña.</p>
         <div id="google-btn-container" style="display:flex;justify-content:center;min-height:48px;margin-bottom:16px;"></div>
         <p class="gwall__note">&#128274; Solo accedemos a tu nombre y email. Nunca a tu contraseña.</p>
@@ -520,9 +520,9 @@
   <!-- TESTIMONIOS -->
   <section class="sec"><div class="sec__c"><h2 class="sec__h" style="text-align:center" data-t="test_title">Lo que dicen nuestros clientes</h2></div>
     <div class="tgrid">
-      <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q" data-t="test1_q">"Pensé que era imposible reclamar, pero SolucionAir se encargó de todo. En pocas semanas tenía mi compensación acreditada."</p><div class="tcard__n">Martina R.</div><div class="tcard__m" data-t="test1_m">Buenos Aires · Vuelo demorado · USD 600 recuperados</div></div>
-      <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q" data-t="test2_q">"Me cancelaron el vuelo y no sabía qué hacer. Subí mi pasaje, la IA completó todo y a los días ya tenía respuesta."</p><div class="tcard__n">Jorge L.</div><div class="tcard__m" data-t="test2_m">Córdoba · Vuelo cancelado · USD 320 recuperados</div></div>
-      <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q" data-t="test3_q">"Mi equipaje llegó destruido. SolucionAir gestionó el reclamo completo, incluyendo la mediación. Excelente servicio."</p><div class="tcard__n">Sofía V.</div><div class="tcard__m" data-t="test3_m">Mendoza · Equipaje dañado · USD 450 recuperados</div></div>
+      <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q" data-t="test1_q">"Pensé que era difícil reclamar, pero SolucionAir se encargó de todo. En pocas semanas tenía mi compensación acreditada."</p><div class="tcard__n">Martina R.</div><div class="tcard__m" data-t="test1_m">Buenos Aires · Vuelo demorado · USD 600 recuperados</div></div>
+      <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q" data-t="test2_q">"Me fueron avisando en cada paso, sin que yo tuviera que preguntar nada. Tardó un par de meses pero cobré."</p><div class="tcard__n">Jorge L.</div><div class="tcard__m" data-t="test2_m">Córdoba · Vuelo cancelado · USD 320 recuperados</div></div>
+      <div class="tcard"><div class="tcard__s">&#9733;&#9733;&#9733;&#9733;&#9733;</div><p class="tcard__q" data-t="test3_q">"Fue subir los datos del equipaje y esperar. Me mantuvieron al tanto y terminé cobrando la compensación."</p><div class="tcard__n">Sofía V.</div><div class="tcard__m" data-t="test3_m">Mendoza · Equipaje dañado · USD 450 recuperados</div></div>
     </div>
   </section>
 

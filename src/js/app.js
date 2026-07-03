@@ -730,7 +730,6 @@ document.addEventListener('DOMContentLoaded', function () {
       ctg2_t:'Estrategia legal', ctg2_d:'Armamos la mejor estrategia basada en normativa vigente y jurisprudencia.',
       ctg3_t:'Mediación por videollamada', ctg3_d:'Resolución 100% online, sin necesidad de trasladarte a ningún tribunal.',
       ctg4_t:'Pagás 20% por el servicio', ctg4_d:'Si no ganás, no pagás.',
-      ctg_note:'Sin riesgo para vos. Si no hay compensación, no pagás nada.',
       /* Cases */
       cases_title:'Casos que podés reclamar',
       case1_t:'Vuelo demorado', case1_d:'Si llegaste tarde a destino por culpa de la aerolínea.',
@@ -749,11 +748,11 @@ document.addEventListener('DOMContentLoaded', function () {
       adv6_t:'Equipo especializado', adv6_d:'Conocemos las normativas de cada aerolínea y jurisdicción. Tu reclamo está en manos de quienes saben cómo avanzar.',
       /* Testimonials */
       test_title:'Lo que dicen nuestros clientes',
-      test1_q:'"Pensé que era imposible reclamar, pero SolucionAir se encargó de todo. En pocas semanas tenía mi compensación acreditada."',
+      test1_q:'"Pensé que era difícil reclamar, pero SolucionAir se encargó de todo. En pocas semanas tenía mi compensación acreditada."',
       test1_m:'Buenos Aires · Vuelo demorado · USD 600 recuperados',
-      test2_q:'"Me cancelaron el vuelo y no sabía qué hacer. Subí mi pasaje, la IA completó todo y a los días ya tenía respuesta."',
+      test2_q:'"Me fueron avisando en cada paso, sin que yo tuviera que preguntar nada. Tardó un par de meses pero cobré."',
       test2_m:'Córdoba · Vuelo cancelado · USD 320 recuperados',
-      test3_q:'"Mi equipaje llegó destruido. SolucionAir gestionó el reclamo completo, incluyendo la mediación. Excelente servicio."',
+      test3_q:'"Fue subir los datos del equipaje y esperar. Me mantuvieron al tanto y terminé cobrando la compensación."',
       test3_m:'Mendoza · Equipaje dañado · USD 450 recuperados',
       /* About */
       about_title:'Quién está detrás de SolucionAir',
@@ -818,7 +817,6 @@ document.addEventListener('DOMContentLoaded', function () {
       ctg2_t:'Legal strategy', ctg2_d:'We build the best strategy based on current regulations and case law.',
       ctg3_t:'Video call mediation', ctg3_d:'100% online resolution, no need to travel to any court.',
       ctg4_t:'You pay 20% for the service', ctg4_d:'If you don\'t win, you don\'t pay.',
-      ctg_note:'No risk for you. If there is no compensation, you pay nothing.',
       /* Cases */
       cases_title:'Cases you can claim',
       case1_t:'Delayed flight', case1_d:'If you arrived late at your destination due to the airline\'s fault.',
@@ -837,11 +835,11 @@ document.addEventListener('DOMContentLoaded', function () {
       adv6_t:'Specialized team', adv6_d:'We know the regulations of each airline and jurisdiction. Your claim is in the hands of those who know how to move it forward.',
       /* Testimonials */
       test_title:'What our clients say',
-      test1_q:'"I thought it was impossible to claim, but SolucionAir handled everything. In a few weeks I had my compensation credited."',
+      test1_q:'"I thought it was difficult to claim, but SolucionAir handled everything. In a few weeks I had my compensation credited."',
       test1_m:'Buenos Aires · Delayed flight · USD 600 recovered',
-      test2_q:'"My flight was cancelled and I didn\'t know what to do. I uploaded my ticket, the AI filled everything in, and within days I had an answer."',
+      test2_q:'"They kept me posted at every step, I never had to ask. It took a couple of months but I got paid."',
       test2_m:'Córdoba · Cancelled flight · USD 320 recovered',
-      test3_q:'"My baggage arrived destroyed. SolucionAir managed the entire claim, including mediation. Excellent service."',
+      test3_q:'"I just uploaded the baggage details and waited. They kept me informed and I ended up getting the compensation."',
       test3_m:'Mendoza · Damaged baggage · USD 450 recovered',
       /* About */
       about_title:'Who is behind SolucionAir',
