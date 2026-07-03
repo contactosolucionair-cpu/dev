@@ -126,7 +126,17 @@ document.addEventListener('DOMContentLoaded', function () {
   langBtns.forEach(function (b) { b.addEventListener('click', function () { setLang(b.getAttribute('data-lang-btn')); }); });
 
   /* ============ SCROLL ============ */
-  window.addEventListener('scroll', function () { if (nav) nav.classList.toggle('scrolled', window.scrollY > 10); }, { passive: true });
+  /* Nav is transparent over the hero (lets its gradient show through) and
+     turns solid the instant the hero scrolls out from behind it. */
+  var heroEl = document.querySelector('.hero');
+  function onScroll() {
+    if (!nav) return;
+    var navH = nav.offsetHeight || 0;
+    var threshold = heroEl ? Math.max(heroEl.offsetHeight - navH, 0) : 10;
+    nav.classList.toggle('scrolled', window.scrollY > threshold);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
   /* ============ TABS ============ */
   function setTab(id) {
@@ -676,21 +686,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  /* ============ DYNAMIC CONFIG FROM SUPABASE ============ */
-  var siteConfig = null;
-
-  /* Built-in fallback translations for all data-t keys */
+  /* Built-in translations for all data-t keys */
   var DICT = {
     es: {
       /* Nav */
       nav_cases:'Casos', nav_how:'Cómo funciona', nav_why:'Por qué elegirnos', nav_about:'Quiénes somos', nav_faq:'FAQ',
       nav_cta:'Iniciá tu reclamo',
-      hero_link:'Ver si mi caso aplica →',
-      badge1:'✓ Evaluación inicial sin costo', badge2:'✓ Cubrimos todos los costos', badge3:'✓ Solo cobramos si ganás',
-      /* Trust cards */
-      trust1_t:'Reclamamos por vos', trust1_d:'Cubrimos todos los costos del proceso',
-      trust2_t:'Visión IA que lee tu pasaje', trust2_d:'Subí una foto y eficientizamos el proceso',
-      trust3_t:'100% gratuito hasta ganar', trust3_d:'Sin costos iniciales ni ocultos',
+      hero_title:'Plataforma de reclamos aéreos', hero_cta:'Iniciá tu reclamo',
+      badge1:'✓ Solo cobramos si ganás', badge2:'✓ Cubrimos todos los costos', badge3:'✓ Sin riesgo',
+      form_title:'Comenzá tu reclamo',
       /* Select options */
       opt_select:'Seleccionar...', opt_dni:'DNI', opt_passport:'Pasaporte', opt_id:'ID / Cédula',
       /* Wizard */
@@ -715,20 +719,20 @@ document.addEventListener('DOMContentLoaded', function () {
       f_sign_t:'Declaración jurada y firma electrónica', f_sign_sub:'Leé atentamente antes de firmar y enviar.',
       btn_back2:'← Volver al Paso 2', btn_submit:'Enviar reclamo', btn_note:'Análisis gratuito e instantáneo · Sin compromiso',
       /* How it works */
-      how_ey:'Proceso', how_title:'Cómo funciona', how_sub:'Cuatro pasos simples para recuperar tu compensación',
+      how_title:'Cómo funciona',
       step1_t:'Cargás tu caso', step1_d:'Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.',
       step2_t:'Hacemos el reclamo por vos', step2_d:'Te mantenemos informado y cubrimos todos los costos del proceso.',
       step3_t:'Obtenés tu compensación', step3_d:'La aerolínea responde con un acuerdo o derivamos a mediación online profesional.',
       step4_t:'Pagás 20% por el servicio', step4_d:'Si no ganás, no pagás.',
       /* Contingency */
-      ctg_title:'¿Sin respuesta de la aerolínea?', ctg_desc:'Derivamos tu caso a nuestra Red de Profesionales: una mediación privada y 100% online, sin necesidad de tribunales.',
+      ctg_title:'¿Sin respuesta de la aerolínea?',
       ctg1_t:'Abogado especializado', ctg1_d:'Un abogado de nuestra Red de Profesionales, especializado en derechos del pasajero.',
       ctg2_t:'Estrategia legal', ctg2_d:'Armamos la mejor estrategia basada en normativa vigente y jurisprudencia.',
       ctg3_t:'Mediación por videollamada', ctg3_d:'Resolución 100% online, sin necesidad de trasladarte a ningún tribunal.',
       ctg4_t:'Pagás 20% por el servicio', ctg4_d:'Si no ganás, no pagás.',
       ctg_note:'Sin riesgo para vos. Si no hay compensación, no pagás nada.',
       /* Cases */
-      cases_ey:'Cobertura', cases_title:'Casos que podés reclamar',
+      cases_title:'Casos que podés reclamar',
       case1_t:'Vuelo demorado', case1_d:'Si llegaste tarde a destino por culpa de la aerolínea.',
       case2_t:'Vuelo cancelado', case2_d:'Si la aerolínea canceló tu vuelo sin causa de fuerza mayor.',
       case3_t:'Sobreventa', case3_d:'Si te denegaron el embarque por venta de más asientos de los disponibles.',
@@ -736,7 +740,7 @@ document.addEventListener('DOMContentLoaded', function () {
       case5_t:'Equipaje dañado', case5_d:'Si tu maleta llegó rota, rajada o con daños visibles causados durante el vuelo.',
       case6_t:'Equipaje entregado tarde', case6_d:'Si tu equipaje llegó días después que vos y tuviste gastos por eso.',
       /* Advantages */
-      adv_ey:'Beneficios', adv_title:'Por qué elegirnos',
+      adv_title:'Por qué elegirnos',
       adv1_t:'Sin costos iniciales', adv1_d:'No pagás nada por adelantado. Nosotros cubrimos todos los gastos del proceso.',
       adv2_t:'Solo cobramos si ganás', adv2_d:'Nuestros honorarios se aplican únicamente si conseguimos tu compensación.',
       adv3_t:'No tenés que pelearte con la aerolínea', adv3_d:'Nos encargamos de todo el proceso. Vos solo nos contás qué pasó y nosotros nos ocupamos del resto.',
@@ -744,7 +748,7 @@ document.addEventListener('DOMContentLoaded', function () {
       adv5_t:'Revisamos tu caso antes de avanzar', adv5_d:'Analizamos la viabilidad antes de iniciar. Si el reclamo no tiene posibilidades reales, te lo decimos sin vueltas.',
       adv6_t:'Equipo especializado', adv6_d:'Conocemos las normativas de cada aerolínea y jurisdicción. Tu reclamo está en manos de quienes saben cómo avanzar.',
       /* Testimonials */
-      test_ey:'Testimonios', test_title:'Lo que dicen nuestros clientes',
+      test_title:'Lo que dicen nuestros clientes',
       test1_q:'"Pensé que era imposible reclamar, pero SolucionAir se encargó de todo. En pocas semanas tenía mi compensación acreditada."',
       test1_m:'Buenos Aires · Vuelo demorado · USD 600 recuperados',
       test2_q:'"Me cancelaron el vuelo y no sabía qué hacer. Subí mi pasaje, la IA completó todo y a los días ya tenía respuesta."',
@@ -752,12 +756,12 @@ document.addEventListener('DOMContentLoaded', function () {
       test3_q:'"Mi equipaje llegó destruido. SolucionAir gestionó el reclamo completo, incluyendo la mediación. Excelente servicio."',
       test3_m:'Mendoza · Equipaje dañado · USD 450 recuperados',
       /* About */
-      about_ey:'Equipo', about_title:'Quién está detrás de SolucionAir',
+      about_title:'Quién está detrás de SolucionAir',
       about_p1:'SolucionAir nace para simplificar un proceso que suele ser confuso, lento y frustrante para los pasajeros. Combinamos gestión, análisis de casos y seguimiento personalizado para ayudarte a reclamar lo que te corresponde sin que tengas que ocuparte de todo el trámite.',
       about_p2:'Somos un equipo especializado en gestión de reclamos ante aerolíneas. Cada caso recibe atención directa, con seguimiento real y comunicación clara en cada etapa.',
       about_p3:'¿Tenés alguna consulta? Escribinos a contacto@solucionair.com',
       /* FAQ */
-      faq_ey:'Ayuda', faq_title:'Preguntas frecuentes',
+      faq_title:'Preguntas frecuentes',
       faq1_q:'¿Cuánto cuesta usar SolucionAir?', faq1_a:'Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión del 20% sobre la compensación obtenida si el reclamo es exitoso.',
       faq2_q:'¿Cuándo cobran sus honorarios?', faq2_a:'Únicamente cuando vos cobrás tu compensación. Si no se consigue nada, no nos debés nada.',
       faq3_q:'¿Qué pasa si mi reclamo no prospera?', faq3_a:'No pagás absolutamente nada. Nosotros asumimos el riesgo y los costos del proceso completo.',
@@ -770,17 +774,15 @@ document.addEventListener('DOMContentLoaded', function () {
       /* Footer */
       ft_tagline:'Tu compensación siempre despega.', ft_desc:'Plataforma LegalTech con inteligencia artificial para reclamos aéreos.',
       ft_contact:'Contacto', ft_legal:'Legal', ft_terms:'Términos y Condiciones', ft_privacy:'Política de Privacidad',
+      ft_portals:'Portales', ft_agencies:'Portal Agencias', ft_lawyers:'Portal Abogados',
     },
     en: {
       /* Nav */
       nav_cases:'Cases', nav_how:'How it works', nav_why:'Why choose us', nav_about:'About us', nav_faq:'FAQ',
       nav_cta:'Start your claim',
-      hero_link:'See if my case applies →',
-      badge1:'✓ Free initial evaluation', badge2:'✓ We cover all costs', badge3:'✓ No win, no fee',
-      /* Trust cards */
-      trust1_t:'We claim for you', trust1_d:'We cover all claim costs',
-      trust2_t:'AI Vision Ticket Reader', trust2_d:'Upload a photo and we streamline the process',
-      trust3_t:'100% Free Until We Win', trust3_d:'No upfront or hidden fees',
+      hero_title:'Flight claims platform', hero_cta:'Start your claim',
+      badge1:'✓ No win, no fee', badge2:'✓ We cover all costs', badge3:'✓ No risk',
+      form_title:'Start your claim',
       /* Select options */
       opt_select:'Select...', opt_dni:'National ID', opt_passport:'Passport', opt_id:'ID Card',
       /* Wizard */
@@ -805,20 +807,20 @@ document.addEventListener('DOMContentLoaded', function () {
       f_sign_t:'Sworn statement and electronic signature', f_sign_sub:'Read carefully before signing and submitting.',
       btn_back2:'← Back to Step 2', btn_submit:'Submit claim', btn_note:'Free and instant analysis · No commitment',
       /* How it works */
-      how_ey:'Process', how_title:'How it works', how_sub:'Four simple steps to recover your compensation',
+      how_title:'How it works',
       step1_t:'Upload your case', step1_d:'Upload your data and documents from your PC or phone. Our AI reads your ticket automatically.',
       step2_t:'We claim for you', step2_d:'We keep you informed and cover all process costs.',
       step3_t:'You get your compensation', step3_d:'The airline responds with an agreement or we refer to professional online mediation.',
       step4_t:'You pay 20% for the service', step4_d:'If you don\'t win, you don\'t pay.',
       /* Contingency */
-      ctg_title:'No response from the airline?', ctg_desc:'We refer your case to our Professional Network: private and 100% online mediation, no courts needed.',
+      ctg_title:'No response from the airline?',
       ctg1_t:'Specialized attorney', ctg1_d:'A lawyer from our Professional Network, specialised in passenger rights.',
       ctg2_t:'Legal strategy', ctg2_d:'We build the best strategy based on current regulations and case law.',
       ctg3_t:'Video call mediation', ctg3_d:'100% online resolution, no need to travel to any court.',
       ctg4_t:'You pay 20% for the service', ctg4_d:'If you don\'t win, you don\'t pay.',
       ctg_note:'No risk for you. If there is no compensation, you pay nothing.',
       /* Cases */
-      cases_ey:'Coverage', cases_title:'Cases you can claim',
+      cases_title:'Cases you can claim',
       case1_t:'Delayed flight', case1_d:'If you arrived late at your destination due to the airline\'s fault.',
       case2_t:'Cancelled flight', case2_d:'If the airline cancelled your flight without extraordinary circumstances.',
       case3_t:'Overbooking', case3_d:'If you were denied boarding because the airline oversold the flight.',
@@ -826,7 +828,7 @@ document.addEventListener('DOMContentLoaded', function () {
       case5_t:'Damaged baggage', case5_d:'If your bag arrived broken, torn or visibly damaged during the flight.',
       case6_t:'Late baggage', case6_d:'If your baggage arrived days after you and you incurred expenses as a result.',
       /* Advantages */
-      adv_ey:'Benefits', adv_title:'Why choose us',
+      adv_title:'Why choose us',
       adv1_t:'No upfront costs', adv1_d:'You pay nothing in advance. We cover all process expenses.',
       adv2_t:'We only charge if you win', adv2_d:'Our fees apply only if we secure your compensation.',
       adv3_t:'No fighting with the airline', adv3_d:'We handle the entire process. You just tell us what happened and we take care of the rest.',
@@ -834,7 +836,7 @@ document.addEventListener('DOMContentLoaded', function () {
       adv5_t:'We review your case before proceeding', adv5_d:'We assess viability before starting. If the claim has no real chance, we tell you straight.',
       adv6_t:'Specialized team', adv6_d:'We know the regulations of each airline and jurisdiction. Your claim is in the hands of those who know how to move it forward.',
       /* Testimonials */
-      test_ey:'Testimonials', test_title:'What our clients say',
+      test_title:'What our clients say',
       test1_q:'"I thought it was impossible to claim, but SolucionAir handled everything. In a few weeks I had my compensation credited."',
       test1_m:'Buenos Aires · Delayed flight · USD 600 recovered',
       test2_q:'"My flight was cancelled and I didn\'t know what to do. I uploaded my ticket, the AI filled everything in, and within days I had an answer."',
@@ -842,12 +844,12 @@ document.addEventListener('DOMContentLoaded', function () {
       test3_q:'"My baggage arrived destroyed. SolucionAir managed the entire claim, including mediation. Excellent service."',
       test3_m:'Mendoza · Damaged baggage · USD 450 recovered',
       /* About */
-      about_ey:'Team', about_title:'Who is behind SolucionAir',
+      about_title:'Who is behind SolucionAir',
       about_p1:'SolucionAir was created to simplify a process that is often confusing, slow and frustrating for passengers. We combine case management, case analysis and personalised follow-up to help you claim what you\'re owed without having to handle the entire procedure yourself.',
       about_p2:'We are a team specialised in airline claims management. Each case receives direct attention, with real follow-up and clear communication at every stage.',
       about_p3:'Have a question? Write to us at contacto@solucionair.com',
       /* FAQ */
-      faq_ey:'Help', faq_title:'Frequently asked questions',
+      faq_title:'Frequently asked questions',
       faq1_q:'How much does SolucionAir cost?', faq1_a:'Nothing upfront. The initial service is 100% free. We only charge a 20% commission on the compensation obtained if the claim is successful.',
       faq2_q:'When do you charge your fees?', faq2_a:'Only when you receive your compensation. If nothing is obtained, you owe us nothing.',
       faq3_q:'What happens if my claim doesn\'t succeed?', faq3_a:'You pay absolutely nothing. We assume the risk and costs of the entire process.',
@@ -860,25 +862,12 @@ document.addEventListener('DOMContentLoaded', function () {
       /* Footer */
       ft_tagline:'Your compensation always takes off.', ft_desc:'AI-powered LegalTech platform for flight claims.',
       ft_contact:'Contact', ft_legal:'Legal', ft_terms:'Terms and Conditions', ft_privacy:'Privacy Policy',
+      ft_portals:'Portals', ft_agencies:'Agency Portal', ft_lawyers:'Lawyer Portal',
     }
   };
 
   function applyTexts(lang) {
-    /* Apply hero/CTA from Supabase config if available */
-    var cfgT = (siteConfig && siteConfig.translations && siteConfig.translations[lang]) || {};
-    var cfgFb = (siteConfig && siteConfig.translations && siteConfig.translations.es) || {};
-
-    var heroTitle = cfgT.hero_title || cfgFb.hero_title;
-    var heroSub = cfgT.hero_sub || cfgFb.hero_sub;
-    var ctaText = cfgT.cta_text || cfgFb.cta_text;
-    var formTitle = cfgT.form_title || cfgFb.form_title;
-
-    if (heroTitle) document.querySelectorAll('.hero__h1').forEach(function (el) { el.innerHTML = heroTitle.replace(/\n/g, '<br/>'); });
-    if (heroSub) document.querySelectorAll('.hero__sub').forEach(function (el) { el.textContent = heroSub; });
-    if (ctaText) document.querySelectorAll('.hero__cta').forEach(function (el) { var svg = el.querySelector('svg'); el.textContent = ctaText + ' '; if (svg) el.appendChild(svg); });
-    if (formTitle) document.querySelectorAll('.claim__title').forEach(function (el) { el.textContent = formTitle; });
-
-    /* Apply all data-t elements from built-in dictionary.
+    /* Apply all data-t elements from the built-in dictionary.
        Preserves child elements like <span class="field__ast">*</span> inside labels. */
     var dict = DICT[lang] || DICT.es;
     var fallback = DICT.es;
@@ -900,51 +889,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  function applyColors() {
-    if (!siteConfig || !siteConfig.colors) return;
-    var c = siteConfig.colors;
-    var r = document.documentElement.style;
-    if (c.primary) {
-      r.setProperty('--au', c.primary);
-      r.setProperty('--aul', c.primary);
-      r.setProperty('--aud', c.primary);
-    }
-    if (c.secondary) {
-      r.setProperty('--g', c.secondary);
-      r.setProperty('--gl', c.secondary);
-      r.setProperty('--gd', c.secondary);
-    }
-    if (c.bg) {
-      r.setProperty('--bg', c.bg);
-      r.setProperty('--bgd', c.bg);
-    }
-    if (c.text) {
-      r.setProperty('--t1', c.text);
-    }
-  }
-
-  function applyFlags() {
-    if (!siteConfig || !siteConfig.feature_flags) return;
-    var ff = siteConfig.feature_flags;
-    var aiScan = document.getElementById('ai-scan');
-    if (aiScan && ff.ai_extraction === false) {
-      aiScan.style.display = 'none';
-      var hr = aiScan.nextElementSibling;
-      if (hr && hr.tagName === 'HR') hr.style.display = 'none';
-    }
-  }
-
-  function loadSiteConfig() {
-    fetch('/api/get-config').then(function (r) { return r.json(); }).then(function (json) {
-      if (!json.success || !json.config) return;
-      siteConfig = json.config;
-      window.__SA_CONFIG = siteConfig;
-      applyColors();
-      applyFlags();
-      applyTexts(S.lang);
-    }).catch(function () { /* Fallback: hardcoded defaults in HTML remain */ });
-  }
-
   /* Override setLang to also apply translated texts */
   var originalSetLang = setLang;
   setLang = function (l) {
@@ -955,5 +899,4 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ============ INIT ============ */
   setLang('es');
   setTab('flight');
-  loadSiteConfig();
 });
