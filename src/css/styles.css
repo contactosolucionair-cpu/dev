@@ -33,22 +33,27 @@ body.lang-en [data-lang="es"]{display:none}
 body.lang-en [data-lang="en"]{display:revert}
 
 /* ==== NAV ==== */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.86);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--bdl);transition:box-shadow .3s var(--ez)}
-.nav.scrolled{box-shadow:var(--s2)}
-.nav__wrap{max-width:1060px;margin:0 auto;padding:0 24px;height:72px;display:flex;align-items:center;justify-content:space-between}
-.nav__brand{display:flex;align-items:center}
-.nav__brand img{height:92px;width:auto;display:block}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:transparent;transition:background .25s var(--ez),box-shadow .3s var(--ez)}
+.nav.scrolled{background:var(--gd);box-shadow:0 4px 20px rgba(0,0,0,.18)}
+.nav__wrap{max-width:1160px;margin:0 auto;padding:0 24px;height:112px;display:flex;align-items:center;justify-content:space-between}
+.nav__brand{display:flex;align-items:center;flex-shrink:0}
+.nav__brand img{height:136px;width:auto;max-width:none;display:block}
 .nav__end{display:flex;align-items:center}
-.lang{display:flex;background:var(--bg);border-radius:18px;padding:2px;gap:2px;border:1px solid var(--bdl)}
-.lang__btn{padding:3px 12px;border-radius:14px;font-family:var(--fm);font-size:.68rem;font-weight:600;color:var(--t4);transition:all .2s var(--ez);letter-spacing:.05em}
-.lang__btn.active{background:var(--g);color:var(--w)}
-.lang__btn:hover:not(.active){color:var(--t2)}
+.lang{display:flex;background:rgba(255,255,255,.10);border-radius:18px;padding:3px;gap:2px;border:1px solid rgba(255,255,255,.16)}
+.lang__btn{padding:5px 16px;border-radius:14px;font-family:var(--fm);font-size:.78rem;font-weight:600;color:rgba(255,255,255,.6);transition:all .2s var(--ez);letter-spacing:.05em}
+.lang__btn.active{background:var(--au);color:var(--gd)}
+.lang__btn:hover:not(.active){color:#fff}
 
 /* ==== HERO ==== */
-.hero{padding:132px 24px 60px;text-align:center;background:linear-gradient(176deg,var(--gd) 0%,var(--gd) 35%,var(--g) 70%,var(--gl) 100%);color:var(--w);position:relative;overflow:hidden}
+.hero{min-height:82vh;padding:160px 24px 100px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(176deg,var(--gd) 0%,var(--gd) 35%,var(--g) 70%,var(--gl) 100%);color:var(--w);position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-35%;right:-10%;width:600px;height:600px;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(212,168,83,.09) 0%,transparent 60%)}
+.hero__deco{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.hero__deco-trail-svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero__deco-trail{fill:none;stroke:rgba(255,255,255,.30);stroke-width:3;stroke-dasharray:2 14;stroke-linecap:round}
+.hero__deco-plane{position:absolute;top:14%;left:84%;width:58px;height:58px;transform:translate(-50%,-50%) rotate(34deg);fill:var(--au);opacity:.65}
+@media(max-width:900px){.hero__deco{display:none}}
 .hero__wrap{position:relative;z-index:1;max-width:700px;margin:0 auto}
-.hero__h1{font-family:var(--fh);font-size:clamp(2rem,5.2vw,3.4rem);font-weight:800;line-height:1.1;margin-bottom:34px;letter-spacing:-.03em}
+.hero__h1{font-family:var(--fh);font-size:clamp(2rem,5.2vw,3.4rem);font-weight:800;line-height:1.1;margin-bottom:68px;letter-spacing:-.03em}
 .hero__cta{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;background:var(--au);color:var(--gd);font-family:var(--fh);font-weight:800;font-size:1.08rem;border-radius:var(--r8);box-shadow:0 10px 30px rgba(212,168,83,.28);transition:all .25s var(--ez)}
 .hero__cta:hover{background:var(--aul);color:var(--gd);transform:translateY(-2px);box-shadow:0 14px 36px rgba(212,168,83,.36)}
 .hero__cta svg{transition:transform .25s var(--ez)}.hero__cta:hover svg{transform:translateX(3px)}
@@ -214,5 +219,5 @@ select.field__in{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg 
 
 /* ==== RESPONSIVE ==== */
 @media(max-width:768px){.hero__kpis{flex-direction:column;gap:10px;padding:14px 18px}.hero__kpi-div{width:36px;height:1px}}
-@media(max-width:640px){.hero{padding:118px 20px 44px}.card{padding:20px 16px}.g2{grid-template-columns:1fr}.tabs{grid-template-columns:1fr}.nav__wrap{padding:0 16px}.btn-verify{width:100%;min-width:unset}.modal{padding:26px 20px}.claim{padding:32px 16px 52px}.card__blk-head{flex-direction:column;gap:6px}}
+@media(max-width:640px){.hero{min-height:auto;padding:140px 20px 64px}.card{padding:20px 16px}.g2{grid-template-columns:1fr}.tabs{grid-template-columns:1fr}.nav__wrap{padding:0 16px}.btn-verify{width:100%;min-width:unset}.modal{padding:26px 20px}.claim{padding:32px 16px 52px}.card__blk-head{flex-direction:column;gap:6px}}
 @media(max-width:400px){.nav__name{font-size:.95rem}.lang__btn{padding:3px 8px;font-size:.62rem}}

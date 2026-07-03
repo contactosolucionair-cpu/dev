@@ -126,7 +126,17 @@ document.addEventListener('DOMContentLoaded', function () {
   langBtns.forEach(function (b) { b.addEventListener('click', function () { setLang(b.getAttribute('data-lang-btn')); }); });
 
   /* ============ SCROLL ============ */
-  window.addEventListener('scroll', function () { if (nav) nav.classList.toggle('scrolled', window.scrollY > 10); }, { passive: true });
+  /* Nav is transparent over the hero (lets its gradient show through) and
+     turns solid the instant the hero scrolls out from behind it. */
+  var heroEl = document.querySelector('.hero');
+  function onScroll() {
+    if (!nav) return;
+    var navH = nav.offsetHeight || 0;
+    var threshold = heroEl ? Math.max(heroEl.offsetHeight - navH, 0) : 10;
+    nav.classList.toggle('scrolled', window.scrollY > threshold);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
   /* ============ TABS ============ */
   function setTab(id) {
@@ -682,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function () {
       /* Nav */
       nav_cases:'Casos', nav_how:'Cómo funciona', nav_why:'Por qué elegirnos', nav_about:'Quiénes somos', nav_faq:'FAQ',
       nav_cta:'Iniciá tu reclamo',
-      hero_title:'Plataforma de reclamos aéreos', hero_cta:'Iniciá gratis tu reclamo',
+      hero_title:'Plataforma de reclamos aéreos', hero_cta:'Iniciá tu reclamo',
       badge1:'✓ Solo cobramos si ganás', badge2:'✓ Cubrimos todos los costos', badge3:'✓ Sin riesgo',
       form_title:'Comenzá tu reclamo',
       /* Select options */
@@ -769,7 +779,7 @@ document.addEventListener('DOMContentLoaded', function () {
       /* Nav */
       nav_cases:'Cases', nav_how:'How it works', nav_why:'Why choose us', nav_about:'About us', nav_faq:'FAQ',
       nav_cta:'Start your claim',
-      hero_title:'Flight claims platform', hero_cta:'Start your free claim',
+      hero_title:'Flight claims platform', hero_cta:'Start your claim',
       badge1:'✓ No win, no fee', badge2:'✓ We cover all costs', badge3:'✓ No risk',
       form_title:'Start your claim',
       /* Select options */
