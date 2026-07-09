@@ -6,7 +6,7 @@
   <title>SolucionAir — Backoffice</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
-    :root{--g:#2D4A3E;--gl:#3A6154;--gd:#1E332B;--g10:rgba(45,74,62,.10);--g05:rgba(45,74,62,.05);--au:#D4A853;--aul:#E0BE7A;--bg:#F5F3EE;--bgd:#EDE9E1;--w:#FFF;--t1:#111;--t2:#3A3A3A;--t3:#6B6B6B;--t4:#999;--bd:#E0DCD4;--bdl:#EDEAE4;--ok:#1B9B5A;--okbg:#EDF9F0;--err:#C0392B;--errbg:#FDF0EE;--warn:#D4A853;--warnbg:#FDF8EE;--ai:#6366F1;--aibg:#EEF0FF;--f:'Inter',system-ui,sans-serif;--fh:'Plus Jakarta Sans','Inter',sans-serif;--fm:'JetBrains Mono',monospace;--ez:cubic-bezier(.4,0,.2,1)}
+    :root{--g:#2D4A3E;--gl:#3A6154;--gd:#1E332B;--g10:rgba(45,74,62,.10);--g05:rgba(45,74,62,.05);--au:#D4A853;--aul:#E0BE7A;--bg:#F5F3EE;--bgd:#EDE9E1;--w:#FFF;--t1:#111;--t2:#3A3A3A;--t3:#6B6B6B;--t4:#999;--bd:#E0DCD4;--bdl:#EDEAE4;--ok:#1B9B5A;--okbg:#EDF9F0;--err:#C0392B;--errbg:#FDF0EE;--warn:#D4A853;--warnbg:#FDF8EE;--f:'Inter',system-ui,sans-serif;--fh:'Plus Jakarta Sans','Inter',sans-serif;--fm:'JetBrains Mono',monospace;--ez:cubic-bezier(.4,0,.2,1)}
     /* Auth gate */
     .auth-gate{display:none;position:fixed;inset:0;z-index:600;background:var(--gd);align-items:center;justify-content:center}
     .auth-gate.open{display:flex}
@@ -58,7 +58,6 @@
     .btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:6px;font-family:var(--fh);font-size:.72rem;font-weight:700;cursor:pointer;border:none;transition:all .15s}
     .btn--primary{background:var(--g);color:var(--w)}.btn--primary:hover{background:var(--gl)}
     .btn--ghost{background:var(--w);color:var(--t2);border:1px solid var(--bd)}.btn--ghost:hover{background:var(--bg)}
-    .btn--ai{background:var(--ai);color:var(--w)}.btn--ai:hover{background:#5558E6}
     .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
     .stat{background:var(--w);border:1px solid var(--bdl);border-radius:8px;padding:15px 16px}
     .stat__label{font-size:.66rem;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
@@ -129,23 +128,6 @@
     .detail__value.mono{font-family:var(--fm);font-size:.74rem}
     .detail__grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
     .detail__divider{height:1px;background:var(--bdl);margin:16px 0}
-
-    /* AI module */
-    .ai-box{background:var(--aibg);border:1px solid rgba(99,102,241,.12);border-radius:8px;padding:14px;margin-top:14px}
-    .ai-box__head{display:flex;align-items:center;gap:5px;margin-bottom:8px}
-    .ai-box__dot{width:5px;height:5px;border-radius:50%;background:var(--ai)}
-    .ai-box__title{font-family:var(--fh);font-size:.74rem;font-weight:700;color:var(--ai)}
-    .ai-box__textarea{width:100%;min-height:120px;border:1px solid rgba(99,102,241,.18);border-radius:5px;padding:9px 10px;font-family:var(--f);font-size:.76rem;color:var(--t1);background:var(--w);resize:vertical;line-height:1.55}
-    .ai-box__textarea:focus{outline:none;border-color:var(--ai);box-shadow:0 0 0 2px rgba(99,102,241,.08)}
-    .ai-box__loading{text-align:center;padding:16px}
-    .ai-box__spin{width:18px;height:18px;border:2px solid rgba(99,102,241,.18);border-top-color:var(--ai);border-radius:50%;animation:spin .6s linear infinite;margin:0 auto 6px}
-    .ai-box__status{font-family:var(--fm);font-size:.68rem;color:var(--ai)}
-    .ai-box__actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-    .ai-box__select{font-family:var(--f);font-size:.72rem;padding:5px 8px;border:1px solid rgba(99,102,241,.18);border-radius:5px;background:var(--w);color:var(--t2);cursor:pointer;width:100%;margin-bottom:8px}
-    .ai-box__select:focus{outline:none;border-color:var(--ai)}
-    .ai-box__draft{width:100%;min-height:70px;border:1px solid var(--bd);border-radius:5px;padding:9px 10px;font-family:var(--f);font-size:.76rem;color:var(--t1);background:var(--w);resize:vertical;line-height:1.5;margin-bottom:8px}
-    .ai-box__draft:focus{outline:none;border-color:var(--ai);box-shadow:0 0 0 2px rgba(99,102,241,.08)}
-    .ai-box__sublabel{font-size:.64rem;color:var(--t4);margin-bottom:4px;font-weight:500}
 
     /* Delete button in table */
     .btn-del{background:none;border:none;color:var(--t4);cursor:pointer;padding:3px;border-radius:4px;transition:all .12s;display:inline-flex;align-items:center}
@@ -428,12 +410,6 @@
     overlay.addEventListener('click',closeDetail);
     document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDetail()});
 
-    var TEMPLATES={
-      'falta_doc':'Estimado/a {nombre},\n\nLe informamos que para continuar con el procesamiento de su reclamo {ref}, necesitamos documentación adicional.\n\nPor favor, adjunte a la brevedad posible:\n- Boarding pass o reserva del vuelo\n- Comprobante de la demora/cancelación emitido por la aerolínea\n- DNI o pasaporte del pasajero\n\nQuedamos a disposición para cualquier consulta.\n\nEquipo Legal — SolucionAir',
-      'aprobado':'Estimado/a {nombre},\n\nNos complace informarle que su reclamo {ref} por el vuelo {vuelo} de {aerolinea} ha sido aprobado.\n\nLa aerolínea ha aceptado otorgar la compensación correspondiente. En los próximos días recibirá los detalles del monto y la forma de pago.\n\nGracias por confiar en SolucionAir.\n\nEquipo Legal — SolucionAir',
-      'rechazado':'Estimado/a {nombre},\n\nLamentamos informarle que la aerolínea {aerolinea} ha rechazado el reclamo {ref} por el vuelo {vuelo}.\n\nNuestro equipo legal está evaluando si corresponde derivar su caso a mediación para obtener una resolución favorable. Le informaremos sobre los próximos pasos.\n\nEquipo Legal — SolucionAir'
-    };
-
     function load(){
       tblBody.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
       fetch('/api/get-claims').then(function(r){return r.json()}).then(function(json){
@@ -567,6 +543,24 @@
         h+='</div>';
       }
 
+      /* Equipaje */
+      if(c.tipo_caso_equipaje||c.descripcion_equipaje||c.valor_equipaje||c.fecha_entrega_equipaje){
+        h+='<div class="detail__divider"></div><div class="detail__grid">';
+        if(c.tipo_caso_equipaje)h+='<div class="detail__section"><div class="detail__label">Tipo de caso</div><div class="detail__value">'+esc(c.tipo_caso_equipaje)+'</div></div>';
+        if(c.valor_equipaje!=null)h+='<div class="detail__section"><div class="detail__label">Valor equipaje</div><div class="detail__value mono">USD '+esc(String(c.valor_equipaje))+'</div></div>';
+        if(c.fecha_entrega_equipaje)h+='<div class="detail__section"><div class="detail__label">Fecha de entrega</div><div class="detail__value mono">'+esc(c.fecha_entrega_equipaje)+'</div></div>';
+        h+='</div>';
+        if(c.descripcion_equipaje)h+='<div class="detail__section" style="margin-top:6px"><div class="detail__label">Descripción del incidente</div><div class="detail__value" style="white-space:pre-wrap">'+esc(c.descripcion_equipaje)+'</div></div>';
+      }
+
+      /* Gastos incurridos */
+      if(c.monto_gastos||c.gastos_detalle){
+        h+='<div class="detail__divider"></div><div class="detail__grid">';
+        if(c.monto_gastos)h+='<div class="detail__section"><div class="detail__label">Monto gastos</div><div class="detail__value mono">'+esc(c.moneda_gastos||'')+' '+esc(String(c.monto_gastos))+'</div></div>';
+        h+='</div>';
+        if(c.gastos_detalle)h+='<div class="detail__section" style="margin-top:6px"><div class="detail__label">Detalle de gastos</div><div class="detail__value" style="white-space:pre-wrap">'+esc(c.gastos_detalle)+'</div></div>';
+      }
+
       /* Agente (B2B) */
       if(canalVal==='B2B'&&(c.agente_nombre||c.agente_email)){
         h+='<div class="detail__divider"></div>';
@@ -595,18 +589,22 @@
       h+='<div id="msg-firma" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       h+='</div>'; /* action-row */
       /* Derivación a mediación (visible solo si estado = derivado_mediacion) */
-      var tieneDeriv=(Array.isArray(c.adjuntos)?c.adjuntos:[]).some(function(a){return a.tipo==='derivacion'});
+      var adjArrDeriv=[];
+      try{if(c.adjuntos)adjArrDeriv=Array.isArray(c.adjuntos)?c.adjuntos:JSON.parse(c.adjuntos)}catch(e){}
+      var existingOptsHtml='<option value="">Seleccionar archivo existente...</option>'+adjArrDeriv.map(function(a,ai){return '<option value="'+ai+'">'+esc(a.nombre||a.tipo)+'</option>'}).join('');
+      var DERIV_DOCS=[{tipo:'patrocinio',label:'Designación de patrocinio'},{tipo:'ficha_caso',label:'Ficha de caso'}];
       h+='<div id="deriv-box" style="margin-top:10px;padding:12px;border:1px solid var(--bdl);border-radius:8px;background:var(--g05);display:'+(estado==='derivado_mediacion'?'block':'none')+'">';
       h+='<div class="detail__label" style="margin-bottom:8px">Derivación a mediación</div>';
       h+='<div class="action-field" style="margin-bottom:8px"><div class="detail__label">Abogado asignado</div><select id="sel-abogado" class="firma-select"><option value="">Cargando abogados...</option></select></div>';
-      h+='<div class="action-field"><div class="detail__label">Documento de derivación</div>';
-      h+='<div id="deriv-doc-status" style="font-size:.74rem;margin-bottom:6px;color:'+(tieneDeriv?'var(--ok)':'var(--t3)')+'">'+(tieneDeriv?'✓ Documento de derivación cargado':'Sin documento de derivación')+'</div>';
-      h+='<div class="upload-zone" id="deriv-upload-zone" style="padding:10px">Subir documento de derivación (resumen del caso)</div><input type="file" id="deriv-upload-inp" style="display:none"></div>';
+      DERIV_DOCS.forEach(function(dd){
+        var tieneDoc=adjArrDeriv.some(function(a){return a.tipo===dd.tipo});
+        h+='<div class="action-field" style="margin-bottom:10px"><div class="detail__label">'+dd.label+'</div>';
+        h+='<div id="deriv-'+dd.tipo+'-status" style="font-size:.74rem;margin-bottom:6px;color:'+(tieneDoc?'var(--ok)':'var(--t3)')+'">'+(tieneDoc?'✓ Documento cargado':'Sin documento cargado')+'</div>';
+        h+='<div style="display:flex;gap:5px;margin-bottom:6px"><select id="deriv-'+dd.tipo+'-existing" class="firma-select" style="flex:1">'+existingOptsHtml+'</select><button class="btn btn--ghost" id="deriv-'+dd.tipo+'-use" type="button" style="font-size:.7rem;white-space:nowrap">Usar</button></div>';
+        h+='<div class="upload-zone" id="deriv-'+dd.tipo+'-zone" style="padding:10px">Subir '+dd.label.toLowerCase()+'</div><input type="file" id="deriv-'+dd.tipo+'-inp" style="display:none">';
+        h+='</div>';
+      });
       h+='</div>';
-      /* Compensación */
-      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Compensación obtenida (USD)</div>';
-      h+='<div style="display:flex;gap:5px;align-items:center"><input id="inp-monto" type="number" min="0" step="0.01" class="firma-select" style="flex:1;font-family:var(--fm)" placeholder="0.00" value="'+(c.monto_compensacion!=null?c.monto_compensacion:'')+'"><button class="btn btn--ghost" id="btn-save-monto" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
-      h+='<div id="msg-monto" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       /* Fecha de mediación */
       h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Fecha de mediación</div>';
       h+='<div style="display:flex;gap:5px;align-items:center"><input id="inp-fmediacion" type="datetime-local" class="firma-select" style="flex:1;font-family:var(--fm)" value="'+toLocalInput(c.fecha_mediacion)+'"><button class="btn btn--ghost" id="btn-save-fmediacion" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
@@ -682,29 +680,6 @@
       h+='</div></div>';
       h+='<div class="detail__divider"></div>';
 
-      /* AI Copilot */
-      h+='<div class="ai-box">';
-      h+='<div class="ai-box__head"><span class="ai-box__dot"></span><span class="ai-box__title">Copiloto de respuesta</span></div>';
-
-      /* Template selector */
-      h+='<div class="ai-box__sublabel">Plantilla de resolución</div>';
-      h+='<select class="ai-box__select" id="tpl-select"><option value="">Seleccionar plantilla...</option><option value="falta_doc">Falta documentación</option><option value="aprobado">Compensación aprobada</option><option value="rechazado">Caso rechazado por aerolínea</option></select>';
-
-      /* Draft */
-      h+='<div class="ai-box__sublabel">Borrador rápido</div>';
-      h+='<textarea class="ai-box__draft" id="ai-draft" placeholder="Escribí tu respuesta de forma informal o introducí puntos clave aquí..."></textarea>';
-      h+='<button class="btn btn--ai" id="btn-optimize" type="button" style="width:100%;justify-content:center"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Optimizar borrador con IA &#9889;</button>';
-
-      /* AI gen button */
-      h+='<div style="margin-top:10px"><button class="btn btn--ghost" id="btn-ai-gen" type="button" style="width:100%;justify-content:center" data-ref="'+(c.ref_code||'')+'" data-nombre="'+(c.nombre||'')+'" data-aerolinea="'+(c.aerolinea||'')+'" data-vuelo="'+(c.vuelo_nro||'')+'" data-estado="'+estado+'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Generar respuesta completa con IA</button></div>';
-
-      /* Output */
-      h+='<div class="ai-box__sublabel" style="margin-top:12px">Respuesta final (editable)</div>';
-      h+='<textarea class="ai-box__textarea" id="ai-final"></textarea>';
-      h+='<div class="ai-box__actions"><button class="btn btn--primary" id="btn-copy" type="button"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar</button></div>';
-      h+='<div id="ai-output-msg" style="font-family:var(--fm);font-size:.66rem;margin-top:6px;min-height:14px"></div>';
-      h+='</div>';
-
       detailBody.innerHTML=h;
 
       /* Signed URL buttons (Supabase Storage) */
@@ -763,7 +738,8 @@
             if(d.success){
               statusEl.className='upload-item__status ok';statusEl.textContent='✓ Subido';
               c.adjuntos=d.adjuntos;
-              if(tipo==='derivacion'){var ds=document.getElementById('deriv-doc-status');if(ds){ds.textContent='✓ Documento de derivación cargado';ds.style.color='var(--ok)'}}
+              claims.forEach(function(cl){if(cl.id===c.id)cl.adjuntos=d.adjuntos});
+              if(tipo==='patrocinio'||tipo==='ficha_caso'){openDetail(c)}
             } else {
               statusEl.className='upload-item__status err';statusEl.textContent='Error: '+(d.error||'desconocido');
             }
@@ -800,12 +776,35 @@
         if(dm)loadAbogadosSelect();
       });
       if(estado==='derivado_mediacion')loadAbogadosSelect();
-      var derivZone=document.getElementById('deriv-upload-zone');
-      var derivInp=document.getElementById('deriv-upload-inp');
-      if(derivZone&&derivInp){
-        derivZone.addEventListener('click',function(){derivInp.click()});
-        derivInp.addEventListener('change',function(){if(derivInp.files.length)uploadFiles(derivInp.files,'derivacion');derivInp.value=''});
-      }
+      ['patrocinio','ficha_caso'].forEach(function(dt){
+        var zone=document.getElementById('deriv-'+dt+'-zone');
+        var inp=document.getElementById('deriv-'+dt+'-inp');
+        if(zone&&inp){
+          zone.addEventListener('click',function(){inp.click()});
+          inp.addEventListener('change',function(){if(inp.files.length)uploadFiles(inp.files,dt);inp.value=''});
+        }
+        var useBtn=document.getElementById('deriv-'+dt+'-use');
+        var existingSel=document.getElementById('deriv-'+dt+'-existing');
+        if(useBtn&&existingSel){
+          useBtn.addEventListener('click',function(){
+            var idx=existingSel.value;
+            if(idx===''){alert('Elegí un archivo de la lista primero.');return}
+            useBtn.disabled=true;useBtn.textContent='...';
+            fetch('/api/admin?action=retag',{
+              method:'POST',
+              headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
+              body:JSON.stringify({id:c.id,index:parseInt(idx),tipo:dt})
+            }).then(function(r){return r.json()}).then(function(d){
+              useBtn.disabled=false;useBtn.textContent='Usar';
+              if(d.success){
+                c.adjuntos=d.adjuntos;
+                claims.forEach(function(cl){if(cl.id===c.id)cl.adjuntos=d.adjuntos});
+                openDetail(c);
+              }else{alert('Error: '+(d.error||'desconocido'))}
+            }).catch(function(){useBtn.disabled=false;useBtn.textContent='Usar';alert('Error de red')});
+          });
+        }
+      });
 
       /* Bitácora — agregar novedad */
       var novInput=detailBody.querySelector('#nov-input');
@@ -836,48 +835,6 @@
         }).catch(function(){btnAddNov.disabled=false;btnAddNov.textContent='+ Agregar';alert('Error de red')});
       });
 
-      /* Template select */
-      var tplSelect=document.getElementById('tpl-select');
-      var aiFinal=document.getElementById('ai-final');
-      tplSelect.addEventListener('change',function(){
-        var key=tplSelect.value;
-        if(!key||!TEMPLATES[key])return;
-        aiFinal.value=TEMPLATES[key].replace(/\{nombre\}/g,c.nombre||'Pasajero').replace(/\{ref\}/g,c.ref_code||'').replace(/\{vuelo\}/g,c.vuelo_nro||'N/A').replace(/\{aerolinea\}/g,c.aerolinea||'la aerolínea');
-      });
-
-      /* Optimize draft */
-      document.getElementById('btn-optimize').addEventListener('click',function(){
-        var draft=document.getElementById('ai-draft').value.trim();
-        if(!draft){document.getElementById('ai-output-msg').textContent='Escribí algo en el borrador primero.';document.getElementById('ai-output-msg').style.color='#C0392B';return}
-        var msg=document.getElementById('ai-output-msg');msg.textContent='';
-        var btn=document.getElementById('btn-optimize');btn.disabled=true;btn.textContent='Optimizando...';
-        fetch('/api/generate-reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'optimize',text:draft,nombre:c.nombre||'',ref_code:c.ref_code||''})})
-        .then(function(r){return r.json()}).then(function(d){
-          btn.disabled=false;btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Optimizar borrador con IA &#9889;';
-          if(d.success){aiFinal.value=d.reply;msg.style.color='#1B9B5A';msg.textContent='Borrador optimizado con IA.'}
-          else{msg.style.color='#C0392B';msg.textContent=d.error||'Error'}
-        }).catch(function(){btn.disabled=false;btn.textContent='Optimizar borrador con IA ⚡';msg.style.color='#C0392B';msg.textContent='Error de conexión'});
-      });
-
-      /* Generate full reply */
-      document.getElementById('btn-ai-gen').addEventListener('click',function(){
-        var btn=document.getElementById('btn-ai-gen');
-        var msg=document.getElementById('ai-output-msg');msg.textContent='';
-        btn.disabled=true;btn.textContent='Generando...';
-        fetch('/api/generate-reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre:c.nombre||'',aerolinea:c.aerolinea||'',vuelo_nro:c.vuelo_nro||'',estado:c.estado||'',ref_code:c.ref_code||''})})
-        .then(function(r){return r.json()}).then(function(d){
-          btn.disabled=false;btn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Generar respuesta completa con IA';
-          if(d.success){aiFinal.value=d.reply;msg.style.color='#1B9B5A';msg.textContent='Respuesta generada.'}
-          else{msg.style.color='#C0392B';msg.textContent=d.error||'Error'}
-        }).catch(function(){btn.disabled=false;msg.style.color='#C0392B';msg.textContent='Error de conexión'});
-      });
-
-      /* Copy */
-      document.getElementById('btn-copy').addEventListener('click',function(){
-        aiFinal.select();document.execCommand('copy');aiFinal.setSelectionRange(0,0);
-        var msg=document.getElementById('ai-output-msg');msg.style.color='#1B9B5A';msg.textContent='Copiado al portapapeles.';setTimeout(function(){msg.textContent=''},3000);
-      });
-
       /* --- Guardar estado --- */
       var btnSaveEstado=document.getElementById('btn-save-estado');
       var msgEstado=document.getElementById('msg-estado');
@@ -885,12 +842,15 @@
         var newEstado=document.getElementById('sel-estado').value;
         if(newEstado===c.estado){msgEstado.style.color='var(--t4)';msgEstado.textContent='Sin cambios.';return}
         var body={id:c.id,action:'update-estado',estado:newEstado};
-        /* Gating de derivación a mediación: exige abogado + documento de derivación */
+        /* Gating de derivación a mediación: exige abogado + designación de patrocinio + ficha de caso */
         if(newEstado==='derivado_mediacion'){
           var abogadoId=(document.getElementById('sel-abogado')||{}).value||'';
-          var tieneDocDeriv=(Array.isArray(c.adjuntos)?c.adjuntos:[]).some(function(a){return a.tipo==='derivacion'});
+          var adjParaGating=Array.isArray(c.adjuntos)?c.adjuntos:[];
+          var tienePatrocinio=adjParaGating.some(function(a){return a.tipo==='patrocinio'});
+          var tieneFichaCaso=adjParaGating.some(function(a){return a.tipo==='ficha_caso'});
           if(!abogadoId){msgEstado.style.color='var(--err)';msgEstado.textContent='Elegí un abogado para derivar.';return}
-          if(!tieneDocDeriv){msgEstado.style.color='var(--err)';msgEstado.textContent='Subí el documento de derivación primero.';return}
+          if(!tienePatrocinio){msgEstado.style.color='var(--err)';msgEstado.textContent='Cargá la designación de patrocinio primero.';return}
+          if(!tieneFichaCaso){msgEstado.style.color='var(--err)';msgEstado.textContent='Cargá la ficha de caso primero.';return}
           body.abogado_id=abogadoId;
         }
         btnSaveEstado.disabled=true;btnSaveEstado.textContent='...';msgEstado.textContent='';
@@ -943,24 +903,6 @@
             toast('Autorización → '+newFirma);
           }else{msgFirma.style.color='var(--err)';msgFirma.textContent=d.error||'Error.'}
         }).catch(function(){btnSaveFirma.disabled=false;btnSaveFirma.textContent='Guardar';msgFirma.style.color='var(--err)';msgFirma.textContent='Error de conexión.'});
-      });
-
-      /* --- Guardar compensación --- */
-      var btnSaveMonto=document.getElementById('btn-save-monto');
-      var msgMonto=document.getElementById('msg-monto');
-      if(btnSaveMonto)btnSaveMonto.addEventListener('click',function(){
-        var mv=document.getElementById('inp-monto').value;
-        btnSaveMonto.disabled=true;btnSaveMonto.textContent='...';msgMonto.textContent='';
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'update-compensacion',monto_compensacion:mv===''?null:mv})})
-        .then(function(r){return r.json()}).then(function(d){
-          btnSaveMonto.disabled=false;btnSaveMonto.textContent='Guardar';
-          if(d.success){
-            c.monto_compensacion=d.monto_compensacion;
-            claims.forEach(function(cl){if(cl.id===c.id)cl.monto_compensacion=d.monto_compensacion});
-            msgMonto.style.color='#1B9B5A';msgMonto.textContent='Compensación guardada.';
-            toast('Compensación guardada.');
-          }else{msgMonto.style.color='var(--err)';msgMonto.textContent=d.error||'Error.'}
-        }).catch(function(){btnSaveMonto.disabled=false;btnSaveMonto.textContent='Guardar';msgMonto.style.color='var(--err)';msgMonto.textContent='Error de conexión.'});
       });
 
       overlay.classList.add('open');panel.classList.add('open');
@@ -1451,7 +1393,7 @@
         var countEl = document.getElementById('ag-count');
         if (countEl) countEl.textContent = ags.length + ' agencias';
         if (!ags.length) { agBody.innerHTML = '<div class="state"><p class="state__txt" style="color:var(--t4)">Sin agencias registradas.</p></div>'; return; }
-        var h = '<table><thead><tr><th>Nombre</th><th>Tipo</th><th>Email</th><th>CUIT/DNI</th><th>Estado</th><th>Casos</th><th>Comisión</th><th>Acciones</th></tr></thead><tbody>';
+        var h = '<table><thead><tr><th>Nombre</th><th>Tipo</th><th>Email</th><th>CUIT/DNI</th><th>Estado</th><th>Casos</th><th>Acciones</th></tr></thead><tbody>';
         ags.forEach(function (ag) {
           var bc = 'ag-badge--' + (ag.estado || 'pendiente');
           h += '<tr>';
@@ -1461,7 +1403,6 @@
           h += '<td class="mono">' + esc(ag.cuit_dni || '—') + '</td>';
           h += '<td><span class="ag-badge ' + bc + '">' + esc(ag.estado || '—') + '</span></td>';
           h += '<td class="mono">' + (ag.num_casos || 0) + '</td>';
-          h += '<td class="mono">' + (ag.comision_pct || 10) + '%</td>';
           h += '<td>';
           if (ag.estado === 'pendiente') h += '<button class="btn-ag btn-ag--aprobar" data-ag-id="' + ag.id + '" data-ag-action="aprobar">Aprobar</button>';
           if (ag.estado === 'activa')    h += '<button class="btn-ag btn-ag--suspender" data-ag-id="' + ag.id + '" data-ag-action="suspender">Suspender</button>';

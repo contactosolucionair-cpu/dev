@@ -300,7 +300,7 @@ async function handleStats(req, res, SB_URL, SB_KEY) {
   console.log('[agency/stats] Stats para agencia:', agencia.id);
 
   var sbRes = await fetch(
-    SB_URL + '/rest/v1/reclamos?agencia_id=eq.' + agencia.id + '&deleted_at=is.null&select=estado,monto_compensacion',
+    SB_URL + '/rest/v1/reclamos?agencia_id=eq.' + agencia.id + '&deleted_at=is.null&select=estado',
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
   );
   var sbText = await sbRes.text();
@@ -317,15 +317,5 @@ async function handleStats(req, res, SB_URL, SB_KEY) {
     por_estado[e] = (por_estado[e] || 0) + 1;
   });
 
-  var comision_pct = parseFloat(agencia.comision_pct) || 10;
-  var comision_estimada = null;
-  claims.forEach(function (c) {
-    if ((c.estado === 'aprobado' || c.estado === 'resuelto') && c.monto_compensacion) {
-      if (comision_estimada === null) comision_estimada = 0;
-      comision_estimada += parseFloat(c.monto_compensacion) * (comision_pct / 100);
-    }
-  });
-  if (comision_estimada !== null) comision_estimada = Math.round(comision_estimada * 100) / 100;
-
-  return res.status(200).json({ success: true, total: total, por_estado: por_estado, comision_estimada: comision_estimada });
+  return res.status(200).json({ success: true, total: total, por_estado: por_estado });
 }

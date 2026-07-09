@@ -204,12 +204,13 @@
     var adj=Array.isArray(c.adjuntos)?c.adjuntos:[];
     if(!adj.length){docsEl.innerHTML='<p style="font-size:.74rem;color:var(--t4)">Sin documentos.</p>';}
     else{
-      var ordered=adj.slice().sort(function(a,b){return (b.tipo==='derivacion'?1:0)-(a.tipo==='derivacion'?1:0)});
+      var DERIV_LABELS={patrocinio:'Designación de patrocinio',ficha_caso:'Ficha de caso'};
+      var ordered=adj.slice().sort(function(a,b){return (DERIV_LABELS[b.tipo]?1:0)-(DERIV_LABELS[a.tipo]?1:0)});
       ordered.forEach(function(a){
         var bucket=a.bucket||'reclamos',path=a.path||null;
         if(!path&&a.url){var mk=a.url.indexOf('/object/public/');if(mk>-1){var rest=a.url.substring(mk+15);var sl=rest.indexOf('/');if(sl>-1){bucket=rest.substring(0,sl);path=decodeURIComponent(rest.substring(sl+1))}}}
-        var esDeriv=a.tipo==='derivacion';
-        var nombre=esDeriv?('📄 Documento de derivación'+(a.nombre?' — '+a.nombre:'')):(a.nombre||a.tipo||'Documento');
+        var esDeriv=!!DERIV_LABELS[a.tipo];
+        var nombre=esDeriv?('📄 '+DERIV_LABELS[a.tipo]+(a.nombre?' — '+a.nombre:'')):(a.nombre||a.tipo||'Documento');
         var btn=document.createElement('button');
         btn.type='button';btn.className='doc-item'+(esDeriv?' doc-item--deriv':'');
         btn.textContent=nombre;

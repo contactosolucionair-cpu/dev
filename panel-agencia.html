@@ -36,7 +36,7 @@
     .btn--primary:disabled,.btn--ghost:disabled{opacity:.55;cursor:not-allowed}
 
     /* ---- Stats ---- */
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
     .stat{background:var(--w);border:1px solid var(--bdl);border-radius:8px;padding:15px 16px}
     .stat__label{font-size:.66rem;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
     .stat__val{font-family:var(--fm);font-size:1.4rem;font-weight:600;color:var(--g)}
@@ -176,7 +176,6 @@
         <div class="stat"><div class="stat__label">Total casos</div><div class="stat__val" id="st-total">—</div></div>
         <div class="stat"><div class="stat__label">Pendientes</div><div class="stat__val stat__val--warn" id="st-pend">—</div></div>
         <div class="stat"><div class="stat__label">Aprobados</div><div class="stat__val stat__val--ok" id="st-aprobados">—</div></div>
-        <div class="stat"><div class="stat__label">Comisión estimada</div><div class="stat__val" id="st-comision">—</div></div>
       </div>
       <div class="tbl-wrap" style="max-width:340px">
         <div class="tbl-bar"><span class="tbl-bar__title">Por estado</span></div>
@@ -347,7 +346,6 @@
         <div class="perfil-card__row"><div class="perfil-card__label">Email</div><div class="perfil-card__val mono" id="p-email">—</div></div>
         <div class="perfil-card__row"><div class="perfil-card__label">Tipo</div><div class="perfil-card__val" id="p-tipo">—</div></div>
         <div class="perfil-card__row"><div class="perfil-card__label">Estado</div><div class="perfil-card__val" id="p-estado">—</div></div>
-        <div class="perfil-card__row"><div class="perfil-card__label">Comisión pactada</div><div class="perfil-card__val mono" id="p-comision">—</div></div>
       </div>
     </div>
 
@@ -479,8 +477,6 @@
       document.getElementById('st-total').textContent    = d.total || 0;
       document.getElementById('st-pend').textContent     = (d.por_estado && d.por_estado.pendiente) || 0;
       var aprobEl = document.getElementById('st-aprobados'); if(aprobEl) aprobEl.textContent = (d.por_estado && ((d.por_estado.aprobado||0)+(d.por_estado.resuelto||0))) || 0;
-      var comision = d.comision_estimada;
-      document.getElementById('st-comision').textContent = (comision !== null && comision !== undefined) ? '$' + Number(comision).toFixed(0) : '—';
 
       if (d.por_estado) {
         var breakdown = '';
@@ -732,7 +728,6 @@
     document.getElementById('p-email').textContent   = email || '—';
     document.getElementById('p-tipo').textContent    = ag.tipo === 'individual' ? 'Agente individual' : 'Agencia';
     document.getElementById('p-estado').textContent  = ag.estado || '—';
-    document.getElementById('p-comision').textContent = (ag.comision_pct || 10) + '%';
   }
 
   /* ---- Init ---- */

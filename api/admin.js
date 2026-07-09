@@ -64,6 +64,7 @@ export default async function handler(req, res) {
     if (action === 'sign')             return await signUrl(req, res, SB_URL, SB_KEY);
     if (action === 'upload')           return await uploadDoc(req, res, SB_URL, SB_KEY);
     if (action === 'remove')           return await removeAdj(req, res, SB_URL, SB_KEY);
+    if (action === 'retag')            return await retagAdj(req, res, SB_URL, SB_KEY);
     if (action === 'create-case')      return await createCase(req, res, SB_URL, SB_KEY);
     return res.status(404).json({ error: 'Acción no encontrada: ' + action });
   } catch (err) {
@@ -251,6 +252,34 @@ async function removeAdj(req, res, SB_URL, SB_KEY) {
 
   var adjuntos = Array.isArray(cases[0].adjuntos) ? cases[0].adjuntos.slice() : [];
   adjuntos.splice(index, 1);
+
+  var patchResp = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+    method: 'PATCH',
+    headers: { 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ adjuntos: adjuntos }),
+  });
+  if (!patchResp.ok) return res.status(patchResp.status).json({ error: await patchResp.text() });
+  return res.status(200).json({ success: true, adjuntos: adjuntos });
+}
+
+/* ------------------------------------------------------------------ */
+/* Storage: reetiquetar un adjunto existente (reusar archivo ya subido) */
+/* ------------------------------------------------------------------ */
+async function retagAdj(req, res, SB_URL, SB_KEY) {
+  var body  = await getJson(req);
+  var id    = body.id;
+  var index = body.index;
+  var tipo  = body.tipo;
+  if (!id || index === undefined || !tipo) return res.status(400).json({ error: 'id, index y tipo son requeridos' });
+
+  var caseResp = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=id,adjuntos',
+    { headers: { 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY } });
+  var cases = await caseResp.json();
+  if (!cases.length) return res.status(404).json({ error: 'Caso no encontrado' });
+
+  var adjuntos = Array.isArray(cases[0].adjuntos) ? cases[0].adjuntos.slice() : [];
+  if (!adjuntos[index]) return res.status(400).json({ error: 'Adjunto no encontrado' });
+  adjuntos[index] = Object.assign({}, adjuntos[index], { tipo: tipo });
 
   var patchResp = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
     method: 'PATCH',
