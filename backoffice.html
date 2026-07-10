@@ -1359,7 +1359,8 @@
       {id:'pendiente',label:'Pendiente sin avanzar',tipo:'estado_dias',estado:'pendiente',dias:2,enabled:true,builtin:true},
       {id:'reclamado',label:'Reclamado a aerolínea',tipo:'estado_dias',estado:'reclamado_aerolinea',dias:7,enabled:true,builtin:true},
       {id:'mediacion',label:'Mediación próxima',tipo:'mediacion',dias:1,enabled:true,builtin:true},
-      {id:'sin_update',label:'Sin update al cliente',tipo:'sin_update',dias:7,enabled:true,builtin:true}
+      {id:'sin_update',label:'Sin update al cliente',tipo:'sin_update',dias:7,enabled:true,builtin:true},
+      {id:'firma_pendiente',label:'Autorización pendiente de envío',tipo:'firma_dias',dias:1,enabled:true,builtin:true}
     ];
     var alertRules=DEFAULT_REGLAS.map(function(r){return Object.assign({},r)});
     var alertRulesLoaded=false;
@@ -1368,7 +1369,14 @@
       fetch('/api/admin?action=alertas-get',{headers:{'X-Admin-Password':adminPwd}})
       .then(function(r){return r.json()}).then(function(d){
         alertRulesLoaded=true;
-        if(d&&d.reglas&&d.reglas.length)alertRules=d.reglas;
+        if(d&&d.reglas&&d.reglas.length){
+          var saved=d.reglas;
+          var savedIds={};
+          saved.forEach(function(r){savedIds[r.id]=true});
+          /* Reglas builtin nuevas agregadas al código después de guardar la config: se suman igual */
+          var faltantes=DEFAULT_REGLAS.filter(function(r){return !savedIds[r.id]});
+          alertRules=saved.concat(faltantes);
+        }
         if(cb)cb();
       }).catch(function(){alertRulesLoaded=true;if(cb)cb()});
     }
@@ -1398,6 +1406,12 @@
         var refU=c.ultimo_update_cliente||c.creado_en;
         var ddU=_diasDesde(refU);if(ddU==null||ddU<(regla.dias||0))return null;
         return {ref:refU?new Date(refU):null,texto:'Último update hace '+ddU+' días',accionUpdate:true};
+      }
+      if(regla.tipo==='firma_dias'){
+        if((c.firma_estado||'no_aplica')!=='pendiente_envio'||TERMINAL.indexOf(est)!==-1)return null;
+        var refF=c.creado_en?new Date(c.creado_en):null;
+        var ddF=_diasDesde(refF);if(ddF==null||ddF<(regla.dias||0))return null;
+        return {ref:refF,texto:'Autorización sin enviar hace '+ddF+' días'};
       }
       return null;
     }
@@ -1487,7 +1501,7 @@
       var cont=document.getElementById('alertas-admin-list');if(!cont)return;
       var h='';
       alertRules.forEach(function(regla,idx){
-        var desc=regla.tipo==='estado_dias'?('Estado "'+estadoLabel(regla.estado)+'" por más de N días'):regla.tipo==='mediacion'?('Mediación dentro de N día(s)'):('Sin update al cliente por más de N días');
+        var desc=regla.tipo==='estado_dias'?('Estado "'+estadoLabel(regla.estado)+'" por más de N días'):regla.tipo==='mediacion'?('Mediación dentro de N día(s)'):regla.tipo==='firma_dias'?('Autorización sin enviar por más de N días'):('Sin update al cliente por más de N días');
         h+='<div class="upload-item" style="justify-content:space-between;gap:10px">';
         h+='<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:.8rem;color:var(--t1)">'+esc(regla.label)+'</span><span style="font-size:.66rem;color:var(--t4)">'+esc(desc)+'</span></div>';
         h+='<div style="display:flex;gap:8px;align-items:center;flex-shrink:0">';
