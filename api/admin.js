@@ -13,10 +13,14 @@
  *   sign              POST  ?bucket&path → URL firmada de Storage
  *   upload            POST  ?id&filename&tipo&nombre  (body binario) → sube adjunto
  *   remove            POST  {id, index} → quita un adjunto
+ *   retag             POST  {id, index, tipo} → reetiqueta un adjunto existente
+ *   download-zip      POST  ?id → ZIP con todos los adjuntos del caso
  *   create-case       POST  {datos del caso} → alta manual desde backoffice + mail al cliente
  *
  * bodyParser desactivado: 'upload' necesita el body crudo; el resto parsea JSON a mano.
  */
+import JSZip from 'jszip';
+
 export const config = { api: { bodyParser: false } };
 
 function getRawBody(req) {
@@ -65,6 +69,7 @@ export default async function handler(req, res) {
     if (action === 'upload')           return await uploadDoc(req, res, SB_URL, SB_KEY);
     if (action === 'remove')           return await removeAdj(req, res, SB_URL, SB_KEY);
     if (action === 'retag')            return await retagAdj(req, res, SB_URL, SB_KEY);
+    if (action === 'download-zip')     return await downloadZip(req, res, SB_URL, SB_KEY);
     if (action === 'create-case')      return await createCase(req, res, SB_URL, SB_KEY);
     return res.status(404).json({ error: 'Acción no encontrada: ' + action });
   } catch (err) {
@@ -288,6 +293,66 @@ async function retagAdj(req, res, SB_URL, SB_KEY) {
   });
   if (!patchResp.ok) return res.status(patchResp.status).json({ error: await patchResp.text() });
   return res.status(200).json({ success: true, adjuntos: adjuntos });
+}
+
+/* ------------------------------------------------------------------ */
+/* Storage: ZIP con todos los adjuntos de un caso                      */
+/* ------------------------------------------------------------------ */
+function resolveBucketPath(a) {
+  var bucket = a.bucket || 'reclamos';
+  var path   = a.path || null;
+  if (!path && a.url) {
+    var mk = a.url.indexOf('/object/public/');
+    if (mk > -1) {
+      var rest = a.url.substring(mk + '/object/public/'.length);
+      var sl = rest.indexOf('/');
+      if (sl > -1) { bucket = rest.substring(0, sl); path = decodeURIComponent(rest.substring(sl + 1)); }
+    }
+  }
+  return { bucket: bucket, path: path };
+}
+
+async function downloadZip(req, res, SB_URL, SB_KEY) {
+  var id = req.query.id;
+  if (!id) return res.status(400).json({ error: 'id es requerido' });
+
+  var caseResp = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=id,ref_code,adjuntos',
+    { headers: { 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY } });
+  var cases = await caseResp.json();
+  if (!cases.length) return res.status(404).json({ error: 'Caso no encontrado' });
+  var claim = cases[0];
+  var adjuntos = Array.isArray(claim.adjuntos) ? claim.adjuntos : [];
+
+  var zip = new JSZip();
+  var usedNames = {};
+  var added = 0;
+
+  for (var i = 0; i < adjuntos.length; i++) {
+    var a = adjuntos[i];
+    var loc = resolveBucketPath(a);
+    if (!loc.path) continue; /* link externo (ej. carpeta de Drive): no hay bytes para zippear */
+
+    var fileResp = await fetch(SB_URL + '/storage/v1/object/' + loc.bucket + '/' + loc.path,
+      { headers: { 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY } });
+    if (!fileResp.ok) continue;
+    var arrBuf = await fileResp.arrayBuffer();
+
+    var name = (a.nombre || loc.path.split('/').pop() || ('documento_' + i)).replace(/[\\/]/g, '_');
+    if (usedNames[name]) name = (i + 1) + '_' + name;
+    usedNames[name] = true;
+
+    zip.file(name, arrBuf);
+    added++;
+  }
+
+  if (!added) return res.status(404).json({ error: 'No hay documentos descargables para este caso' });
+
+  var zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+  var safeRef = (claim.ref_code || 'reclamo').replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', 'attachment; filename="' + safeRef + '_adjuntos.zip"');
+  return res.status(200).send(zipBuffer);
 }
 
 /* ------------------------------------------------------------------ */

@@ -630,7 +630,7 @@
       try{if(c.adjuntos)adjArr=Array.isArray(c.adjuntos)?c.adjuntos:JSON.parse(c.adjuntos)}catch(e){}
       /* Adjuntos + upload zone (always shown) */
       h+='<div class="detail__section">';
-      h+='<div class="detail__label" style="margin-bottom:8px">Documentos adjuntos</div>';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div class="detail__label" style="margin-bottom:0">Documentos adjuntos</div>'+(adjArr.length?'<button class="btn btn--ghost" id="btn-download-zip" type="button" style="font-size:.68rem;padding:4px 10px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar todos (ZIP)</button>':'')+'</div>';
       h+='<div id="adj-list">';
       adjArr.forEach(function(a,ai){
         var icono=a.tipo==='carpeta_drive'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
@@ -694,6 +694,30 @@
             if(d.signedURL){window.open(d.signedURL,'_blank')}
             else{alert('Error al obtener el documento: '+(d.error||'Error desconocido'))}
           }).catch(function(){btn.disabled=false;btn.style.opacity='1';alert('Error de red')});
+        });
+      });
+
+      /* Descargar todos los adjuntos (ZIP) */
+      var btnZip=document.getElementById('btn-download-zip');
+      if(btnZip)btnZip.addEventListener('click',function(){
+        var zipLabel=btnZip.innerHTML;
+        btnZip.disabled=true;btnZip.textContent='Generando ZIP...';
+        fetch('/api/admin?action=download-zip&id='+encodeURIComponent(c.id),{
+          method:'POST',
+          headers:{'X-Admin-Password':adminPwd}
+        }).then(function(r){
+          if(!r.ok)return r.json().then(function(d){throw new Error(d.error||'Error al generar el ZIP')});
+          return r.blob();
+        }).then(function(blob){
+          var url=URL.createObjectURL(blob);
+          var a=document.createElement('a');
+          a.href=url;a.download=(c.ref_code||'reclamo')+'_adjuntos.zip';
+          document.body.appendChild(a);a.click();document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          btnZip.disabled=false;btnZip.innerHTML=zipLabel;
+        }).catch(function(err){
+          alert(err.message||'Error al generar el ZIP');
+          btnZip.disabled=false;btnZip.innerHTML=zipLabel;
         });
       });
 
