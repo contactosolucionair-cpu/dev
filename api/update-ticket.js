@@ -139,6 +139,34 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, action: 'set-fecha-mediacion', fecha_mediacion: fmVal });
     }
 
+    /* ---- REASIGNAR ABOGADO (+ bitácora) ---- */
+    if (body.action === 'update-abogado') {
+      var newAbogadoId = (body.abogado_id || '').trim();
+      if (!newAbogadoId) return res.status(400).json({ error: 'abogado_id es requerido' });
+
+      var abogRes = await fetch(SB_URL + '/rest/v1/abogados?id=eq.' + newAbogadoId + '&select=id,nombre', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      });
+      var abogRows = await abogRes.json();
+      if (!Array.isArray(abogRows) || !abogRows.length) return res.status(400).json({ error: 'Abogado no encontrado' });
+      var abogadoNombre = abogRows[0].nombre || 'sin nombre';
+
+      var uaRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=novedades', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      });
+      var uaRows = await uaRes.json();
+      var uaNov = Array.isArray(uaRows[0]?.novedades) ? uaRows[0].novedades : [];
+      uaNov.unshift({ fecha: new Date().toISOString(), texto: 'Caso reasignado a ' + abogadoNombre + '.' });
+
+      var uaPatch = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ abogado_id: newAbogadoId, novedades: uaNov }),
+      });
+      if (!uaPatch.ok) return res.status(500).json({ error: 'Error al reasignar el abogado' });
+      return res.status(200).json({ success: true, action: 'update-abogado', abogado_id: newAbogadoId, abogado_nombre: abogadoNombre, novedades: uaNov });
+    }
+
     /* ---- CONFIRM UPDATE AL CLIENTE (+ bitácora) ---- */
     if (body.action === 'confirm-update-cliente') {
       var nowTs = new Date().toISOString();
