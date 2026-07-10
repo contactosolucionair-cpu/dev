@@ -374,6 +374,7 @@
     var ESTADO_LABELS={pendiente:'Pendiente',en_revision:'En revisión',esperando_info:'Esperando información',autorizacion_pendiente:'Autorización pendiente',reclamado_aerolinea:'Reclamado a aerolínea',negociacion:'En negociación',derivado_mediacion:'Derivado a mediación',mediacion_notificada:'Mediación notificada',en_mediacion:'En mediación',acuerdo:'Acuerdo alcanzado',cobro_pasajero_pendiente:'Cobro pasajero pendiente',cobro_comision_pendiente:'Cobro comisión pendiente',cerrado:'Cerrado / Cobrado',rechazado:'Rechazado',no_apto:'No apto',cancelado:'Cancelado',en_gestion:'En gestión',aprobado:'Aprobado',resuelto:'Resuelto'};
     var ESTADO_GROUPS=[['Ingreso',['pendiente','en_revision','esperando_info','autorizacion_pendiente']],['Gestión',['reclamado_aerolinea','negociacion']],['Mediación',['derivado_mediacion','mediacion_notificada','en_mediacion']],['Cierre',['acuerdo','cobro_pasajero_pendiente','cobro_comision_pendiente','cerrado']],['Salidas',['rechazado','no_apto','cancelado']],['Anteriores',['en_gestion','aprobado','resuelto']]];
     var MEDIACION_ESTADOS=['derivado_mediacion','mediacion_notificada','en_mediacion'];
+    var REQ_LABELS={info_adicional:'Información complementaria',subsanacion:'Subsanación'};
     function resolveAdjLoc(a){
       var bucket=a.bucket||'reclamos', path=a.path||null;
       if(!path && a.url){
@@ -603,6 +604,15 @@
       h+='</select><button class="btn btn--ghost" id="btn-save-firma" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
       h+='<div id="msg-firma" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       h+='</div>'; /* action-row */
+      /* Requerimiento de la aerolínea (info complementaria / subsanación pendiente) */
+      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Requerimiento de la aerolínea</div>';
+      if(c.requerimiento_tipo){
+        h+='<div style="font-size:.78rem;color:var(--warn);margin-bottom:6px">⚠ '+esc(REQ_LABELS[c.requerimiento_tipo]||c.requerimiento_tipo)+' pendiente — marcado el '+fmtFechaHora(c.requerimiento_fecha)+'</div>';
+        h+='<button class="btn btn--primary" id="btn-requerimiento-respondida" type="button">✓ Respondida</button>';
+      } else {
+        h+='<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn--ghost" data-req-tipo="info_adicional" type="button" style="font-size:.72rem">⚠ Marcar info. complementaria pendiente</button><button class="btn btn--ghost" data-req-tipo="subsanacion" type="button" style="font-size:.72rem">⚠ Marcar subsanación pendiente</button></div>';
+      }
+      h+='<div id="msg-requerimiento" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div></div>';
       /* Derivación a mediación (visible mientras el estado esté en el grupo Mediación) */
       var adjArrDeriv=[];
       try{if(c.adjuntos)adjArrDeriv=Array.isArray(c.adjuntos)?c.adjuntos:JSON.parse(c.adjuntos)}catch(e){}
@@ -1033,6 +1043,50 @@
         }).catch(function(){btnSaveFirma.disabled=false;btnSaveFirma.textContent='Guardar';msgFirma.style.color='var(--err)';msgFirma.textContent='Error de conexión.'});
       });
 
+      /* Requerimiento de la aerolínea: marcar pendiente / respondida */
+      var msgRequerimiento=document.getElementById('msg-requerimiento');
+      detailBody.querySelectorAll('[data-req-tipo]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var tipo=btn.dataset.reqTipo;
+          detailBody.querySelectorAll('[data-req-tipo]').forEach(function(b){b.disabled=true});
+          if(msgRequerimiento)msgRequerimiento.textContent='';
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-requerimiento',tipo:tipo})})
+          .then(function(r){return r.json()}).then(function(d){
+            if(d.success){
+              c.requerimiento_tipo=d.requerimiento_tipo;c.requerimiento_fecha=d.requerimiento_fecha;c.novedades=d.novedades;
+              claims.forEach(function(cl){if(cl.id===c.id){cl.requerimiento_tipo=d.requerimiento_tipo;cl.requerimiento_fecha=d.requerimiento_fecha;cl.novedades=d.novedades}});
+              toast('Marcado: '+(REQ_LABELS[tipo]||tipo)+' pendiente.');
+              openDetail(c);
+            }else{
+              detailBody.querySelectorAll('[data-req-tipo]').forEach(function(b){b.disabled=false});
+              if(msgRequerimiento){msgRequerimiento.style.color='var(--err)';msgRequerimiento.textContent=d.error||'Error.'}
+            }
+          }).catch(function(){
+            detailBody.querySelectorAll('[data-req-tipo]').forEach(function(b){b.disabled=false});
+            if(msgRequerimiento){msgRequerimiento.style.color='var(--err)';msgRequerimiento.textContent='Error de conexión.'}
+          });
+        });
+      });
+      var btnReqRespondida=document.getElementById('btn-requerimiento-respondida');
+      if(btnReqRespondida)btnReqRespondida.addEventListener('click',function(){
+        btnReqRespondida.disabled=true;btnReqRespondida.textContent='...';
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'clear-requerimiento'})})
+        .then(function(r){return r.json()}).then(function(d){
+          if(d.success){
+            c.requerimiento_tipo=null;c.requerimiento_fecha=null;c.novedades=d.novedades;
+            claims.forEach(function(cl){if(cl.id===c.id){cl.requerimiento_tipo=null;cl.requerimiento_fecha=null;cl.novedades=d.novedades}});
+            toast('Requerimiento marcado como respondido.');
+            openDetail(c);
+          }else{
+            btnReqRespondida.disabled=false;btnReqRespondida.textContent='✓ Respondida';
+            if(msgRequerimiento){msgRequerimiento.style.color='var(--err)';msgRequerimiento.textContent=d.error||'Error.'}
+          }
+        }).catch(function(){
+          btnReqRespondida.disabled=false;btnReqRespondida.textContent='✓ Respondida';
+          if(msgRequerimiento){msgRequerimiento.style.color='var(--err)';msgRequerimiento.textContent='Error de conexión.'}
+        });
+      });
+
       overlay.classList.add('open');panel.classList.add('open');
     }
 
@@ -1097,6 +1151,7 @@
       p('- Autorización cliente: '+(c.firma_estado||'no_aplica'));
       if(c.abogado_id)p('- Abogado asignado (ID): '+c.abogado_id);
       if(c.fecha_mediacion)p('- Fecha de mediación: '+fmtDateEsAR(c.fecha_mediacion));
+      if(c.requerimiento_tipo)p('- Requerimiento aerolínea pendiente: '+(REQ_LABELS[c.requerimiento_tipo]||c.requerimiento_tipo)+' (desde '+fmtDateEsAR(c.requerimiento_fecha)+')');
       p('');
 
       var hist=Array.isArray(c.estado_historial)?c.estado_historial:[];
@@ -1358,6 +1413,17 @@
           out.push({regla:regla,c:c,ref:hit.ref,texto:hit.texto,accionUpdate:hit.accionUpdate});
         });
       });
+      /* Requerimiento de la aerolínea: incondicional, se resuelve solo con "Respondida" en el caso */
+      act.forEach(function(c){
+        if(!c.requerimiento_tipo)return;
+        out.push({
+          regla:{id:null,label:(REQ_LABELS[c.requerimiento_tipo]||c.requerimiento_tipo)+' pendiente'},
+          c:c,
+          ref:c.requerimiento_fecha?new Date(c.requerimiento_fecha):null,
+          texto:'Pedido por la aerolínea desde '+fmtFechaHora(c.requerimiento_fecha),
+          requerimiento:true
+        });
+      });
       out.sort(function(a,b){return (a.ref?new Date(a.ref).getTime():0)-(b.ref?new Date(b.ref).getTime():0)});
       return out;
     }
@@ -1377,7 +1443,7 @@
           h+='<span style="font-size:.68rem;color:var(--t4)">'+esc(it.texto)+'</span></div>';
           h+='<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">';
           if(it.accionUpdate)h+='<button class="btn btn--ghost" data-update-id="'+it.c.id+'" type="button" style="font-size:.66rem;white-space:nowrap">Confirmé update</button>';
-          h+='<button class="btn btn--ghost" data-dismiss-id="'+it.c.id+'" data-dismiss-regla="'+esc(it.regla.id)+'" type="button" title="Eliminar alerta" style="font-size:.66rem;padding:4px 8px">✕</button>';
+          if(!it.requerimiento)h+='<button class="btn btn--ghost" data-dismiss-id="'+it.c.id+'" data-dismiss-regla="'+esc(it.regla.id)+'" type="button" title="Eliminar alerta" style="font-size:.66rem;padding:4px 8px">✕</button>';
           h+='</div></div>';
         });
         h+='</div></div>';

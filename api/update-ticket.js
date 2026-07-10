@@ -167,6 +167,48 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, action: 'update-abogado', abogado_id: newAbogadoId, abogado_nombre: abogadoNombre, novedades: uaNov });
     }
 
+    /* ---- REQUERIMIENTO DE LA AEROLÍNEA (info complementaria / subsanación) ---- */
+    var REQUERIMIENTO_LABELS = { info_adicional: 'Información complementaria', subsanacion: 'Subsanación' };
+
+    if (body.action === 'set-requerimiento') {
+      var reqTipo = (body.tipo || '').trim();
+      if (!REQUERIMIENTO_LABELS[reqTipo]) return res.status(400).json({ error: 'Tipo de requerimiento inválido' });
+
+      var srRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=novedades', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      });
+      var srRows = await srRes.json();
+      var srNov = Array.isArray(srRows[0]?.novedades) ? srRows[0].novedades : [];
+      var srFecha = new Date().toISOString();
+      srNov.unshift({ fecha: srFecha, texto: 'Se marcó: ' + REQUERIMIENTO_LABELS[reqTipo] + ' pendiente.' });
+
+      var srPatch = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ requerimiento_tipo: reqTipo, requerimiento_fecha: srFecha, novedades: srNov }),
+      });
+      if (!srPatch.ok) return res.status(500).json({ error: 'Error al marcar el requerimiento' });
+      return res.status(200).json({ success: true, action: 'set-requerimiento', requerimiento_tipo: reqTipo, requerimiento_fecha: srFecha, novedades: srNov });
+    }
+
+    if (body.action === 'clear-requerimiento') {
+      var crRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=novedades,requerimiento_tipo', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      });
+      var crRows = await crRes.json();
+      var crNov = Array.isArray(crRows[0]?.novedades) ? crRows[0].novedades : [];
+      var crTipoPrevio = crRows[0]?.requerimiento_tipo;
+      crNov.unshift({ fecha: new Date().toISOString(), texto: (REQUERIMIENTO_LABELS[crTipoPrevio] || 'Requerimiento') + ' respondida.' });
+
+      var crPatch = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ requerimiento_tipo: null, requerimiento_fecha: null, novedades: crNov }),
+      });
+      if (!crPatch.ok) return res.status(500).json({ error: 'Error al resolver el requerimiento' });
+      return res.status(200).json({ success: true, action: 'clear-requerimiento', novedades: crNov });
+    }
+
     /* ---- CONFIRM UPDATE AL CLIENTE (+ bitácora) ---- */
     if (body.action === 'confirm-update-cliente') {
       var nowTs = new Date().toISOString();
