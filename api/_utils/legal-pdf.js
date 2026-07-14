@@ -93,11 +93,34 @@ export async function renderLegalPdf(text, { refCode } = {}) {
     }
   }
 
+  /* Justifica una línea ya wrapeada: dibuja cada palabra por separado,
+     repartiendo el espacio sobrante entre los huecos de espacio en blanco
+     para que el texto llegue exactamente al margen derecho. */
+  function drawJustifiedRunsLine(lineRuns, x, yy, size, color, targetW) {
+    let naturalW = 0, gaps = 0;
+    lineRuns.forEach((w) => {
+      const font = w.bold ? bold : reg;
+      naturalW += font.widthOfTextAtSize(w.text, size);
+      if (/^\s+$/.test(w.text)) gaps++;
+    });
+    const extra = gaps > 0 ? Math.max(0, targetW - naturalW) / gaps : 0;
+    let cx = x;
+    lineRuns.forEach((w) => {
+      const font = w.bold ? bold : reg;
+      const ww = font.widthOfTextAtSize(w.text, size);
+      if (/^\s+$/.test(w.text)) { cx += ww + extra; return; }
+      page.drawText(w.text, { x: cx, y: yy, size, font, color });
+      cx += ww;
+    });
+  }
+
   function drawLine(line) {
     const lines = wrapRuns(parseInline(line), BODY_SIZE);
-    lines.forEach((l) => {
+    lines.forEach((l, li) => {
       ensureSpace(BODY_SIZE + LINE_GAP);
-      drawRunsLine(l, MARGIN, y, BODY_SIZE, C_DARK);
+      /* La última línea de cada bloque wrapeado no se justifica (convención tipográfica estándar). */
+      if (li === lines.length - 1) drawRunsLine(l, MARGIN, y, BODY_SIZE, C_DARK);
+      else drawJustifiedRunsLine(l, MARGIN, y, BODY_SIZE, C_DARK, maxW);
       y -= BODY_SIZE + LINE_GAP;
     });
   }

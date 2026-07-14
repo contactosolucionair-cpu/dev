@@ -113,7 +113,7 @@
   var detailTitle=document.getElementById('detail-title');
   var detailBody=document.getElementById('detail-body');
 
-  var ESTADO_LABELS={derivado_mediacion:'Derivado a mediación',mediacion_notificada:'Mediación notificada',en_mediacion:'En mediación',acuerdo:'Acuerdo alcanzado',cobro_pasajero_pendiente:'Cobro pasajero pendiente',cobro_comision_pendiente:'Cobro comisión pendiente',cerrado:'Cerrado',rechazado:'Rechazado'};
+  var ESTADO_LABELS={derivado_mediacion:'Derivado a mediación',mediacion_notificada:'Mediación notificada',en_mediacion:'En mediación',acuerdo:'Acuerdo alcanzado',cobro_pasajero_pendiente:'Cobro pasajero pendiente',cobro_comision_pendiente:'Cobro comisión pendiente',cerrado:'Cerrado',rechazado:'Rechazado Aerolínea',rechazado_aerolinea:'Rechazado Aerolínea',sin_exito:'Sin éxito'};
   var MED_OPCIONES=['derivado_mediacion','mediacion_notificada','en_mediacion','acuerdo'];
   function estadoLabel(e){return ESTADO_LABELS[e]||e||'—'}
   function estadoBadge(e){return e==='acuerdo'||e==='cerrado'?'badge--aprobado':'badge--mediacion'}
@@ -155,6 +155,26 @@
     authFetch('/api/abogados/sign?bucket='+encodeURIComponent(bucket)+'&path='+encodeURIComponent(path))
     .then(function(r){return r.json()}).then(function(d){btn.disabled=false;btn.style.opacity=old;if(d.signedURL)window.open(d.signedURL,'_blank');else toast(d.error||'Error al abrir',true)})
     .catch(function(){btn.disabled=false;btn.style.opacity=old;toast('Error de red',true)});
+  }
+
+  function downloadBlob(url,filename,btn){
+    if(btn){btn.disabled=true;btn.style.opacity='.5'}
+    fetch(url).then(function(r){return r.blob()}).then(function(blob){
+      var u=URL.createObjectURL(blob);
+      var a=document.createElement('a');
+      a.href=u;a.download=filename;
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(u);
+      if(btn){btn.disabled=false;btn.style.opacity='1'}
+    }).catch(function(){if(btn){btn.disabled=false;btn.style.opacity='1'}toast('Error al descargar',true)});
+  }
+  function signAndDownload(bucket,path,filename,btn){
+    if(btn){btn.disabled=true}var old=btn?btn.style.opacity:'1';if(btn)btn.style.opacity='.5';
+    authFetch('/api/abogados/sign?bucket='+encodeURIComponent(bucket)+'&path='+encodeURIComponent(path))
+    .then(function(r){return r.json()}).then(function(d){
+      if(d.signedURL)downloadBlob(d.signedURL,filename,btn);
+      else{if(btn){btn.disabled=false;btn.style.opacity=old}toast(d.error||'Error al descargar',true)}
+    }).catch(function(){if(btn){btn.disabled=false;btn.style.opacity=old}toast('Error de red',true)});
   }
 
   function openDetail(c){
@@ -211,12 +231,27 @@
         if(!path&&a.url){var mk=a.url.indexOf('/object/public/');if(mk>-1){var rest=a.url.substring(mk+15);var sl=rest.indexOf('/');if(sl>-1){bucket=rest.substring(0,sl);path=decodeURIComponent(rest.substring(sl+1))}}}
         var esDeriv=!!DERIV_LABELS[a.tipo];
         var nombre=esDeriv?('📄 '+DERIV_LABELS[a.tipo]+(a.nombre?' — '+a.nombre:'')):(a.nombre||a.tipo||'Documento');
+        var nombreArchivo=a.nombre||a.tipo||'documento';
+
+        var row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:stretch;gap:6px;margin-bottom:6px';
+
         var btn=document.createElement('button');
-        btn.type='button';btn.className='doc-item'+(esDeriv?' doc-item--deriv':'');
+        btn.type='button';btn.className='doc-item'+(esDeriv?' doc-item--deriv':'');btn.style.marginBottom='0';btn.style.flex='1';
         btn.textContent=nombre;
         if(path){(function(bk,pt){btn.addEventListener('click',function(){signAndOpen(bk,pt,btn)})})(bucket,path);}
         else if(a.url){btn.addEventListener('click',function(){window.open(a.url,'_blank')});}
-        docsEl.appendChild(btn);
+        row.appendChild(btn);
+
+        var dlBtn=document.createElement('button');
+        dlBtn.type='button';dlBtn.title='Descargar';
+        dlBtn.style.cssText='display:flex;align-items:center;justify-content:center;width:32px;flex-shrink:0;border:1px solid var(--bdl);border-radius:6px;background:none;cursor:pointer;color:var(--t3)';
+        dlBtn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+        if(path){(function(bk,pt,fn){dlBtn.addEventListener('click',function(){signAndDownload(bk,pt,fn,dlBtn)})})(bucket,path,nombreArchivo);}
+        else if(a.url){(function(u,fn){dlBtn.addEventListener('click',function(){downloadBlob(u,fn,dlBtn)})})(a.url,nombreArchivo);}
+        row.appendChild(dlBtn);
+
+        docsEl.appendChild(row);
       });
     }
 

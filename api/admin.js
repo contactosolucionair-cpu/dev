@@ -511,8 +511,10 @@ async function generarDocumento(req, res, SB_URL, SB_KEY) {
 
   try {
     var out = await generarDocumentoLegal({ tipo: tipo, idioma: idioma, reclamo: reclamo, abogado: abogado });
+    var COMBINING_MARKS = new RegExp('[̀-ͯ]', 'g');
+    var filenameAscii = out.filename.normalize('NFD').replace(COMBINING_MARKS, '');
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="' + out.filename + '"');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + filenameAscii + '"; filename*=UTF-8\'\'' + encodeURIComponent(out.filename));
     return res.status(200).send(out.buffer);
   } catch (err) {
     if (err.faltantes) return res.status(400).json({ error: err.message, faltantes: err.faltantes });

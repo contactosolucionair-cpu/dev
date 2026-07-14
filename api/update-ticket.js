@@ -85,11 +85,16 @@ export default async function handler(req, res) {
         'reclamado_aerolinea', 'negociacion', 'derivado_mediacion', 'mediacion_notificada',
         'en_mediacion', 'acuerdo', 'cobro_pasajero_pendiente', 'cobro_comision_pendiente', 'cerrado',
         /* salidas */
-        'rechazado', 'no_apto', 'cancelado',
+        'rechazado_aerolinea', 'no_apto', 'cancelado', 'sin_exito',
         /* legacy (compatibilidad con datos existentes) */
-        'en_gestion', 'aprobado', 'resuelto'
+        'en_gestion', 'aprobado', 'resuelto', 'rechazado'
       ];
       if (validEstados.indexOf(newEstado) === -1) return res.status(400).json({ error: 'Estado inválido' });
+
+      if (newEstado === 'reclamado_aerolinea' && (body.monto_reclamado === undefined || body.monto_reclamado === null || body.monto_reclamado === ''))
+        return res.status(400).json({ error: 'Monto reclamado requerido' });
+      if (newEstado === 'acuerdo' && (body.monto_acordado === undefined || body.monto_acordado === null || body.monto_acordado === ''))
+        return res.status(400).json({ error: 'Monto total acordado requerido' });
 
       /* Leer historial actual y appendear el cambio */
       var hgRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=estado_historial', {
@@ -101,6 +106,8 @@ export default async function handler(req, res) {
 
       var patch = { estado: newEstado, estado_historial: historial };
       if (body.abogado_id) patch.abogado_id = body.abogado_id;
+      if (newEstado === 'reclamado_aerolinea') patch.monto_reclamado = Number(body.monto_reclamado);
+      if (newEstado === 'acuerdo') patch.monto_acordado = Number(body.monto_acordado);
 
       var updRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
@@ -108,7 +115,7 @@ export default async function handler(req, res) {
         body: JSON.stringify(patch),
       });
       if (!updRes.ok) return res.status(500).json({ error: 'Error al actualizar estado' });
-      return res.status(200).json({ success: true, action: 'update-estado', estado: newEstado, estado_historial: historial });
+      return res.status(200).json({ success: true, action: 'update-estado', estado: newEstado, estado_historial: historial, monto_reclamado: patch.monto_reclamado, monto_acordado: patch.monto_acordado });
     }
 
     /* ---- UPDATE FIRMA ESTADO ---- */
@@ -173,6 +180,8 @@ export default async function handler(req, res) {
     if (body.action === 'set-requerimiento') {
       var reqTipo = (body.tipo || '').trim();
       if (!REQUERIMIENTO_LABELS[reqTipo]) return res.status(400).json({ error: 'Tipo de requerimiento inválido' });
+      var reqDetalle = (body.detalle || '').trim();
+      if (!reqDetalle) return res.status(400).json({ error: 'El detalle de lo solicitado es obligatorio' });
 
       var srRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=novedades', {
         headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
@@ -180,15 +189,15 @@ export default async function handler(req, res) {
       var srRows = await srRes.json();
       var srNov = Array.isArray(srRows[0]?.novedades) ? srRows[0].novedades : [];
       var srFecha = new Date().toISOString();
-      srNov.unshift({ fecha: srFecha, texto: 'Se marcó: ' + REQUERIMIENTO_LABELS[reqTipo] + ' pendiente.' });
+      srNov.unshift({ fecha: srFecha, texto: 'Se marcó: ' + REQUERIMIENTO_LABELS[reqTipo] + ' pendiente — ' + reqDetalle });
 
       var srPatch = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ requerimiento_tipo: reqTipo, requerimiento_fecha: srFecha, novedades: srNov }),
+        body: JSON.stringify({ requerimiento_tipo: reqTipo, requerimiento_fecha: srFecha, requerimiento_detalle: reqDetalle, novedades: srNov }),
       });
       if (!srPatch.ok) return res.status(500).json({ error: 'Error al marcar el requerimiento' });
-      return res.status(200).json({ success: true, action: 'set-requerimiento', requerimiento_tipo: reqTipo, requerimiento_fecha: srFecha, novedades: srNov });
+      return res.status(200).json({ success: true, action: 'set-requerimiento', requerimiento_tipo: reqTipo, requerimiento_fecha: srFecha, requerimiento_detalle: reqDetalle, novedades: srNov });
     }
 
     if (body.action === 'clear-requerimiento') {
@@ -203,7 +212,7 @@ export default async function handler(req, res) {
       var crPatch = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ requerimiento_tipo: null, requerimiento_fecha: null, novedades: crNov }),
+        body: JSON.stringify({ requerimiento_tipo: null, requerimiento_fecha: null, requerimiento_detalle: null, novedades: crNov }),
       });
       if (!crPatch.ok) return res.status(500).json({ error: 'Error al resolver el requerimiento' });
       return res.status(200).json({ success: true, action: 'clear-requerimiento', novedades: crNov });
@@ -234,7 +243,7 @@ export default async function handler(req, res) {
       'tipo_incidencia', 'causa_informada', 'horas_retraso',
       'moneda_gastos', 'monto_gastos', 'gastos_detalle',
       'cuil', 'fecha_nacimiento', 'domicilio_real', 'pais_emisor', 'id_fiscal_extranjero',
-      'agente_nombre', 'agente_email',
+      'agente_nombre', 'agente_email', 'monto_reclamado', 'monto_acordado',
     ];
 
     if (body.action === 'set-campo') {

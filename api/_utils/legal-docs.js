@@ -142,6 +142,9 @@ export async function generarDocumentoLegal({ tipo, idioma, reclamo, abogado }) 
   var template = loadTemplate(templateName);
   var text = interpolate(template, built.data);
   var buffer = await renderLegalPdf(text, { refCode: reclamo.ref_code });
-  var filename = (tipo === 'poder' ? ('Poder_' + idioma) : 'Patrocinio') + '_' + (reclamo.ref_code || 'caso') + '.pdf';
+  var titulo = tipo === 'patrocinio'
+    ? 'Designación de Patrocinio Letrado'
+    : (idioma === 'en' ? 'Power of Attorney for Claims Management' : 'Poder Especial para Gestión de Reclamo');
+  var filename = (reclamo.ref_code || 'caso') + ' - ' + titulo + '.pdf';
   return { buffer: buffer, filename: filename };
 }

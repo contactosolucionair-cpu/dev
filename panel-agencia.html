@@ -193,7 +193,7 @@
         </div>
         <div class="filters">
           <input class="filters__input" id="filter-q" type="text" placeholder="Buscar por Ref, Pasajero..." />
-          <select class="filters__select" id="filter-estado"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="resuelto">Resuelto</option><option value="rechazado">Rechazado</option><option value="cancelado">Cancelado</option></select>
+          <select class="filters__select" id="filter-estado"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="resuelto">Resuelto</option><option value="rechazado_aerolinea">Rechazado Aerolínea</option><option value="cancelado">Cancelado</option><option value="sin_exito">Sin éxito</option></select>
         </div>
         <div class="tbl-scroll"><div id="claims-body"><div class="state"><div class="state__spin"></div><p class="state__txt">Cargando casos...</p></div></div></div>
       </div>
@@ -427,7 +427,8 @@
 
   function badgeClass(estado) {
     if (estado === 'aprobado' || estado === 'resuelto') return 'badge--aprobado';
-    if (estado === 'rechazado') return 'badge--rechazado';
+    if (estado === 'rechazado' || estado === 'rechazado_aerolinea') return 'badge--rechazado';
+    if (estado === 'sin_exito') return 'badge--cancelado';
     if (estado === 'cancelado') return 'badge--cancelado';
     return 'badge--pendiente';
   }

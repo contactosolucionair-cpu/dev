@@ -130,8 +130,8 @@
       claims.forEach(function(c,idx){
         var estado=c.estado||'pendiente';
         var isActive=estado==='pendiente'||estado==='en revision';
-        var bc=estado==='aprobado'||estado==='resuelto'?'badge--aprobado':estado==='rechazado'?'badge--rechazado':estado==='cancelado'?'badge--cancelado':'badge--pendiente';
-        var estadoLabel=estado==='pendiente'?'En revisión':estado==='aprobado'?'Aprobado':estado==='resuelto'?'Resuelto':estado==='rechazado'?'Rechazado':estado==='cancelado'?'Cancelado por el usuario':estado;
+        var bc=estado==='aprobado'||estado==='resuelto'?'badge--aprobado':(estado==='rechazado'||estado==='rechazado_aerolinea')?'badge--rechazado':(estado==='cancelado'||estado==='sin_exito')?'badge--cancelado':'badge--pendiente';
+        var estadoLabel=estado==='pendiente'?'En revisión':estado==='aprobado'?'Aprobado':estado==='resuelto'?'Resuelto':(estado==='rechazado'||estado==='rechazado_aerolinea')?'Rechazado':estado==='cancelado'?'Cancelado por el usuario':estado==='sin_exito'?'Sin éxito':estado;
         var fecha=c.creado_en?new Date(c.creado_en).toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'}):'—';
 
         html+='<div class="case-card" id="card-'+idx+'" style="margin-bottom:18px">';
