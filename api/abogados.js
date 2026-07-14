@@ -52,12 +52,14 @@ async function handleRegister(req, res, SB_URL, SB_KEY) {
   var body      = req.body || {};
   var nombre    = (body.nombre    || '').trim();
   var matricula = (body.matricula || '').trim();
+  var colegio   = (body.colegio   || '').trim();
+  var domicilio = (body.domicilio || '').trim();
   var email     = (body.email     || '').trim().toLowerCase();
   var telefono  = (body.telefono  || '').trim();
   var password  = (body.password  || '');
 
-  if (!nombre || !email || !password)
-    return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios.' });
+  if (!nombre || !email || !password || !colegio || !domicilio)
+    return res.status(400).json({ error: 'Nombre, email, contraseña, colegio y domicilio son obligatorios.' });
 
   /* Alta vía endpoint admin (service role) con email ya confirmado: evita el paso de
      confirmación por email y la ofuscación del signup para emails ya existentes. */
@@ -85,6 +87,7 @@ async function handleRegister(req, res, SB_URL, SB_KEY) {
     headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
     body: JSON.stringify({
       auth_user_id: authUserId, nombre: nombre, matricula: matricula || null,
+      colegio: colegio, domicilio: domicilio,
       email: email, telefono: telefono || null, estado: 'pendiente',
     }),
   });

@@ -16,10 +16,16 @@
  *   retag             POST  {id, index, tipo} → reetiqueta un adjunto existente
  *   download-zip      POST  ?id → ZIP con todos los adjuntos del caso
  *   create-case       POST  {datos del caso} → alta manual desde backoffice + mail al cliente
+ *   generar-documento POST  ?tipo=poder|patrocinio&idioma=es|en&caso_id= (+ body {overrides})
+ *                           → genera el PDF (poder o convenio de patrocinio) y lo devuelve
+ *                           como descarga directa. No se sube a Storage ni se toca `adjuntos`:
+ *                           es solo un generador de documentos, la carga del PDF ya firmado
+ *                           sigue siendo manual (como cualquier otro adjunto).
  *
  * bodyParser desactivado: 'upload' necesita el body crudo; el resto parsea JSON a mano.
  */
 import JSZip from 'jszip';
+import { generarDocumentoLegal } from './_utils/legal-docs.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -71,6 +77,7 @@ export default async function handler(req, res) {
     if (action === 'retag')            return await retagAdj(req, res, SB_URL, SB_KEY);
     if (action === 'download-zip')     return await downloadZip(req, res, SB_URL, SB_KEY);
     if (action === 'create-case')      return await createCase(req, res, SB_URL, SB_KEY);
+    if (action === 'generar-documento') return await generarDocumento(req, res, SB_URL, SB_KEY);
     return res.status(404).json({ error: 'Acción no encontrada: ' + action });
   } catch (err) {
     console.error('[admin/' + action + '] Error:', err.message);
@@ -447,4 +454,69 @@ async function createCase(req, res, SB_URL, SB_KEY) {
   }
 
   return res.status(200).json({ success: true, refCode: refCode, id: insertedId, emailSent: emailSent });
+}
+
+/* ------------------------------------------------------------------ */
+/* Generar documento legal (poder / patrocinio) — descarga directa,    */
+/* no se sube a Storage ni se toca `adjuntos`.                         */
+/* ------------------------------------------------------------------ */
+var OVERRIDE_CAMPOS = ['domicilio_real', 'fecha_nacimiento', 'cuil', 'documento_tipo',
+  'documento_numero', 'pais_emisor', 'id_fiscal_extranjero'];
+
+async function generarDocumento(req, res, SB_URL, SB_KEY) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  var tipo    = (req.query.tipo    || '').trim();
+  var idioma  = (req.query.idioma  || 'es').trim();
+  var casoId  = (req.query.caso_id || '').trim();
+  if (['poder', 'patrocinio'].indexOf(tipo) === -1) return res.status(400).json({ error: 'tipo debe ser poder o patrocinio.' });
+  if (!casoId) return res.status(400).json({ error: 'caso_id es requerido.' });
+
+  var body = {};
+  try { body = await getJson(req); } catch (e) { body = {}; }
+
+  /* Overrides confirmados en el popup: persistirlos en reclamos antes de generar,
+     para que queden disponibles y precargados la próxima vez. */
+  if (body.overrides && typeof body.overrides === 'object') {
+    var patch = {};
+    OVERRIDE_CAMPOS.forEach(function (campo) {
+      if (Object.prototype.hasOwnProperty.call(body.overrides, campo)) patch[campo] = body.overrides[campo] || null;
+    });
+    if (Object.keys(patch).length) {
+      var ovRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + casoId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(patch),
+      });
+      if (!ovRes.ok) {
+        console.error('[admin/generar-documento] Error al persistir overrides:', (await ovRes.text()).substring(0, 300));
+        return res.status(500).json({ error: 'Error al guardar los datos confirmados.' });
+      }
+    }
+  }
+
+  var caseResp = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + casoId + '&select=*',
+    { headers: { 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY } });
+  var cases = await caseResp.json();
+  if (!Array.isArray(cases) || !cases.length) return res.status(404).json({ error: 'Caso no encontrado.' });
+  var reclamo = cases[0];
+
+  var abogado = null;
+  if (tipo === 'patrocinio') {
+    if (!reclamo.abogado_id) return res.status(400).json({ error: 'El caso no tiene un abogado asignado.', faltantes: ['Abogado asignado al caso'] });
+    var abogRes = await fetch(SB_URL + '/rest/v1/abogados?id=eq.' + reclamo.abogado_id + '&select=*',
+      { headers: { 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY } });
+    var abogRows = await abogRes.json();
+    if (Array.isArray(abogRows) && abogRows.length) abogado = abogRows[0];
+  }
+
+  try {
+    var out = await generarDocumentoLegal({ tipo: tipo, idioma: idioma, reclamo: reclamo, abogado: abogado });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="' + out.filename + '"');
+    return res.status(200).send(out.buffer);
+  } catch (err) {
+    if (err.faltantes) return res.status(400).json({ error: err.message, faltantes: err.faltantes });
+    console.error('[admin/generar-documento] Error:', err.message);
+    return res.status(500).json({ error: 'Error al generar el documento.' });
+  }
 }

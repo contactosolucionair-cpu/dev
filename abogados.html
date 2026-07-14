@@ -88,6 +88,16 @@
           <input type="text" id="reg-matricula" placeholder="T° 123 F° 456" />
         </div>
         <div class="form-group">
+          <label>Colegio de matrícula</label>
+          <input type="text" id="reg-colegio" placeholder="CPACF" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Domicilio profesional</label>
+          <input type="text" id="reg-domicilio" placeholder="Talcahuano 550, CABA" />
+        </div>
+        <div class="form-group">
           <label>Teléfono</label>
           <input type="tel" id="reg-telefono" placeholder="+54 9 11 1234-5678" />
         </div>
@@ -159,21 +169,23 @@
   btnReg.addEventListener('click', function () {
     var nombre = document.getElementById('reg-nombre').value.trim();
     var matricula = document.getElementById('reg-matricula').value.trim();
+    var colegio = document.getElementById('reg-colegio').value.trim();
+    var domicilio = document.getElementById('reg-domicilio').value.trim();
     var email = document.getElementById('reg-email').value.trim();
     var telefono = document.getElementById('reg-telefono').value.trim();
     var password = document.getElementById('reg-password').value;
     regMsg.textContent = '';
-    if (!nombre || !email || !password) { regMsg.className = 'msg msg--err'; regMsg.textContent = 'Nombre, email y contraseña son obligatorios.'; return; }
+    if (!nombre || !email || !password || !colegio || !domicilio) { regMsg.className = 'msg msg--err'; regMsg.textContent = 'Nombre, email, contraseña, colegio y domicilio son obligatorios.'; return; }
     if (password.length < 8) { regMsg.className = 'msg msg--err'; regMsg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
     btnReg.disabled = true; btnReg.textContent = 'Enviando solicitud...';
-    fetch('/api/abogados/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: nombre, matricula: matricula, email: email, telefono: telefono, password: password }) })
+    fetch('/api/abogados/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: nombre, matricula: matricula, colegio: colegio, domicilio: domicilio, email: email, telefono: telefono, password: password }) })
     .then(function (r) { return r.json(); })
     .then(function (d) {
       btnReg.disabled = false; btnReg.textContent = 'Solicitar acceso';
       if (d.success) {
         regMsg.className = 'msg msg--ok';
         regMsg.textContent = 'Solicitud enviada. Te avisaremos cuando tu cuenta sea aprobada.';
-        ['reg-nombre','reg-matricula','reg-email','reg-telefono','reg-password'].forEach(function (id) { document.getElementById(id).value = ''; });
+        ['reg-nombre','reg-matricula','reg-colegio','reg-domicilio','reg-email','reg-telefono','reg-password'].forEach(function (id) { document.getElementById(id).value = ''; });
       } else { regMsg.className = 'msg msg--err'; regMsg.textContent = d.error || 'Error al registrar.'; }
     })
     .catch(function () { btnReg.disabled = false; btnReg.textContent = 'Solicitar acceso'; regMsg.className = 'msg msg--err'; regMsg.textContent = 'Error de conexión.'; });

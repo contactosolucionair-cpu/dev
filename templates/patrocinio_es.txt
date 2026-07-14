@@ -1,0 +1,35 @@
+# CONVENIO DE HONORARIOS POR SERVICIOS PROFESIONALES – DESIGNACIÓN DE PATROCINIO LETRADO
+
+Entre el Dr. {{abogado_nombre}}, abogado inscripto al {{abogado_matricula}} del {{abogado_colegio}}, con domicilio en {{abogado_domicilio}} y correo electrónico {{abogado_email}}, en adelante denominado "EL PROFESIONAL", y por la otra, el Sr./Sra. {{cliente_nombre}}, por derecho propio, {{cliente_identificacion}}, fecha de nacimiento {{cliente_fecha_nac}}, con domicilio real en {{cliente_domicilio_real}}, celular {{cliente_celular}} y correo electrónico {{cliente_email}}, en adelante denominada "EL CLIENTE", convienen en celebrar el presente acuerdo que se regirá por las siguientes cláusulas y condiciones:
+
+**PRIMERA:** El CLIENTE encomienda al PROFESIONAL los trabajos de representación letrada, asesoramiento jurídico y patrocinio con el fin de que intervenga hasta su finalización en el reclamo de instancia de Mediación Prejudicial Obligatoria contra {{aerolinea}} con motivo de la incidencia ocurrida en el vuelo {{vuelo_numero}}.
+
+El CLIENTE declara haber gestionado previamente reclamo extrajudicial ante la aerolínea, sin resultado satisfactorio. Dicha gestión previa se desarrolló con asistencia de "SolucionAir" bajo un acuerdo de servicios separado. En razón del resultado de la gestión previa, el CLIENTE decide contratar al PROFESIONAL para la instancia mencionada ut supra, en los términos del presente.
+
+**SEGUNDA:** La representación letrada comprende, exclusivamente, la instancia de Mediación Prejudicial Obligatoria incluyendo: requerimiento de la mediación; comparecencia y actuación en las audiencias y actos del trámite; asesoramiento y negociación; eventual suscripción del acuerdo.
+
+Toda etapa posterior, incluyendo la vía judicial, no se encuentra comprendida en el presente y deberá ser objeto de acuerdo separado, según corresponda.
+
+**TERCERA:** Las partes acuerdan que la designación del mediador que intervendrá quedará a cargo del PROFESIONAL, quien procederá conforme a su criterio y experiencia, dentro del marco de la normativa vigente. El CLIENTE declara haber sido informado de ello y presta su conformidad.
+
+**CUARTA:** Las partes celebran el presente pacto de cuota litis con sujeción al art. 6 de la Ley 27.423.
+
+En caso de obtener un resultado favorable en la instancia, por los trabajos encomendados EL PROFESIONAL, percibirá el cinco por ciento (5%) de la compensación efectivamente cobrada, que se abonará en un solo pago al momento de la percepción de esta. Todo ello, sin perjuicio de los honorarios que pudieren corresponder a EL PROFESIONAL a cargo de la contraparte.
+
+Por "compensación efectivamente cobrada" se entiende toda suma monetaria efectivamente percibida por el CLIENTE, incluyendo compensaciones tarifadas, reintegros, millas o voucher, indemnizaciones por daños (incluido daño moral, en caso de proceder), intereses y todo otro rubro monetario cobrado.
+
+El CLIENTE abonará los honorarios mediante transferencia bancaria a la cuenta que el PROFESIONAL indique.
+
+**QUINTA:** Para el supuesto de que la mediación concluya sin arribarse a un acuerdo favorable para el CLIENTE —ya sea por decisión de este último, por falta de voluntad conciliatoria de la contraparte, por imposibilidad de celebración de la audiencia (sea por falta de notificación o incomparecencia de la contraria), o por cualquier otra causa que implique que el CLIENTE no perciba compensación económica alguna durante el patrocinio aquí convenido— las partes acuerdan que los honorarios profesionales pactados se encuentran condicionados a la efectiva obtención de un resultado económico favorable. La presente estipulación se establece en ejercicio de la autonomía de la voluntad y no implica renuncia anticipada a honorarios.
+
+**SEXTA:** Los gastos vinculados al inicio y desarrollo de la instancia de mediación (incluyendo pago de arancel de justicia, gastos de notificación y honorarios del mediador en caso de cierre sin acuerdo), estarán a cargo de "SoluciónAir", liberándose al CLIENTE de toda obligación de pago por tales conceptos, con la excepción mencionada en la cláusula OCTAVA.
+
+**SÉPTIMA:** El CLIENTE se obliga a aportar al PROFESIONAL toda la documentación que se requiera e información necesaria para la sustanciación de la mediación, la comparecencia a las audiencias que se citen, comprometiéndose el PROFESIONAL a efectuar en su nombre y representación, todos los trabajos que resulten menester para el mejor desempeño de la labor encomendada. El CLIENTE se obliga a considerar de buena fe las ofertas que el PROFESIONAL presente. Si el PROFESIONAL califica una oferta como razonable y el CLIENTE opta por rechazarla, la circunstancia será documentada en las actuaciones del caso, sin perjuicio del derecho del CLIENTE a decidir libremente sobre la firma del acuerdo.
+
+**OCTAVA:** En caso que el CLIENTE revocare el apoderamiento sin justa causa, habiendo tenido lugar al menos la primera audiencia de mediación, y previa intervención profesional consistente en el asesoramiento jurídico y análisis del caso, el PROFESIONAL tendrá derecho a percibir, en concepto de honorarios, la suma equivalente a 1 UMA, conforme su valor vigente al momento de la revocación.
+
+**NOVENA:** Para el supuesto de controversia, las partes desde ya establecen como válidos los domicilios consignados en el encabezamiento de este convenio, donde serán válidas cualquier notificación, judicial o extrajudicial, y para el caso de litigio expresamente fijan los Juzgados Nacionales en lo Civil, con jurisdicción en la Ciudad Autónoma de Buenos Aires, con renuncia expresa a cualquier otro fuero y/o jurisdicción.
+
+En prueba de conformidad, previa lectura íntegra y ratificación de las cláusulas que anteceden, el CLIENTE suscribe el presente mediante firma electrónica. La aceptación tácita del mandato por parte del PROFESIONAL quedará materializada con el requerimiento e impulso del procedimiento de la instancia de Mediación Prejudicial Obligatoria.
+
+Buenos Aires, a los {{fecha_dia}} días del mes de {{fecha_mes}} de {{fecha_anio}}.

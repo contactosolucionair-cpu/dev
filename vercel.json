@@ -3,5 +3,10 @@
   "rewrites": [
     { "source": "/api/agency/:action", "destination": "/api/agency?action=:action" },
     { "source": "/api/abogados/:action", "destination": "/api/abogados?action=:action" }
-  ]
+  ],
+  "functions": {
+    "api/admin.js": {
+      "includeFiles": "templates/**"
+    }
+  }
 }

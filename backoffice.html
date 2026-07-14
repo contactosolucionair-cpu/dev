@@ -359,6 +359,44 @@
       </div>
     </div>
 
+    <!-- Confirmar datos para generar el patrocinio -->
+    <div class="cm-ov" id="pat-ov">
+      <div class="cm" style="max-width:520px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Confirmar datos del patrocinio</div>
+          <button class="detail__close" id="pat-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <p style="font-size:.72rem;color:var(--t4);margin:0 0 12px">Estos datos se guardan en el caso y se usan para redactar el convenio. El PDF generado es solo para descargar y hacer firmar — no se sube automáticamente.</p>
+
+        <div class="detail__label" style="margin-bottom:6px">Documento de identidad del cliente</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <select id="pat-doctipo" class="firma-select"><option value="dni">DNI (residente)</option><option value="pasaporte">Pasaporte (extranjero)</option></select>
+          <input id="pat-docnum" class="firma-select" placeholder="Número de documento">
+        </div>
+        <div id="pat-sec-dni" style="margin-bottom:10px">
+          <input id="pat-cuil" class="firma-select" style="width:100%" placeholder="CUIT/CUIL (ej. 20-12345678-9)">
+        </div>
+        <div id="pat-sec-pasaporte" style="display:none;margin-bottom:10px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <input id="pat-pais" class="firma-select" placeholder="País emisor del pasaporte">
+            <input id="pat-idfiscal" class="firma-select" placeholder="Identificación fiscal del país emisor">
+          </div>
+        </div>
+
+        <div class="detail__label" style="margin-bottom:6px">Datos personales</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <input id="pat-fechanac" type="date" class="firma-select">
+          <input id="pat-domicilio" class="firma-select" placeholder="Domicilio real">
+        </div>
+
+        <div id="pat-msg" style="font-family:var(--fm);font-size:.66rem;min-height:14px;margin:6px 0 8px"></div>
+        <div class="cm__btns" style="justify-content:flex-end">
+          <button class="cm__btn cm__btn--cancel" id="pat-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="pat-save" type="button">Guardar y generar</button>
+        </div>
+      </div>
+    </div>
+
     <div class="panel-overlay" id="panel-overlay"></div>
     <div class="detail" id="detail-panel">
       <div class="detail__top"><span class="detail__title" id="detail-title">Detalle</span><button class="detail__close" id="detail-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
@@ -375,6 +413,17 @@
     var ESTADO_GROUPS=[['Ingreso',['pendiente','en_revision','esperando_info','autorizacion_pendiente']],['Gestión',['reclamado_aerolinea','negociacion']],['Mediación',['derivado_mediacion','mediacion_notificada','en_mediacion']],['Cierre',['acuerdo','cobro_pasajero_pendiente','cobro_comision_pendiente','cerrado']],['Salidas',['rechazado','no_apto','cancelado']],['Anteriores',['en_gestion','aprobado','resuelto']]];
     var MEDIACION_ESTADOS=['derivado_mediacion','mediacion_notificada','en_mediacion'];
     var REQ_LABELS={info_adicional:'Información complementaria',subsanacion:'Subsanación'};
+    var CAMPOS_EDITABLES=[
+      {campo:'nombre',label:'Nombre'},{campo:'email',label:'Email'},{campo:'telefono',label:'Teléfono'},
+      {campo:'documento_tipo',label:'Tipo de documento (dni/pasaporte)'},{campo:'documento_numero',label:'Número de documento'},
+      {campo:'pnr',label:'PNR'},{campo:'aerolinea',label:'Aerolínea'},{campo:'vuelo_nro',label:'Número de vuelo'},
+      {campo:'fecha_vuelo',label:'Fecha del vuelo'},{campo:'origen',label:'Origen'},{campo:'destino',label:'Destino'},
+      {campo:'tipo_incidencia',label:'Tipo de incidencia'},{campo:'causa_informada',label:'Causa informada'},{campo:'horas_retraso',label:'Horas de retraso'},
+      {campo:'moneda_gastos',label:'Moneda de gastos'},{campo:'monto_gastos',label:'Monto de gastos'},{campo:'gastos_detalle',label:'Detalle de gastos'},
+      {campo:'cuil',label:'CUIT/CUIL'},{campo:'fecha_nacimiento',label:'Fecha de nacimiento (AAAA-MM-DD)'},{campo:'domicilio_real',label:'Domicilio real'},
+      {campo:'pais_emisor',label:'País emisor (pasaporte)'},{campo:'id_fiscal_extranjero',label:'Identificación fiscal extranjera'},
+      {campo:'agente_nombre',label:'Nombre del agente'},{campo:'agente_email',label:'Email del agente'},
+    ];
     function resolveAdjLoc(a){
       var bucket=a.bucket||'reclamos', path=a.path||null;
       if(!path && a.url){
@@ -613,6 +662,21 @@
         h+='<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn--ghost" data-req-tipo="info_adicional" type="button" style="font-size:.72rem">⚠ Marcar info. complementaria pendiente</button><button class="btn btn--ghost" data-req-tipo="subsanacion" type="button" style="font-size:.72rem">⚠ Marcar subsanación pendiente</button></div>';
       }
       h+='<div id="msg-requerimiento" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div></div>';
+      /* Documentos legales (poder / patrocinio) — solo genera y descarga, no sube a Storage */
+      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Documentos legales</div>';
+      h+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
+      h+='<select id="sel-poder-idioma" class="firma-select" style="width:auto;flex:0 0 auto"><option value="es">Poder (ES)</option><option value="en">Poder (EN)</option></select>';
+      h+='<button class="btn btn--ghost" id="btn-generar-poder" type="button" style="font-size:.72rem">Generar poder</button>';
+      h+='<button class="btn btn--ghost" id="btn-generar-patrocinio" type="button" style="font-size:.72rem"'+(c.abogado_id?'':' disabled title="Asigná un abogado al caso primero"')+'>Generar patrocinio</button>';
+      h+='</div>';
+      if(!c.abogado_id)h+='<div style="font-size:.68rem;color:var(--t4);margin-top:4px">Para generar el patrocinio primero asigná un abogado al caso.</div>';
+      h+='<div id="msg-doclegal" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div></div>';
+      /* Editor genérico de campos */
+      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Editar un campo del caso</div>';
+      h+='<div style="display:flex;gap:5px;flex-wrap:wrap"><select id="edit-campo-sel" class="firma-select" style="flex:1;min-width:150px">'+CAMPOS_EDITABLES.map(function(cf){return '<option value="'+cf.campo+'">'+esc(cf.label)+'</option>'}).join('')+'</select>';
+      h+='<input id="edit-campo-val" class="firma-select" style="flex:1;min-width:150px" placeholder="Nuevo valor">';
+      h+='<button class="btn btn--ghost" id="btn-save-campo" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
+      h+='<div id="msg-editcampo" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       /* Derivación a mediación (visible mientras el estado esté en el grupo Mediación) */
       var adjArrDeriv=[];
       try{if(c.adjuntos)adjArrDeriv=Array.isArray(c.adjuntos)?c.adjuntos:JSON.parse(c.adjuntos)}catch(e){}
@@ -734,6 +798,65 @@
             else{alert('Error al obtener el documento: '+(d.error||'Error desconocido'))}
           }).catch(function(){btn.disabled=false;btn.style.opacity='1';alert('Error de red')});
         });
+      });
+
+      /* Generar poder (descarga directa, no se sube a Storage) */
+      var btnPoder=document.getElementById('btn-generar-poder');
+      var selPoderIdioma=document.getElementById('sel-poder-idioma');
+      var msgDoclegal=document.getElementById('msg-doclegal');
+      if(btnPoder)btnPoder.addEventListener('click',function(){
+        var idioma=(selPoderIdioma&&selPoderIdioma.value)||'es';
+        var label=btnPoder.textContent;
+        btnPoder.disabled=true;btnPoder.textContent='Generando...';
+        if(msgDoclegal){msgDoclegal.style.color='';msgDoclegal.textContent=''}
+        fetch('/api/admin?action=generar-documento&tipo=poder&idioma='+encodeURIComponent(idioma)+'&caso_id='+encodeURIComponent(c.id),{
+          method:'POST', headers:{'X-Admin-Password':adminPwd}
+        }).then(function(r){
+          if(!r.ok)return r.json().then(function(d){throw new Error((d.error||'Error al generar el poder')+(d.faltantes&&d.faltantes.length?' — Faltan: '+d.faltantes.join(', '):''))});
+          return r.blob();
+        }).then(function(blob){
+          var url=URL.createObjectURL(blob);
+          var a=document.createElement('a');
+          a.href=url;a.download=(c.ref_code||'caso')+'_poder_'+idioma+'.pdf';
+          document.body.appendChild(a);a.click();document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          btnPoder.disabled=false;btnPoder.textContent=label;
+        }).catch(function(err){
+          if(msgDoclegal){msgDoclegal.style.color='var(--err)';msgDoclegal.textContent=err.message}
+          btnPoder.disabled=false;btnPoder.textContent=label;
+        });
+      });
+
+      /* Generar patrocinio: abre el popup de confirmación de datos */
+      var btnPatrocinio=document.getElementById('btn-generar-patrocinio');
+      if(btnPatrocinio)btnPatrocinio.addEventListener('click',function(){
+        if(btnPatrocinio.disabled)return;
+        openPatrocinioModal(c);
+      });
+
+      /* Editor genérico de campos */
+      var btnSaveCampo=document.getElementById('btn-save-campo');
+      var selCampo=document.getElementById('edit-campo-sel');
+      var inpCampoVal=document.getElementById('edit-campo-val');
+      var msgEditCampo=document.getElementById('msg-editcampo');
+      if(btnSaveCampo)btnSaveCampo.addEventListener('click',function(){
+        var campo=selCampo.value;
+        var valor=inpCampoVal.value;
+        btnSaveCampo.disabled=true;
+        if(msgEditCampo){msgEditCampo.style.color='';msgEditCampo.textContent='Guardando...'}
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-campo',campo:campo,valor:valor})})
+        .then(function(r){return r.json()})
+        .then(function(d){
+          btnSaveCampo.disabled=false;
+          if(d.success){
+            c[campo]=d.valor;
+            claims.forEach(function(cl){if(cl.id===c.id)cl[campo]=d.valor});
+            if(msgEditCampo){msgEditCampo.style.color='var(--ok)';msgEditCampo.textContent='✓ Guardado'}
+            inpCampoVal.value='';
+          } else {
+            if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent=d.error||'Error al guardar'}
+          }
+        }).catch(function(){btnSaveCampo.disabled=false;if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Error de red'}});
       });
 
       /* Copiar info del caso al portapapeles */
@@ -1601,6 +1724,82 @@
     }
     var btnRefreshAbo=document.getElementById('btn-refresh-abogados');
     if(btnRefreshAbo)btnRefreshAbo.addEventListener('click',loadAbogados);
+
+    /* ---- PATROCINIO (confirmar datos + generar) ---- */
+    var patOv=document.getElementById('pat-ov');
+    var patCase=null;
+    function patToggleDocSecciones(){
+      var t=(document.getElementById('pat-doctipo')||{}).value||'dni';
+      var secD=document.getElementById('pat-sec-dni'),secP=document.getElementById('pat-sec-pasaporte');
+      if(secD)secD.style.display=t==='dni'?'':'none';
+      if(secP)secP.style.display=t==='pasaporte'?'':'none';
+    }
+    function openPatrocinioModal(caseObj){
+      patCase=caseObj;
+      document.getElementById('pat-doctipo').value=caseObj.documento_tipo==='pasaporte'?'pasaporte':'dni';
+      document.getElementById('pat-docnum').value=caseObj.documento_numero||'';
+      document.getElementById('pat-cuil').value=caseObj.cuil||'';
+      document.getElementById('pat-pais').value=caseObj.pais_emisor||'';
+      document.getElementById('pat-idfiscal').value=caseObj.id_fiscal_extranjero||'';
+      document.getElementById('pat-fechanac').value=(caseObj.fecha_nacimiento||'').substring(0,10);
+      document.getElementById('pat-domicilio').value=caseObj.domicilio_real||'';
+      document.getElementById('pat-msg').textContent='';
+      patToggleDocSecciones();
+      if(patOv)patOv.classList.add('open');
+    }
+    var patDoctipoSel=document.getElementById('pat-doctipo');
+    if(patDoctipoSel)patDoctipoSel.addEventListener('change',patToggleDocSecciones);
+    var patClose=document.getElementById('pat-close'),patCancel=document.getElementById('pat-cancel');
+    if(patClose)patClose.addEventListener('click',function(){patOv.classList.remove('open')});
+    if(patCancel)patCancel.addEventListener('click',function(){patOv.classList.remove('open')});
+    if(patOv)patOv.addEventListener('click',function(e){if(e.target===patOv)patOv.classList.remove('open')});
+
+    var patSave=document.getElementById('pat-save');
+    if(patSave)patSave.addEventListener('click',function(){
+      if(!patCase)return;
+      var patMsg=document.getElementById('pat-msg');
+      var doctipo=document.getElementById('pat-doctipo').value;
+      var docnum=document.getElementById('pat-docnum').value.trim();
+      var fechanac=document.getElementById('pat-fechanac').value;
+      var domicilio=document.getElementById('pat-domicilio').value.trim();
+      var overrides={documento_tipo:doctipo,documento_numero:docnum,fecha_nacimiento:fechanac||null,domicilio_real:domicilio};
+      if(doctipo==='pasaporte'){
+        overrides.pais_emisor=document.getElementById('pat-pais').value.trim();
+        overrides.id_fiscal_extranjero=document.getElementById('pat-idfiscal').value.trim();
+        overrides.cuil=null;
+      } else {
+        overrides.cuil=document.getElementById('pat-cuil').value.trim();
+        overrides.pais_emisor=null;overrides.id_fiscal_extranjero=null;
+      }
+      if(!docnum||!fechanac||!domicilio||(doctipo==='dni'&&!overrides.cuil)||(doctipo==='pasaporte'&&(!overrides.pais_emisor||!overrides.id_fiscal_extranjero))){
+        if(patMsg){patMsg.style.color='var(--err)';patMsg.textContent='Completá todos los campos requeridos.'}
+        return;
+      }
+      patSave.disabled=true;
+      if(patMsg){patMsg.style.color='';patMsg.textContent='Generando...'}
+      fetch('/api/admin?action=generar-documento&tipo=patrocinio&idioma=es&caso_id='+encodeURIComponent(patCase.id),{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
+        body:JSON.stringify({overrides:overrides})
+      }).then(function(r){
+        if(!r.ok)return r.json().then(function(d){throw new Error((d.error||'Error al generar el patrocinio')+(d.faltantes&&d.faltantes.length?' — Faltan: '+d.faltantes.join(', '):''))});
+        return r.blob();
+      }).then(function(blob){
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        a.href=url;a.download=(patCase.ref_code||'caso')+'_patrocinio.pdf';
+        document.body.appendChild(a);a.click();document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        for(var k in overrides)patCase[k]=overrides[k];
+        claims.forEach(function(cl){if(cl.id===patCase.id)for(var k2 in overrides)cl[k2]=overrides[k2]});
+        patSave.disabled=false;
+        patOv.classList.remove('open');
+        openDetail(patCase);
+      }).catch(function(err){
+        patSave.disabled=false;
+        if(patMsg){patMsg.style.color='var(--err)';patMsg.textContent=err.message}
+      });
+    });
 
     /* ---- NUEVO CASO ---- */
     var ncOv=document.getElementById('nc-ov');

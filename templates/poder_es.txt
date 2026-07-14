@@ -1,0 +1,36 @@
+# PODER ESPECIAL PARA LA GESTIÓN DE RECLAMOS AERONÁUTICOS
+
+**Otorgante:** Sr./Sra. {{otorgante_nombre}}, {{otorgante_documento}}, con domicilio electrónico (correo) en {{otorgante_email}} (en adelante, el «Otorgante»),
+
+CONFIERE PODER ESPECIAL, tan amplio y suficiente como en derecho se requiera, a favor de **SoluciónAIR** (en adelante, el «Apoderado» o «SolucionAIR» indistintamente), para que, en nombre y representación del Otorgante, gestione los reclamos con el alcance y las facultades que se establecen a continuación:
+
+**PRIMERA — Objeto.** El presente poder faculta al Apoderado a gestionar, por vía administrativa y prejudicial, todo reclamo derivado de incidencias de transporte aéreo —incluyendo demora, cancelación, denegación de embarque, reprogramación y/o incidencias de equipaje— ante la aerolínea correspondiente (nacional o extranjera) y/o ante la autoridad regulatoria competente en la jurisdicción que resulte aplicable.
+
+**SEGUNDA — Alcance.** Este poder es de alcance general respecto de su objeto y comprende tanto el reclamo puntual que el Otorgante detalle al pie del presente, como todo otro reclamo que el Otorgante refiera al Apoderado durante la vigencia de este poder, sin necesidad de otorgar un nuevo instrumento por cada caso.
+
+**TERCERA — Facultades.** A los fines indicados, el Apoderado queda expresamente facultado para: (i) iniciar, presentar, sustanciar, ampliar, contestar y desistir reclamos y presentaciones; (ii) negociar los términos de resolución del reclamo; (iii) transigir, aceptar o rechazar acuerdos, ofrecimientos y propuestas de la aerolínea y/o de la autoridad, obligando al Otorgante en los términos que acuerde; (iv) recibir notificaciones y comunicaciones vinculadas al reclamo; (v) suscribir la documentación necesaria para la gestión; (vi) constituir domicilios; y (vii) sustituir total o parcialmente el presente poder en los profesionales de su red —incluida la derivación a patrocinio letrado para instancias de mediación prejudicial—, revocar sustituciones y reasumir la representación. La facultad de transigir se otorga en forma expresa a los efectos del art. 375 del Código Civil y Comercial de la Nación.
+
+**CUARTA — Exclusión de la facultad de percibir.** El presente poder NO comprende la facultad de percibir ni cobrar suma alguna en nombre del Otorgante. Toda compensación, reintegro o indemnización que resulte del reclamo será abonada directamente al Otorgante. Los honorarios del Apoderado se rigen por el contrato de servicios celebrado por separado.
+
+**QUINTA — Titularidad del derecho.** El presente poder no importa cesión de derechos. La titularidad del reclamo permanece en todo momento en cabeza del Otorgante.
+
+**SEXTA — Protección de datos personales.** El tratamiento de los datos personales del Otorgante (identificatorios, de contacto, de vuelo e incidencia, y documentación respaldatoria) por parte del Apoderado tiene como única finalidad la gestión del/de los reclamo(s) objeto de este poder. En jurisdicción argentina, dicho tratamiento se rige por la Ley N° 25.326 de Protección de los Datos Personales, y el Otorgante presta a tal efecto su consentimiento libre, expreso e informado. Cuando resulte aplicable el Reglamento (UE) 2016/679 (RGPD) —por encontrarse el Otorgante en el territorio de la Unión Europea—, el tratamiento se funda en la ejecución del mandato conferido por este poder (art. 6.1.b del RGPD) y, en su caso, en el consentimiento del Otorgante. El Otorgante presta asimismo su conformidad para la transferencia internacional de sus datos a aerolíneas y/o autoridades regulatorias con asiento en el extranjero, en la medida estrictamente necesaria para dicha gestión; se deja constancia de que la República Argentina cuenta con decisión de adecuación de la Comisión Europea, por lo que las transferencias de datos desde la Unión Europea hacia el Apoderado no requieren garantías adicionales. El Otorgante conserva los derechos de acceso, rectificación, actualización, supresión, oposición, limitación y portabilidad, así como el derecho a revocar el consentimiento, que podrá ejercer directamente ante el Apoderado conforme se detalla en la Política de Privacidad de SolucionAir.
+
+**SÉPTIMA — Vigencia y revocación.** El presente poder rige por tiempo indeterminado y podrá ser revocado por el Otorgante en cualquier momento mediante comunicación escrita dirigida al Apoderado. La revocación no afectará las gestiones que se encuentren en trámite al momento de su notificación.
+
+**OCTAVA — Actuación conjunta y solidaria.** Se deja constancia de que «SolucionAir» constituye una denominación comercial que identifica a Juan Pablo Mario Adaniya, DNI 37.806.475, y Tomás Gregorio Dicranian, DNI 37.606.877, quienes actúan en forma conjunta bajo dicha denominación y asumen solidariamente las obligaciones aquí contraídas.
+
+**NOVENA — Ley aplicable e idioma.** El presente poder se rige por la ley de la República Argentina.
+
+**DATOS DEL VUELO / INCIDENCIA**
+
+Aerolínea / Airline: {{vuelo_aerolinea}}
+Vuelo N° / Flight No.: {{vuelo_numero}}
+Fecha / Date: {{vuelo_fecha}}
+Ruta (origen–destino) / Route: {{vuelo_ruta}}
+
+**FIRMA**
+
+Firma / Signature: __________________________________________
+Aclaración / Full name: {{otorgante_nombre}}
+DNI/Pasaporte: {{otorgante_documento}}

@@ -227,6 +227,32 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, action: 'confirm-update-cliente', ultimo_update_cliente: nowTs, novedades: cuNov });
     }
 
+    /* ---- EDITOR GENÉRICO DE CAMPOS (corrección manual de un dato del caso) ---- */
+    var CAMPOS_EDITABLES = [
+      'nombre', 'email', 'telefono', 'documento_tipo', 'documento_numero', 'pnr',
+      'aerolinea', 'vuelo_nro', 'fecha_vuelo', 'origen', 'destino',
+      'tipo_incidencia', 'causa_informada', 'horas_retraso',
+      'moneda_gastos', 'monto_gastos', 'gastos_detalle',
+      'cuil', 'fecha_nacimiento', 'domicilio_real', 'pais_emisor', 'id_fiscal_extranjero',
+      'agente_nombre', 'agente_email',
+    ];
+
+    if (body.action === 'set-campo') {
+      var campo = (body.campo || '').trim();
+      if (CAMPOS_EDITABLES.indexOf(campo) === -1) return res.status(400).json({ error: 'Campo no editable: ' + campo });
+      var valor = body.valor;
+      var scPatch = {};
+      scPatch[campo] = (valor === undefined || valor === '') ? null : valor;
+
+      var scRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(scPatch),
+      });
+      if (!scRes.ok) return res.status(500).json({ error: 'Error al guardar el campo.' });
+      return res.status(200).json({ success: true, action: 'set-campo', campo: campo, valor: scPatch[campo] });
+    }
+
     /* ---- DESCARTAR ALERTA (manual) ---- */
     if (body.action === 'dismiss-alerta') {
       var regla = (body.regla || '').trim();

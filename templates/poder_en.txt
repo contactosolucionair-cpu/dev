@@ -1,0 +1,36 @@
+# SPECIAL POWER OF ATTORNEY FOR THE MANAGEMENT OF AIR TRANSPORT CLAIMS
+
+**Grantor:** Mr./Ms. {{otorgante_nombre}}, {{otorgante_documento}}, with electronic domicile (e-mail) at {{otorgante_email}} (the "Grantor"),
+
+HEREBY GRANTS A SPECIAL POWER OF ATTORNEY, as broad and sufficient as may be required by law, in favor of **SoluciónAIR** (the "Attorney-in-fact" or "SolucionAir"), so that, in the name and on behalf of the Grantor, it may manage the claims with the scope and powers set out below:
+
+**FIRST — Purpose.** This power of attorney authorizes the Attorney-in-fact to manage, through administrative and pre-litigation channels, any claim arising from air transport disruptions —including delay, cancellation, denied boarding, rescheduling and/or baggage incidents— before the relevant airline (domestic or foreign) and/or before the competent regulatory authority in the applicable jurisdiction.
+
+**SECOND — Scope.** This power is general in scope as regards its purpose and covers both the specific claim detailed by the Grantor at the foot of this instrument and any other claim the Grantor may refer to the Attorney-in-fact during the term hereof, without the need to grant a new instrument for each case.
+
+**THIRD — Powers.** For such purposes, the Attorney-in-fact is expressly empowered to: (i) initiate, file, pursue, expand, respond to and withdraw claims and submissions; (ii) negotiate the terms of resolution of the claim; (iii) settle, accept or reject agreements, offers and proposals from the airline and/or authority, binding the Grantor on the terms agreed; (iv) receive notices and communications related to the claim; (v) sign the documentation necessary for the management; (vi) establish domiciles; and (vii) substitute this power of attorney, in whole or in part, in the professionals of its network —including referral to legal counsel for pre-litigation mediation—, revoke substitutions and resume the representation. The power to settle is expressly granted for the purposes of Section 375 of the Argentine Civil and Commercial Code.
+
+**FOURTH — Exclusion of collection power.** This power of attorney does NOT include the power to receive or collect any sum on behalf of the Grantor. Any compensation, refund or indemnity resulting from the claim shall be paid directly to the Grantor. The Attorney-in-fact's fees are governed by the separately executed services agreement.
+
+**FIFTH — Ownership of the right.** This power of attorney does not entail an assignment of rights. Ownership of the claim remains with the Grantor at all times.
+
+**SIXTH — Personal data protection.** The processing of the Grantor's personal data (identifying, contact, flight and incident data, and supporting documentation) by the Attorney-in-fact is carried out for the sole purpose of managing the claim(s) covered by this power of attorney. Within Argentine jurisdiction, such processing is governed by Argentine Law No. 25,326 on the Protection of Personal Data, and the Grantor grants free, express and informed consent to that effect. Where Regulation (EU) 2016/679 (GDPR) applies —because the Grantor is located within the territory of the European Union—, the processing is based on the performance of the mandate granted under this power of attorney (Article 6(1)(b) GDPR) and, where applicable, on the Grantor's consent. The Grantor likewise consents to the international transfer of such data to airlines and/or regulatory authorities based abroad, to the extent strictly necessary for such management; it is placed on record that the Argentine Republic benefits from an adequacy decision of the European Commission, so that transfers of data from the European Union to the Attorney-in-fact do not require additional safeguards. The Grantor retains the rights of access, rectification, updating, erasure, objection, restriction and portability, as well as the right to withdraw consent, which may be exercised directly before the Attorney-in-fact as detailed in SolucionAir's Privacy Policy.
+
+**SEVENTH — Term and revocation.** This power of attorney shall remain in force for an indefinite period and may be revoked by the Grantor at any time by written notice addressed to the Attorney-in-fact. Revocation shall not affect any management already in progress at the time of its notification.
+
+**EIGHTH — Joint and several action.** It is placed on record that "SolucionAir" is a commercial denomination identifying Juan Pablo Mario Adaniya, DNI 37.806.475, and Tomás Gregorio Dicranian, DNI 37.606.877, who act jointly under such denomination and assume, jointly and severally, the obligations undertaken herein.
+
+**NINTH — Governing law and language.** This power of attorney is governed by the laws of the Argentine Republic.
+
+**FLIGHT / INCIDENT DATA**
+
+Airline: {{vuelo_aerolinea}}
+Flight No.: {{vuelo_numero}}
+Date: {{vuelo_fecha}}
+Route: {{vuelo_ruta}}
+
+**SIGNATURE**
+
+Signature: __________________________________________
+Full name: {{otorgante_nombre}}
+ID/Passport: {{otorgante_documento}}
