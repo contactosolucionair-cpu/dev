@@ -115,12 +115,16 @@
     .panel-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.25);backdrop-filter:blur(5px)}
     .panel-overlay.open{display:block;animation:fadeIn .15s ease}
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-    .detail{position:fixed;top:0;right:-500px;width:480px;max-width:94vw;height:100vh;background:var(--w);z-index:310;box-shadow:-6px 0 30px rgba(0,0,0,.08);transition:right .25s var(--ez);display:flex;flex-direction:column}
+    .detail{position:fixed;top:0;right:-680px;width:640px;max-width:94vw;height:100vh;background:var(--w);z-index:310;box-shadow:-6px 0 30px rgba(0,0,0,.08);transition:right .25s var(--ez);display:flex;flex-direction:column}
     .detail.open{right:0}
     .detail__top{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bdl)}
     .detail__title{font-family:var(--fh);font-size:.95rem;font-weight:700;color:var(--t1)}
     .detail__close{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:none;background:none;cursor:pointer;color:var(--t4);transition:all .12s}
     .detail__close:hover{background:var(--bg);color:var(--t1)}
+    .icon-btn{width:27px;height:27px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--bd);background:var(--w);color:var(--t3);cursor:pointer;transition:all .12s}
+    .icon-btn:hover{background:var(--bg);color:var(--g);border-color:var(--g)}
+    .icon-btn:disabled{opacity:.4;cursor:not-allowed}
+    .icon-btn:disabled:hover{background:var(--w);color:var(--t3);border-color:var(--bd)}
     .detail__body{flex:1;overflow-y:auto;padding:20px}
     .detail__section{margin-bottom:16px}
     .detail__label{font-size:.64rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
@@ -397,6 +401,48 @@
       </div>
     </div>
 
+    <!-- Documentos legales (poder / patrocinio) -->
+    <div class="cm-ov" id="doclegal-ov">
+      <div class="cm" style="max-width:420px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Documentos legales</div>
+          <button class="detail__close" id="doclegal-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="action-field">
+          <div class="detail__label">Poder</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <select id="sel-poder-idioma" class="firma-select" style="width:auto;flex:0 0 auto"><option value="es">Español</option><option value="en">Inglés</option></select>
+            <button class="btn btn--ghost" id="btn-generar-poder" type="button" style="font-size:.72rem">Generar poder</button>
+          </div>
+        </div>
+        <div class="action-field" style="margin-top:14px">
+          <div class="detail__label">Patrocinio</div>
+          <button class="btn btn--ghost" id="btn-generar-patrocinio" type="button" style="font-size:.72rem">Generar patrocinio</button>
+          <div id="doclegal-patrocinio-hint" style="font-size:.68rem;color:var(--t4);margin-top:4px"></div>
+        </div>
+        <div id="msg-doclegal" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- Editar un campo del caso -->
+    <div class="cm-ov" id="editcampo-ov">
+      <div class="cm" style="max-width:420px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Editar un campo del caso</div>
+          <button class="detail__close" id="editcampo-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <select id="edit-campo-sel" class="firma-select" style="width:100%"></select>
+          <input id="edit-campo-val" class="firma-select" style="width:100%" placeholder="Nuevo valor">
+        </div>
+        <div id="msg-editcampo" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
+        <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
+          <button class="cm__btn cm__btn--cancel" id="editcampo-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="btn-save-campo" type="button">Guardar</button>
+        </div>
+      </div>
+    </div>
+
     <div class="panel-overlay" id="panel-overlay"></div>
     <div class="detail" id="detail-panel">
       <div class="detail__top"><span class="detail__title" id="detail-title">Detalle</span><button class="detail__close" id="detail-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
@@ -634,7 +680,10 @@
 
       /* Gestión del caso */
       h+='<div class="detail__divider"></div>';
-      h+='<div class="detail__section"><div class="detail__label" style="margin-bottom:8px;font-size:.7rem">Gestión del caso</div>';
+      h+='<div class="detail__section"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div class="detail__label" style="margin-bottom:0;font-size:.7rem">Gestión del caso</div><div style="display:flex;gap:5px">';
+      h+='<button class="icon-btn" id="btn-open-doclegal" type="button" title="Documentos legales (poder / patrocinio)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>';
+      h+='<button class="icon-btn" id="btn-open-editcampo" type="button" title="Editar un campo del caso"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+      h+='</div></div>';
       h+='<div class="action-row">';
       /* Estado */
       h+='<div class="action-field"><div class="detail__label">Estado</div>';
@@ -662,21 +711,6 @@
         h+='<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn--ghost" data-req-tipo="info_adicional" type="button" style="font-size:.72rem">⚠ Marcar info. complementaria pendiente</button><button class="btn btn--ghost" data-req-tipo="subsanacion" type="button" style="font-size:.72rem">⚠ Marcar subsanación pendiente</button></div>';
       }
       h+='<div id="msg-requerimiento" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div></div>';
-      /* Documentos legales (poder / patrocinio) — solo genera y descarga, no sube a Storage */
-      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Documentos legales</div>';
-      h+='<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">';
-      h+='<select id="sel-poder-idioma" class="firma-select" style="width:auto;flex:0 0 auto"><option value="es">Poder (ES)</option><option value="en">Poder (EN)</option></select>';
-      h+='<button class="btn btn--ghost" id="btn-generar-poder" type="button" style="font-size:.72rem">Generar poder</button>';
-      h+='<button class="btn btn--ghost" id="btn-generar-patrocinio" type="button" style="font-size:.72rem"'+(c.abogado_id?'':' disabled title="Asigná un abogado al caso primero"')+'>Generar patrocinio</button>';
-      h+='</div>';
-      if(!c.abogado_id)h+='<div style="font-size:.68rem;color:var(--t4);margin-top:4px">Para generar el patrocinio primero asigná un abogado al caso.</div>';
-      h+='<div id="msg-doclegal" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div></div>';
-      /* Editor genérico de campos */
-      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Editar un campo del caso</div>';
-      h+='<div style="display:flex;gap:5px;flex-wrap:wrap"><select id="edit-campo-sel" class="firma-select" style="flex:1;min-width:150px">'+CAMPOS_EDITABLES.map(function(cf){return '<option value="'+cf.campo+'">'+esc(cf.label)+'</option>'}).join('')+'</select>';
-      h+='<input id="edit-campo-val" class="firma-select" style="flex:1;min-width:150px" placeholder="Nuevo valor">';
-      h+='<button class="btn btn--ghost" id="btn-save-campo" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
-      h+='<div id="msg-editcampo" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       /* Derivación a mediación (visible mientras el estado esté en el grupo Mediación) */
       var adjArrDeriv=[];
       try{if(c.adjuntos)adjArrDeriv=Array.isArray(c.adjuntos)?c.adjuntos:JSON.parse(c.adjuntos)}catch(e){}
@@ -716,10 +750,12 @@
         }
       }
       h+='</div>';
-      /* Fecha de mediación */
-      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Fecha de mediación</div>';
-      h+='<div style="display:flex;gap:5px;align-items:center"><input id="inp-fmediacion" type="datetime-local" class="firma-select" style="flex:1;font-family:var(--fm)" value="'+toLocalInput(c.fecha_mediacion)+'"><button class="btn btn--ghost" id="btn-save-fmediacion" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
-      h+='<div id="msg-fmediacion" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
+      /* Fecha de mediación (solo mientras el caso esté en el grupo Mediación) */
+      if(enMediacion){
+        h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Fecha de mediación</div>';
+        h+='<div style="display:flex;gap:5px;align-items:center"><input id="inp-fmediacion" type="datetime-local" class="firma-select" style="flex:1;font-family:var(--fm)" value="'+toLocalInput(c.fecha_mediacion)+'"><button class="btn btn--ghost" id="btn-save-fmediacion" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
+        h+='<div id="msg-fmediacion" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
+      }
       h+='</div>'; /* section gestión */
 
       /* Historial de estados (timestamps) */
@@ -800,64 +836,13 @@
         });
       });
 
-      /* Generar poder (descarga directa, no se sube a Storage) */
-      var btnPoder=document.getElementById('btn-generar-poder');
-      var selPoderIdioma=document.getElementById('sel-poder-idioma');
-      var msgDoclegal=document.getElementById('msg-doclegal');
-      if(btnPoder)btnPoder.addEventListener('click',function(){
-        var idioma=(selPoderIdioma&&selPoderIdioma.value)||'es';
-        var label=btnPoder.textContent;
-        btnPoder.disabled=true;btnPoder.textContent='Generando...';
-        if(msgDoclegal){msgDoclegal.style.color='';msgDoclegal.textContent=''}
-        fetch('/api/admin?action=generar-documento&tipo=poder&idioma='+encodeURIComponent(idioma)+'&caso_id='+encodeURIComponent(c.id),{
-          method:'POST', headers:{'X-Admin-Password':adminPwd}
-        }).then(function(r){
-          if(!r.ok)return r.json().then(function(d){throw new Error((d.error||'Error al generar el poder')+(d.faltantes&&d.faltantes.length?' — Faltan: '+d.faltantes.join(', '):''))});
-          return r.blob();
-        }).then(function(blob){
-          var url=URL.createObjectURL(blob);
-          var a=document.createElement('a');
-          a.href=url;a.download=(c.ref_code||'caso')+'_poder_'+idioma+'.pdf';
-          document.body.appendChild(a);a.click();document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          btnPoder.disabled=false;btnPoder.textContent=label;
-        }).catch(function(err){
-          if(msgDoclegal){msgDoclegal.style.color='var(--err)';msgDoclegal.textContent=err.message}
-          btnPoder.disabled=false;btnPoder.textContent=label;
-        });
-      });
+      /* Abre el popup de documentos legales (poder / patrocinio) */
+      var btnOpenDoclegal=document.getElementById('btn-open-doclegal');
+      if(btnOpenDoclegal)btnOpenDoclegal.addEventListener('click',function(){openDoclegalModal(c)});
 
-      /* Generar patrocinio: abre el popup de confirmación de datos */
-      var btnPatrocinio=document.getElementById('btn-generar-patrocinio');
-      if(btnPatrocinio)btnPatrocinio.addEventListener('click',function(){
-        if(btnPatrocinio.disabled)return;
-        openPatrocinioModal(c);
-      });
-
-      /* Editor genérico de campos */
-      var btnSaveCampo=document.getElementById('btn-save-campo');
-      var selCampo=document.getElementById('edit-campo-sel');
-      var inpCampoVal=document.getElementById('edit-campo-val');
-      var msgEditCampo=document.getElementById('msg-editcampo');
-      if(btnSaveCampo)btnSaveCampo.addEventListener('click',function(){
-        var campo=selCampo.value;
-        var valor=inpCampoVal.value;
-        btnSaveCampo.disabled=true;
-        if(msgEditCampo){msgEditCampo.style.color='';msgEditCampo.textContent='Guardando...'}
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-campo',campo:campo,valor:valor})})
-        .then(function(r){return r.json()})
-        .then(function(d){
-          btnSaveCampo.disabled=false;
-          if(d.success){
-            c[campo]=d.valor;
-            claims.forEach(function(cl){if(cl.id===c.id)cl[campo]=d.valor});
-            if(msgEditCampo){msgEditCampo.style.color='var(--ok)';msgEditCampo.textContent='✓ Guardado'}
-            inpCampoVal.value='';
-          } else {
-            if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent=d.error||'Error al guardar'}
-          }
-        }).catch(function(){btnSaveCampo.disabled=false;if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Error de red'}});
-      });
+      /* Abre el popup de edición de un campo del caso */
+      var btnOpenEditcampo=document.getElementById('btn-open-editcampo');
+      if(btnOpenEditcampo)btnOpenEditcampo.addEventListener('click',function(){openEditCampoModal(c)});
 
       /* Copiar info del caso al portapapeles */
       var btnCopyCaso=document.getElementById('btn-copy-caso');
@@ -1799,6 +1784,96 @@
         patSave.disabled=false;
         if(patMsg){patMsg.style.color='var(--err)';patMsg.textContent=err.message}
       });
+    });
+
+    /* ---- DOCUMENTOS LEGALES (poder / patrocinio) ---- */
+    var doclegalOv=document.getElementById('doclegal-ov');
+    var docLegalCase=null;
+    function openDoclegalModal(caseObj){
+      docLegalCase=caseObj;
+      var msg=document.getElementById('msg-doclegal'); if(msg){msg.style.color='';msg.textContent=''}
+      var btnPat=document.getElementById('btn-generar-patrocinio');
+      var hint=document.getElementById('doclegal-patrocinio-hint');
+      if(btnPat){btnPat.disabled=!caseObj.abogado_id;btnPat.title=caseObj.abogado_id?'':'Asigná un abogado al caso primero'}
+      if(hint)hint.textContent=caseObj.abogado_id?'':'Para generar el patrocinio primero asigná un abogado al caso.';
+      if(doclegalOv)doclegalOv.classList.add('open');
+    }
+    var doclegalClose=document.getElementById('doclegal-close');
+    if(doclegalClose)doclegalClose.addEventListener('click',function(){doclegalOv.classList.remove('open')});
+    if(doclegalOv)doclegalOv.addEventListener('click',function(e){if(e.target===doclegalOv)doclegalOv.classList.remove('open')});
+
+    var btnPoder=document.getElementById('btn-generar-poder');
+    var selPoderIdioma=document.getElementById('sel-poder-idioma');
+    var msgDoclegal=document.getElementById('msg-doclegal');
+    if(btnPoder)btnPoder.addEventListener('click',function(){
+      if(!docLegalCase)return;
+      var idioma=(selPoderIdioma&&selPoderIdioma.value)||'es';
+      var label=btnPoder.textContent;
+      btnPoder.disabled=true;btnPoder.textContent='Generando...';
+      if(msgDoclegal){msgDoclegal.style.color='';msgDoclegal.textContent=''}
+      fetch('/api/admin?action=generar-documento&tipo=poder&idioma='+encodeURIComponent(idioma)+'&caso_id='+encodeURIComponent(docLegalCase.id),{
+        method:'POST', headers:{'X-Admin-Password':adminPwd}
+      }).then(function(r){
+        if(!r.ok)return r.json().then(function(d){throw new Error((d.error||'Error al generar el poder')+(d.faltantes&&d.faltantes.length?' — Faltan: '+d.faltantes.join(', '):''))});
+        return r.blob();
+      }).then(function(blob){
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a');
+        a.href=url;a.download=(docLegalCase.ref_code||'caso')+'_poder_'+idioma+'.pdf';
+        document.body.appendChild(a);a.click();document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        btnPoder.disabled=false;btnPoder.textContent=label;
+      }).catch(function(err){
+        if(msgDoclegal){msgDoclegal.style.color='var(--err)';msgDoclegal.textContent=err.message}
+        btnPoder.disabled=false;btnPoder.textContent=label;
+      });
+    });
+
+    var btnPatrocinio=document.getElementById('btn-generar-patrocinio');
+    if(btnPatrocinio)btnPatrocinio.addEventListener('click',function(){
+      if(btnPatrocinio.disabled||!docLegalCase)return;
+      doclegalOv.classList.remove('open');
+      openPatrocinioModal(docLegalCase);
+    });
+
+    /* ---- EDITAR UN CAMPO DEL CASO ---- */
+    var editcampoOv=document.getElementById('editcampo-ov');
+    var editCampoCase=null;
+    var selCampo=document.getElementById('edit-campo-sel');
+    if(selCampo)selCampo.innerHTML=CAMPOS_EDITABLES.map(function(cf){return '<option value="'+cf.campo+'">'+esc(cf.label)+'</option>'}).join('');
+    function openEditCampoModal(caseObj){
+      editCampoCase=caseObj;
+      var msg=document.getElementById('msg-editcampo'); if(msg){msg.style.color='';msg.textContent=''}
+      var inp=document.getElementById('edit-campo-val'); if(inp)inp.value='';
+      if(editcampoOv)editcampoOv.classList.add('open');
+    }
+    var editcampoClose=document.getElementById('editcampo-close'),editcampoCancel=document.getElementById('editcampo-cancel');
+    if(editcampoClose)editcampoClose.addEventListener('click',function(){editcampoOv.classList.remove('open')});
+    if(editcampoCancel)editcampoCancel.addEventListener('click',function(){editcampoOv.classList.remove('open')});
+    if(editcampoOv)editcampoOv.addEventListener('click',function(e){if(e.target===editcampoOv)editcampoOv.classList.remove('open')});
+
+    var btnSaveCampo=document.getElementById('btn-save-campo');
+    var inpCampoVal=document.getElementById('edit-campo-val');
+    var msgEditCampo=document.getElementById('msg-editcampo');
+    if(btnSaveCampo)btnSaveCampo.addEventListener('click',function(){
+      if(!editCampoCase)return;
+      var campo=selCampo.value;
+      var valor=inpCampoVal.value;
+      btnSaveCampo.disabled=true;
+      if(msgEditCampo){msgEditCampo.style.color='';msgEditCampo.textContent='Guardando...'}
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editCampoCase.id,action:'set-campo',campo:campo,valor:valor})})
+      .then(function(r){return r.json()})
+      .then(function(d){
+        btnSaveCampo.disabled=false;
+        if(d.success){
+          editCampoCase[campo]=d.valor;
+          claims.forEach(function(cl){if(cl.id===editCampoCase.id)cl[campo]=d.valor});
+          if(msgEditCampo){msgEditCampo.style.color='var(--ok)';msgEditCampo.textContent='✓ Guardado'}
+          inpCampoVal.value='';
+        } else {
+          if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent=d.error||'Error al guardar'}
+        }
+      }).catch(function(){btnSaveCampo.disabled=false;if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Error de red'}});
     });
 
     /* ---- NUEVO CASO ---- */
