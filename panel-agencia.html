@@ -239,6 +239,8 @@
             </div>
             <div class="form-group"><label>Nro. de documento</label><input type="text" id="f-doc-num" /></div>
           </div>
+          <div id="doc-extra-list"></div>
+          <div style="margin-top:8px"><button type="button" class="btn btn--ghost" id="doc-add" style="font-size:.72rem">+ Agregar otro documento</button></div>
         </div>
 
         <!-- Tipo de reclamo -->
@@ -268,28 +270,47 @@
                 <option value="">Seleccionar...</option>
                 <option value="demora">Demora</option>
                 <option value="cancelacion">Cancelación</option>
-                <option value="overbooking">Overbooking / denegación de embarque</option>
+                <option value="reprogramacion">Reprogramación</option>
+                <option value="overbooking">Overbooking</option>
+                <option value="denegacion">Denegación de embarque</option>
               </select>
             </div>
-            <div class="form-group"><label>Horas de retraso</label><input type="number" id="f-horas" min="0" placeholder="ej: 4" /></div>
-            <div class="form-group"><label>Anticipación del aviso</label>
+            <div class="form-group" id="fg-horas"><label>Horas de retraso</label><input type="number" id="f-horas" min="0" placeholder="ej: 4" /></div>
+            <div class="form-group" id="fg-embarque" style="display:none"><label>¿Se presentó al embarque en tiempo y con reserva confirmada?</label>
+              <select id="f-embarque"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option></select>
+            </div>
+            <div class="form-group" id="fg-anticipacion" style="display:none"><label>¿Con cuánta anticipación avisaron?</label>
               <select id="f-anticipacion">
-                <option value="">Sin información</option>
-                <option value="sin_aviso">Sin aviso previo</option>
-                <option value="menos_14">Menos de 14 días</option>
-                <option value="14_a_21">14 a 21 días</option>
-                <option value="mas_21">Más de 21 días</option>
+                <option value="">Seleccionar...</option>
+                <option value="mas_14_dias">Más de 14 días</option>
+                <option value="7_a_14_dias">Entre 7 y 14 días</option>
+                <option value="menos_7_dias">Menos de 7 días</option>
+                <option value="menos_24h">Menos de 24 horas</option>
+                <option value="en_aeropuerto">En el aeropuerto, sin aviso previo</option>
               </select>
             </div>
-            <div class="form-group"><label>Ofrecimiento de la aerolínea</label>
+            <div class="form-group" id="fg-ofrecimiento" style="display:none"><label>¿Qué ofreció la aerolínea?</label>
               <select id="f-ofrecimiento">
-                <option value="">Sin información</option>
-                <option value="ninguno">Ninguno</option>
-                <option value="voucher">Voucher</option>
-                <option value="reembolso">Reembolso parcial</option>
-                <option value="reembolso_total">Reembolso total</option>
+                <option value="">Seleccionar...</option>
+                <option value="reubicacion">Reubicación en otro vuelo</option>
+                <option value="reembolso">Reembolso</option>
+                <option value="reubicacion_y_reembolso">Reubicación y reembolso</option>
+                <option value="voucher">Voucher / compensación en el momento</option>
+                <option value="nada">Nada</option>
               </select>
             </div>
+            <div class="form-group" id="fg-viajo" style="display:none"><label>¿Finalmente viajó a destino?</label>
+              <select id="f-viajo">
+                <option value="">Seleccionar...</option>
+                <option value="reubicado">Sí, lo reubicó la aerolínea</option>
+                <option value="medios_propios">Sí, por sus propios medios (compró otro pasaje)</option>
+                <option value="no_viajo">No viajó</option>
+              </select>
+            </div>
+            <div class="form-group" id="fg-pasaje-moneda" style="display:none"><label>Moneda del nuevo pasaje</label>
+              <select id="f-pasaje-moneda"><option value="ARS">ARS</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="BRL">BRL</option></select>
+            </div>
+            <div class="form-group" id="fg-pasaje-monto" style="display:none"><label>Costo del nuevo pasaje</label><input type="number" id="f-pasaje-monto" min="0" step="0.01" /></div>
             <div class="form-group"><label>Causa informada</label><input type="text" id="f-causa" placeholder="ej: condiciones meteorológicas" /></div>
             <div class="form-group"><label>Moneda gastos</label>
               <select id="f-moneda"><option value="">Sin gastos</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
@@ -315,8 +336,14 @@
                 <option value="demora">Demora en entrega</option>
               </select>
             </div>
-            <div class="form-group"><label>Fecha de entrega (si aplica)</label><input type="date" id="fe-fecha-entrega" /></div>
+            <div class="form-group" id="fg-fe-entrega"><label>Fecha de entrega (si aplica)</label><input type="date" id="fe-fecha-entrega" />
+              <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:.76rem;font-weight:400"><input type="checkbox" id="fe-no-entregado" /> Todavía no se lo entregaron</label>
+            </div>
             <div class="form-group"><label>Valor del equipaje (USD)</label><input type="number" id="fe-valor" min="0" step="0.01" /></div>
+            <div class="form-group"><label>¿Presentó el reporte de equipaje (PIR)?</label>
+              <select id="fe-pir"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option><option value="no_sabe">No sabe</option></select>
+            </div>
+            <div class="form-group" id="fg-fe-pir-numero" style="display:none"><label>Número de PIR</label><input type="text" id="fe-pir-numero" /></div>
             <div class="form-group form-group--full"><label>Descripción</label><textarea id="fe-descripcion" rows="2" placeholder="Describe el contenido y la incidencia"></textarea></div>
           </div>
         </div>
@@ -564,6 +591,69 @@
     secEqp.style.display   = isEqp ? '' : 'none';
   });
 
+  /* ---- Incidencia: bloques condicionales (mismos values que el form público) ---- */
+  var fIncidencia = document.getElementById('f-incidencia');
+  var fViajoAg = document.getElementById('f-viajo');
+  function showGroup(id, show) { var el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; }
+  function updateIncidenciaBlocks() {
+    var v = fIncidencia.value;
+    var isDemora = v === 'demora';
+    var isEmbarque = v === 'overbooking' || v === 'denegacion';
+    var isAnticipacion = v === 'cancelacion' || v === 'reprogramacion';
+    var isComun = v !== '' && v !== 'demora';
+    showGroup('fg-embarque', isEmbarque);
+    showGroup('fg-anticipacion', isAnticipacion);
+    showGroup('fg-ofrecimiento', isComun);
+    showGroup('fg-viajo', isComun);
+    var viajoVal = isComun ? fViajoAg.value : '';
+    showGroup('fg-horas', isDemora || viajoVal === 'reubicado');
+    showGroup('fg-pasaje-moneda', viajoVal === 'medios_propios');
+    showGroup('fg-pasaje-monto', viajoVal === 'medios_propios');
+  }
+  fIncidencia.addEventListener('change', updateIncidenciaBlocks);
+  fViajoAg.addEventListener('change', updateIncidenciaBlocks);
+  updateIncidenciaBlocks();
+
+  /* ---- Equipaje: PIR + no entregado ---- */
+  var fePir = document.getElementById('fe-pir');
+  if (fePir) fePir.addEventListener('change', function () { showGroup('fg-fe-pir-numero', fePir.value === 'si'); });
+  var feNoEntregado = document.getElementById('fe-no-entregado');
+  var feFechaEntrega = document.getElementById('fe-fecha-entrega');
+  if (feNoEntregado) feNoEntregado.addEventListener('change', function () {
+    if (feFechaEntrega) { feFechaEntrega.disabled = feNoEntregado.checked; if (feNoEntregado.checked) feFechaEntrega.value = ''; }
+  });
+
+  /* ---- Documentos múltiples del titular (hasta 2 adicionales) ---- */
+  var MAX_EXTRA_DOCS = 2;
+  var docExtraList = document.getElementById('doc-extra-list');
+  var docAddBtn = document.getElementById('doc-add');
+  function addDocExtraRow() {
+    if (!docExtraList || docExtraList.children.length >= MAX_EXTRA_DOCS) return;
+    var row = document.createElement('div');
+    row.className = 'form-grid doc-extra-row';
+    row.style.marginTop = '8px';
+    row.innerHTML = '<div class="form-group"><label>Tipo de documento</label><select class="doc-extra-tipo"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option></select></div>'
+      + '<div class="form-group"><label>Nro. de documento</label><input type="text" class="doc-extra-numero" /></div>'
+      + '<div class="form-group" style="align-self:flex-end"><button type="button" class="btn btn--ghost doc-extra-remove" style="font-size:.7rem">✕ Quitar</button></div>';
+    docExtraList.appendChild(row);
+    row.querySelector('.doc-extra-remove').addEventListener('click', function () { docExtraList.removeChild(row); updateDocAddBtn(); });
+    updateDocAddBtn();
+  }
+  function updateDocAddBtn() {
+    if (docAddBtn) docAddBtn.style.display = (docExtraList && docExtraList.children.length >= MAX_EXTRA_DOCS) ? 'none' : '';
+  }
+  function collectDocExtras() {
+    var out = [];
+    if (!docExtraList) return out;
+    docExtraList.querySelectorAll('.doc-extra-row').forEach(function (row) {
+      var tipo = (row.querySelector('.doc-extra-tipo') || {}).value || '';
+      var numero = ((row.querySelector('.doc-extra-numero') || {}).value || '').trim();
+      if (tipo || numero) out.push({ tipo: tipo, numero: numero });
+    });
+    return out;
+  }
+  if (docAddBtn) docAddBtn.addEventListener('click', addDocExtraRow);
+
   /* Upload / scan */
   var fileInput   = document.getElementById('file-input');
   var uploadArea  = document.getElementById('upload-area');
@@ -659,11 +749,15 @@
       telefono:        document.getElementById('f-telefono').value.trim() || null,
       documento_tipo:  document.getElementById('f-doc-tipo').value || null,
       documento_numero: document.getElementById('f-doc-num').value.trim() || null,
+      documentos: [{ tipo: document.getElementById('f-doc-tipo').value || '', numero: document.getElementById('f-doc-num').value.trim() }].concat(collectDocExtras()),
       cliente_autorizacion_declarada: true,
       scanned_files: scannedFiles,
     };
 
     if (tipo === 'vuelo') {
+      var incidenciaVal = document.getElementById('f-incidencia').value || '';
+      var viajoVal = document.getElementById('f-viajo').value || '';
+      var horasVal = document.getElementById('f-horas').value || null;
       Object.assign(payload, {
         aerolinea:           document.getElementById('f-aerolinea').value.trim() || null,
         vuelo_nro:           document.getElementById('f-vuelo-nro').value.trim() || null,
@@ -671,10 +765,14 @@
         pnr:                 document.getElementById('f-pnr').value.trim() || null,
         origen:              document.getElementById('f-origen').value.trim() || null,
         destino:             document.getElementById('f-destino').value.trim() || null,
-        tipo_incidencia:     document.getElementById('f-incidencia').value || null,
-        horas_retraso:       document.getElementById('f-horas').value || null,
+        tipo_incidencia:     incidenciaVal || null,
+        horas_retraso:       horasVal,
         anticipacion_aviso:  document.getElementById('f-anticipacion').value || null,
         ofrecimiento_aerolinea: document.getElementById('f-ofrecimiento').value || null,
+        embarque_presentado: document.getElementById('f-embarque').value || null,
+        viajo_finalmente:    viajoVal || null,
+        pasaje_alternativo_moneda: viajoVal === 'medios_propios' ? (document.getElementById('f-pasaje-moneda').value || null) : null,
+        pasaje_alternativo_monto:  viajoVal === 'medios_propios' ? (document.getElementById('f-pasaje-monto').value || null) : null,
         causa_informada:     document.getElementById('f-causa').value.trim() || null,
         moneda_gastos:       document.getElementById('f-moneda').value || null,
         monto_gastos:        document.getElementById('f-monto-gastos').value || null,
@@ -688,7 +786,10 @@
         pnr:                 document.getElementById('fe-pnr').value.trim() || null,
         tipo_caso_equipaje:  document.getElementById('fe-tipo-caso').value || null,
         fecha_entrega_equipaje: document.getElementById('fe-fecha-entrega').value || null,
+        equipaje_no_entregado: !!document.getElementById('fe-no-entregado').checked,
         valor_equipaje:      document.getElementById('fe-valor').value || null,
+        pir_presentado:      document.getElementById('fe-pir').value || null,
+        pir_numero:          document.getElementById('fe-pir-numero').value.trim() || null,
         descripcion_equipaje: document.getElementById('fe-descripcion').value.trim() || null,
       });
     }

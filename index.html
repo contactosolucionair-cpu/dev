@@ -348,6 +348,8 @@
             <div class="field"><label class="field__lbl" data-t="lbl_doctype">Tipo de documento <span class="field__ast">*</span></label><select class="field__in" id="f-doctype" data-required="true"><option value="" data-t="opt_select">Seleccionar...</option><option value="DNI" data-t="opt_dni">DNI</option><option value="Pasaporte" data-t="opt_passport">Pasaporte</option><option value="ID" data-t="opt_id">ID / Cédula</option></select><span class="field__msg"></span></div>
             <div class="field"><label class="field__lbl" data-t="lbl_docnum">Número de documento <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-docnum" data-required="true" placeholder="37.806.475" /><span class="field__msg"></span></div>
           </div>
+          <div id="doc-extra-list"></div>
+          <div style="margin-top:8px"><button type="button" class="btn-add-acomp" id="doc-add">+ Agregar otro documento</button></div>
         </div>
         <div class="wz-nav"><button class="btn-verify" id="wz-next-1" type="button" data-t="btn_next2">Continuar al Paso 2 &rarr;</button></div>
       </div>
@@ -374,9 +376,31 @@
           <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#9888;</span><div><h3 class="card__blk-title" data-t="f_incident_t">Incidente</h3></div></div>
             <div class="g g2">
               <div class="field"><label class="field__lbl" data-t="lbl_incident">Tipo de incidencia <span class="field__ast">*</span></label><select class="field__in" id="f-incident" data-required="true"><option value="">Seleccionar...</option><option value="cancelacion">Cancelación</option><option value="demora">Demora</option><option value="overbooking">Overbooking</option><option value="reprogramacion">Reprogramación</option><option value="denegacion">Denegación de embarque</option></select><span class="field__msg"></span></div>
-              <div class="field"><label class="field__lbl" data-t="lbl_delay">Magnitud del retraso (horas)</label><input class="field__in" type="number" id="f-delay-hours" placeholder="4" min="0" /><span class="field__msg"></span></div>
-              <div class="field"><label class="field__lbl" data-t="lbl_notice">Anticipación de notificación</label><input class="field__in" type="text" id="f-notice" placeholder="Ej: 2 horas antes, en el aeropuerto" /><span class="field__msg"></span></div>
-              <div class="field"><label class="field__lbl" data-t="lbl_refund">¿Ofrecieron reembolso?</label><select class="field__in" id="f-refund"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option></select><span class="field__msg"></span></div>
+            </div>
+
+            <!-- demora -->
+            <div class="g g2 inc-block" id="inc-demora" style="display:none">
+              <div class="field"><label class="field__lbl">¿Cuántas horas más tarde llegaste a tu destino final? <span class="field__ast">*</span></label><input class="field__in" type="number" id="f-delay-hours" data-required="true" placeholder="4" min="1" /><span class="field__msg"></span></div>
+            </div>
+
+            <!-- cancelacion / reprogramacion / overbooking / denegacion (comparten campos) -->
+            <div class="g g2 inc-block" id="inc-comun" style="display:none">
+              <div class="field" id="inc-embarque-wrap" style="display:none"><label class="field__lbl">¿Te presentaste al embarque en tiempo y con reserva confirmada? <span class="field__ast">*</span></label><select class="field__in" id="f-embarque" data-required="true"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option></select><span class="field__msg"></span></div>
+              <div class="field" id="inc-notice-wrap" style="display:none"><label class="field__lbl">¿Con cuánta anticipación te avisaron? <span class="field__ast">*</span></label><select class="field__in" id="f-notice" data-required="true"><option value="">Seleccionar...</option><option value="mas_14_dias">Más de 14 días</option><option value="7_a_14_dias">Entre 7 y 14 días</option><option value="menos_7_dias">Menos de 7 días</option><option value="menos_24h">Menos de 24 horas</option><option value="en_aeropuerto">En el aeropuerto, sin aviso previo</option></select><span class="field__msg"></span></div>
+              <div class="field"><label class="field__lbl">¿Qué te ofreció la aerolínea? <span class="field__ast">*</span></label><select class="field__in" id="f-refund" data-required="true"><option value="">Seleccionar...</option><option value="reubicacion">Reubicación en otro vuelo</option><option value="reembolso">Reembolso</option><option value="reubicacion_y_reembolso">Reubicación y reembolso</option><option value="voucher">Voucher / compensación en el momento</option><option value="nada">Nada</option></select><span class="field__msg"></span></div>
+              <div class="field"><label class="field__lbl">¿Finalmente viajaste a tu destino? <span class="field__ast">*</span></label><select class="field__in" id="f-viajo" data-required="true"><option value="">Seleccionar...</option><option value="reubicado">Sí, me reubicó la aerolínea</option><option value="medios_propios">Sí, por mis propios medios (compré otro pasaje)</option><option value="no_viajo">No viajé</option></select><span class="field__msg"></span></div>
+              <div class="field" id="inc-viajo-horas-wrap" style="display:none"><label class="field__lbl">¿Cuántas horas más tarde llegaste? <span class="field__ast">*</span></label><input class="field__in" type="number" id="f-viajo-horas" data-required="true" min="0" placeholder="4" /><span class="field__msg"></span></div>
+            </div>
+
+            <!-- medios propios: pasaje alternativo -->
+            <div class="inc-block" id="inc-pasaje-alt" style="display:none">
+              <div class="g g2">
+                <div class="field"><label class="field__lbl">Moneda del nuevo pasaje <span class="field__ast">*</span></label><select class="field__in" id="f-pasaje-moneda" data-required="true"><option value="ARS">ARS (Peso argentino)</option><option value="USD">USD (Dólar)</option><option value="EUR">EUR (Euro)</option><option value="BRL">BRL (Real)</option></select><span class="field__msg"></span></div>
+                <div class="field"><label class="field__lbl">¿Cuánto costó el nuevo pasaje? <span class="field__ast">*</span></label><input class="field__in" type="number" id="f-pasaje-monto" data-required="true" min="0" step="0.01" placeholder="0.00" /><span class="field__msg"></span></div>
+              </div>
+              <div style="margin-top:12px">
+                <div class="drop" id="drop-pasaje-alt"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple /><div class="drop__body"><svg class="drop__ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p class="drop__txt">Constancia del nuevo pasaje (ticket / factura)</p><p class="drop__meta">PDF, JPG, PNG · Máx. 5 · 10MB c/u</p></div><div class="drop__list"></div></div>
+              </div>
             </div>
           </div>
           <hr class="card__hr"/>
@@ -405,12 +429,18 @@
             <label class="combo-toggle"><input type="checkbox" id="fv-bag-toggle" /> <span>Sí, también tuve un problema con mi equipaje en este vuelo</span></label>
             <div id="fv-bag-fields" style="display:none;margin-top:12px">
               <div class="g g2">
-                <div class="field"><label class="field__lbl">Tipo de incidencia</label><select class="field__in" id="fv-bag-type"><option value="">Seleccionar...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select><span class="field__msg"></span></div>
-                <div class="field" id="fv-bag-delivery-wrap" style="display:none"><label class="field__lbl">Fecha en que recibiste el equipaje</label><input class="field__in" type="date" id="fv-bag-delivery" /><span class="field__msg"></span></div>
-                <div class="field"><label class="field__lbl">Valor estimado del equipaje (USD)</label><input class="field__in" type="number" id="fv-bag-value" placeholder="500" min="0" /><span class="field__msg"></span></div>
+                <div class="field"><label class="field__lbl">Tipo de incidencia</label><select class="field__in" id="fv-bag-type" data-required="true"><option value="">Seleccionar...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select><span class="field__msg"></span></div>
+                <div class="field" id="fv-bag-delivery-wrap" style="display:none"><label class="field__lbl">Fecha en que recibiste el equipaje</label><input class="field__in" type="date" id="fv-bag-delivery" /><span class="field__msg"></span>
+                  <label class="combo-toggle" style="margin-top:6px"><input type="checkbox" id="fv-bag-no-entregado" /> <span>Todavía no me lo entregaron</span></label>
+                </div>
+                <div class="field" id="fv-bag-value-wrap"><label class="field__lbl" id="fv-bag-value-lbl">Valor estimado del equipaje (USD)</label><input class="field__in" type="number" id="fv-bag-value" placeholder="500" min="0" /><span class="field__msg"></span></div>
+              </div>
+              <div class="g g2" style="margin-top:12px">
+                <div class="field"><label class="field__lbl">¿Presentaste el reporte de equipaje (PIR) en el aeropuerto? <span class="field__ast">*</span></label><select class="field__in" id="fv-bag-pir" data-required="true"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option><option value="no_sabe">No sé</option></select><span class="field__msg"></span></div>
+                <div class="field" id="fv-bag-pir-numero-wrap" style="display:none"><label class="field__lbl">Número de PIR</label><input class="field__in" type="text" id="fv-bag-pir-numero" placeholder="Ej: EZEAR12345" /><span class="field__msg"></span></div>
               </div>
               <div class="g g1" style="margin-top:12px">
-                <div class="field"><label class="field__lbl">Descripción del incidente</label><textarea class="field__in field__ta" id="fv-bag-desc" rows="2" placeholder="Ej: Mi maleta llegó con la rueda rota. Presenté el formulario PIR en el aeropuerto."></textarea><span class="field__msg"></span></div>
+                <div class="field"><label class="field__lbl">Descripción del incidente</label><textarea class="field__in field__ta" id="fv-bag-desc" rows="2" data-required="true" placeholder="Ej: Mi maleta llegó con la rueda rota. Presenté el formulario PIR en el aeropuerto."></textarea><span class="field__msg"></span></div>
               </div>
             </div>
           </div>
@@ -428,14 +458,31 @@
           <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#129523;</span><div><h3 class="card__blk-title">Detalles del equipaje</h3><p class="card__blk-sub">Contanos qué pasó con tu equipaje y agregá la documentación que tengas.</p></div></div>
             <div class="g g2">
               <div class="field"><label class="field__lbl">Tipo de incidencia <span class="field__ast">*</span></label><select class="field__in" id="fb-type" data-required="true"><option value="">Seleccionar...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select><span class="field__msg"></span></div>
-              <div class="field" id="fb-delivery-wrap" style="display:none"><label class="field__lbl">Fecha en que recibiste el equipaje</label><input class="field__in" type="date" id="fb-delivery-date" /><span class="field__msg"></span></div>
-              <div class="field"><label class="field__lbl">Valor estimado del equipaje (USD)</label><input class="field__in" type="number" id="fb-value" placeholder="500" min="0" /><span class="field__msg"></span></div>
+              <div class="field" id="fb-delivery-wrap" style="display:none"><label class="field__lbl">Fecha en que recibiste el equipaje <span class="field__ast">*</span></label><input class="field__in" type="date" id="fb-delivery-date" data-required="true" /><span class="field__msg"></span>
+                <label class="combo-toggle" style="margin-top:6px"><input type="checkbox" id="fb-no-entregado" /> <span>Todavía no me lo entregaron</span></label>
+              </div>
+              <div class="field" id="fb-value-wrap"><label class="field__lbl" id="fb-value-lbl">Valor estimado del equipaje (USD)</label><input class="field__in" type="number" id="fb-value" placeholder="500" min="0" /><span class="field__msg"></span></div>
+            </div>
+            <div class="g g2" style="margin-top:12px">
+              <div class="field"><label class="field__lbl">¿Presentaste el reporte de equipaje (PIR) en el aeropuerto? <span class="field__ast">*</span></label><select class="field__in" id="fb-pir" data-required="true"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option><option value="no_sabe">No sé</option></select><span class="field__msg"></span></div>
+              <div class="field" id="fb-pir-numero-wrap" style="display:none"><label class="field__lbl">Número de PIR</label><input class="field__in" type="text" id="fb-pir-numero" placeholder="Ej: EZEAR12345" /><span class="field__msg"></span></div>
             </div>
             <div class="g g1" style="margin-top:12px">
               <div class="field"><label class="field__lbl">Descripción del incidente <span class="field__ast">*</span></label><textarea class="field__in field__ta" id="fb-description" data-required="true" rows="3" placeholder="Ej: Mi maleta azul llegó con la rueda rota y la cerradura forzada. Presenté el formulario PIR en el aeropuerto."></textarea><span class="field__msg"></span></div>
             </div>
             <div style="margin-top:12px">
               <div class="drop" id="drop-baggage"><input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple /><div class="drop__body"><svg class="drop__ic" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><p class="drop__txt">Fotos del daño, formulario PIR y comprobantes</p><p class="drop__meta">PDF, JPG, PNG · Máx. 5 · 10MB c/u</p></div><div class="drop__list"></div></div>
+            </div>
+          </div>
+
+          <hr class="card__hr"/>
+          <div class="card__blk"><div class="card__blk-head"><span class="badge-step">&#128176;</span><div><h3 class="card__blk-title">Gastos incurridos</h3><p class="card__blk-sub">Si tuviste gastos por el incidente (ropa, artículos de reposición), detallalos acá.</p></div></div>
+            <div class="g g2">
+              <div class="field"><label class="field__lbl">Moneda</label><select class="field__in" id="fb-currency"><option value="ARS">ARS (Peso argentino)</option><option value="USD">USD (Dólar)</option><option value="EUR">EUR (Euro)</option><option value="BRL">BRL (Real)</option></select><span class="field__msg"></span></div>
+              <div class="field"><label class="field__lbl">Monto total</label><input class="field__in" type="number" id="fb-expenses-amount" placeholder="0.00" min="0" step="0.01" /><span class="field__msg"></span></div>
+            </div>
+            <div class="g g1" style="margin-top:12px">
+              <div class="field"><label class="field__lbl">Detalle de gastos</label><textarea class="field__in field__ta" id="fb-expenses-detail" rows="2" placeholder="Ej: Ropa de reposición USD 60"></textarea><span class="field__msg"></span></div>
             </div>
           </div>
 
@@ -664,15 +711,18 @@
   var b2=document.getElementById('wz-back-2');
   var b3=document.getElementById('wz-back-3');
 
-  /* Check if all required fields in a wizard step are filled (skips inactive ctype-sub) */
+  /* Un campo data-required solo cuenta si está visible: no dentro de un contenedor
+     con display:none ni de una .ctype-sub inactiva. offsetParent es null en ambos casos. */
+  function isFieldVisible(f){ return f.offsetParent !== null; }
+
+  /* Check if all required fields in a wizard step are filled (skips hidden fields) */
   function checkStepFields(stepId){
     var panel=document.getElementById(stepId);
     if(!panel)return true;
     var fields=panel.querySelectorAll('[data-required="true"]');
     var ok=true;
     fields.forEach(function(f){
-      var sub=f.closest('.ctype-sub');
-      if(sub&&!sub.classList.contains('active'))return;
+      if(!isFieldVisible(f))return;
       if(f.type==='checkbox'){if(!f.checked)ok=false}
       else if(f.tagName==='SELECT'){if(!f.value)ok=false}
       else{if(!f.value.trim())ok=false}

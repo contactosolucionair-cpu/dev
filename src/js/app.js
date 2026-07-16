@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function $(s, c) { return (c || document).querySelector(s); }
   function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
 
-  var S = { lang: 'es', tab: 'flight', claimType: 'vuelo', files: { flight: [], baggage: [] }, lastRef: null };
+  var S = { lang: 'es', tab: 'flight', claimType: 'vuelo', files: { flight: [], baggage: [], pasajeAlt: [] }, lastRef: null };
 
   /* ---- DOM ---- */
   var nav = document.querySelector('.nav');
@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function () {
   $$('.drop').forEach(function (z) {
     var inp = $('input[type="file"]', z);
     var list = $('.drop__list', z);
-    var type = z.id === 'drop-flight' ? 'flight' : 'baggage';
+    var type = z.id === 'drop-flight' ? 'flight' : (z.id === 'drop-pasaje-alt' ? 'pasajeAlt' : 'baggage');
     z.addEventListener('click', function (e) { if (e.target !== inp) inp.click(); });
     z.addEventListener('dragover', function (e) { e.preventDefault(); });
     z.addEventListener('drop', function (e) { e.preventDefault(); addF(e.dataTransfer.files, type, list); });
@@ -187,14 +187,115 @@ document.addEventListener('DOMContentLoaded', function () {
     b.addEventListener('click', function () { switchClaimType(b.getAttribute('data-ctype')); });
   });
 
-  /* Show/hide delivery date for baggage demora */
-  var fbType = document.getElementById('fb-type');
-  if (fbType) {
-    fbType.addEventListener('change', function () {
-      var wrap = document.getElementById('fb-delivery-wrap');
-      if (wrap) wrap.style.display = fbType.value === 'demora' ? '' : 'none';
+  /* ============ DOCUMENTOS MÚLTIPLES (hasta 2 pares adicionales) ============ */
+  var MAX_EXTRA_DOCS = 2;
+  function addDocExtraRow(listEl, addBtn) {
+    if (!listEl || listEl.children.length >= MAX_EXTRA_DOCS) return;
+    var row = document.createElement('div');
+    row.className = 'g g2 doc-extra-row';
+    row.style.marginTop = '8px';
+    row.innerHTML = '<div class="field"><label class="field__lbl">Tipo de documento</label><select class="field__in doc-extra-tipo"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select></div>'
+      + '<div class="field"><label class="field__lbl">Número de documento</label><input class="field__in doc-extra-numero" type="text" placeholder="Número" /></div>'
+      + '<div style="grid-column:1/-1;text-align:right"><button type="button" class="acomp-remove doc-extra-remove">✕ Quitar documento</button></div>';
+    listEl.appendChild(row);
+    var rm = row.querySelector('.doc-extra-remove');
+    if (rm) rm.addEventListener('click', function () { listEl.removeChild(row); updateDocAddBtn(listEl, addBtn); });
+    updateDocAddBtn(listEl, addBtn);
+  }
+  function updateDocAddBtn(listEl, addBtn) {
+    if (!listEl || !addBtn) return;
+    addBtn.style.display = listEl.children.length >= MAX_EXTRA_DOCS ? 'none' : '';
+  }
+  function collectDocExtras(listEl) {
+    if (!listEl) return [];
+    var out = [];
+    $$('.doc-extra-row', listEl).forEach(function (row) {
+      var tipo = ($('.doc-extra-tipo', row) || {}).value || '';
+      var numero = (($('.doc-extra-numero', row) || {}).value || '').trim();
+      if (tipo || numero) out.push({ tipo: tipo, numero: numero });
+    });
+    return out;
+  }
+  var docExtraList = document.getElementById('doc-extra-list');
+  var docAddBtn = document.getElementById('doc-add');
+  if (docAddBtn) docAddBtn.addEventListener('click', function () { addDocExtraRow(docExtraList, docAddBtn); });
+
+  /* ============ INCIDENTE: bloques condicionales por tipo ============ */
+  var fIncident = document.getElementById('f-incident');
+  var fViajo = document.getElementById('f-viajo');
+  function updateViajoCascade() {
+    var v = fViajo ? fViajo.value : '';
+    var horasWrap = document.getElementById('inc-viajo-horas-wrap');
+    var pasajeBlock = document.getElementById('inc-pasaje-alt');
+    if (horasWrap) horasWrap.style.display = v === 'reubicado' ? '' : 'none';
+    if (pasajeBlock) pasajeBlock.style.display = v === 'medios_propios' ? '' : 'none';
+  }
+  function updateIncidentBlocks() {
+    var v = fIncident ? fIncident.value : '';
+    var isDemora = v === 'demora';
+    var isComun = v === 'cancelacion' || v === 'reprogramacion' || v === 'overbooking' || v === 'denegacion';
+    var isEmbarque = v === 'overbooking' || v === 'denegacion';
+    var isNotice = v === 'cancelacion' || v === 'reprogramacion';
+    var demoraBlock = document.getElementById('inc-demora');
+    var comunBlock = document.getElementById('inc-comun');
+    var embarqueWrap = document.getElementById('inc-embarque-wrap');
+    var noticeWrap = document.getElementById('inc-notice-wrap');
+    if (demoraBlock) demoraBlock.style.display = isDemora ? '' : 'none';
+    if (comunBlock) comunBlock.style.display = isComun ? '' : 'none';
+    if (embarqueWrap) embarqueWrap.style.display = isEmbarque ? '' : 'none';
+    if (noticeWrap) noticeWrap.style.display = isNotice ? '' : 'none';
+    updateViajoCascade();
+  }
+  if (fIncident) fIncident.addEventListener('change', updateIncidentBlocks);
+  if (fViajo) fViajo.addEventListener('change', updateViajoCascade);
+
+  /* ============ EQUIPAJE: PIR, valor requerido por tipo, no entregado ============ */
+  function wireBaggageBlock(prefix) {
+    var typeSel = document.getElementById(prefix + '-type');
+    var pirSel = document.getElementById(prefix + '-pir');
+    var noEntregado = document.getElementById(prefix + '-no-entregado');
+    var deliveryInp = document.getElementById(prefix === 'fb' ? 'fb-delivery-date' : 'fv-bag-delivery');
+    var deliveryWrapId = prefix === 'fb' ? 'fb-delivery-wrap' : 'fv-bag-delivery-wrap';
+    var valueInp = document.getElementById(prefix + '-value');
+    var valueLbl = document.getElementById(prefix + '-value-lbl');
+
+    function updateDelivery() {
+      var isDemora = typeSel && typeSel.value === 'demora';
+      var wrap = document.getElementById(deliveryWrapId);
+      if (wrap) wrap.style.display = isDemora ? '' : 'none';
+      if (deliveryInp) {
+        if (isDemora && !(noEntregado && noEntregado.checked)) deliveryInp.setAttribute('data-required', 'true');
+        else deliveryInp.removeAttribute('data-required');
+      }
+    }
+    function updateValue() {
+      if (!typeSel) return;
+      if (typeSel.value === 'perdida') {
+        if (valueLbl) valueLbl.innerHTML = 'Valor estimado del contenido (USD) <span class="field__ast">*</span>';
+        if (valueInp) valueInp.setAttribute('data-required', 'true');
+      } else if (typeSel.value === 'danio') {
+        if (valueLbl) valueLbl.textContent = 'Costo estimado de reparación/reposición (USD)';
+        if (valueInp) valueInp.removeAttribute('data-required');
+      } else {
+        if (valueLbl) valueLbl.textContent = 'Valor estimado del equipaje (USD)';
+        if (valueInp) valueInp.removeAttribute('data-required');
+      }
+    }
+    if (typeSel) typeSel.addEventListener('change', function () { updateDelivery(); updateValue(); });
+    if (noEntregado) noEntregado.addEventListener('change', function () {
+      if (deliveryInp) {
+        deliveryInp.disabled = noEntregado.checked;
+        if (noEntregado.checked) { deliveryInp.value = ''; deliveryInp.removeAttribute('data-required'); }
+        else if (typeSel && typeSel.value === 'demora') deliveryInp.setAttribute('data-required', 'true');
+      }
+    });
+    if (pirSel) pirSel.addEventListener('change', function () {
+      var wrap = document.getElementById(prefix + '-pir-numero-wrap');
+      if (wrap) wrap.style.display = pirSel.value === 'si' ? '' : 'none';
     });
   }
+  wireBaggageBlock('fb');
+  wireBaggageBlock('fv-bag');
 
   /* ============ COMBINADO: equipaje en reclamo por vuelo ============ */
   var fvBagToggle = document.getElementById('fv-bag-toggle');
@@ -202,13 +303,6 @@ document.addEventListener('DOMContentLoaded', function () {
     fvBagToggle.addEventListener('change', function () {
       var f = document.getElementById('fv-bag-fields');
       if (f) f.style.display = fvBagToggle.checked ? '' : 'none';
-    });
-  }
-  var fvBagType = document.getElementById('fv-bag-type');
-  if (fvBagType) {
-    fvBagType.addEventListener('change', function () {
-      var wrap = document.getElementById('fv-bag-delivery-wrap');
-      if (wrap) wrap.style.display = fvBagType.value === 'demora' ? '' : 'none';
     });
   }
 
@@ -223,7 +317,9 @@ document.addEventListener('DOMContentLoaded', function () {
       + '<div class="field"><label class="field__lbl">Tipo de documento</label><select class="field__in acomp-doctype"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select></div>'
       + '<div class="field"><label class="field__lbl">Número de documento</label><input class="field__in acomp-docnum" type="text" placeholder="Número" /></div>'
       + '<div class="field" style="justify-content:flex-end"><label class="acomp-chk"><input type="checkbox" class="acomp-menor" /> <span>Es menor de edad</span></label></div>'
-      + '</div>';
+      + '</div>'
+      + '<div class="acomp-doc-extra-list"></div>'
+      + '<div style="margin-top:6px"><button type="button" class="btn-add-acomp acomp-doc-add">+ Agregar otro documento</button></div>';
     if (withBag) {
       h += '<div class="g g2" style="margin-top:10px">'
         + '<div class="field"><label class="field__lbl">Equipaje: tipo de incidencia</label><select class="field__in acomp-bag-type"><option value="">Seleccionar...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select></div>'
@@ -235,6 +331,9 @@ document.addEventListener('DOMContentLoaded', function () {
     row.innerHTML = h;
     var rm = row.querySelector('.acomp-remove');
     if (rm) rm.addEventListener('click', function () { row.parentNode.removeChild(row); });
+    var acompDocList = row.querySelector('.acomp-doc-extra-list');
+    var acompDocBtn = row.querySelector('.acomp-doc-add');
+    if (acompDocBtn) acompDocBtn.addEventListener('click', function () { addDocExtraRow(acompDocList, acompDocBtn); });
     listEl.appendChild(row);
   }
 
@@ -251,11 +350,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var out = [];
     $$('.acomp-row', listEl).forEach(function (row) {
       var nombre = (($('.acomp-nombre', row) || {}).value || '').trim();
-      if (!nombre) return; /* skip empty rows */
+      var doctype = ($('.acomp-doctype', row) || {}).value || '';
+      var docnum = (($('.acomp-docnum', row) || {}).value || '').trim();
+      if (!nombre && !doctype && !docnum) return; /* skip fully empty rows */
       var item = {
         nombre: nombre,
-        documento_tipo: ($('.acomp-doctype', row) || {}).value || '',
-        documento_numero: (($('.acomp-docnum', row) || {}).value || '').trim(),
+        documento_tipo: doctype,
+        documento_numero: docnum,
+        documentos: [{ tipo: doctype, numero: docnum }].concat(collectDocExtras(row.querySelector('.acomp-doc-extra-list'))),
         es_menor: !!(($('.acomp-menor', row) || {}).checked),
         equipaje: null
       };
@@ -272,14 +374,38 @@ document.addEventListener('DOMContentLoaded', function () {
     return out;
   }
 
+  /* Filas de acompañante agregadas: si no están totalmente vacías, nombre + tipo +
+     número de documento pasan a obligatorios. */
+  function validateAcompRows() {
+    var en = S.lang === 'en', ok = true;
+    var type = S.claimType === 'equipaje' ? 'equipaje' : 'vuelo';
+    var listEl = document.getElementById('acomp-' + type + '-list');
+    if (!listEl) return true;
+    $$('.acomp-row', listEl).forEach(function (row) {
+      var nombreEl = $('.acomp-nombre', row), doctypeEl = $('.acomp-doctype', row), docnumEl = $('.acomp-docnum', row);
+      var nombre = (nombreEl.value || '').trim(), doctype = doctypeEl.value || '', docnum = (docnumEl.value || '').trim();
+      if (!nombre && !doctype && !docnum) return; /* fully empty: not validated, will be skipped on submit */
+      [[nombreEl, nombre], [doctypeEl, doctype], [docnumEl, docnum]].forEach(function (pair) {
+        var el = pair[0], val = pair[1];
+        var g = el.closest('.field'), m = $('.field__msg', g);
+        if (!val) { g.classList.add('field-error'); g.classList.remove('field-ok'); if (m) m.textContent = en ? 'Required' : 'Obligatorio'; ok = false; }
+        else { g.classList.add('field-ok'); g.classList.remove('field-error'); if (m) m.textContent = ''; }
+      });
+    });
+    return ok;
+  }
+
   /* ============ PROGRESS ============ */
+  /* Un campo data-required solo cuenta si está visible (no dentro de un contenedor
+     con display:none ni de una .ctype-sub inactiva). offsetParent es null en ambos casos. */
+  function isFieldVisible(f) { return f.offsetParent !== null; }
+
   function getReq() {
     var active = document.querySelector('.wz-panel.active');
     if (!active) return [];
     var result = [];
     active.querySelectorAll('[data-required="true"]').forEach(function (f) {
-      var sub = f.closest('.ctype-sub');
-      if (sub && !sub.classList.contains('active')) return;
+      if (!isFieldVisible(f)) return;
       result.push(f);
     });
     return result;
@@ -551,6 +677,7 @@ document.addEventListener('DOMContentLoaded', function () {
       else if (f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.value.trim())) { g.classList.add('field-error'); g.classList.remove('field-ok'); if (m) m.textContent = en ? 'Invalid email' : 'Email invalido'; ok = false; }
       else { g.classList.add('field-ok'); g.classList.remove('field-error'); if (m) m.textContent = ''; }
     });
+    if (!validateAcompRows()) ok = false;
     return ok;
   }
 
@@ -590,17 +717,41 @@ document.addEventListener('DOMContentLoaded', function () {
     /* Combined flight+baggage: if a flight claim also reports baggage, switch type
        and map the fv-bag-* fields onto the existing baggage columns. */
     var tipoReclamo = S.claimType;
+    var bagPrefix = 'fb';
     var bagType = gv('fb-type'), bagDesc = gv('fb-description'), bagValue = gv('fb-value'), bagDelivery = gv('fb-delivery-date');
     if (S.claimType === 'vuelo') {
       var fvT = document.getElementById('fv-bag-toggle');
       if (fvT && fvT.checked && gv('fv-bag-type')) {
         tipoReclamo = 'vuelo_equipaje';
+        bagPrefix = 'fv-bag';
         bagType = gv('fv-bag-type'); bagDesc = gv('fv-bag-desc'); bagValue = gv('fv-bag-value'); bagDelivery = gv('fv-bag-delivery');
       }
     }
+    var bagNoEntregadoEl = document.getElementById(bagPrefix + '-no-entregado');
+    var equipajeNoEntregado = !!(bagNoEntregadoEl && bagNoEntregadoEl.checked);
+    var pirPresentado = tipoReclamo !== 'vuelo' ? gv(bagPrefix + '-pir') : '';
+    var pirNumero = tipoReclamo !== 'vuelo' ? gv(bagPrefix + '-pir-numero') : '';
+
+    /* Gastos: la sub-sección equipaje tiene sus propios campos (fb-*); vuelo y
+       vuelo_equipaje siguen usando los de la sub-sección vuelo (f-*). */
+    var gastosPrefix = tipoReclamo === 'equipaje' ? 'fb' : 'f';
+    var gastosMoneda = gv(gastosPrefix + '-currency');
+    var gastosMonto = gv(gastosPrefix + '-expenses-amount');
+    var gastosDetalle = gv(gastosPrefix + '-expenses-detail');
+
+    /* Incidente: horas de retraso viene de f-delay-hours (demora) o f-viajo-horas
+       (reubicado dentro de cancelación/reprogramación/overbooking/denegación). */
+    var horasRetraso = gv('f-incident') === 'demora' ? gv('f-delay-hours') : gv('f-viajo-horas');
+
+    var documentosTitular = [{ tipo: gv('f-doctype'), numero: gv('f-docnum') }].concat(collectDocExtras(docExtraList));
     var acompanantes = collectAcompanantes();
 
-    filesToB64(dropFiles).then(function(convertedDrop) {
+    var pasajeAltFiles = S.files.pasajeAlt || [];
+
+    filesToB64(dropFiles.concat(pasajeAltFiles)).then(function(convertedDrop) {
+      var pasajeAltNames = {};
+      pasajeAltFiles.forEach(function (f) { pasajeAltNames[f.name] = true; });
+      convertedDrop.forEach(function (cf) { if (pasajeAltNames[cf.name]) cf.categoria = 'pasaje_alternativo'; });
       var allFiles = (S.scannedFiles || []).concat(convertedDrop);
       return fetch('/api/process-ticket', {
       method: 'POST',
@@ -619,6 +770,7 @@ document.addEventListener('DOMContentLoaded', function () {
         telefono:               gv('f-phone'),
         documento_tipo:         gv('f-doctype'),
         documento_numero:       gv('f-docnum'),
+        documentos:             documentosTitular,
         /* Flight */
         aerolinea:              gv('f-airline'),
         vuelo_nro:              gv('f-flight'),
@@ -628,19 +780,26 @@ document.addEventListener('DOMContentLoaded', function () {
         pnr:                    gv('f-pnr'),
         /* Incident (vuelo) */
         tipo_incidencia:        gv('f-incident'),
-        horas_retraso:          gv('f-delay-hours'),
+        horas_retraso:          horasRetraso,
         anticipacion_aviso:     gv('f-notice'),
         ofrecimiento_aerolinea: gv('f-refund'),
         causa_informada:        gv('f-cause'),
-        /* Expenses (vuelo) */
-        moneda_gastos:          gv('f-currency'),
-        monto_gastos:           gv('f-expenses-amount'),
-        gastos_detalle:         gv('f-expenses-detail'),
+        viajo_finalmente:       gv('f-viajo'),
+        embarque_presentado:    gv('f-embarque'),
+        pasaje_alternativo_monto:  gv('f-pasaje-monto'),
+        pasaje_alternativo_moneda: gv('f-pasaje-moneda'),
+        /* Expenses */
+        moneda_gastos:          gastosMoneda,
+        monto_gastos:           gastosMonto,
+        gastos_detalle:         gastosDetalle,
         /* Baggage fields (equipaje claim, or combined vuelo+equipaje) */
         tipo_caso_equipaje:     bagType,
         descripcion_equipaje:   bagDesc,
         valor_equipaje:         bagValue,
         fecha_entrega_equipaje: bagDelivery,
+        equipaje_no_entregado:  equipajeNoEntregado,
+        pir_presentado:         pirPresentado,
+        pir_numero:             pirNumero,
         /* Acompañantes (pasajeros adicionales) */
         acompanantes:           acompanantes,
         /* Consent / electronic signature (from terms modal) */

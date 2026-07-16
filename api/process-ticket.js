@@ -175,6 +175,17 @@ export default async function handler(req, res) {
         fecha_entrega_equipaje: body.fecha_entrega_equipaje || null,
         /* Acompañantes (pasajeros adicionales) */
         acompanantes:          Array.isArray(body.acompanantes) ? body.acompanantes : [],
+        /* Documentos múltiples del titular (principal primero) */
+        documentos:            Array.isArray(body.documentos) ? body.documentos : [],
+        /* Incidencia: campos condicionales por tipo */
+        viajo_finalmente:      body.viajo_finalmente || null,
+        embarque_presentado:   body.embarque_presentado || null,
+        pasaje_alternativo_monto:  body.pasaje_alternativo_monto ? parseFloat(body.pasaje_alternativo_monto) || null : null,
+        pasaje_alternativo_moneda: body.pasaje_alternativo_moneda || null,
+        /* Equipaje: PIR + no entregado */
+        pir_presentado:        body.pir_presentado || null,
+        pir_numero:            body.pir_numero || null,
+        equipaje_no_entregado: body.equipaje_no_entregado === true || body.equipaje_no_entregado === 'true' || false,
         /* Google identity */
         google_sub:            body.google_sub            || null,
         google_email_verified: body.google_email_verified || null,
@@ -314,7 +325,9 @@ export default async function handler(req, res) {
             body: Buffer.from(sf.base64, 'base64'),
           });
           if (sfRes.ok) {
-            docUrls.push({ tipo: 'documento_viaje', url: SB_URL + '/storage/v1/object/public/reclamos/' + sfPath, nombre: sf.name || fname });
+            var docEntry = { tipo: 'documento_viaje', url: SB_URL + '/storage/v1/object/public/reclamos/' + sfPath, nombre: sf.name || fname };
+            if (sf.categoria) docEntry.categoria = sf.categoria;
+            docUrls.push(docEntry);
             console.log('[process-ticket] Doc uploaded:', sfPath);
           } else {
             var sfErr = await sfRes.text();
