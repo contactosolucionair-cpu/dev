@@ -95,6 +95,7 @@ export var TRANSICIONES = {
   'reclamo_directo/respuesta_recibida': {
     volver_a_presentar: { to: { instancia: 'reclamo_directo', momento: 'presentado' } },
     escalar_mediacion:  { to: { instancia: 'mediacion', momento: 'preparacion' } },
+    elevar_organismo:   { to: { instancia: 'reclamo_directo', momento: 'presentado' }, requires: ['organismo'] },
     acuerdo:             { to: { instancia: 'cobro', momento: null }, requires: ['monto_acordado'] },
     cerrar_sin_exito:    { to: { instancia: 'cerrado', momento: null }, closes: 'sin_exito', requiresMotivo: true },
     abandonar:           { to: { instancia: 'cerrado', momento: null }, closes: 'abandonado', requiresMotivo: true },
@@ -158,3 +159,4 @@ export var RESPONSABLES_ESPERA = ['solucionair', 'pasajero', 'aerolinea', 'aboga
 export var INSTANCIAS_VALIDAS = ['evaluacion', 'reclamo_directo', 'mediacion', 'cobro', 'cerrado'];
 export var MOMENTOS_VALIDOS = ['preparacion', 'presentado', 'respuesta_recibida'];
 export var RESULTADOS_VALIDOS = ['exito', 'sin_exito', 'no_apto', 'abandonado'];
+export var MONEDAS_VALIDAS = ['ARS', 'USD', 'EUR', 'BRL'];

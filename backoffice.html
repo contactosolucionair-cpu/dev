@@ -297,6 +297,8 @@
           <select id="nc-doctype" class="firma-select"><option value="">Tipo de documento...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>
           <input id="nc-docnum" class="firma-select" placeholder="Número de documento">
         </div>
+        <div id="nc-doc-extra-list"></div>
+        <div style="margin-bottom:14px"><button type="button" class="btn btn--ghost" id="nc-doc-add" style="font-size:.72rem">+ Agregar otro documento</button></div>
 
         <div class="detail__label" style="margin-bottom:6px">Tipo de reclamo</div>
         <select id="nc-tipo" class="firma-select" style="width:100%;margin-bottom:14px"><option value="vuelo">Reclamo por vuelo</option><option value="equipaje">Reclamo por equipaje</option><option value="vuelo_equipaje">Vuelo + Equipaje</option></select>
@@ -313,12 +315,24 @@
 
         <div id="nc-sec-vuelo">
           <div class="detail__label" style="margin-bottom:6px">Incidencia</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
             <select id="nc-incidencia" class="firma-select"><option value="">Tipo de incidencia...</option><option value="cancelacion">Cancelación</option><option value="demora">Demora</option><option value="overbooking">Overbooking</option><option value="reprogramacion">Reprogramación</option><option value="denegacion">Denegación de embarque</option></select>
-            <input id="nc-delay" type="number" min="0" class="firma-select" placeholder="Horas de retraso">
-            <input id="nc-notice" class="firma-select" placeholder="Anticipación de notificación">
-            <select id="nc-refund" class="firma-select"><option value="">¿Ofrecieron reembolso?</option><option value="si">Sí</option><option value="no">No</option></select>
             <select id="nc-causa" class="firma-select"><option value="">Causa informada...</option><option value="operativa">Operativa</option><option value="tecnica">Técnica</option><option value="climatica">Climática</option><option value="atc">ATC</option><option value="otra">Otra</option><option value="no_informada">No informada</option></select>
+          </div>
+          <div id="nc-fg-delay" style="display:none;margin-bottom:8px"><input id="nc-delay" type="number" min="0" class="firma-select" style="width:100%" placeholder="Horas de retraso"></div>
+          <div id="nc-fg-comun" style="display:none;margin-bottom:8px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div id="nc-fg-embarque"><select id="nc-embarque" class="firma-select"><option value="">¿Se presentó al embarque?</option><option value="si">Sí</option><option value="no">No</option></select></div>
+              <div id="nc-fg-notice"><select id="nc-notice" class="firma-select"><option value="">Anticipación del aviso...</option><option value="mas_14_dias">Más de 14 días</option><option value="7_a_14_dias">Entre 7 y 14 días</option><option value="menos_7_dias">Menos de 7 días</option><option value="menos_24h">Menos de 24 horas</option><option value="en_aeropuerto">En el aeropuerto, sin aviso previo</option></select></div>
+              <select id="nc-refund" class="firma-select"><option value="">¿Qué ofreció la aerolínea?</option><option value="reubicacion">Reubicación en otro vuelo</option><option value="reembolso">Reembolso</option><option value="reubicacion_y_reembolso">Reubicación y reembolso</option><option value="voucher">Voucher / compensación en el momento</option><option value="nada">Nada</option></select>
+              <select id="nc-viajo" class="firma-select"><option value="">¿Finalmente viajó?</option><option value="reubicado">Sí, lo reubicó la aerolínea</option><option value="medios_propios">Sí, por sus propios medios</option><option value="no_viajo">No viajó</option></select>
+            </div>
+            <div id="nc-fg-pasaje" style="display:none">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <select id="nc-pasaje-moneda" class="firma-select"><option value="ARS">ARS</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="BRL">BRL</option></select>
+                <input id="nc-pasaje-monto" type="number" min="0" step="0.01" class="firma-select" placeholder="Costo del nuevo pasaje">
+              </div>
+            </div>
           </div>
           <div class="detail__label" style="margin-bottom:6px">Gastos</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
@@ -332,9 +346,14 @@
           <div class="detail__label" style="margin-bottom:6px">Equipaje</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
             <select id="nc-bag-type" class="firma-select"><option value="">Tipo de incidencia...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select>
-            <input id="nc-bag-delivery" type="date" class="firma-select" style="display:none">
+            <div id="nc-bag-delivery-wrap" style="display:none">
+              <input id="nc-bag-delivery" type="date" class="firma-select" style="width:100%">
+              <label style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:.72rem"><input type="checkbox" id="nc-bag-no-entregado"> Todavía no se lo entregaron</label>
+            </div>
             <input id="nc-bag-value" type="number" min="0" class="firma-select" placeholder="Valor estimado (USD)">
+            <select id="nc-bag-pir" class="firma-select"><option value="">¿Presentó PIR?</option><option value="si">Sí</option><option value="no">No</option><option value="no_sabe">No sabe</option></select>
           </div>
+          <div id="nc-bag-pir-numero-wrap" style="display:none;margin-bottom:8px"><input id="nc-bag-pir-numero" class="firma-select" style="width:100%" placeholder="Número de PIR"></div>
           <textarea id="nc-bag-desc" class="firma-select" rows="2" style="width:100%;margin-bottom:14px;resize:vertical" placeholder="Descripción del incidente"></textarea>
         </div>
 
@@ -466,7 +485,10 @@
           <button class="detail__close" id="monto-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div class="detail__label" style="margin-bottom:6px" id="monto-label">Monto</div>
-        <input id="monto-valor" type="number" step="0.01" min="0" class="firma-select" style="width:100%" placeholder="0.00">
+        <div style="display:flex;gap:6px">
+          <select id="monto-moneda" class="firma-select" style="flex:0 0 90px"><option value="ARS">ARS</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="BRL">BRL</option></select>
+          <input id="monto-valor" type="number" step="0.01" min="0" class="firma-select" style="flex:1" placeholder="0.00">
+        </div>
         <div id="monto-msg" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
         <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
           <button class="cm__btn cm__btn--cancel" id="monto-cancel" type="button">Cancelar</button>
@@ -490,6 +512,23 @@
         <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
           <button class="cm__btn cm__btn--cancel" id="cierre-cancel" type="button">Cancelar</button>
           <button class="cm__btn cm__btn--confirm" id="cierre-save" type="button">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Elevar a organismo -->
+    <div class="cm-ov" id="organismo-ov">
+      <div class="cm" style="max-width:380px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Elevar a organismo</div>
+          <button class="detail__close" id="organismo-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="detail__label" style="margin-bottom:6px">Organismo (ej. AESA, ANAC)</div>
+        <input id="organismo-valor" class="firma-select" style="width:100%" placeholder="Nombre del organismo">
+        <div id="organismo-msg" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
+        <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
+          <button class="cm__btn cm__btn--cancel" id="organismo-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="organismo-save" type="button">Confirmar</button>
         </div>
       </div>
     </div>
@@ -568,11 +607,16 @@
     /* ---- Instancia + momento (reemplaza el pipeline plano de estados) ---- */
     var INSTANCIA_LABELS={evaluacion:'Evaluación',reclamo_directo:'Reclamo directo',mediacion:'Mediación',cobro:'Cobro',cerrado:'Cerrado'};
     var INSTANCIA_ORDEN=['evaluacion','reclamo_directo','mediacion','cobro','cerrado'];
-    var MOMENTO_LABELS={preparacion:'Preparación',presentado:'Presentado',respuesta_recibida:'Esperando respuesta'};
+    var MOMENTO_LABELS={preparacion:'Preparación',presentado:'Presentado · esperando respuesta',respuesta_recibida:'Respuesta recibida · a decidir'};
     var RESULTADO_LABELS={exito:'Éxito',sin_exito:'Sin éxito',no_apto:'No apto',abandonado:'Abandonado'};
     var MOTIVO_CIERRE_LABELS={rechazo_definitivo:'Rechazo definitivo',monto_inviable:'Monto inviable',documentacion_insuficiente:'Documentación insuficiente',no_elegible:'No elegible',prescripto:'Prescripto',pasajero_no_responde:'Pasajero no responde',desistimiento_pasajero:'Desistimiento del pasajero',aerolinea_no_pago:'Aerolínea no pagó',otro:'Otro'};
     var TIPO_ESPERA_LABELS={info_pasajero:'Información del pasajero',firma_documento:'Firma de documento',requerimiento_aerolinea:'Requerimiento de la aerolínea',audiencia:'Audiencia',accion_interna:'Acción interna'};
-    var RESPONSABLE_ESPERA_LABELS={solucionair:'Nosotros',pasajero:'Pasajero',aerolinea:'Aerolínea',abogado:'Abogado',mediador:'Mediador'};
+    var RESPONSABLE_ESPERA_LABELS={solucionair:'SolucionAir',pasajero:'Pasajero',aerolinea:'Aerolínea',abogado:'Abogado',mediador:'Mediador'};
+    /* Valores canónicos nuevos + fallback a valores viejos del form (no migrados) */
+    var ANTICIPACION_LABELS={mas_14_dias:'Más de 14 días','7_a_14_dias':'Entre 7 y 14 días',menos_7_dias:'Menos de 7 días',menos_24h:'Menos de 24 horas',en_aeropuerto:'En el aeropuerto, sin aviso previo',sin_aviso:'Sin aviso previo (valor anterior)',menos_14:'Menos de 14 días (valor anterior)','14_a_21':'14 a 21 días (valor anterior)',mas_21:'Más de 21 días (valor anterior)'};
+    var OFRECIMIENTO_LABELS={reubicacion:'Reubicación en otro vuelo',reembolso:'Reembolso',reubicacion_y_reembolso:'Reubicación y reembolso',voucher:'Voucher / compensación en el momento',nada:'Nada',si:'Sí (valor anterior)',no:'No (valor anterior)',ninguno:'Ninguno (valor anterior)',reembolso_total:'Reembolso total (valor anterior)'};
+    var VIAJO_LABELS={reubicado:'Sí, lo reubicó la aerolínea',medios_propios:'Sí, por sus propios medios',no_viajo:'No viajó'};
+    var SI_NO_LABELS={si:'Sí',no:'No',no_sabe:'No sabe'};
     /* Mapping directo estado legacy -> instancia/momento (espejo de api/_utils/instancias.js) */
     var ESTADO_A_INSTANCIA={
       pendiente:{instancia:'evaluacion',momento:null},en_revision:{instancia:'evaluacion',momento:null},
@@ -592,8 +636,9 @@
       var m=ESTADO_A_INSTANCIA[(c&&c.estado)||'pendiente']||{instancia:'evaluacion',momento:null};
       return{instancia:m.instancia,momento:m.momento||null,resultado:m.resultado||null};
     }
-    function etapaLabel(pos){
+    function etapaLabel(pos,via,organismo){
       var l=INSTANCIA_LABELS[pos.instancia]||pos.instancia;
+      if(pos.instancia==='reclamo_directo'&&via==='organismo')l+=' ('+(organismo||'organismo')+')';
       if(pos.instancia==='cerrado'&&pos.resultado)return l+' · '+(RESULTADO_LABELS[pos.resultado]||pos.resultado);
       if(pos.momento)l+=' · '+(MOMENTO_LABELS[pos.momento]||pos.momento);
       return l;
@@ -614,7 +659,11 @@
     /** Responsable principal derivado de la posición del caso (sin contar esperas ad-hoc). */
     function pelotaPrincipal(c,pos){
       if(pos.instancia==='cerrado')return null;
-      if(pos.momento==='presentado')return pos.instancia==='mediacion'?'mediador':'aerolinea';
+      if(pos.momento==='presentado'){
+        if(pos.instancia==='mediacion')return 'mediador';
+        if(pos.instancia==='reclamo_directo'&&c.via_reclamo==='organismo')return c.organismo||'aerolinea';
+        return 'aerolinea';
+      }
       if(pos.instancia==='cobro')return c.pago_aerolinea_fecha?'solucionair':'aerolinea';
       return 'solucionair';
     }
@@ -641,6 +690,12 @@
       {campo:'pais_emisor',label:'País emisor (pasaporte)'},{campo:'id_fiscal_extranjero',label:'Identificación fiscal extranjera'},
       {campo:'agente_nombre',label:'Nombre del agente'},{campo:'agente_email',label:'Email del agente'},
       {campo:'monto_reclamado',label:'Monto reclamado'},{campo:'monto_acordado',label:'Monto total acordado'},
+      {campo:'anticipacion_aviso',label:'Anticipación del aviso'},{campo:'ofrecimiento_aerolinea',label:'Ofrecimiento de la aerolínea'},
+      {campo:'viajo_finalmente',label:'¿Viajó finalmente?'},{campo:'embarque_presentado',label:'Embarque presentado (si/no)'},
+      {campo:'pir_presentado',label:'PIR presentado (si/no/no_sabe)'},{campo:'pir_numero',label:'Número de PIR'},
+      {campo:'pasaje_alternativo_monto',label:'Monto del pasaje alternativo'},{campo:'pasaje_alternativo_moneda',label:'Moneda del pasaje alternativo'},
+      {campo:'monto_reclamado_moneda',label:'Moneda del monto reclamado'},{campo:'monto_acordado_moneda',label:'Moneda del monto acordado'},
+      {campo:'organismo',label:'Organismo (vía elevación)'},
     ];
     function resolveAdjLoc(a){
       var bucket=a.bucket||'reclamos', path=a.path||null;
@@ -779,7 +834,7 @@
         html+='<td class="mono">'+(c.vuelo_nro||'—')+'</td>';
         html+='<td>'+(c.aerolinea||'—')+'</td>';
         html+='<td class="mono">'+(c.fecha_vuelo||'—')+'</td>';
-        html+='<td><span class="badge '+bc+'">'+esc(etapaLabel(pos))+'</span></td>';
+        html+='<td><span class="badge '+bc+'">'+esc(etapaLabel(pos,c.via_reclamo,c.organismo))+'</span></td>';
         html+='<td class="mono">'+pelotaCell+'</td>';
         html+='<td class="mono" style="'+diasStyle+'">'+(dias==null?'—':dias)+'</td>';
         html+='<td><button class="btn-del" data-del-id="'+c.id+'" title="Eliminar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>';
@@ -826,7 +881,7 @@
         evaluacion:[['iniciar_reclamo','Iniciar reclamo directo'],['no_apto','Marcar no apto'],['abandonar','Abandonar caso']],
         'reclamo_directo/preparacion':[['presentar','Presentar a la aerolínea'],['abandonar','Abandonar caso']],
         'reclamo_directo/presentado':[['respuesta_recibida','Registrar respuesta recibida'],['vencio_plazo','Marcar plazo vencido'],['acuerdo','Registrar acuerdo'],['abandonar','Abandonar caso']],
-        'reclamo_directo/respuesta_recibida':[['volver_a_presentar','Volver a presentar'],['escalar_mediacion','Escalar a mediación'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
+        'reclamo_directo/respuesta_recibida':[['volver_a_presentar','Volver a presentar'],['escalar_mediacion','Escalar a mediación'],['elevar_organismo','Elevar a organismo'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
         'mediacion/preparacion':[['presentar','Presentar a mediación'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
         'mediacion/presentado':[['respuesta_recibida','Registrar respuesta / audiencia'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
         'mediacion/respuesta_recibida':[['volver_a_presentar','Nueva audiencia'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
@@ -868,7 +923,7 @@
       var resueltas=(Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return e.resuelta});
       var firmaVal=c.firma_estado||'no_aplica';
       var h='<div class="action-field" style="margin-top:8px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0"><div class="detail__label" style="margin-bottom:0">Esperas</div><button class="btn btn--ghost" id="btn-open-espera" type="button" style="font-size:.68rem;padding:3px 9px">+ Agregar espera</button></div>';
-      if(firmaVal==='pendiente_envio')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Autorización pendiente de envío</span><span class="badge badge--en_gestion">Nosotros</span></div>';
+      if(firmaVal==='pendiente_envio')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Autorización pendiente de envío</span><span class="badge badge--en_gestion">'+esc(RESPONSABLE_ESPERA_LABELS.solucionair)+'</span></div>';
       if(firmaVal==='enviada')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Esperando firma del pasajero</span><span class="badge badge--en_gestion">Pasajero</span></div>';
       if(!abiertas.length&&firmaVal!=='pendiente_envio'&&firmaVal!=='enviada')h+='<p style="font-size:.72rem;color:var(--t4);margin:6px 0">Sin esperas abiertas.</p>';
       abiertas.forEach(function(e){
@@ -897,7 +952,7 @@
       return fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
       .then(function(r){return r.json()}).then(function(d){
         if(d.success){
-          ['instancia','momento','resultado','estado','estado_historial','instancia_historial','monto_reclamado','monto_acordado','acuerdo_instancia','fecha_acuerdo','motivo_cierre','motivo_cierre_detalle','novedades'].forEach(function(k){
+          ['instancia','momento','resultado','estado','estado_historial','instancia_historial','monto_reclamado','monto_acordado','monto_reclamado_moneda','monto_acordado_moneda','acuerdo_instancia','fecha_acuerdo','motivo_cierre','motivo_cierre_detalle','via_reclamo','organismo','novedades'].forEach(function(k){
             if(d[k]!==undefined){c[k]=d[k];claims.forEach(function(cl){if(cl.id===c.id)cl[k]=d[k]})}
           });
           applyFilters();
@@ -936,6 +991,31 @@
       h+='</div>';
       h+='<div class="detail__divider"></div>';
 
+      /* Documentos (titular + acompañantes) */
+      var documentosTitular=Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[]);
+      var acompArrDoc=Array.isArray(c.acompanantes)?c.acompanantes:[];
+      if(documentosTitular.length>1||acompArrDoc.some(function(a){return Array.isArray(a.documentos)&&a.documentos.length})){
+        h+='<div class="detail__section"><div class="detail__label" style="margin-bottom:6px">Documentos</div>';
+        h+='<div class="detail__value" style="font-size:.72rem;color:var(--t3);margin-bottom:4px">Titular</div>';
+        documentosTitular.forEach(function(d,di){
+          h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bdl);font-size:.78rem">';
+          h+='<span>'+(di===0?'★ ':'')+esc(d.tipo||'—')+' '+esc(d.numero||'—')+'</span>';
+          if(di>0)h+='<button class="btn btn--ghost" data-doc-principal="titular:'+di+'" type="button" style="font-size:.62rem;padding:2px 7px">Hacer principal</button>';
+          h+='</div>';
+        });
+        acompArrDoc.forEach(function(a,ai){
+          var docsA=Array.isArray(a.documentos)&&a.documentos.length?a.documentos:(a.documento_tipo||a.documento_numero?[{tipo:a.documento_tipo,numero:a.documento_numero}]:[]);
+          if(!docsA.length)return;
+          h+='<div class="detail__value" style="font-size:.72rem;color:var(--t3);margin:8px 0 4px">'+esc(a.nombre||'Acompañante')+'</div>';
+          docsA.forEach(function(d,di){
+            h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bdl);font-size:.78rem">';
+            h+='<span>'+(di===0?'★ ':'')+esc(d.tipo||'—')+' '+esc(d.numero||'—')+'</span>';
+            h+='</div>';
+          });
+        });
+        h+='</div><div class="detail__divider"></div>';
+      }
+
       /* Vuelo */
       h+='<div class="detail__grid">';
       h+='<div class="detail__section"><div class="detail__label">Vuelo</div><div class="detail__value mono">'+(c.vuelo_nro||'—')+'</div></div>';
@@ -946,22 +1026,33 @@
       if(c.origen||c.destino){h+='<div class="detail__section" style="margin-top:6px"><div class="detail__label">Ruta</div><div class="detail__value mono">'+(c.origen||'?')+' → '+(c.destino||'?')+'</div></div>'}
 
       /* Incidencia */
-      if(c.tipo_incidencia||c.horas_retraso||c.causa_informada){
+      if(c.tipo_incidencia||c.horas_retraso||c.causa_informada||c.anticipacion_aviso||c.ofrecimiento_aerolinea||c.viajo_finalmente||c.embarque_presentado||c.pasaje_alternativo_monto){
         h+='<div class="detail__divider"></div><div class="detail__grid">';
         if(c.tipo_incidencia)h+='<div class="detail__section"><div class="detail__label">Tipo incidencia</div><div class="detail__value">'+esc(c.tipo_incidencia)+'</div></div>';
         if(c.horas_retraso!=null)h+='<div class="detail__section"><div class="detail__label">Horas retraso</div><div class="detail__value mono">'+esc(String(c.horas_retraso))+'h</div></div>';
+        if(c.embarque_presentado)h+='<div class="detail__section"><div class="detail__label">Embarque presentado</div><div class="detail__value">'+esc(SI_NO_LABELS[c.embarque_presentado]||c.embarque_presentado)+'</div></div>';
+        if(c.anticipacion_aviso)h+='<div class="detail__section"><div class="detail__label">Anticipación del aviso</div><div class="detail__value">'+esc(ANTICIPACION_LABELS[c.anticipacion_aviso]||c.anticipacion_aviso)+'</div></div>';
+        if(c.ofrecimiento_aerolinea)h+='<div class="detail__section"><div class="detail__label">Ofrecimiento de la aerolínea</div><div class="detail__value">'+esc(OFRECIMIENTO_LABELS[c.ofrecimiento_aerolinea]||c.ofrecimiento_aerolinea)+'</div></div>';
+        if(c.viajo_finalmente)h+='<div class="detail__section"><div class="detail__label">¿Viajó finalmente?</div><div class="detail__value">'+esc(VIAJO_LABELS[c.viajo_finalmente]||c.viajo_finalmente)+'</div></div>';
+        if(c.pasaje_alternativo_monto)h+='<div class="detail__section"><div class="detail__label">Pasaje alternativo</div><div class="detail__value mono">'+esc(c.pasaje_alternativo_moneda||'')+' '+esc(String(c.pasaje_alternativo_monto))+'</div></div>';
         if(c.causa_informada)h+='<div class="detail__section" style="grid-column:1/-1"><div class="detail__label">Causa informada</div><div class="detail__value">'+esc(c.causa_informada)+'</div></div>';
         h+='</div>';
       }
 
       /* Equipaje */
-      if(c.tipo_caso_equipaje||c.descripcion_equipaje||c.valor_equipaje||c.fecha_entrega_equipaje){
+      if(c.tipo_caso_equipaje||c.descripcion_equipaje||c.valor_equipaje||c.fecha_entrega_equipaje||c.pir_presentado){
         h+='<div class="detail__divider"></div><div class="detail__grid">';
         if(c.tipo_caso_equipaje)h+='<div class="detail__section"><div class="detail__label">Tipo de caso</div><div class="detail__value">'+esc(c.tipo_caso_equipaje)+'</div></div>';
         if(c.valor_equipaje!=null)h+='<div class="detail__section"><div class="detail__label">Valor equipaje</div><div class="detail__value mono">USD '+esc(String(c.valor_equipaje))+'</div></div>';
-        if(c.fecha_entrega_equipaje)h+='<div class="detail__section"><div class="detail__label">Fecha de entrega</div><div class="detail__value mono">'+esc(c.fecha_entrega_equipaje)+'</div></div>';
+        if(c.equipaje_no_entregado)h+='<div class="detail__section"><div class="detail__label">Fecha de entrega</div><div class="detail__value" style="color:var(--warn)">Todavía no entregado</div></div>';
+        else if(c.fecha_entrega_equipaje)h+='<div class="detail__section"><div class="detail__label">Fecha de entrega</div><div class="detail__value mono">'+esc(c.fecha_entrega_equipaje)+'</div></div>';
+        if(c.pir_presentado)h+='<div class="detail__section"><div class="detail__label">PIR presentado</div><div class="detail__value">'+esc(SI_NO_LABELS[c.pir_presentado]||c.pir_presentado)+(c.pir_numero?' — '+esc(c.pir_numero):'')+'</div></div>';
         h+='</div>';
         if(c.descripcion_equipaje)h+='<div class="detail__section" style="margin-top:6px"><div class="detail__label">Descripción del incidente</div><div class="detail__value" style="white-space:pre-wrap">'+esc(c.descripcion_equipaje)+'</div></div>';
+        if(c.equipaje_no_entregado&&c.fecha_vuelo){
+          var diasSinEntrega=Math.floor((Date.now()-new Date(c.fecha_vuelo).getTime())/86400000);
+          if(diasSinEntrega>21)h+='<div class="detail__section" style="margin-top:8px;padding:8px 10px;background:var(--warnbg);border-radius:6px;color:var(--warn);font-size:.76rem">⚠ El equipaje lleva +21 días sin entrega: legalmente tratable como pérdida.</div>';
+        }
       }
 
       /* Gastos incurridos */
@@ -975,8 +1066,8 @@
       /* Montos de reclamo / acuerdo */
       if(c.monto_reclamado||c.monto_acordado){
         h+='<div class="detail__divider"></div><div class="detail__grid">';
-        if(c.monto_reclamado)h+='<div class="detail__section"><div class="detail__label">Monto reclamado</div><div class="detail__value mono">'+esc(String(c.monto_reclamado))+'</div></div>';
-        if(c.monto_acordado)h+='<div class="detail__section"><div class="detail__label">Monto total acordado</div><div class="detail__value mono">'+esc(String(c.monto_acordado))+'</div></div>';
+        if(c.monto_reclamado)h+='<div class="detail__section"><div class="detail__label">Monto reclamado</div><div class="detail__value mono">'+esc(c.monto_reclamado_moneda||'')+' '+esc(String(c.monto_reclamado))+'</div></div>';
+        if(c.monto_acordado)h+='<div class="detail__section"><div class="detail__label">Monto total acordado</div><div class="detail__value mono">'+esc(c.monto_acordado_moneda||'')+' '+esc(String(c.monto_acordado))+'</div></div>';
         h+='</div>';
       }
 
@@ -1068,7 +1159,7 @@
         hist.slice().reverse().forEach(function(ev){
           var fd=ev.fecha?new Date(ev.fecha).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
           var evPos={instancia:ev.instancia,momento:ev.momento,resultado:ev.instancia==='cerrado'?c.resultado:null};
-          h+='<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--bdl)"><span style="font-family:var(--fm);font-size:.66rem;color:var(--t4);white-space:nowrap;padding-top:2px">'+fd+'</span><span style="font-size:.76rem;color:var(--t1)"><span class="badge '+etapaBadgeClass(evPos.instancia,evPos.resultado)+'">'+esc(etapaLabel(evPos))+'</span>'+(ev.por?' <span style="color:var(--t4);font-size:.7rem">('+esc(ev.por)+')</span>':'')+'</span></div>';
+          h+='<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--bdl)"><span style="font-family:var(--fm);font-size:.66rem;color:var(--t4);white-space:nowrap;padding-top:2px">'+fd+'</span><span style="font-size:.76rem;color:var(--t1)"><span class="badge '+etapaBadgeClass(evPos.instancia,evPos.resultado)+'">'+esc(etapaLabel(evPos,ev.via,ev.organismo))+'</span>'+(ev.por?' <span style="color:var(--t4);font-size:.7rem">('+esc(ev.por)+')</span>':'')+'</span></div>';
         });
         h+='</div></div>';
       }
@@ -1082,7 +1173,7 @@
       h+='<div class="detail__section">';
       h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div class="detail__label" style="margin-bottom:0">Documentos adjuntos</div>'+(adjArr.length?'<button class="btn btn--ghost" id="btn-download-zip" type="button" style="font-size:.68rem;padding:4px 10px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Descargar todos (ZIP)</button>':'')+'</div>';
       h+='<div id="adj-list">';
-      adjArr.forEach(function(a,ai){
+      function renderAdjItem(a,ai){
         var icono=a.tipo==='carpeta_drive'?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>':'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
         var removeBtn='<button data-remove-idx="'+ai+'" type="button" title="Eliminar" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:2px 4px;flex-shrink:0;line-height:1" onmouseover="this.style.color=\'var(--err)\'" onmouseout="this.style.color=\'var(--t4)\'">✕</button>';
         /* El bucket es privado: abrir todo por URL firmada. Los adjuntos viejos
@@ -1094,11 +1185,18 @@
           ? '<button data-dlb="'+esc(signBucket)+'" data-dlp="'+esc(signPath)+'" data-dlname="'+esc(a.nombre||a.tipo)+'" type="button" title="Descargar" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:2px 4px;flex-shrink:0;display:flex;align-items:center" onmouseover="this.style.color=\'var(--g)\'" onmouseout="this.style.color=\'var(--t4)\'">'+dlIcon+'</button>'
           : '<button data-dlurl="'+esc(a.url)+'" data-dlname="'+esc(a.nombre||a.tipo)+'" type="button" title="Descargar" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:2px 4px;flex-shrink:0;display:flex;align-items:center" onmouseover="this.style.color=\'var(--g)\'" onmouseout="this.style.color=\'var(--t4)\'">'+dlIcon+'</button>';
         if(signPath){
-          h+='<div class="upload-item"><button data-bucket="'+esc(signBucket)+'" data-path="'+esc(signPath)+'" type="button" style="display:flex;align-items:center;gap:7px;flex:1;background:none;border:none;cursor:pointer;text-align:left;min-width:0">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span>'+openIcon+'</button>'+dlBtn+removeBtn+'</div>';
-        } else {
-          h+='<div class="upload-item"><a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:7px;flex:1;text-decoration:none;color:var(--t1);min-width:0">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span>'+openIcon+'</a>'+dlBtn+removeBtn+'</div>';
+          return '<div class="upload-item"><button data-bucket="'+esc(signBucket)+'" data-path="'+esc(signPath)+'" type="button" style="display:flex;align-items:center;gap:7px;flex:1;background:none;border:none;cursor:pointer;text-align:left;min-width:0">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span>'+openIcon+'</button>'+dlBtn+removeBtn+'</div>';
         }
-      });
+        return '<div class="upload-item"><a href="'+esc(a.url)+'" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:7px;flex:1;text-decoration:none;color:var(--t1);min-width:0">'+icono+'<span class="upload-item__name">'+esc(a.nombre||a.tipo)+'</span>'+openIcon+'</a>'+dlBtn+removeBtn+'</div>';
+      }
+      var pasajeAltIdx=[],otrosIdx=[];
+      adjArr.forEach(function(a,ai){(a.categoria==='pasaje_alternativo'?pasajeAltIdx:otrosIdx).push(ai)});
+      if(pasajeAltIdx.length){
+        h+='<div style="font-size:.66rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin:4px 0 4px">Constancia del nuevo pasaje</div>';
+        pasajeAltIdx.forEach(function(ai){h+=renderAdjItem(adjArr[ai],ai)});
+        if(otrosIdx.length)h+='<div style="font-size:.66rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px">Otros documentos</div>';
+      }
+      otrosIdx.forEach(function(ai){h+=renderAdjItem(adjArr[ai],ai)});
       if(!adjArr.length) h+='<p style="font-size:.72rem;color:var(--t4);margin:0 0 6px">Sin documentos cargados.</p>';
       h+='</div>';
       h+='<div class="upload-zone" id="upload-zone"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>Arrastrar archivos o hacer click para subir</div>';
@@ -1416,8 +1514,8 @@
           if(btn.disabled)return;
           var tr=btn.getAttribute('data-transicion');
           if(msgTransicion)msgTransicion.textContent='';
-          if(tr==='acuerdo'){openMontoModal(c,'acuerdo','monto_acordado','Monto total acordado',c.monto_acordado);return}
-          if(tr==='presentar'&&pos.instancia==='reclamo_directo'&&pos.momento==='preparacion'&&!c.monto_reclamado){openMontoModal(c,'presentar','monto_reclamado','Monto reclamado',c.monto_reclamado);return}
+          if(tr==='acuerdo'){openMontoModal(c,'acuerdo','monto_acordado','Monto total acordado',c.monto_acordado,c.monto_reclamado_moneda);return}
+          if(tr==='presentar'&&pos.instancia==='reclamo_directo'&&pos.momento==='preparacion'&&!c.monto_reclamado){openMontoModal(c,'presentar','monto_reclamado','Monto reclamado',c.monto_reclamado,c.monto_reclamado_moneda);return}
           if(tr==='presentar'&&pos.instancia==='mediacion'&&pos.momento==='preparacion'){
             var adjGate=Array.isArray(c.adjuntos)?c.adjuntos:[];
             var abogadoIdGate=c.abogado_id||(document.getElementById('sel-abogado')||{}).value||'';
@@ -1427,12 +1525,33 @@
             if(!tienePat||!tieneFicha){if(msgTransicion){msgTransicion.style.color='var(--err)';msgTransicion.textContent='Cargá la designación de patrocinio y la ficha de caso primero.'}return}
           }
           if(tr==='no_apto'||tr==='cerrar_sin_exito'||tr==='abandonar'){openCierreModal(c,tr,btn.textContent);return}
+          if(tr==='elevar_organismo'){openOrganismoModal(c);return}
           btn.disabled=true;
           doAvanzar(c,tr,{},function(err){btn.disabled=false;if(msgTransicion){msgTransicion.style.color='var(--err)';msgTransicion.textContent=err}});
         });
       });
       var linkCorreccion=document.getElementById('link-correccion');
       if(linkCorreccion)linkCorreccion.addEventListener('click',function(e){e.preventDefault();openCorreccionModal(c,pos)});
+
+      /* --- Documentos: hacer principal --- */
+      detailBody.querySelectorAll('[data-doc-principal]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var idx=parseInt(btn.getAttribute('data-doc-principal').split(':')[1]);
+          var docs=(Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[])).slice();
+          if(idx<1||idx>=docs.length)return;
+          var reordered=[docs[idx]].concat(docs.slice(0,idx)).concat(docs.slice(idx+1));
+          btn.disabled=true;
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-documentos',documentos:reordered})})
+          .then(function(r){return r.json()}).then(function(d){
+            if(d.success){
+              c.documentos=d.documentos;c.documento_tipo=d.documento_tipo;c.documento_numero=d.documento_numero;
+              claims.forEach(function(cl){if(cl.id===c.id){cl.documentos=d.documentos;cl.documento_tipo=d.documento_tipo;cl.documento_numero=d.documento_numero}});
+              toast('Documento principal actualizado.');
+              openDetail(c);
+            } else {btn.disabled=false;toast(d.error||'Error.',true)}
+          }).catch(function(){btn.disabled=false;toast('Error de conexión.',true)});
+        });
+      });
 
       /* --- Esperas --- */
       detailBody.querySelectorAll('[data-espera-resolver]').forEach(function(btn){
@@ -1504,13 +1623,15 @@
       p('- Referencia: '+(c.ref_code||'—'));
       p('- Canal: '+(c.canal||'B2C'));
       p('- Tipo de reclamo: '+(c.tipo_reclamo||'vuelo'));
-      p('- Etapa: '+etapaLabel(getInstancia(c)));
+      p('- Etapa: '+etapaLabel(getInstancia(c),c.via_reclamo,c.organismo));
       p('- Ingresado: '+fmtDateEsAR(c.creado_en));
       p('');
       p('## Pasajero');
       p('- Nombre: '+(c.nombre||'—'));
       p('- Email: '+(c.email||'—'));
       p('- Teléfono: '+(c.telefono||'—'));
+      var documentosTitularInfo=Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[]);
+      if(documentosTitularInfo.length)documentosTitularInfo.forEach(function(d,di){p('- Documento'+(di===0?' (principal)':' adicional')+': '+(d.tipo||'—')+' '+(d.numero||'—'))});
       p('');
       p('## Vuelo');
       p('- Vuelo: '+(c.vuelo_nro||'—'));
@@ -1519,18 +1640,25 @@
       if(c.pnr)p('- PNR: '+c.pnr);
       if(c.origen||c.destino)p('- Ruta: '+(c.origen||'?')+' → '+(c.destino||'?'));
       p('');
-      if(c.tipo_incidencia||c.horas_retraso!=null||c.causa_informada){
+      if(c.tipo_incidencia||c.horas_retraso!=null||c.causa_informada||c.anticipacion_aviso||c.ofrecimiento_aerolinea||c.viajo_finalmente||c.embarque_presentado){
         p('## Incidencia');
         if(c.tipo_incidencia)p('- Tipo: '+c.tipo_incidencia);
         if(c.horas_retraso!=null)p('- Horas de retraso: '+c.horas_retraso+'h');
+        if(c.embarque_presentado)p('- Embarque presentado: '+(SI_NO_LABELS[c.embarque_presentado]||c.embarque_presentado));
+        if(c.anticipacion_aviso)p('- Anticipación del aviso: '+(ANTICIPACION_LABELS[c.anticipacion_aviso]||c.anticipacion_aviso));
+        if(c.ofrecimiento_aerolinea)p('- Ofrecimiento de la aerolínea: '+(OFRECIMIENTO_LABELS[c.ofrecimiento_aerolinea]||c.ofrecimiento_aerolinea));
+        if(c.viajo_finalmente)p('- ¿Viajó finalmente?: '+(VIAJO_LABELS[c.viajo_finalmente]||c.viajo_finalmente));
+        if(c.pasaje_alternativo_monto)p('- Pasaje alternativo: '+(c.pasaje_alternativo_moneda||'')+' '+c.pasaje_alternativo_monto);
         if(c.causa_informada)p('- Causa informada: '+c.causa_informada);
         p('');
       }
-      if(c.tipo_caso_equipaje||c.descripcion_equipaje||c.valor_equipaje!=null||c.fecha_entrega_equipaje){
+      if(c.tipo_caso_equipaje||c.descripcion_equipaje||c.valor_equipaje!=null||c.fecha_entrega_equipaje||c.pir_presentado){
         p('## Equipaje');
         if(c.tipo_caso_equipaje)p('- Tipo de caso: '+c.tipo_caso_equipaje);
         if(c.valor_equipaje!=null)p('- Valor: USD '+c.valor_equipaje);
-        if(c.fecha_entrega_equipaje)p('- Fecha de entrega: '+c.fecha_entrega_equipaje);
+        if(c.equipaje_no_entregado)p('- Fecha de entrega: todavía no entregado');
+        else if(c.fecha_entrega_equipaje)p('- Fecha de entrega: '+c.fecha_entrega_equipaje);
+        if(c.pir_presentado)p('- PIR presentado: '+(SI_NO_LABELS[c.pir_presentado]||c.pir_presentado)+(c.pir_numero?' ('+c.pir_numero+')':''));
         if(c.descripcion_equipaje)p('- Descripción del incidente: '+c.descripcion_equipaje);
         p('');
       }
@@ -1542,8 +1670,8 @@
       }
       if(c.monto_reclamado||c.monto_acordado){
         p('## Montos de reclamo / acuerdo');
-        if(c.monto_reclamado)p('- Monto reclamado: '+c.monto_reclamado);
-        if(c.monto_acordado)p('- Monto total acordado: '+c.monto_acordado);
+        if(c.monto_reclamado)p('- Monto reclamado: '+(c.monto_reclamado_moneda||'')+' '+c.monto_reclamado);
+        if(c.monto_acordado)p('- Monto total acordado: '+(c.monto_acordado_moneda||'')+' '+c.monto_acordado);
         p('');
       }
       if((c.canal||'B2C')==='B2B'&&(c.agente_nombre||c.agente_email)){
@@ -1567,7 +1695,7 @@
       if(hist.length){
         p('## Historial');
         hist.slice().reverse().forEach(function(ev){
-          p('- '+fmtDateEsAR(ev.fecha)+': '+etapaLabel({instancia:ev.instancia,momento:ev.momento,resultado:ev.instancia==='cerrado'?c.resultado:null})+(ev.por?' (por '+ev.por+')':''));
+          p('- '+fmtDateEsAR(ev.fecha)+': '+etapaLabel({instancia:ev.instancia,momento:ev.momento,resultado:ev.instancia==='cerrado'?c.resultado:null},ev.via,ev.organismo)+(ev.por?' (por '+ev.por+')':''));
         });
         p('');
       }
@@ -1765,7 +1893,8 @@
     var DAY_MS=86400000;
     var DEFAULT_REGLAS=[
       {id:'evaluacion_dias',label:'Evaluación sin avanzar',tipo:'instancia_dias',instancia:'evaluacion',momento:null,dias:2,enabled:true,builtin:true},
-      {id:'presentado_dias',label:'Reclamo directo presentado sin respuesta',tipo:'instancia_dias',instancia:'reclamo_directo',momento:'presentado',dias:7,enabled:true,builtin:true},
+      {id:'presentado_dias',label:'Reclamo directo presentado sin respuesta (aerolínea)',tipo:'instancia_dias',instancia:'reclamo_directo',momento:'presentado',via:'aerolinea',dias:7,enabled:true,builtin:true},
+      {id:'presentado_organismo',label:'Reclamo directo presentado sin respuesta (organismo)',tipo:'instancia_dias',instancia:'reclamo_directo',momento:'presentado',via:'organismo',dias:20,enabled:true,builtin:true},
       {id:'espera_vencida',label:'Espera vencida',tipo:'espera_vencida',dias:0,enabled:true,builtin:true},
       {id:'espera_pasajero_dias',label:'Espera del pasajero sin resolver',tipo:'espera_responsable_dias',responsable:'pasajero',dias:5,enabled:true,builtin:true},
       {id:'cobro_dias',label:'En cobro',tipo:'instancia_dias',instancia:'cobro',momento:null,dias:15,enabled:true,builtin:true},
@@ -1801,9 +1930,10 @@
       if(regla.tipo==='instancia_dias'){
         if(pos.instancia!==regla.instancia)return null;
         if(regla.momento&&pos.momento!==regla.momento)return null;
+        if(regla.via&&(c.via_reclamo||'aerolinea')!==regla.via)return null;
         var ref=fechaInicioInstancia(c);
         var dd=_diasDesde(ref);if(dd==null||dd<(regla.dias||0))return null;
-        return {ref:ref,texto:'En "'+etapaLabel(pos)+'" hace '+dd+' días'};
+        return {ref:ref,texto:'En "'+etapaLabel(pos,c.via_reclamo,c.organismo)+'" hace '+dd+' días'};
       }
       if(regla.tipo==='espera_vencida'){
         var venc=esperasAbiertas(c).filter(function(e){return e.vence&&new Date(e.vence).getTime()<Date.now()});
@@ -1907,7 +2037,7 @@
       var cont=document.getElementById('alertas-admin-list');if(!cont)return;
       var h='';
       alertRules.forEach(function(regla,idx){
-        var desc=regla.tipo==='instancia_dias'?('"'+(INSTANCIA_LABELS[regla.instancia]||regla.instancia)+(regla.momento?' · '+(MOMENTO_LABELS[regla.momento]||regla.momento):'')+'" por más de N días')
+        var desc=regla.tipo==='instancia_dias'?('"'+(INSTANCIA_LABELS[regla.instancia]||regla.instancia)+(regla.momento?' · '+(MOMENTO_LABELS[regla.momento]||regla.momento):'')+(regla.via?' · vía '+regla.via:'')+'" por más de N días')
           :regla.tipo==='espera_vencida'?('Espera abierta vencida')
           :regla.tipo==='espera_responsable_dias'?('Espera de '+(RESPONSABLE_ESPERA_LABELS[regla.responsable]||regla.responsable)+' abierta por más de N días')
           :regla.tipo==='firma_dias'?('Autorización sin enviar por más de N días')
@@ -2184,12 +2314,13 @@
     /* ---- MONTO (presentar / acuerdo) ---- */
     var montoOv=document.getElementById('monto-ov');
     var montoCaseRef=null,montoTransicion=null,montoCampo=null;
-    function openMontoModal(caseObj,transicion,campo,title,prefill){
+    function openMontoModal(caseObj,transicion,campo,title,prefill,monedaPrefill){
       montoCaseRef=caseObj;montoTransicion=transicion;montoCampo=campo;
       var titleEl=document.getElementById('monto-title'),labelEl=document.getElementById('monto-label');
       if(titleEl)titleEl.textContent=title;
       if(labelEl)labelEl.textContent=title;
       var val=document.getElementById('monto-valor');if(val)val.value=(prefill!=null&&prefill!==''?prefill:'');
+      var moneda=document.getElementById('monto-moneda');if(moneda)moneda.value=monedaPrefill||'ARS';
       var msg=document.getElementById('monto-msg');if(msg){msg.style.color='';msg.textContent=''}
       if(montoOv)montoOv.classList.add('open');
     }
@@ -2206,6 +2337,7 @@
       var num=parseFloat(val);
       if(!val||isNaN(num)||num<=0){if(msg){msg.style.color='var(--err)';msg.textContent='Ingresá un monto válido.'}return}
       var extra={};extra[montoCampo]=num;
+      extra[montoCampo+'_moneda']=(document.getElementById('monto-moneda')||{}).value||'ARS';
       montoSave.disabled=true;
       if(msg){msg.style.color='';msg.textContent='Guardando...'}
       doAvanzar(montoCaseRef,montoTransicion,extra,function(err){
@@ -2242,6 +2374,31 @@
       doAvanzar(cierreCaseRef,cierreTransicion,{motivo_cierre:motivo,motivo_cierre_detalle:detalle},function(err){
         cierreSave.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent=err}
       }).then(function(d){if(d&&d.success){cierreOv.classList.remove('open');cierreSave.disabled=false}});
+    });
+
+    /* ---- ELEVAR A ORGANISMO ---- */
+    var organismoOv=document.getElementById('organismo-ov');
+    var organismoCaseRef=null;
+    function openOrganismoModal(caseObj){
+      organismoCaseRef=caseObj;
+      var inp=document.getElementById('organismo-valor');if(inp)inp.value='';
+      var msg=document.getElementById('organismo-msg');if(msg){msg.style.color='';msg.textContent=''}
+      if(organismoOv)organismoOv.classList.add('open');
+    }
+    var organismoClose=document.getElementById('organismo-close'),organismoCancel=document.getElementById('organismo-cancel');
+    if(organismoClose)organismoClose.addEventListener('click',function(){organismoOv.classList.remove('open')});
+    if(organismoCancel)organismoCancel.addEventListener('click',function(){organismoOv.classList.remove('open')});
+    if(organismoOv)organismoOv.addEventListener('click',function(e){if(e.target===organismoOv)organismoOv.classList.remove('open')});
+    var organismoSave=document.getElementById('organismo-save');
+    if(organismoSave)organismoSave.addEventListener('click',function(){
+      if(!organismoCaseRef)return;
+      var msg=document.getElementById('organismo-msg');
+      var val=((document.getElementById('organismo-valor')||{}).value||'').trim();
+      if(!val){if(msg){msg.style.color='var(--err)';msg.textContent='Ingresá el nombre del organismo.'}return}
+      organismoSave.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
+      doAvanzar(organismoCaseRef,'elevar_organismo',{organismo:val},function(err){
+        organismoSave.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent=err}
+      }).then(function(d){if(d&&d.success){organismoOv.classList.remove('open');organismoSave.disabled=false}});
     });
 
     /* ---- CORRECCIÓN MANUAL (instancia/momento/resultado) ---- */
@@ -2366,22 +2523,80 @@
       if(secV)secV.style.display=(t==='vuelo'||t==='vuelo_equipaje')?'':'none';
       if(secE)secE.style.display=(t==='equipaje'||t==='vuelo_equipaje')?'':'none';
     }
+    function ncSetDisp(id,show){var e=document.getElementById(id);if(e)e.style.display=show?'':'none'}
+    function ncUpdateViajoCascade(){
+      var incidencia=ncVal('nc-incidencia'),viajo=ncVal('nc-viajo');
+      ncSetDisp('nc-fg-delay', incidencia==='demora'||viajo==='reubicado'||viajo==='medios_propios');
+      ncSetDisp('nc-fg-pasaje', viajo==='medios_propios');
+    }
+    function ncUpdateIncidentBlocks(){
+      var v=ncVal('nc-incidencia');
+      var isEmbarque=v==='overbooking'||v==='denegacion';
+      var isNotice=v==='cancelacion'||v==='reprogramacion';
+      var isComun=v!==''&&v!=='demora';
+      ncSetDisp('nc-fg-comun', isComun);
+      ncSetDisp('nc-fg-embarque', isEmbarque);
+      ncSetDisp('nc-fg-notice', isNotice);
+      ncUpdateViajoCascade();
+    }
+    var ncIncidenciaEl=document.getElementById('nc-incidencia');if(ncIncidenciaEl)ncIncidenciaEl.addEventListener('change',ncUpdateIncidentBlocks);
+    var ncViajoEl=document.getElementById('nc-viajo');if(ncViajoEl)ncViajoEl.addEventListener('change',ncUpdateViajoCascade);
+    var ncBagPirEl=document.getElementById('nc-bag-pir');
+    if(ncBagPirEl)ncBagPirEl.addEventListener('change',function(){ncSetDisp('nc-bag-pir-numero-wrap',ncBagPirEl.value==='si')});
+    var ncBagNoEntregadoEl=document.getElementById('nc-bag-no-entregado');
+    if(ncBagNoEntregadoEl)ncBagNoEntregadoEl.addEventListener('change',function(){
+      var d=document.getElementById('nc-bag-delivery');
+      if(d){d.disabled=ncBagNoEntregadoEl.checked;if(ncBagNoEntregadoEl.checked)d.value=''}
+    });
+
+    /* Documentos múltiples del titular (hasta 2 adicionales) */
+    var NC_MAX_EXTRA_DOCS=2;
+    var ncDocExtraList=document.getElementById('nc-doc-extra-list');
+    var ncDocAddBtn=document.getElementById('nc-doc-add');
+    function ncUpdateDocAddBtn(){if(ncDocAddBtn)ncDocAddBtn.style.display=(ncDocExtraList&&ncDocExtraList.children.length>=NC_MAX_EXTRA_DOCS)?'none':''}
+    function ncAddDocExtraRow(){
+      if(!ncDocExtraList||ncDocExtraList.children.length>=NC_MAX_EXTRA_DOCS)return;
+      var row=document.createElement('div');
+      row.className='doc-extra-row';
+      row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px';
+      row.innerHTML='<select class="firma-select doc-extra-tipo"><option value="">Tipo de documento...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>'
+        +'<div style="display:flex;gap:6px"><input class="firma-select doc-extra-numero" style="flex:1" placeholder="Número de documento"><button type="button" class="btn btn--ghost doc-extra-remove" style="font-size:.68rem">✕</button></div>';
+      ncDocExtraList.appendChild(row);
+      row.querySelector('.doc-extra-remove').addEventListener('click',function(){ncDocExtraList.removeChild(row);ncUpdateDocAddBtn()});
+      ncUpdateDocAddBtn();
+    }
+    function ncCollectDocExtras(){
+      var out=[];
+      if(!ncDocExtraList)return out;
+      ncDocExtraList.querySelectorAll('.doc-extra-row').forEach(function(row){
+        var tipo=(row.querySelector('.doc-extra-tipo')||{}).value||'';
+        var numero=((row.querySelector('.doc-extra-numero')||{}).value||'').trim();
+        if(tipo&&numero)out.push({tipo:tipo,numero:numero});
+      });
+      return out;
+    }
+    if(ncDocAddBtn)ncDocAddBtn.addEventListener('click',ncAddDocExtraRow);
     function ncRenderFiles(){
       var el=document.getElementById('nc-files-list');if(!el)return;
       el.innerHTML=ncFiles.map(function(f,i){return '<div class="upload-item"><span class="upload-item__name">'+esc(f.name)+'</span><button data-ncf="'+i+'" type="button" class="btn-del" title="Quitar">✕</button></div>'}).join('');
       el.querySelectorAll('[data-ncf]').forEach(function(b){b.addEventListener('click',function(){ncFiles.splice(parseInt(b.getAttribute('data-ncf')),1);ncRenderFiles()})});
     }
     function ncReset(){
-      ['nc-nombre','nc-email','nc-telefono','nc-docnum','nc-aerolinea','nc-vuelo','nc-origen','nc-destino','nc-fecha','nc-pnr','nc-delay','nc-notice','nc-monto','nc-gastos-detalle','nc-bag-value','nc-bag-desc','nc-bag-delivery'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
-      ['nc-doctype','nc-incidencia','nc-refund','nc-causa','nc-bag-type'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
+      ['nc-nombre','nc-email','nc-telefono','nc-docnum','nc-aerolinea','nc-vuelo','nc-origen','nc-destino','nc-fecha','nc-pnr','nc-delay','nc-notice','nc-monto','nc-gastos-detalle','nc-bag-value','nc-bag-desc','nc-bag-delivery','nc-embarque','nc-viajo','nc-pasaje-monto','nc-bag-pir-numero'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
+      ['nc-doctype','nc-incidencia','nc-refund','nc-causa','nc-bag-type','nc-bag-pir'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
       var t=document.getElementById('nc-tipo');if(t)t.value='vuelo';
       var m=document.getElementById('nc-moneda');if(m)m.value='ARS';
+      var pm=document.getElementById('nc-pasaje-moneda');if(pm)pm.value='ARS';
+      var bne=document.getElementById('nc-bag-no-entregado');if(bne)bne.checked=false;
+      var bd2=document.getElementById('nc-bag-delivery');if(bd2)bd2.disabled=false;
       ncFiles=[];ncRenderFiles();ncToggleSecciones();
-      var bd=document.getElementById('nc-bag-delivery');if(bd)bd.style.display='none';
+      if(ncDocExtraList)ncDocExtraList.innerHTML='';ncUpdateDocAddBtn();
+      ncSetDisp('nc-bag-delivery-wrap',false);ncSetDisp('nc-bag-pir-numero-wrap',false);
+      ncUpdateIncidentBlocks();
     }
     if(btnNuevoCaso)btnNuevoCaso.addEventListener('click',function(){if(ncOv){ncReset();ncOv.classList.add('open')}});
     var ncTipo=document.getElementById('nc-tipo');if(ncTipo)ncTipo.addEventListener('change',ncToggleSecciones);
-    var ncBagType=document.getElementById('nc-bag-type');if(ncBagType)ncBagType.addEventListener('change',function(){var bd=document.getElementById('nc-bag-delivery');if(bd)bd.style.display=ncBagType.value==='demora'?'':'none'});
+    var ncBagType=document.getElementById('nc-bag-type');if(ncBagType)ncBagType.addEventListener('change',function(){ncSetDisp('nc-bag-delivery-wrap',ncBagType.value==='demora')});
     var ncClose=document.getElementById('nc-close');var ncCancel=document.getElementById('nc-cancel');
     if(ncClose)ncClose.addEventListener('click',function(){ncOv.classList.remove('open')});
     if(ncCancel)ncCancel.addEventListener('click',function(){ncOv.classList.remove('open')});
@@ -2410,12 +2625,27 @@
       if(!nombre||!email){msg.style.color='var(--err)';msg.textContent='Nombre y email son obligatorios.';return}
       ncSave.disabled=true;ncSave.textContent='Creando...';msg.textContent='';
       var tipo=ncVal('nc-tipo')||'vuelo';
+      var ncBagNoEntregadoChecked=!!(document.getElementById('nc-bag-no-entregado')||{}).checked;
+      /* Solo viajan los campos que aplican al tipo elegido: sin valores huérfanos
+         si se cambió de incidencia o de tipo de reclamo a mitad de la carga. */
+      var ncEsVuelo=tipo==='vuelo'||tipo==='vuelo_equipaje';
+      var ncEsEquipaje=tipo==='equipaje'||tipo==='vuelo_equipaje';
+      var ncIncidencia=ncEsVuelo?ncVal('nc-incidencia'):'';
+      var ncEsComun=ncIncidencia==='cancelacion'||ncIncidencia==='reprogramacion'||ncIncidencia==='overbooking'||ncIncidencia==='denegacion';
+      var ncViajo=ncEsComun?ncVal('nc-viajo'):'';
+      var ncHoras=ncIncidencia==='demora'?ncVal('nc-delay'):(ncViajo==='reubicado'||ncViajo==='medios_propios')?ncVal('nc-delay'):'';
       var payload={nombre:nombre,email:email,telefono:ncVal('nc-telefono'),documento_tipo:ncVal('nc-doctype'),documento_numero:ncVal('nc-docnum'),
+        documentos:[{tipo:ncVal('nc-doctype'),numero:ncVal('nc-docnum')}].concat(ncCollectDocExtras()),
         aerolinea:ncVal('nc-aerolinea'),vuelo_nro:ncVal('nc-vuelo'),origen:ncVal('nc-origen'),destino:ncVal('nc-destino'),fecha_vuelo:ncVal('nc-fecha'),pnr:ncVal('nc-pnr'),
         tipo_reclamo:tipo,
-        tipo_incidencia:ncVal('nc-incidencia'),horas_retraso:ncVal('nc-delay'),anticipacion_aviso:ncVal('nc-notice'),ofrecimiento_aerolinea:ncVal('nc-refund'),causa_informada:ncVal('nc-causa'),
+        tipo_incidencia:ncIncidencia,horas_retraso:ncHoras,
+        anticipacion_aviso:(ncIncidencia==='cancelacion'||ncIncidencia==='reprogramacion')?ncVal('nc-notice'):'',
+        ofrecimiento_aerolinea:ncEsComun?ncVal('nc-refund'):'',causa_informada:ncEsVuelo?ncVal('nc-causa'):'',
+        embarque_presentado:(ncIncidencia==='overbooking'||ncIncidencia==='denegacion')?ncVal('nc-embarque'):'',viajo_finalmente:ncViajo,
+        pasaje_alternativo_moneda:ncViajo==='medios_propios'?ncVal('nc-pasaje-moneda'):'',pasaje_alternativo_monto:ncViajo==='medios_propios'?ncVal('nc-pasaje-monto'):'',
         moneda_gastos:ncVal('nc-moneda'),monto_gastos:ncVal('nc-monto'),gastos_detalle:ncVal('nc-gastos-detalle'),
-        tipo_caso_equipaje:ncVal('nc-bag-type'),descripcion_equipaje:ncVal('nc-bag-desc'),valor_equipaje:ncVal('nc-bag-value'),fecha_entrega_equipaje:ncVal('nc-bag-delivery')};
+        tipo_caso_equipaje:ncEsEquipaje?ncVal('nc-bag-type'):'',descripcion_equipaje:ncEsEquipaje?ncVal('nc-bag-desc'):'',valor_equipaje:ncEsEquipaje?ncVal('nc-bag-value'):'',fecha_entrega_equipaje:ncEsEquipaje?ncVal('nc-bag-delivery'):'',
+        equipaje_no_entregado:ncEsEquipaje&&ncBagNoEntregadoChecked,pir_presentado:ncEsEquipaje?ncVal('nc-bag-pir'):'',pir_numero:(ncEsEquipaje&&ncVal('nc-bag-pir')==='si')?ncVal('nc-bag-pir-numero'):''};
       fetch('/api/admin?action=create-case',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(payload)})
       .then(function(r){return r.json()}).then(function(d){
         if(!d.success){ncSave.disabled=false;ncSave.textContent='Crear caso';msg.style.color='var(--err)';msg.textContent=d.error||'Error al crear el caso.';return}

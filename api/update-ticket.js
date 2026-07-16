@@ -8,6 +8,7 @@
  *   resolver-espera    Marca una espera como resuelta
  *   set-cobro          Marca/deshace una fecha del checklist de cobro
  *   set-instancia      Corrección manual de instancia/momento/resultado
+ *   set-documentos     Reordena/actualiza los documentos (el primero pasa a ser el principal)
  *
  * Otras acciones (sin cambios): add-novedad, update-firma, set-fecha-mediacion,
  * update-abogado, confirm-update-cliente, set-campo, dismiss-alerta.
@@ -19,7 +20,7 @@
 import {
   getInstancia, instanciaAEstadoLegacy, validarTransicion,
   MOTIVOS_CIERRE, TIPOS_ESPERA, RESPONSABLES_ESPERA,
-  INSTANCIAS_VALIDAS, MOMENTOS_VALIDOS, RESULTADOS_VALIDOS,
+  INSTANCIAS_VALIDAS, MOMENTOS_VALIDOS, RESULTADOS_VALIDOS, MONEDAS_VALIDAS,
 } from './_utils/instancias.js';
 
 export default async function handler(req, res) {
@@ -62,7 +63,7 @@ export default async function handler(req, res) {
 
       var row = await fetchRow('instancia,momento,resultado,estado,estado_historial,instancia_historial,'
         + 'monto_reclamado,monto_acordado,acuerdo_instancia,pago_aerolinea_fecha,comision_cobrada_fecha,'
-        + 'honorarios_abogado_fecha,novedades');
+        + 'honorarios_abogado_fecha,novedades,via_reclamo,organismo');
       if (!row) return res.status(404).json({ error: 'Reclamo no encontrado' });
 
       var pos = getInstancia(row);
@@ -78,8 +79,11 @@ export default async function handler(req, res) {
         var montoNuevo = body.monto_reclamado;
         if (!yaTieneMonto && (montoNuevo === undefined || montoNuevo === null || montoNuevo === ''))
           return res.status(400).json({ error: 'Monto reclamado requerido' });
-        if (montoNuevo !== undefined && montoNuevo !== null && montoNuevo !== '')
+        if (montoNuevo !== undefined && montoNuevo !== null && montoNuevo !== '') {
           patch.monto_reclamado = Number(montoNuevo);
+          var monedaReclamado = (body.monto_reclamado_moneda || '').trim().toUpperCase();
+          patch.monto_reclamado_moneda = MONEDAS_VALIDAS.indexOf(monedaReclamado) !== -1 ? monedaReclamado : 'ARS';
+        }
       }
 
       if (def.requires) {
@@ -123,6 +127,19 @@ export default async function handler(req, res) {
         patch.acuerdo_instancia = pos.instancia;
         patch.fecha_acuerdo = new Date().toISOString();
         patch.monto_acordado = Number(body.monto_acordado);
+        var monedaAcordado = (body.monto_acordado_moneda || '').trim().toUpperCase();
+        patch.monto_acordado_moneda = MONEDAS_VALIDAS.indexOf(monedaAcordado) !== -1 ? monedaAcordado : 'ARS';
+      }
+
+      /* 'elevar_organismo': eleva el reclamo directo a un organismo administrativo */
+      var newViaReclamo = row.via_reclamo || 'aerolinea';
+      var newOrganismo = row.organismo || null;
+      if (transicion === 'elevar_organismo') {
+        newViaReclamo = 'organismo';
+        newOrganismo = (body.organismo || '').trim();
+        if (!newOrganismo) return res.status(400).json({ error: 'Nombre del organismo requerido' });
+        patch.via_reclamo = newViaReclamo;
+        patch.organismo = newOrganismo;
       }
 
       var nowIso = new Date().toISOString();
@@ -133,8 +150,13 @@ export default async function handler(req, res) {
       estadoHist.push({ estado: estadoLegacy, fecha: nowIso, por: 'admin' });
       patch.estado_historial = estadoHist;
 
+      var instEntry = { instancia: newInstancia, momento: newMomento, fecha: nowIso, por: 'admin' };
+      if (newInstancia === 'reclamo_directo') {
+        instEntry.via = newViaReclamo;
+        if (newViaReclamo === 'organismo' && newOrganismo) instEntry.organismo = newOrganismo;
+      }
       var instHist = Array.isArray(row.instancia_historial) ? row.instancia_historial : [];
-      instHist.push({ instancia: newInstancia, momento: newMomento, fecha: nowIso, por: 'admin' });
+      instHist.push(instEntry);
       patch.instancia_historial = instHist;
 
       var novedades = Array.isArray(row.novedades) ? row.novedades : [];
@@ -155,8 +177,10 @@ export default async function handler(req, res) {
         instancia: newInstancia, momento: newMomento, resultado: newResultado,
         estado: estadoLegacy, estado_historial: estadoHist, instancia_historial: instHist,
         monto_reclamado: patch.monto_reclamado, monto_acordado: patch.monto_acordado,
+        monto_reclamado_moneda: patch.monto_reclamado_moneda, monto_acordado_moneda: patch.monto_acordado_moneda,
         acuerdo_instancia: patch.acuerdo_instancia, fecha_acuerdo: patch.fecha_acuerdo,
         motivo_cierre: patch.motivo_cierre, motivo_cierre_detalle: patch.motivo_cierre_detalle,
+        via_reclamo: patch.via_reclamo, organismo: patch.organismo,
         novedades: novedades,
       });
     }
@@ -276,6 +300,24 @@ export default async function handler(req, res) {
       });
     }
 
+    /* ---- SET DOCUMENTOS (reordenar / hacer principal) ---- */
+    if (body.action === 'set-documentos') {
+      var docsArr = Array.isArray(body.documentos) ? body.documentos : null;
+      if (!docsArr || !docsArr.length) return res.status(400).json({ error: 'documentos requerido' });
+      for (var dvi = 0; dvi < docsArr.length; dvi++) {
+        var dv = docsArr[dvi];
+        if (!dv || typeof dv !== 'object' || !dv.tipo || !dv.numero)
+          return res.status(400).json({ error: 'Cada documento requiere tipo y número' });
+      }
+      var sdPatch = { documentos: docsArr, documento_tipo: docsArr[0].tipo, documento_numero: docsArr[0].numero };
+      var sdRes = await patchRow(sdPatch);
+      if (!sdRes.ok) return res.status(500).json({ error: 'Error al actualizar los documentos' });
+      return res.status(200).json({
+        success: true, action: 'set-documentos', documentos: docsArr,
+        documento_tipo: sdPatch.documento_tipo, documento_numero: sdPatch.documento_numero,
+      });
+    }
+
     /* ---- UPDATE FIRMA ESTADO ---- */
     if (body.action === 'update-firma') {
       var newFirma = (body.firma_estado || '').trim();
@@ -358,6 +400,9 @@ export default async function handler(req, res) {
       'moneda_gastos', 'monto_gastos', 'gastos_detalle',
       'cuil', 'fecha_nacimiento', 'domicilio_real', 'pais_emisor', 'id_fiscal_extranjero',
       'agente_nombre', 'agente_email', 'monto_reclamado', 'monto_acordado',
+      'anticipacion_aviso', 'ofrecimiento_aerolinea', 'viajo_finalmente', 'embarque_presentado',
+      'pir_presentado', 'pir_numero', 'pasaje_alternativo_monto', 'pasaje_alternativo_moneda',
+      'monto_reclamado_moneda', 'monto_acordado_moneda', 'organismo',
     ];
 
     if (body.action === 'set-campo') {
