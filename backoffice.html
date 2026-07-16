@@ -64,6 +64,20 @@
     .stat__val{font-family:var(--fm);font-size:1.4rem;font-weight:600;color:var(--g)}
     .stat__val--warn{color:var(--warn)}.stat__val--ok{color:var(--ok)}
 
+    /* Instancia tabs */
+    .itab{padding:6px 12px;border-radius:6px;font-family:var(--fh);font-size:.72rem;font-weight:600;color:var(--t3);cursor:pointer;border:1px solid transparent;transition:all .12s;white-space:nowrap}
+    .itab:hover{background:var(--g05);color:var(--g)}
+    .itab.active{background:var(--g);color:var(--w)}
+
+    /* Stepper */
+    .stepper{display:flex;align-items:center;margin-bottom:16px}
+    .stepper__step{flex:1;text-align:center;font-size:.62rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.04em;position:relative;padding-bottom:10px}
+    .stepper__step::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--bdl);border-radius:2px}
+    .stepper__step.done::after{background:var(--gl)}
+    .stepper__step.active{color:var(--g)}
+    .stepper__step.active::after{background:var(--g)}
+    .stepper__step.dim{opacity:.4}
+
     /* Filters */
     .filters{display:flex;gap:10px;padding:12px 16px;border-bottom:1px solid var(--bdl);flex-wrap:wrap;align-items:center}
     .filters__input{font-family:var(--f);font-size:.76rem;padding:6px 10px;border:1px solid var(--bd);border-radius:5px;background:var(--w);color:var(--t1);min-width:200px;transition:border-color .15s}
@@ -200,14 +214,14 @@
       <!-- RECLAMOS VIEW -->
       <div id="view-reclamos">
       <div class="main__header"><h1 class="main__title">Panel de Reclamos</h1><div style="display:flex;align-items:center;gap:14px"><button class="btn btn--ghost" id="btn-nuevo-caso" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nuevo caso</button><button class="btn btn--primary" id="btn-refresh" type="button"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Actualizar</button></div></div>
-      <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><div class="stat__label">Total reclamos</div><div class="stat__val" id="st-total">—</div></div><div class="stat"><div class="stat__label">Pendientes</div><div class="stat__val stat__val--warn" id="st-pending">—</div></div><div class="stat"><div class="stat__label">Aprobados / Resueltos</div><div class="stat__val stat__val--ok" id="st-resolved">—</div></div><div class="stat"><div class="stat__label">Rechazados</div><div class="stat__val" style="color:var(--err)" id="st-rejected">—</div></div></div>
+      <div class="stats" style="grid-template-columns:repeat(4,1fr)"><div class="stat"><div class="stat__label">Activos</div><div class="stat__val" id="st-activos">—</div></div><div class="stat"><div class="stat__label">Evaluación</div><div class="stat__val stat__val--warn" id="st-evaluacion">—</div></div><div class="stat"><div class="stat__label">En pelea</div><div class="stat__val" id="st-pelea">—</div></div><div class="stat"><div class="stat__label">Cobro</div><div class="stat__val stat__val--ok" id="st-cobro">—</div></div></div>
 
       <div class="tbl-wrap">
         <div class="tbl-bar"><span class="tbl-bar__title">Todos los reclamos</span><span class="tbl-bar__count" id="tbl-count"></span></div>
+        <div id="instancia-tabs" style="display:flex;gap:4px;padding:10px 16px 0;flex-wrap:wrap"></div>
         <div class="filters">
           <input class="filters__input" id="filter-search" type="text" placeholder="Buscar por Ref, Pasajero o Email..." />
           <select class="filters__select" id="filter-airline"><option value="">Todas las aerolíneas</option></select>
-          <select class="filters__select" id="filter-status"><option value="">Todos los estados</option><optgroup label="Ingreso"><option value="pendiente">Pendiente</option><option value="en_revision">En revisión</option><option value="esperando_info">Esperando información</option><option value="autorizacion_pendiente">Autorización pendiente</option></optgroup><optgroup label="Gestión"><option value="reclamado_aerolinea">Reclamado a aerolínea</option><option value="negociacion">En negociación</option></optgroup><optgroup label="Mediación"><option value="derivado_mediacion">Derivado a mediación</option><option value="mediacion_notificada">Mediación notificada</option><option value="en_mediacion">En mediación</option></optgroup><optgroup label="Cierre"><option value="acuerdo">Acuerdo alcanzado</option><option value="cobro_pasajero_pendiente">Cobro pasajero pendiente</option><option value="cobro_comision_pendiente">Cobro comisión pendiente</option><option value="cerrado">Cerrado / Cobrado</option></optgroup><optgroup label="Salidas"><option value="rechazado_aerolinea">Rechazado Aerolínea</option><option value="no_apto">No apto</option><option value="cancelado">Cancelado</option><option value="sin_exito">Sin éxito</option></optgroup><optgroup label="Anteriores"><option value="en_gestion">En gestión</option><option value="aprobado">Aprobado</option><option value="resuelto">Resuelto</option></optgroup></select>
           <select class="filters__select" id="filter-canal"><option value="">Todos los canales</option><option value="B2C">B2C</option><option value="B2B">B2B</option></select>
           <select class="filters__select" id="filter-tipo"><option value="">Todos los tipos</option><option value="vuelo">Vuelo</option><option value="equipaje">Equipaje</option></select>
         </div>
@@ -347,10 +361,11 @@
         </div>
         <div id="alertas-admin-list" style="margin-bottom:16px"></div>
         <div style="border-top:1px solid var(--bdl);padding-top:14px">
-          <div class="detail__label" style="margin-bottom:8px">Nueva alerta — caso en un estado por más de N días</div>
+          <div class="detail__label" style="margin-bottom:8px">Nueva alerta — caso en una instancia por más de N días</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <input id="nueva-label" type="text" class="firma-select" placeholder="Nombre de la alerta" style="flex:1;min-width:150px">
-            <select id="nueva-estado" class="firma-select" style="flex:1;min-width:150px"><option value="">Estado...</option></select>
+            <select id="nueva-instancia" class="firma-select" style="flex:1;min-width:120px"></select>
+            <select id="nueva-momento" class="firma-select" style="flex:1;min-width:130px"><option value="">Cualquier momento</option></select>
             <input id="nueva-dias" type="number" min="1" class="firma-select" placeholder="Días" style="width:80px;font-family:var(--fm)">
             <button class="btn btn--ghost" id="btn-nueva-alerta" type="button">+ Agregar</button>
           </div>
@@ -443,23 +458,6 @@
       </div>
     </div>
 
-    <!-- Detalle del requerimiento pendiente (info complementaria / subsanación) -->
-    <div class="cm-ov" id="reqdet-ov">
-      <div class="cm" style="max-width:420px;text-align:left">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <div class="cm__title" style="margin:0" id="reqdet-title">Marcar requerimiento pendiente</div>
-          <button class="detail__close" id="reqdet-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-        </div>
-        <div class="detail__label" style="margin-bottom:6px">¿Qué pidió la aerolínea?</div>
-        <textarea id="reqdet-detalle" class="firma-select" style="width:100%;min-height:80px;resize:vertical;font-family:var(--f)" placeholder="Describí qué información o documentación se solicitó..."></textarea>
-        <div id="reqdet-msg" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
-        <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
-          <button class="cm__btn cm__btn--cancel" id="reqdet-cancel" type="button">Cancelar</button>
-          <button class="cm__btn cm__btn--confirm" id="reqdet-save" type="button">Marcar pendiente</button>
-        </div>
-      </div>
-    </div>
-
     <!-- Monto obligatorio al reclamar a la aerolínea / alcanzar un acuerdo -->
     <div class="cm-ov" id="monto-ov">
       <div class="cm" style="max-width:380px;text-align:left">
@@ -477,6 +475,47 @@
       </div>
     </div>
 
+    <!-- Motivo de cierre (no_apto / cerrar_sin_exito / abandonar) -->
+    <div class="cm-ov" id="cierre-ov">
+      <div class="cm" style="max-width:400px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0" id="cierre-title">Cerrar caso</div>
+          <button class="detail__close" id="cierre-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="detail__label" style="margin-bottom:6px">Motivo</div>
+        <select id="cierre-motivo" class="firma-select" style="width:100%;margin-bottom:10px"></select>
+        <div class="detail__label" style="margin-bottom:6px">Detalle (opcional)</div>
+        <textarea id="cierre-detalle" class="firma-select" style="width:100%;min-height:70px;resize:vertical;font-family:var(--f)" placeholder="Aclaración adicional..."></textarea>
+        <div id="cierre-msg" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
+        <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
+          <button class="cm__btn cm__btn--cancel" id="cierre-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="cierre-save" type="button">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Corrección manual de instancia/momento/resultado -->
+    <div class="cm-ov" id="correccion-ov">
+      <div class="cm" style="max-width:400px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Corrección manual</div>
+          <button class="detail__close" id="correccion-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <p style="font-size:.7rem;color:var(--t4);margin:0 0 12px">Usar solo para corregir un caso mal cargado. No dispara validaciones de las transiciones normales.</p>
+        <div class="detail__label" style="margin-bottom:6px">Instancia</div>
+        <select id="correccion-instancia" class="firma-select" style="width:100%;margin-bottom:10px"></select>
+        <div class="detail__label" style="margin-bottom:6px">Momento</div>
+        <select id="correccion-momento" class="firma-select" style="width:100%;margin-bottom:10px"><option value="">—</option></select>
+        <div class="detail__label" style="margin-bottom:6px">Resultado</div>
+        <select id="correccion-resultado" class="firma-select" style="width:100%;margin-bottom:10px"><option value="">—</option></select>
+        <div id="correccion-msg" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div>
+        <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
+          <button class="cm__btn cm__btn--cancel" id="correccion-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="correccion-save" type="button">Guardar</button>
+        </div>
+      </div>
+    </div>
+
     <div class="panel-overlay" id="panel-overlay"></div>
     <div class="detail" id="detail-panel">
       <div class="detail__top"><span class="detail__title" id="detail-title">Detalle</span><button class="detail__close" id="detail-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
@@ -488,11 +527,71 @@
   (function(){
     var claims=[],filtered=[];
 
-    /* ---- Estados (pipeline plano con etiquetas + badges) ---- */
-    var ESTADO_LABELS={pendiente:'Pendiente',en_revision:'En revisión',esperando_info:'Esperando información',autorizacion_pendiente:'Autorización pendiente',reclamado_aerolinea:'Reclamado a aerolínea',negociacion:'En negociación',derivado_mediacion:'Derivado a mediación',mediacion_notificada:'Mediación notificada',en_mediacion:'En mediación',acuerdo:'Acuerdo alcanzado',cobro_pasajero_pendiente:'Cobro pasajero pendiente',cobro_comision_pendiente:'Cobro comisión pendiente',cerrado:'Cerrado / Cobrado',rechazado_aerolinea:'Rechazado Aerolínea',no_apto:'No apto',cancelado:'Cancelado',sin_exito:'Sin éxito',rechazado:'Rechazado Aerolínea',en_gestion:'En gestión',aprobado:'Aprobado',resuelto:'Resuelto'};
-    var ESTADO_GROUPS=[['Ingreso',['pendiente','en_revision','esperando_info','autorizacion_pendiente']],['Gestión',['reclamado_aerolinea','negociacion']],['Mediación',['derivado_mediacion','mediacion_notificada','en_mediacion']],['Cierre',['acuerdo','cobro_pasajero_pendiente','cobro_comision_pendiente','cerrado']],['Salidas',['rechazado_aerolinea','no_apto','cancelado','sin_exito']],['Anteriores',['en_gestion','aprobado','resuelto']]];
-    var MEDIACION_ESTADOS=['derivado_mediacion','mediacion_notificada','en_mediacion'];
-    var REQ_LABELS={info_adicional:'Información complementaria',subsanacion:'Subsanación'};
+    /* ---- Instancia + momento (reemplaza el pipeline plano de estados) ---- */
+    var INSTANCIA_LABELS={evaluacion:'Evaluación',reclamo_directo:'Reclamo directo',mediacion:'Mediación',cobro:'Cobro',cerrado:'Cerrado'};
+    var INSTANCIA_ORDEN=['evaluacion','reclamo_directo','mediacion','cobro','cerrado'];
+    var MOMENTO_LABELS={preparacion:'Preparación',presentado:'Presentado',respuesta_recibida:'Esperando respuesta'};
+    var RESULTADO_LABELS={exito:'Éxito',sin_exito:'Sin éxito',no_apto:'No apto',abandonado:'Abandonado'};
+    var MOTIVO_CIERRE_LABELS={rechazo_definitivo:'Rechazo definitivo',monto_inviable:'Monto inviable',documentacion_insuficiente:'Documentación insuficiente',no_elegible:'No elegible',prescripto:'Prescripto',pasajero_no_responde:'Pasajero no responde',desistimiento_pasajero:'Desistimiento del pasajero',aerolinea_no_pago:'Aerolínea no pagó',otro:'Otro'};
+    var TIPO_ESPERA_LABELS={info_pasajero:'Información del pasajero',firma_documento:'Firma de documento',requerimiento_aerolinea:'Requerimiento de la aerolínea',audiencia:'Audiencia',accion_interna:'Acción interna'};
+    var RESPONSABLE_ESPERA_LABELS={solucionair:'Nosotros',pasajero:'Pasajero',aerolinea:'Aerolínea',abogado:'Abogado',mediador:'Mediador'};
+    /* Mapping directo estado legacy -> instancia/momento (espejo de api/_utils/instancias.js) */
+    var ESTADO_A_INSTANCIA={
+      pendiente:{instancia:'evaluacion',momento:null},en_revision:{instancia:'evaluacion',momento:null},
+      esperando_info:{instancia:'evaluacion',momento:null},autorizacion_pendiente:{instancia:'evaluacion',momento:null},
+      en_gestion:{instancia:'reclamo_directo',momento:'preparacion'},reclamado_aerolinea:{instancia:'reclamo_directo',momento:'presentado'},
+      negociacion:{instancia:'reclamo_directo',momento:'respuesta_recibida'},rechazado_aerolinea:{instancia:'reclamo_directo',momento:'respuesta_recibida'},
+      rechazado:{instancia:'reclamo_directo',momento:'respuesta_recibida'},
+      derivado_mediacion:{instancia:'mediacion',momento:'preparacion'},mediacion_notificada:{instancia:'mediacion',momento:'presentado'},
+      en_mediacion:{instancia:'mediacion',momento:'presentado'},
+      acuerdo:{instancia:'cobro',momento:null},cobro_pasajero_pendiente:{instancia:'cobro',momento:null},cobro_comision_pendiente:{instancia:'cobro',momento:null},
+      cerrado:{instancia:'cerrado',momento:null,resultado:'exito'},aprobado:{instancia:'cerrado',momento:null,resultado:'exito'},resuelto:{instancia:'cerrado',momento:null,resultado:'exito'},
+      sin_exito:{instancia:'cerrado',momento:null,resultado:'sin_exito'},no_apto:{instancia:'cerrado',momento:null,resultado:'no_apto'},cancelado:{instancia:'cerrado',momento:null,resultado:'abandonado'}
+    };
+    /** Deriva {instancia,momento,resultado} del caso: usa la columna nueva si existe, si no la deriva del estado legacy. */
+    function getInstancia(c){
+      if(c&&c.instancia)return{instancia:c.instancia,momento:c.momento||null,resultado:c.resultado||null};
+      var m=ESTADO_A_INSTANCIA[(c&&c.estado)||'pendiente']||{instancia:'evaluacion',momento:null};
+      return{instancia:m.instancia,momento:m.momento||null,resultado:m.resultado||null};
+    }
+    function etapaLabel(pos){
+      var l=INSTANCIA_LABELS[pos.instancia]||pos.instancia;
+      if(pos.instancia==='cerrado'&&pos.resultado)return l+' · '+(RESULTADO_LABELS[pos.resultado]||pos.resultado);
+      if(pos.momento)l+=' · '+(MOMENTO_LABELS[pos.momento]||pos.momento);
+      return l;
+    }
+    function etapaBadgeClass(instancia,resultado){
+      if(instancia==='evaluacion')return 'badge--pendiente';
+      if(instancia==='reclamo_directo')return 'badge--en_gestion';
+      if(instancia==='mediacion')return 'badge--mediacion';
+      if(instancia==='cobro')return 'badge--cobro';
+      if(instancia==='cerrado'){
+        if(resultado==='exito')return 'badge--aprobado';
+        if(resultado==='sin_exito'||resultado==='no_apto')return 'badge--rechazado';
+        return 'badge--cancelado';
+      }
+      return 'badge--en_gestion';
+    }
+    function esperasAbiertas(c){return (Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return !e.resuelta})}
+    /** Responsable "de la pelota" derivado de la posición del caso (sin contar esperas ad-hoc). */
+    function pelotaPrincipal(c,pos){
+      if(pos.instancia==='cerrado')return null;
+      if(pos.momento==='presentado')return pos.instancia==='mediacion'?'mediador':'aerolinea';
+      if(pos.instancia==='cobro')return c.pago_aerolinea_fecha?'solucionair':'aerolinea';
+      return 'solucionair';
+    }
+    function fechaInicioInstancia(c){
+      var ih=Array.isArray(c.instancia_historial)?c.instancia_historial:[];
+      if(ih.length)return new Date(ih[ih.length-1].fecha);
+      return c.creado_en?new Date(c.creado_en):null;
+    }
+    function diasEnInstancia(c){var f=fechaInicioInstancia(c);return f?Math.floor((Date.now()-f.getTime())/86400000):null}
+    function diasUmbral(pos){
+      if(pos.instancia==='evaluacion')return 3;
+      if(pos.momento==='presentado')return 10;
+      if(pos.instancia==='cobro')return 15;
+      return null;
+    }
     var CAMPOS_EDITABLES=[
       {campo:'nombre',label:'Nombre'},{campo:'email',label:'Email'},{campo:'telefono',label:'Teléfono'},
       {campo:'documento_tipo',label:'Tipo de documento (dni/pasaporte)'},{campo:'documento_numero',label:'Número de documento'},
@@ -517,25 +616,6 @@
       }
       return {bucket:bucket,path:path};
     }
-    function estadoLabel(e){return ESTADO_LABELS[e]||e||'pendiente'}
-    function estadoBadge(e){
-      if(e==='aprobado'||e==='resuelto'||e==='acuerdo'||e==='cerrado')return 'badge--aprobado';
-      if(e==='rechazado'||e==='rechazado_aerolinea')return 'badge--rechazado';
-      if(e==='cancelado'||e==='no_apto'||e==='sin_exito')return 'badge--cancelado';
-      if(e==='derivado_mediacion'||e==='mediacion_notificada'||e==='en_mediacion')return 'badge--mediacion';
-      if(e==='cobro_pasajero_pendiente'||e==='cobro_comision_pendiente')return 'badge--cobro';
-      if(e==='pendiente')return 'badge--pendiente';
-      return 'badge--en_gestion';
-    }
-    function buildEstadoOptions(sel){
-      var h='';
-      ESTADO_GROUPS.forEach(function(g){
-        h+='<optgroup label="'+g[0]+'">';
-        g[1].forEach(function(v){h+='<option value="'+v+'"'+(v===sel?' selected':'')+'>'+estadoLabel(v)+'</option>'});
-        h+='</optgroup>';
-      });
-      return h;
-    }
     function tipoLabel(t){return t==='vuelo_equipaje'?'Vuelo + Equipaje':t==='equipaje'?'Equipaje':'Vuelo'}
     function tipoBadge(t){return t==='equipaje'?'badge--equipaje':t==='vuelo_equipaje'?'badge--combo':'badge--vuelo'}
     function fmtFecha(d){if(!d)return '—';try{return new Date(d).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}catch(e){return '—'}}
@@ -548,7 +628,8 @@
     var detailBody=document.getElementById('detail-body');
     var filterSearch=document.getElementById('filter-search');
     var filterAirline=document.getElementById('filter-airline');
-    var filterStatus=document.getElementById('filter-status');
+    var currentTab='';
+    var sortDias=null; /* null | 'asc' | 'desc' */
 
     document.getElementById('detail-close').addEventListener('click',closeDetail);
     overlay.addEventListener('click',closeDetail);
@@ -561,10 +642,11 @@
         claims=json.claims||[];
 
         try{
-          document.getElementById('st-total').textContent=claims.length;
-          document.getElementById('st-pending').textContent=claims.filter(function(c){return(c.estado||'')==='pendiente'}).length;
-          document.getElementById('st-resolved').textContent=claims.filter(function(c){var e=c.estado||'';return e==='aprobado'||e==='resuelto'||e==='acuerdo'||e==='cerrado'}).length;
-          var stRej=document.getElementById('st-rejected');if(stRej)stRej.textContent=claims.filter(function(c){var e=c.estado||'';return e==='rechazado_aerolinea'||e==='rechazado'}).length;
+          var act=claims.filter(function(c){return !c.deleted_at&&c.estado!=='eliminado'});
+          document.getElementById('st-activos').textContent=act.filter(function(c){return getInstancia(c).instancia!=='cerrado'}).length;
+          document.getElementById('st-evaluacion').textContent=act.filter(function(c){return getInstancia(c).instancia==='evaluacion'}).length;
+          document.getElementById('st-pelea').textContent=act.filter(function(c){var i=getInstancia(c).instancia;return i==='reclamo_directo'||i==='mediacion'}).length;
+          document.getElementById('st-cobro').textContent=act.filter(function(c){return getInstancia(c).instancia==='cobro'}).length;
         }catch(e){console.error('[BO] Stats error:',e)}
 
         try{
@@ -580,27 +662,38 @@
       });
     }
 
+    function renderTabs(){
+      var cont=document.getElementById('instancia-tabs');if(!cont)return;
+      var act=claims.filter(function(c){return !c.deleted_at&&c.estado!=='eliminado'});
+      var counts={};INSTANCIA_ORDEN.forEach(function(i){counts[i]=0});
+      act.forEach(function(c){var i=getInstancia(c).instancia;if(counts[i]!=null)counts[i]++});
+      var tabs=[['','Todos',act.length]].concat(INSTANCIA_ORDEN.map(function(i){return [i,INSTANCIA_LABELS[i],counts[i]]}));
+      cont.innerHTML=tabs.map(function(t){return '<span class="itab'+(currentTab===t[0]?' active':'')+'" data-tab="'+esc(t[0])+'">'+esc(t[1])+' ('+t[2]+')</span>'}).join('');
+      cont.querySelectorAll('[data-tab]').forEach(function(el){
+        el.addEventListener('click',function(){currentTab=el.getAttribute('data-tab');applyFilters()});
+      });
+    }
+
     function applyFilters(){
       var q=(filterSearch.value||'').trim().toLowerCase();
       var airline=filterAirline.value;
-      var status=filterStatus.value;
       var canalEl=document.getElementById('filter-canal');var canal=canalEl?canalEl.value:'';
       var tipoEl=document.getElementById('filter-tipo');var tipo=tipoEl?tipoEl.value:'';
       filtered=claims.filter(function(c){
         if(c.deleted_at||c.estado==='eliminado')return false;
         if(q&&!((c.ref_code||'').toLowerCase().indexOf(q)>-1||(c.nombre||'').toLowerCase().indexOf(q)>-1||(c.email||'').toLowerCase().indexOf(q)>-1))return false;
         if(airline&&c.aerolinea!==airline)return false;
-        if(status&&c.estado!==status)return false;
+        if(currentTab&&getInstancia(c).instancia!==currentTab)return false;
         if(canal&&(c.canal||'B2C')!==canal)return false;
         if(tipo&&(c.tipo_reclamo||'vuelo')!==tipo)return false;
         return true;
       });
+      renderTabs();
       renderTable();
     }
 
     filterSearch.addEventListener('input',applyFilters);
     filterAirline.addEventListener('change',applyFilters);
-    filterStatus.addEventListener('change',applyFilters);
     var filterCanalEl=document.getElementById('filter-canal');if(filterCanalEl)filterCanalEl.addEventListener('change',applyFilters);
     var filterTipoEl=document.getElementById('filter-tipo');if(filterTipoEl)filterTipoEl.addEventListener('change',applyFilters);
 
@@ -608,19 +701,38 @@
       try{document.getElementById('tbl-count').textContent=filtered.length+' de '+claims.length}catch(e){}
       if(!filtered.length){tblBody.innerHTML='<div class="state"><p class="state__txt">Sin resultados.</p></div>';return}
 
+      var rows=filtered.slice();
+      if(sortDias){
+        rows.sort(function(a,b){
+          var da=diasEnInstancia(a),db=diasEnInstancia(b);
+          da=da==null?-1:da;db=db==null?-1:db;
+          return sortDias==='asc'?da-db:db-da;
+        });
+      }
+
       var ALERT_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-      var html='<table><thead><tr><th class="cb-cell"><input type="checkbox" id="cb-all"/></th><th style="width:20px"></th><th>Ref</th><th>Pasajero</th><th>Canal</th><th>Tipo</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha vuelo</th><th>Ingreso</th><th>Estado</th><th></th></tr></thead><tbody>';
-      filtered.forEach(function(c,i){
-        var estado=c.estado||'pendiente';
-        var bc=estadoBadge(estado);
+      var html='<table><thead><tr><th class="cb-cell"><input type="checkbox" id="cb-all"/></th><th style="width:20px"></th><th>Ref</th><th>Pasajero</th><th>Canal</th><th>Tipo</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha vuelo</th><th>Etapa</th><th>Pelota</th><th id="th-dias" style="cursor:pointer" title="Ordenar por días">Días'+(sortDias?(sortDias==='asc'?' ▲':' ▼'):'')+'</th><th></th></tr></thead><tbody>';
+      rows.forEach(function(c,i){
+        var pos=getInstancia(c);
+        var bc=etapaBadgeClass(pos.instancia,pos.resultado);
         var canalVal=c.canal||'B2C';
         var tipoVal=c.tipo_reclamo||'vuelo';
+        var abiertas=esperasAbiertas(c);
+        var vencidas=abiertas.filter(function(e){return e.vence&&new Date(e.vence).getTime()<Date.now()});
         var alertReasons=[];
-        if(c.requerimiento_tipo)alertReasons.push((REQ_LABELS[c.requerimiento_tipo]||c.requerimiento_tipo)+' pendiente');
+        vencidas.forEach(function(e){alertReasons.push((TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' vencida')});
         if((c.firma_estado||'no_aplica')==='pendiente_envio')alertReasons.push('Autorización pendiente de envío');
-        if(estado==='pendiente')alertReasons.push('Caso pendiente de revisión');
+        if(pos.instancia==='evaluacion'&&!abiertas.length)alertReasons.push('Caso en evaluación');
         var alertCell=alertReasons.length?'<span title="'+esc(alertReasons.join(' · '))+'" style="color:var(--warn);display:inline-flex">'+ALERT_ICON+'</span>':'';
-        html+='<tr data-fidx="'+i+'"><td class="cb-cell"><input type="checkbox" class="cb-row"/></td>';
+        var principal=pelotaPrincipal(c,pos);
+        var otras=principal?abiertas.filter(function(e){return e.responsable!==principal}):abiertas;
+        var pelotaCell=principal?'<span class="badge badge--en_gestion">'+esc(RESPONSABLE_ESPERA_LABELS[principal]||principal)+'</span>':'—';
+        if(otras.length)pelotaCell+=' <span title="'+esc(otras.map(function(e){return (TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' ('+(RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable)+')'}).join(' · '))+'" class="badge badge--pendiente">+'+otras.length+'</span>';
+        var dias=diasEnInstancia(c);
+        var umbral=diasUmbral(pos);
+        var diasStyle=(dias!=null&&umbral!=null&&dias>umbral)?'color:var(--err);font-weight:700':'';
+        var origIdx=filtered.indexOf(c);
+        html+='<tr data-fidx="'+origIdx+'"><td class="cb-cell"><input type="checkbox" class="cb-row"/></td>';
         html+='<td style="text-align:center">'+alertCell+'</td>';
         html+='<td class="mono">'+(c.ref_code||'—')+'</td>';
         html+='<td>'+(c.nombre||'—')+'</td>';
@@ -629,8 +741,9 @@
         html+='<td class="mono">'+(c.vuelo_nro||'—')+'</td>';
         html+='<td>'+(c.aerolinea||'—')+'</td>';
         html+='<td class="mono">'+(c.fecha_vuelo||'—')+'</td>';
-        html+='<td class="mono">'+fmtFecha(c.creado_en)+'</td>';
-        html+='<td><span class="badge '+bc+'">'+estadoLabel(estado)+'</span></td>';
+        html+='<td><span class="badge '+bc+'">'+esc(etapaLabel(pos))+'</span></td>';
+        html+='<td class="mono">'+pelotaCell+'</td>';
+        html+='<td class="mono" style="'+diasStyle+'">'+(dias==null?'—':dias)+'</td>';
         html+='<td><button class="btn-del" data-del-id="'+c.id+'" title="Eliminar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button></td></tr>';
       });
       html+='</tbody></table>';
@@ -639,6 +752,9 @@
       /* Checkbox master */
       var cbAll=document.getElementById('cb-all');
       if(cbAll)cbAll.addEventListener('change',function(){var cbs=tblBody.querySelectorAll('.cb-row');cbs.forEach(function(cb){cb.checked=cbAll.checked})});
+
+      var thDias=document.getElementById('th-dias');
+      if(thDias)thDias.addEventListener('click',function(){sortDias=sortDias==='asc'?'desc':'asc';renderTable()});
 
       /* Row click (skip checkbox and delete btn) */
       tblBody.querySelectorAll('tr[data-fidx]').forEach(function(row){
@@ -650,10 +766,123 @@
       bindDeleteBtns();
     }
 
+    /* ---- Stepper + transiciones + esperas + cobro (helpers de render) ---- */
+    function renderStepperHtml(c,pos){
+      var steps=[['evaluacion','Evaluación'],['reclamo_directo','Reclamo directo'],['mediacion','Mediación'],['cobro','Cobro'],['cerrado','Cerrado']];
+      var curIdx=INSTANCIA_ORDEN.indexOf(pos.instancia);
+      var pasoPorMediacion=pos.instancia==='mediacion'||(Array.isArray(c.instancia_historial)&&c.instancia_historial.some(function(ih){return ih.instancia==='mediacion'}));
+      var h='<div class="stepper">';
+      steps.forEach(function(s,idx){
+        var cls='stepper__step';
+        if(s[0]==='mediacion'&&!pasoPorMediacion)cls+=' dim';
+        else if(idx<curIdx)cls+=' done';
+        if(idx===curIdx)cls+=' active';
+        h+='<div class="'+cls+'">'+s[1]+'</div>';
+      });
+      h+='</div>';
+      return h;
+    }
+    function transicionesDisponibles(pos){
+      var key=(pos.instancia==='reclamo_directo'||pos.instancia==='mediacion')?(pos.instancia+'/'+(pos.momento||'')):pos.instancia;
+      var TABLA={
+        evaluacion:[['iniciar_reclamo','Iniciar reclamo directo'],['no_apto','Marcar no apto'],['abandonar','Abandonar caso']],
+        'reclamo_directo/preparacion':[['presentar','Presentar a la aerolínea'],['abandonar','Abandonar caso']],
+        'reclamo_directo/presentado':[['respuesta_recibida','Registrar respuesta recibida'],['vencio_plazo','Marcar plazo vencido'],['acuerdo','Registrar acuerdo'],['abandonar','Abandonar caso']],
+        'reclamo_directo/respuesta_recibida':[['volver_a_presentar','Volver a presentar'],['escalar_mediacion','Escalar a mediación'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
+        'mediacion/preparacion':[['presentar','Presentar a mediación'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
+        'mediacion/presentado':[['respuesta_recibida','Registrar respuesta / audiencia'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
+        'mediacion/respuesta_recibida':[['volver_a_presentar','Nueva audiencia'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
+        cobro:[['cerrar_exito','Cerrar con éxito'],['cerrar_sin_exito','Cerrar sin éxito']],
+      };
+      return TABLA[key]||[];
+    }
+    function checklistCobroOk(c){return !!c.pago_aerolinea_fecha&&!!c.comision_cobrada_fecha&&(c.acuerdo_instancia!=='mediacion'||!!c.honorarios_abogado_fecha)}
+    function renderAccionesHtml(c,pos){
+      var opts=transicionesDisponibles(pos);
+      if(!opts.length)return '';
+      var ok=checklistCobroOk(c);
+      var h='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">';
+      opts.forEach(function(o){
+        var disabled=(o[0]==='cerrar_exito'&&!ok)?' disabled title="Completá el checklist de cobro primero"':'';
+        var cls=(o[0]==='no_apto'||o[0]==='abandonar'||o[0]==='cerrar_sin_exito')?'btn--ghost':'btn--primary';
+        h+='<button class="btn '+cls+'" data-transicion="'+o[0]+'" type="button" style="font-size:.72rem"'+disabled+'>'+o[1]+'</button>';
+      });
+      h+='</div><div id="msg-transicion" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:6px"></div>';
+      return h;
+    }
+    function renderCobroChecklistHtml(c){
+      var items=[['pago_aerolinea_fecha','Pago de la aerolínea recibido'],['comision_cobrada_fecha','Comisión cobrada']];
+      if(c.acuerdo_instancia==='mediacion')items.push(['honorarios_abogado_fecha','Honorarios del abogado pagados']);
+      var h='<div class="action-field" style="margin-top:8px;padding:10px;border:1px solid var(--bdl);border-radius:8px"><div class="detail__label">Checklist de cobro</div>';
+      items.forEach(function(it){
+        var val=c[it[0]];
+        h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdl)">';
+        h+='<span style="font-size:.78rem">'+it[1]+(val?'<div class="mono" style="color:var(--t4);font-size:.68rem">'+fmtFechaHora(val)+'</div>':'')+'</span>';
+        if(val)h+='<button class="btn btn--ghost" data-cobro-undo="'+it[0]+'" type="button" style="font-size:.66rem;white-space:nowrap">Deshacer</button>';
+        else h+='<button class="btn btn--primary" data-cobro-marcar="'+it[0]+'" type="button" style="font-size:.66rem;white-space:nowrap">Marcar cobrado</button>';
+        h+='</div>';
+      });
+      h+='<div id="msg-cobro" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div></div>';
+      return h;
+    }
+    function renderEsperasHtml(c){
+      var abiertas=esperasAbiertas(c);
+      var resueltas=(Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return e.resuelta});
+      var firmaVal=c.firma_estado||'no_aplica';
+      var h='<div class="action-field" style="margin-top:8px"><div class="detail__label">Esperas</div>';
+      if(firmaVal==='pendiente_envio')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Autorización pendiente de envío</span><span class="badge badge--en_gestion">Nosotros</span></div>';
+      if(firmaVal==='enviada')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Esperando firma del pasajero</span><span class="badge badge--en_gestion">Pasajero</span></div>';
+      if(!abiertas.length&&firmaVal!=='pendiente_envio'&&firmaVal!=='enviada')h+='<p style="font-size:.72rem;color:var(--t4);margin:6px 0">Sin esperas abiertas.</p>';
+      abiertas.forEach(function(e){
+        var vencida=e.vence&&new Date(e.vence).getTime()<Date.now();
+        var dias=Math.floor((Date.now()-new Date(e.creada).getTime())/86400000);
+        h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdl)">';
+        h+='<div style="min-width:0"><span style="font-size:.78rem">'+esc(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' <span class="badge badge--en_gestion">'+esc(RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable)+'</span>'+(vencida?' <span style="color:var(--err)">Vencida</span>':'')+'</span>';
+        if(e.detalle)h+='<div style="font-size:.7rem;color:var(--t3)">'+esc(e.detalle)+'</div>';
+        h+='<div style="font-size:.66rem;color:var(--t4)">'+dias+' días'+(e.vence?' · vence '+fmtFecha(e.vence):'')+'</div></div>';
+        h+='<button class="btn btn--ghost" data-espera-resolver="'+esc(e.id)+'" type="button" style="font-size:.66rem;white-space:nowrap">Resolver</button>';
+        h+='</div>';
+      });
+      h+='<div style="margin-top:10px;padding:10px;border:1px solid var(--bdl);border-radius:8px">';
+      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">';
+      h+='<select id="esp-tipo" class="firma-select">'+Object.keys(TIPO_ESPERA_LABELS).map(function(t){return '<option value="'+t+'">'+TIPO_ESPERA_LABELS[t]+'</option>'}).join('')+'</select>';
+      h+='<select id="esp-responsable" class="firma-select">'+Object.keys(RESPONSABLE_ESPERA_LABELS).map(function(r){return '<option value="'+r+'">'+RESPONSABLE_ESPERA_LABELS[r]+'</option>'}).join('')+'</select>';
+      h+='</div>';
+      h+='<input id="esp-detalle" class="firma-select" style="width:100%;margin-bottom:6px" placeholder="Detalle (opcional)">';
+      h+='<div style="display:flex;gap:6px;align-items:center"><input id="esp-vence" type="date" class="firma-select" style="flex:1;font-family:var(--fm)"><button class="btn btn--ghost" id="btn-add-espera" type="button" style="font-size:.72rem;white-space:nowrap">+ Agregar espera</button></div>';
+      h+='<div id="msg-espera" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div>';
+      h+='</div>';
+      if(resueltas.length){
+        h+='<details style="margin-top:8px"><summary style="font-size:.7rem;color:var(--t4);cursor:pointer">Esperas resueltas ('+resueltas.length+')</summary>';
+        resueltas.slice().reverse().forEach(function(e){
+          h+='<div style="font-size:.72rem;color:var(--t3);padding:4px 0;border-bottom:1px solid var(--bdl)">'+esc(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' — resuelta '+fmtFechaHora(e.resuelta)+'</div>';
+        });
+        h+='</details>';
+      }
+      h+='</div>';
+      return h;
+    }
+    /** POST /api/update-ticket action:avanzar y refresca caso + tabla + panel. */
+    function doAvanzar(c,transicion,extra,onErr){
+      var body=Object.assign({id:c.id,action:'avanzar',transicion:transicion},extra||{});
+      return fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json()}).then(function(d){
+        if(d.success){
+          ['instancia','momento','resultado','estado','estado_historial','instancia_historial','monto_reclamado','monto_acordado','acuerdo_instancia','fecha_acuerdo','motivo_cierre','motivo_cierre_detalle','novedades'].forEach(function(k){
+            if(d[k]!==undefined){c[k]=d[k];claims.forEach(function(cl){if(cl.id===c.id)cl[k]=d[k]})}
+          });
+          applyFilters();
+          toast('Caso actualizado.');
+          openDetail(c);
+        } else if(onErr){onErr(d.error||'Error.')}
+        else{toast(d.error||'Error.',true)}
+        return d;
+      }).catch(function(){if(onErr)onErr('Error de conexión.');else toast('Error de conexión.',true)});
+    }
+
     function openDetail(c){
       detailTitle.textContent='Reclamo '+(c.ref_code||'');
-      var estado=c.estado||'pendiente';
-      var bc=estadoBadge(estado);
+      var pos=getInstancia(c);
       var fecha=c.creado_en?new Date(c.creado_en).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 
       var canalVal=c.canal||'B2C';
@@ -734,13 +963,13 @@
       h+='<button class="icon-btn" id="btn-open-doclegal" type="button" title="Documentos legales (poder / patrocinio)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>';
       h+='<button class="icon-btn" id="btn-open-editcampo" type="button" title="Editar un campo del caso"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
       h+='</div></div>';
+      h+=renderStepperHtml(c,pos);
+      if(pos.instancia==='cerrado'){
+        h+='<div style="font-size:.8rem;margin-bottom:10px">Resultado: <strong>'+(RESULTADO_LABELS[pos.resultado]||pos.resultado||'—')+'</strong>'+(c.motivo_cierre?' — '+esc(MOTIVO_CIERRE_LABELS[c.motivo_cierre]||c.motivo_cierre):'')+(c.motivo_cierre_detalle?'<div style="color:var(--t3);font-size:.74rem;margin-top:2px">'+esc(c.motivo_cierre_detalle)+'</div>':'')+'</div>';
+      }
+      h+=renderAccionesHtml(c,pos);
+      h+='<div style="text-align:right;margin:2px 0 8px"><a href="#" id="link-correccion" style="font-size:.64rem;color:var(--t4);text-decoration:underline">Corrección manual</a></div>';
       h+='<div class="action-row">';
-      /* Estado */
-      h+='<div class="action-field"><div class="detail__label">Estado</div>';
-      h+='<div style="display:flex;gap:5px"><select id="sel-estado" class="firma-select" style="flex:1">';
-      h+=buildEstadoOptions(estado);
-      h+='</select><button class="btn btn--primary" id="btn-save-estado" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
-      h+='<div id="msg-estado" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       /* Autorización */
       h+='<div class="action-field"><div class="detail__label">Autorización cliente</div>';
       h+='<div style="display:flex;gap:5px"><select id="sel-firma" class="firma-select" style="flex:1">';
@@ -752,21 +981,16 @@
       h+='</select><button class="btn btn--ghost" id="btn-save-firma" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
       h+='<div id="msg-firma" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       h+='</div>'; /* action-row */
-      /* Requerimiento de la aerolínea (info complementaria / subsanación pendiente) */
-      h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Requerimiento de la aerolínea</div>';
-      if(c.requerimiento_tipo){
-        h+='<div style="font-size:.78rem;color:var(--warn);margin-bottom:6px">⚠ '+esc(REQ_LABELS[c.requerimiento_tipo]||c.requerimiento_tipo)+' pendiente — marcado el '+fmtFechaHora(c.requerimiento_fecha)+(c.requerimiento_detalle?'<div style="color:var(--t3);margin-top:2px">'+esc(c.requerimiento_detalle)+'</div>':'')+'</div>';
-        h+='<button class="btn btn--primary" id="btn-requerimiento-respondida" type="button">✓ Respondida</button>';
-      } else {
-        h+='<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn--ghost" data-req-tipo="info_adicional" type="button" style="font-size:.72rem">⚠ Marcar info. complementaria pendiente</button><button class="btn btn--ghost" data-req-tipo="subsanacion" type="button" style="font-size:.72rem">⚠ Marcar subsanación pendiente</button></div>';
-      }
-      h+='<div id="msg-requerimiento" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div></div>';
-      /* Derivación a mediación (visible mientras el estado esté en el grupo Mediación) */
+      /* Esperas (reemplaza el requerimiento de la aerolínea) */
+      h+=renderEsperasHtml(c);
+      /* Checklist de cobro */
+      if(pos.instancia==='cobro')h+=renderCobroChecklistHtml(c);
+      /* Derivación a mediación (visible mientras el caso esté en la instancia Mediación) */
       var adjArrDeriv=[];
       try{if(c.adjuntos)adjArrDeriv=Array.isArray(c.adjuntos)?c.adjuntos:JSON.parse(c.adjuntos)}catch(e){}
       var existingOptsHtml='<option value="">Seleccionar archivo existente...</option>'+adjArrDeriv.map(function(a,ai){return '<option value="'+ai+'">'+esc(a.nombre||a.tipo)+'</option>'}).join('');
       var DERIV_DOCS=[{tipo:'patrocinio',label:'Designación de patrocinio'},{tipo:'ficha_caso',label:'Ficha de caso'}];
-      var enMediacion=MEDIACION_ESTADOS.indexOf(estado)>-1;
+      var enMediacion=pos.instancia==='mediacion';
       var derivLocked=!!c.abogado_id && !c._derivReassign;
       h+='<div id="deriv-box" style="margin-top:10px;padding:12px;border:1px solid var(--bdl);border-radius:8px;background:var(--g05);display:'+(enMediacion?'block':'none')+'">';
       h+='<div class="detail__label" style="margin-bottom:8px">Derivación a mediación</div>';
@@ -808,14 +1032,15 @@
       }
       h+='</div>'; /* section gestión */
 
-      /* Historial de estados (timestamps) */
-      var hist=Array.isArray(c.estado_historial)?c.estado_historial:[];
+      /* Historial de instancias (timestamps) */
+      var hist=Array.isArray(c.instancia_historial)?c.instancia_historial:[];
       if(hist.length){
         h+='<div class="detail__divider"></div>';
-        h+='<div class="detail__section"><div class="detail__label" style="margin-bottom:8px">Historial de estados</div><div id="hist-list">';
+        h+='<div class="detail__section"><div class="detail__label" style="margin-bottom:8px">Historial</div><div id="hist-list">';
         hist.slice().reverse().forEach(function(ev){
           var fd=ev.fecha?new Date(ev.fecha).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
-          h+='<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--bdl)"><span style="font-family:var(--fm);font-size:.66rem;color:var(--t4);white-space:nowrap;padding-top:2px">'+fd+'</span><span style="font-size:.76rem;color:var(--t1)"><span class="badge '+estadoBadge(ev.estado)+'">'+estadoLabel(ev.estado)+'</span>'+(ev.por?' <span style="color:var(--t4);font-size:.7rem">('+esc(ev.por)+')</span>':'')+'</span></div>';
+          var evPos={instancia:ev.instancia,momento:ev.momento,resultado:ev.instancia==='cerrado'?c.resultado:null};
+          h+='<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--bdl)"><span style="font-family:var(--fm);font-size:.66rem;color:var(--t4);white-space:nowrap;padding-top:2px">'+fd+'</span><span style="font-size:.76rem;color:var(--t1)"><span class="badge '+etapaBadgeClass(evPos.instancia,evPos.resultado)+'">'+esc(etapaLabel(evPos))+'</span>'+(ev.por?' <span style="color:var(--t4);font-size:.7rem">('+esc(ev.por)+')</span>':'')+'</span></div>';
         });
         h+='</div></div>';
       }
@@ -1032,8 +1257,6 @@
       uploadZone.addEventListener('drop',function(e){e.preventDefault();uploadZone.classList.remove('drag');if(e.dataTransfer.files.length)uploadFiles(e.dataTransfer.files)});
 
       /* Derivación a mediación: select de abogado + upload del documento */
-      var selEstadoEl=document.getElementById('sel-estado');
-      var derivBox=document.getElementById('deriv-box');
       var selAbogado=document.getElementById('sel-abogado');
       var abogadosLoaded=false;
       function loadAbogadosSelect(){
@@ -1045,11 +1268,6 @@
           selAbogado.innerHTML='<option value="">Seleccionar abogado...</option>'+list.map(function(a){return '<option value="'+a.id+'"'+(a.id===c.abogado_id?' selected':'')+'>'+esc(a.nombre||'—')+(a.matricula?' ('+esc(a.matricula)+')':'')+'</option>'}).join('');
         }).catch(function(){selAbogado.innerHTML='<option value="">Error al cargar</option>'});
       }
-      if(selEstadoEl)selEstadoEl.addEventListener('change',function(){
-        var dm=MEDIACION_ESTADOS.indexOf(selEstadoEl.value)>-1;
-        if(derivBox)derivBox.style.display=dm?'block':'none';
-        if(dm)loadAbogadosSelect();
-      });
       if(enMediacion&&!derivLocked)loadAbogadosSelect();
 
       /* Derivación ya asignada: resolver nombre del abogado + reasignar */
@@ -1163,41 +1381,71 @@
         }).catch(function(){btnAddNov.disabled=false;btnAddNov.textContent='+ Agregar';alert('Error de red')});
       });
 
-      /* --- Guardar estado --- */
-      var btnSaveEstado=document.getElementById('btn-save-estado');
-      var msgEstado=document.getElementById('msg-estado');
-      if(btnSaveEstado)btnSaveEstado.addEventListener('click',function(){
-        var newEstado=document.getElementById('sel-estado').value;
-        if(newEstado===c.estado){msgEstado.style.color='var(--t4)';msgEstado.textContent='Sin cambios.';return}
-        var body={id:c.id,action:'update-estado',estado:newEstado};
-        /* Gating de derivación a mediación: exige abogado + designación de patrocinio + ficha de caso */
-        if(newEstado==='derivado_mediacion'){
-          var abogadoId=c.abogado_id||(document.getElementById('sel-abogado')||{}).value||'';
-          var adjParaGating=Array.isArray(c.adjuntos)?c.adjuntos:[];
-          var tienePatrocinio=adjParaGating.some(function(a){return a.tipo==='patrocinio'});
-          var tieneFichaCaso=adjParaGating.some(function(a){return a.tipo==='ficha_caso'});
-          if(!abogadoId){msgEstado.style.color='var(--err)';msgEstado.textContent='Elegí un abogado para derivar.';return}
-          if(!tienePatrocinio){msgEstado.style.color='var(--err)';msgEstado.textContent='Cargá la designación de patrocinio primero.';return}
-          if(!tieneFichaCaso){msgEstado.style.color='var(--err)';msgEstado.textContent='Cargá la ficha de caso primero.';return}
-          body.abogado_id=abogadoId;
-        }
-        /* Monto obligatorio: reclamado a la aerolínea / acuerdo alcanzado */
-        if(newEstado==='reclamado_aerolinea'){openMontoModal(c,body,'Monto reclamado',c.monto_reclamado);return}
-        if(newEstado==='acuerdo'){openMontoModal(c,body,'Monto total acordado',c.monto_acordado);return}
-        btnSaveEstado.disabled=true;btnSaveEstado.textContent='...';msgEstado.textContent='';
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      /* --- Botones de transición --- */
+      var msgTransicion=document.getElementById('msg-transicion');
+      detailBody.querySelectorAll('[data-transicion]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          if(btn.disabled)return;
+          var tr=btn.getAttribute('data-transicion');
+          if(msgTransicion)msgTransicion.textContent='';
+          if(tr==='acuerdo'){openMontoModal(c,'acuerdo','monto_acordado','Monto total acordado',c.monto_acordado);return}
+          if(tr==='presentar'&&pos.instancia==='reclamo_directo'&&pos.momento==='preparacion'&&!c.monto_reclamado){openMontoModal(c,'presentar','monto_reclamado','Monto reclamado',c.monto_reclamado);return}
+          if(tr==='presentar'&&pos.instancia==='mediacion'&&pos.momento==='preparacion'){
+            var adjGate=Array.isArray(c.adjuntos)?c.adjuntos:[];
+            var abogadoIdGate=c.abogado_id||(document.getElementById('sel-abogado')||{}).value||'';
+            var tienePat=adjGate.some(function(a){return a.tipo==='patrocinio'});
+            var tieneFicha=adjGate.some(function(a){return a.tipo==='ficha_caso'});
+            if(!abogadoIdGate){if(msgTransicion){msgTransicion.style.color='var(--err)';msgTransicion.textContent='Elegí un abogado antes de presentar a mediación.'}return}
+            if(!tienePat||!tieneFicha){if(msgTransicion){msgTransicion.style.color='var(--err)';msgTransicion.textContent='Cargá la designación de patrocinio y la ficha de caso primero.'}return}
+          }
+          if(tr==='no_apto'||tr==='cerrar_sin_exito'||tr==='abandonar'){openCierreModal(c,tr,btn.textContent);return}
+          btn.disabled=true;
+          doAvanzar(c,tr,{},function(err){btn.disabled=false;if(msgTransicion){msgTransicion.style.color='var(--err)';msgTransicion.textContent=err}});
+        });
+      });
+      var linkCorreccion=document.getElementById('link-correccion');
+      if(linkCorreccion)linkCorreccion.addEventListener('click',function(e){e.preventDefault();openCorreccionModal(c,pos)});
+
+      /* --- Esperas --- */
+      detailBody.querySelectorAll('[data-espera-resolver]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          btn.disabled=true;
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'resolver-espera',espera_id:btn.getAttribute('data-espera-resolver')})})
+          .then(function(r){return r.json()}).then(function(d){
+            if(d.success){c.esperas=d.esperas;c.novedades=d.novedades;claims.forEach(function(cl){if(cl.id===c.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});toast('Espera resuelta.');openDetail(c)}
+            else{btn.disabled=false;toast(d.error||'Error.',true)}
+          }).catch(function(){btn.disabled=false;toast('Error de conexión.',true)});
+        });
+      });
+      var btnAddEspera=document.getElementById('btn-add-espera');
+      var msgEspera=document.getElementById('msg-espera');
+      if(btnAddEspera)btnAddEspera.addEventListener('click',function(){
+        var tipoE=(document.getElementById('esp-tipo')||{}).value;
+        var respE=(document.getElementById('esp-responsable')||{}).value;
+        var detE=(document.getElementById('esp-detalle')||{}).value||'';
+        var venceE=(document.getElementById('esp-vence')||{}).value||'';
+        btnAddEspera.disabled=true;if(msgEspera)msgEspera.textContent='';
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-espera',tipo:tipoE,responsable:respE,detalle:detE,vence:venceE||null})})
         .then(function(r){return r.json()}).then(function(d){
-          btnSaveEstado.disabled=false;btnSaveEstado.textContent='Guardar';
-          if(d.success){
-            c.estado=newEstado;
-            if(d.estado_historial)c.estado_historial=d.estado_historial;
-            if(body.abogado_id)c.abogado_id=body.abogado_id;
-            claims.forEach(function(cl){if(cl.id===c.id){cl.estado=newEstado;if(d.estado_historial)cl.estado_historial=d.estado_historial;if(body.abogado_id)cl.abogado_id=body.abogado_id}});
-            applyFilters();
-            toast('Estado → '+estadoLabel(newEstado));
-            openDetail(c); /* refresca historial + caja de derivación */
-          }else{msgEstado.style.color='var(--err)';msgEstado.textContent=d.error||'Error.'}
-        }).catch(function(){btnSaveEstado.disabled=false;btnSaveEstado.textContent='Guardar';msgEstado.style.color='var(--err)';msgEstado.textContent='Error de conexión.'});
+          btnAddEspera.disabled=false;
+          if(d.success){c.esperas=d.esperas;c.novedades=d.novedades;claims.forEach(function(cl){if(cl.id===c.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});toast('Espera agregada.');openDetail(c)}
+          else if(msgEspera){msgEspera.style.color='var(--err)';msgEspera.textContent=d.error||'Error.'}
+        }).catch(function(){btnAddEspera.disabled=false;if(msgEspera){msgEspera.style.color='var(--err)';msgEspera.textContent='Error de conexión.'}});
+      });
+
+      /* --- Checklist de cobro --- */
+      var msgCobro=document.getElementById('msg-cobro');
+      detailBody.querySelectorAll('[data-cobro-marcar],[data-cobro-undo]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var campo=btn.getAttribute('data-cobro-marcar')||btn.getAttribute('data-cobro-undo');
+          var fecha=btn.hasAttribute('data-cobro-marcar')?new Date().toISOString():null;
+          btn.disabled=true;
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-cobro',campo:campo,fecha:fecha})})
+          .then(function(r){return r.json()}).then(function(d){
+            if(d.success){c[campo]=d.fecha;claims.forEach(function(cl){if(cl.id===c.id)cl[campo]=d.fecha});openDetail(c)}
+            else{btn.disabled=false;if(msgCobro){msgCobro.style.color='var(--err)';msgCobro.textContent=d.error||'Error.'}}
+          }).catch(function(){btn.disabled=false;if(msgCobro){msgCobro.style.color='var(--err)';msgCobro.textContent='Error de conexión.'}});
+        });
       });
 
       /* --- Guardar fecha de mediación --- */
@@ -1236,30 +1484,6 @@
         }).catch(function(){btnSaveFirma.disabled=false;btnSaveFirma.textContent='Guardar';msgFirma.style.color='var(--err)';msgFirma.textContent='Error de conexión.'});
       });
 
-      /* Requerimiento de la aerolínea: marcar pendiente (abre popup para el detalle) / respondida */
-      detailBody.querySelectorAll('[data-req-tipo]').forEach(function(btn){
-        btn.addEventListener('click',function(){openReqdetModal(c,btn.dataset.reqTipo)});
-      });
-      var btnReqRespondida=document.getElementById('btn-requerimiento-respondida');
-      if(btnReqRespondida)btnReqRespondida.addEventListener('click',function(){
-        btnReqRespondida.disabled=true;btnReqRespondida.textContent='...';
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'clear-requerimiento'})})
-        .then(function(r){return r.json()}).then(function(d){
-          if(d.success){
-            c.requerimiento_tipo=null;c.requerimiento_fecha=null;c.novedades=d.novedades;
-            claims.forEach(function(cl){if(cl.id===c.id){cl.requerimiento_tipo=null;cl.requerimiento_fecha=null;cl.novedades=d.novedades}});
-            toast('Requerimiento marcado como respondido.');
-            openDetail(c);
-          }else{
-            btnReqRespondida.disabled=false;btnReqRespondida.textContent='✓ Respondida';
-            if(msgRequerimiento){msgRequerimiento.style.color='var(--err)';msgRequerimiento.textContent=d.error||'Error.'}
-          }
-        }).catch(function(){
-          btnReqRespondida.disabled=false;btnReqRespondida.textContent='✓ Respondida';
-          if(msgRequerimiento){msgRequerimiento.style.color='var(--err)';msgRequerimiento.textContent='Error de conexión.'}
-        });
-      });
-
       overlay.classList.add('open');panel.classList.add('open');
     }
 
@@ -1278,7 +1502,7 @@
       p('- Referencia: '+(c.ref_code||'—'));
       p('- Canal: '+(c.canal||'B2C'));
       p('- Tipo de reclamo: '+(c.tipo_reclamo||'vuelo'));
-      p('- Estado: '+estadoLabel(c.estado));
+      p('- Etapa: '+etapaLabel(getInstancia(c)));
       p('- Ingresado: '+fmtDateEsAR(c.creado_en));
       p('');
       p('## Pasajero');
@@ -1330,14 +1554,18 @@
       p('- Autorización cliente: '+(c.firma_estado||'no_aplica'));
       if(c.abogado_id)p('- Abogado asignado (ID): '+c.abogado_id);
       if(c.fecha_mediacion)p('- Fecha de mediación: '+fmtDateEsAR(c.fecha_mediacion));
-      if(c.requerimiento_tipo)p('- Requerimiento aerolínea pendiente: '+(REQ_LABELS[c.requerimiento_tipo]||c.requerimiento_tipo)+' (desde '+fmtDateEsAR(c.requerimiento_fecha)+')');
+      var espAb=esperasAbiertas(c);
+      if(espAb.length){
+        p('- Esperas abiertas:');
+        espAb.forEach(function(e){p('  - '+(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' ('+(RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable)+')'+(e.detalle?' — '+e.detalle:''))});
+      }
       p('');
 
-      var hist=Array.isArray(c.estado_historial)?c.estado_historial:[];
+      var hist=Array.isArray(c.instancia_historial)?c.instancia_historial:[];
       if(hist.length){
-        p('## Historial de estados');
+        p('## Historial');
         hist.slice().reverse().forEach(function(ev){
-          p('- '+fmtDateEsAR(ev.fecha)+': '+estadoLabel(ev.estado)+(ev.por?' (por '+ev.por+')':''));
+          p('- '+fmtDateEsAR(ev.fecha)+': '+etapaLabel({instancia:ev.instancia,momento:ev.momento,resultado:ev.instancia==='cerrado'?c.resultado:null})+(ev.por?' (por '+ev.por+')':''));
         });
         p('');
       }
@@ -1533,11 +1761,12 @@
 
     /* ---- ALERTAS (feed único + reglas configurables + descarte manual) ---- */
     var DAY_MS=86400000;
-    var TERMINAL=['cerrado','rechazado_aerolinea','rechazado','no_apto','cancelado','sin_exito','resuelto','aprobado'];
     var DEFAULT_REGLAS=[
-      {id:'pendiente',label:'Pendiente sin avanzar',tipo:'estado_dias',estado:'pendiente',dias:2,enabled:true,builtin:true},
-      {id:'reclamado',label:'Reclamado a aerolínea',tipo:'estado_dias',estado:'reclamado_aerolinea',dias:7,enabled:true,builtin:true},
-      {id:'mediacion',label:'Mediación próxima',tipo:'mediacion',dias:1,enabled:true,builtin:true},
+      {id:'evaluacion_dias',label:'Evaluación sin avanzar',tipo:'instancia_dias',instancia:'evaluacion',momento:null,dias:2,enabled:true,builtin:true},
+      {id:'presentado_dias',label:'Reclamo directo presentado sin respuesta',tipo:'instancia_dias',instancia:'reclamo_directo',momento:'presentado',dias:7,enabled:true,builtin:true},
+      {id:'espera_vencida',label:'Espera vencida',tipo:'espera_vencida',dias:0,enabled:true,builtin:true},
+      {id:'espera_pasajero_dias',label:'Espera del pasajero sin resolver',tipo:'espera_responsable_dias',responsable:'pasajero',dias:5,enabled:true,builtin:true},
+      {id:'cobro_dias',label:'En cobro',tipo:'instancia_dias',instancia:'cobro',momento:null,dias:15,enabled:true,builtin:true},
       {id:'sin_update',label:'Sin update al cliente',tipo:'sin_update',dias:7,enabled:true,builtin:true},
       {id:'firma_pendiente',label:'Autorización pendiente de envío',tipo:'firma_dias',dias:1,enabled:true,builtin:true}
     ];
@@ -1559,7 +1788,6 @@
         if(cb)cb();
       }).catch(function(){alertRulesLoaded=true;if(cb)cb()});
     }
-    function _estadoFecha(c,est){var hh=Array.isArray(c.estado_historial)?c.estado_historial:[];for(var i=hh.length-1;i>=0;i--){if(hh[i].estado===est&&hh[i].fecha)return new Date(hh[i].fecha)}return null}
     function _diasDesde(d){return d?Math.floor((Date.now()-new Date(d).getTime())/DAY_MS):null}
     function _descartada(c,reglaId,ref){
       var da=Array.isArray(c.alertas_descartadas)?c.alertas_descartadas:[];
@@ -1567,27 +1795,35 @@
       return false;
     }
     function evalRegla(regla,c){
-      var est=c.estado||'pendiente';
-      if(regla.tipo==='estado_dias'){
-        if(est!==regla.estado)return null;
-        var ref=_estadoFecha(c,regla.estado)||(c.creado_en?new Date(c.creado_en):null);
+      var pos=getInstancia(c);
+      if(regla.tipo==='instancia_dias'){
+        if(pos.instancia!==regla.instancia)return null;
+        if(regla.momento&&pos.momento!==regla.momento)return null;
+        var ref=fechaInicioInstancia(c);
         var dd=_diasDesde(ref);if(dd==null||dd<(regla.dias||0))return null;
-        return {ref:ref,texto:'En "'+estadoLabel(regla.estado)+'" hace '+dd+' días'};
+        return {ref:ref,texto:'En "'+etapaLabel(pos)+'" hace '+dd+' días'};
       }
-      if(regla.tipo==='mediacion'){
-        if(!c.fecha_mediacion||TERMINAL.indexOf(est)!==-1)return null;
-        var diff=new Date(c.fecha_mediacion).getTime()-Date.now();
-        if(diff>(regla.dias||1)*DAY_MS||diff< -DAY_MS)return null;
-        return {ref:new Date(c.fecha_mediacion),texto:'Mediación: '+fmtFechaHora(c.fecha_mediacion)};
+      if(regla.tipo==='espera_vencida'){
+        var venc=esperasAbiertas(c).filter(function(e){return e.vence&&new Date(e.vence).getTime()<Date.now()});
+        if(!venc.length)return null;
+        var refV=venc.reduce(function(a,e){var d=new Date(e.vence);return(!a||d<a)?d:a},null);
+        return {ref:refV,texto:venc.length+' espera(s) vencida(s)'};
+      }
+      if(regla.tipo==='espera_responsable_dias'){
+        var abr=esperasAbiertas(c).filter(function(e){return e.responsable===regla.responsable});
+        if(!abr.length)return null;
+        var oldest=abr.reduce(function(a,e){var d=new Date(e.creada);return(!a||d<a)?d:a},null);
+        var ddr=_diasDesde(oldest);if(ddr==null||ddr<(regla.dias||0))return null;
+        return {ref:oldest,texto:'Espera de '+(RESPONSABLE_ESPERA_LABELS[regla.responsable]||regla.responsable)+' hace '+ddr+' días'};
       }
       if(regla.tipo==='sin_update'){
-        if(TERMINAL.indexOf(est)!==-1)return null;
+        if(pos.instancia==='cerrado')return null;
         var refU=c.ultimo_update_cliente||c.creado_en;
         var ddU=_diasDesde(refU);if(ddU==null||ddU<(regla.dias||0))return null;
         return {ref:refU?new Date(refU):null,texto:'Último update hace '+ddU+' días',accionUpdate:true};
       }
       if(regla.tipo==='firma_dias'){
-        if((c.firma_estado||'no_aplica')!=='pendiente_envio'||TERMINAL.indexOf(est)!==-1)return null;
+        if((c.firma_estado||'no_aplica')!=='pendiente_envio'||pos.instancia==='cerrado')return null;
         var refF=c.creado_en?new Date(c.creado_en):null;
         var ddF=_diasDesde(refF);if(ddF==null||ddF<(regla.dias||0))return null;
         return {ref:refF,texto:'Autorización sin enviar hace '+ddF+' días'};
@@ -1604,17 +1840,6 @@
           if(!hit)return;
           if(_descartada(c,regla.id,hit.ref))return;
           out.push({regla:regla,c:c,ref:hit.ref,texto:hit.texto,accionUpdate:hit.accionUpdate});
-        });
-      });
-      /* Requerimiento de la aerolínea: incondicional, se resuelve solo con "Respondida" en el caso */
-      act.forEach(function(c){
-        if(!c.requerimiento_tipo)return;
-        out.push({
-          regla:{id:null,label:(REQ_LABELS[c.requerimiento_tipo]||c.requerimiento_tipo)+' pendiente'},
-          c:c,
-          ref:c.requerimiento_fecha?new Date(c.requerimiento_fecha):null,
-          texto:'Pedido por la aerolínea desde '+fmtFechaHora(c.requerimiento_fecha),
-          requerimiento:true
         });
       });
       out.sort(function(a,b){return (a.ref?new Date(a.ref).getTime():0)-(b.ref?new Date(b.ref).getTime():0)});
@@ -1636,7 +1861,7 @@
           h+='<span style="font-size:.68rem;color:var(--t4)">'+esc(it.texto)+'</span></div>';
           h+='<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">';
           if(it.accionUpdate)h+='<button class="btn btn--ghost" data-update-id="'+it.c.id+'" type="button" style="font-size:.66rem;white-space:nowrap">Confirmé update</button>';
-          if(!it.requerimiento)h+='<button class="btn btn--ghost" data-dismiss-id="'+it.c.id+'" data-dismiss-regla="'+esc(it.regla.id)+'" type="button" title="Eliminar alerta" style="font-size:.66rem;padding:4px 8px">✕</button>';
+          h+='<button class="btn btn--ghost" data-dismiss-id="'+it.c.id+'" data-dismiss-regla="'+esc(it.regla.id)+'" type="button" title="Eliminar alerta" style="font-size:.66rem;padding:4px 8px">✕</button>';
           h+='</div></div>';
         });
         h+='</div></div>';
@@ -1680,7 +1905,11 @@
       var cont=document.getElementById('alertas-admin-list');if(!cont)return;
       var h='';
       alertRules.forEach(function(regla,idx){
-        var desc=regla.tipo==='estado_dias'?('Estado "'+estadoLabel(regla.estado)+'" por más de N días'):regla.tipo==='mediacion'?('Mediación dentro de N día(s)'):regla.tipo==='firma_dias'?('Autorización sin enviar por más de N días'):('Sin update al cliente por más de N días');
+        var desc=regla.tipo==='instancia_dias'?('"'+(INSTANCIA_LABELS[regla.instancia]||regla.instancia)+(regla.momento?' · '+(MOMENTO_LABELS[regla.momento]||regla.momento):'')+'" por más de N días')
+          :regla.tipo==='espera_vencida'?('Espera abierta vencida')
+          :regla.tipo==='espera_responsable_dias'?('Espera de '+(RESPONSABLE_ESPERA_LABELS[regla.responsable]||regla.responsable)+' abierta por más de N días')
+          :regla.tipo==='firma_dias'?('Autorización sin enviar por más de N días')
+          :('Sin update al cliente por más de N días');
         h+='<div class="upload-item" style="justify-content:space-between;gap:10px">';
         h+='<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:.8rem;color:var(--t1)">'+esc(regla.label)+'</span><span style="font-size:.66rem;color:var(--t4)">'+esc(desc)+'</span></div>';
         h+='<div style="display:flex;gap:8px;align-items:center;flex-shrink:0">';
@@ -1699,8 +1928,10 @@
     if(btnAdminAlertas)btnAdminAlertas.addEventListener('click',function(){
       ensureRules(function(){
         renderReglasAdmin();
-        var ne=document.getElementById('nueva-estado');
-        if(ne)ne.innerHTML='<option value="">Estado...</option>'+ESTADO_GROUPS.reduce(function(acc,g){return acc+g[1].map(function(v){return '<option value="'+v+'">'+estadoLabel(v)+'</option>'}).join('')},'');
+        var ni=document.getElementById('nueva-instancia');
+        if(ni)ni.innerHTML=INSTANCIA_ORDEN.filter(function(i){return i!=='cerrado'}).map(function(i){return '<option value="'+i+'">'+INSTANCIA_LABELS[i]+'</option>'}).join('');
+        var nm=document.getElementById('nueva-momento');
+        if(nm)nm.innerHTML='<option value="">Cualquier momento</option>'+Object.keys(MOMENTO_LABELS).map(function(m){return '<option value="'+m+'">'+MOMENTO_LABELS[m]+'</option>'}).join('');
         if(aAdminOv)aAdminOv.classList.add('open');
       });
     });
@@ -1712,11 +1943,12 @@
     var btnNuevaAlerta=document.getElementById('btn-nueva-alerta');
     if(btnNuevaAlerta)btnNuevaAlerta.addEventListener('click',function(){
       var label=(document.getElementById('nueva-label')||{}).value||'';
-      var estadoN=(document.getElementById('nueva-estado')||{}).value||'';
+      var instanciaN=(document.getElementById('nueva-instancia')||{}).value||'';
+      var momentoN=(document.getElementById('nueva-momento')||{}).value||null;
       var diasN=parseInt((document.getElementById('nueva-dias')||{}).value)||0;
       var msg=document.getElementById('nueva-alerta-msg');
-      if(!label.trim()||!estadoN||!diasN){if(msg){msg.style.color='var(--err)';msg.textContent='Completá nombre, estado y días.'}return}
-      alertRules.push({id:'r'+Date.now(),label:label.trim(),tipo:'estado_dias',estado:estadoN,dias:diasN,enabled:true,builtin:false});
+      if(!label.trim()||!instanciaN||!diasN){if(msg){msg.style.color='var(--err)';msg.textContent='Completá nombre, instancia y días.'}return}
+      alertRules.push({id:'r'+Date.now(),label:label.trim(),tipo:'instancia_dias',instancia:instanciaN,momento:momentoN,dias:diasN,enabled:true,builtin:false});
       document.getElementById('nueva-label').value='';document.getElementById('nueva-dias').value='';
       if(msg){msg.style.color='';msg.textContent=''}
       renderReglasAdmin();
@@ -1947,52 +2179,11 @@
       }).catch(function(){btnSaveCampo.disabled=false;if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Error de red'}});
     });
 
-    /* ---- DETALLE DEL REQUERIMIENTO (info complementaria / subsanación) ---- */
-    var reqdetOv=document.getElementById('reqdet-ov');
-    var reqdetCase=null,reqdetTipo=null;
-    function openReqdetModal(caseObj,tipo){
-      reqdetCase=caseObj;reqdetTipo=tipo;
-      var titleEl=document.getElementById('reqdet-title');
-      if(titleEl)titleEl.textContent=tipo==='subsanacion'?'Marcar subsanación pendiente':'Marcar información complementaria pendiente';
-      var det=document.getElementById('reqdet-detalle');if(det)det.value='';
-      var msg=document.getElementById('reqdet-msg');if(msg){msg.style.color='';msg.textContent=''}
-      if(reqdetOv)reqdetOv.classList.add('open');
-    }
-    var reqdetClose=document.getElementById('reqdet-close'),reqdetCancel=document.getElementById('reqdet-cancel');
-    if(reqdetClose)reqdetClose.addEventListener('click',function(){reqdetOv.classList.remove('open')});
-    if(reqdetCancel)reqdetCancel.addEventListener('click',function(){reqdetOv.classList.remove('open')});
-    if(reqdetOv)reqdetOv.addEventListener('click',function(e){if(e.target===reqdetOv)reqdetOv.classList.remove('open')});
-
-    var reqdetSave=document.getElementById('reqdet-save');
-    if(reqdetSave)reqdetSave.addEventListener('click',function(){
-      if(!reqdetCase||!reqdetTipo)return;
-      var msg=document.getElementById('reqdet-msg');
-      var detalle=(document.getElementById('reqdet-detalle')||{}).value||'';
-      detalle=detalle.trim();
-      if(!detalle){if(msg){msg.style.color='var(--err)';msg.textContent='Describí qué se solicitó.'}return}
-      reqdetSave.disabled=true;
-      if(msg){msg.style.color='';msg.textContent='Guardando...'}
-      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:reqdetCase.id,action:'set-requerimiento',tipo:reqdetTipo,detalle:detalle})})
-      .then(function(r){return r.json()}).then(function(d){
-        reqdetSave.disabled=false;
-        if(d.success){
-          var cc=reqdetCase;
-          cc.requerimiento_tipo=d.requerimiento_tipo;cc.requerimiento_fecha=d.requerimiento_fecha;cc.requerimiento_detalle=d.requerimiento_detalle;cc.novedades=d.novedades;
-          claims.forEach(function(cl){if(cl.id===cc.id){cl.requerimiento_tipo=d.requerimiento_tipo;cl.requerimiento_fecha=d.requerimiento_fecha;cl.requerimiento_detalle=d.requerimiento_detalle;cl.novedades=d.novedades}});
-          toast('Marcado: '+(REQ_LABELS[reqdetTipo]||reqdetTipo)+' pendiente.');
-          reqdetOv.classList.remove('open');
-          openDetail(cc);
-        } else {
-          if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
-        }
-      }).catch(function(){reqdetSave.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
-    });
-
-    /* ---- MONTO OBLIGATORIO (reclamado a la aerolínea / acuerdo alcanzado) ---- */
+    /* ---- MONTO (presentar / acuerdo) ---- */
     var montoOv=document.getElementById('monto-ov');
-    var montoCaseRef=null,montoBody=null;
-    function openMontoModal(caseObj,body,title,prefill){
-      montoCaseRef=caseObj;montoBody=body;
+    var montoCaseRef=null,montoTransicion=null,montoCampo=null;
+    function openMontoModal(caseObj,transicion,campo,title,prefill){
+      montoCaseRef=caseObj;montoTransicion=transicion;montoCampo=campo;
       var titleEl=document.getElementById('monto-title'),labelEl=document.getElementById('monto-label');
       if(titleEl)titleEl.textContent=title;
       if(labelEl)labelEl.textContent=title;
@@ -2007,34 +2198,86 @@
 
     var montoSave=document.getElementById('monto-save');
     if(montoSave)montoSave.addEventListener('click',function(){
-      if(!montoCaseRef||!montoBody)return;
+      if(!montoCaseRef||!montoTransicion)return;
       var msg=document.getElementById('monto-msg');
       var val=(document.getElementById('monto-valor')||{}).value;
       var num=parseFloat(val);
       if(!val||isNaN(num)||num<=0){if(msg){msg.style.color='var(--err)';msg.textContent='Ingresá un monto válido.'}return}
-      if(montoBody.estado==='reclamado_aerolinea')montoBody.monto_reclamado=num;
-      if(montoBody.estado==='acuerdo')montoBody.monto_acordado=num;
+      var extra={};extra[montoCampo]=num;
       montoSave.disabled=true;
       if(msg){msg.style.color='';msg.textContent='Guardando...'}
-      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(montoBody)})
+      doAvanzar(montoCaseRef,montoTransicion,extra,function(err){
+        montoSave.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent=err}
+      }).then(function(d){if(d&&d.success){montoOv.classList.remove('open');montoSave.disabled=false}});
+    });
+
+    /* ---- MOTIVO DE CIERRE (no_apto / cerrar_sin_exito / abandonar) ---- */
+    var cierreOv=document.getElementById('cierre-ov');
+    var cierreCaseRef=null,cierreTransicion=null;
+    function openCierreModal(caseObj,transicion,title){
+      cierreCaseRef=caseObj;cierreTransicion=transicion;
+      var titleEl=document.getElementById('cierre-title');if(titleEl)titleEl.textContent=title||'Cerrar caso';
+      var sel=document.getElementById('cierre-motivo');
+      if(sel){
+        sel.innerHTML=Object.keys(MOTIVO_CIERRE_LABELS).map(function(m){return '<option value="'+m+'">'+MOTIVO_CIERRE_LABELS[m]+'</option>'}).join('');
+        sel.value=transicion==='abandonar'?'desistimiento_pasajero':(transicion==='no_apto'?'no_elegible':'rechazo_definitivo');
+      }
+      var det=document.getElementById('cierre-detalle');if(det)det.value='';
+      var msg=document.getElementById('cierre-msg');if(msg){msg.style.color='';msg.textContent=''}
+      if(cierreOv)cierreOv.classList.add('open');
+    }
+    var cierreClose=document.getElementById('cierre-close'),cierreCancel=document.getElementById('cierre-cancel');
+    if(cierreClose)cierreClose.addEventListener('click',function(){cierreOv.classList.remove('open')});
+    if(cierreCancel)cierreCancel.addEventListener('click',function(){cierreOv.classList.remove('open')});
+    if(cierreOv)cierreOv.addEventListener('click',function(e){if(e.target===cierreOv)cierreOv.classList.remove('open')});
+    var cierreSave=document.getElementById('cierre-save');
+    if(cierreSave)cierreSave.addEventListener('click',function(){
+      if(!cierreCaseRef||!cierreTransicion)return;
+      var msg=document.getElementById('cierre-msg');
+      var motivo=(document.getElementById('cierre-motivo')||{}).value;
+      var detalle=(document.getElementById('cierre-detalle')||{}).value||'';
+      cierreSave.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
+      doAvanzar(cierreCaseRef,cierreTransicion,{motivo_cierre:motivo,motivo_cierre_detalle:detalle},function(err){
+        cierreSave.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent=err}
+      }).then(function(d){if(d&&d.success){cierreOv.classList.remove('open');cierreSave.disabled=false}});
+    });
+
+    /* ---- CORRECCIÓN MANUAL (instancia/momento/resultado) ---- */
+    var correccionOv=document.getElementById('correccion-ov');
+    var correccionCaseRef=null;
+    function openCorreccionModal(caseObj,pos){
+      correccionCaseRef=caseObj;
+      var selI=document.getElementById('correccion-instancia'),selM=document.getElementById('correccion-momento'),selR=document.getElementById('correccion-resultado');
+      if(selI)selI.innerHTML=INSTANCIA_ORDEN.map(function(i){return '<option value="'+i+'"'+(i===pos.instancia?' selected':'')+'>'+INSTANCIA_LABELS[i]+'</option>'}).join('');
+      if(selM){selM.innerHTML='<option value="">—</option>'+Object.keys(MOMENTO_LABELS).map(function(m){return '<option value="'+m+'"'+(m===pos.momento?' selected':'')+'>'+MOMENTO_LABELS[m]+'</option>'}).join('')}
+      if(selR){selR.innerHTML='<option value="">—</option>'+Object.keys(RESULTADO_LABELS).map(function(r){return '<option value="'+r+'"'+(r===pos.resultado?' selected':'')+'>'+RESULTADO_LABELS[r]+'</option>'}).join('')}
+      var msg=document.getElementById('correccion-msg');if(msg){msg.style.color='';msg.textContent=''}
+      if(correccionOv)correccionOv.classList.add('open');
+    }
+    var correccionClose=document.getElementById('correccion-close'),correccionCancel=document.getElementById('correccion-cancel');
+    if(correccionClose)correccionClose.addEventListener('click',function(){correccionOv.classList.remove('open')});
+    if(correccionCancel)correccionCancel.addEventListener('click',function(){correccionOv.classList.remove('open')});
+    if(correccionOv)correccionOv.addEventListener('click',function(e){if(e.target===correccionOv)correccionOv.classList.remove('open')});
+    var correccionSave=document.getElementById('correccion-save');
+    if(correccionSave)correccionSave.addEventListener('click',function(){
+      if(!correccionCaseRef)return;
+      var msg=document.getElementById('correccion-msg');
+      var instanciaV=(document.getElementById('correccion-instancia')||{}).value;
+      var momentoV=(document.getElementById('correccion-momento')||{}).value||null;
+      var resultadoV=(document.getElementById('correccion-resultado')||{}).value||null;
+      correccionSave.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:correccionCaseRef.id,action:'set-instancia',instancia:instanciaV,momento:momentoV,resultado:resultadoV})})
       .then(function(r){return r.json()}).then(function(d){
-        montoSave.disabled=false;
+        correccionSave.disabled=false;
         if(d.success){
-          var cc=montoCaseRef;
-          cc.estado=montoBody.estado;
-          if(d.estado_historial)cc.estado_historial=d.estado_historial;
-          if(montoBody.abogado_id)cc.abogado_id=montoBody.abogado_id;
-          if(d.monto_reclamado!=null)cc.monto_reclamado=d.monto_reclamado;
-          if(d.monto_acordado!=null)cc.monto_acordado=d.monto_acordado;
-          claims.forEach(function(cl){if(cl.id===cc.id){cl.estado=cc.estado;if(d.estado_historial)cl.estado_historial=d.estado_historial;if(montoBody.abogado_id)cl.abogado_id=montoBody.abogado_id;if(d.monto_reclamado!=null)cl.monto_reclamado=d.monto_reclamado;if(d.monto_acordado!=null)cl.monto_acordado=d.monto_acordado}});
+          var cc=correccionCaseRef;
+          ['instancia','momento','resultado','estado','estado_historial','instancia_historial'].forEach(function(k){if(d[k]!==undefined){cc[k]=d[k];claims.forEach(function(cl){if(cl.id===cc.id)cl[k]=d[k]})}});
           applyFilters();
-          toast('Estado → '+estadoLabel(cc.estado));
-          montoOv.classList.remove('open');
+          toast('Instancia corregida.');
+          correccionOv.classList.remove('open');
           openDetail(cc);
-        } else {
-          if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
-        }
-      }).catch(function(){montoSave.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
+        } else if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
+      }).catch(function(){correccionSave.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
     });
 
     /* ---- NUEVO CASO ---- */
