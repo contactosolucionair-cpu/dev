@@ -712,8 +712,17 @@
   var b3=document.getElementById('wz-back-3');
 
   /* Un campo data-required solo cuenta si está visible: no dentro de un contenedor
-     con display:none ni de una .ctype-sub inactiva. offsetParent es null en ambos casos. */
-  function isFieldVisible(f){ return f.offsetParent !== null; }
+     con display:none (ctype-sub inactiva, bloque condicional oculto, etc.). Se
+     camina de abajo hacia arriba hasta `boundary` (sin incluirlo) para no verse
+     afectado por que el propio wz-panel esté o no activo en este momento. */
+  function isFieldVisible(f,boundary){
+    var el=f;
+    while(el&&el!==boundary){
+      if(getComputedStyle(el).display==='none')return false;
+      el=el.parentElement;
+    }
+    return true;
+  }
 
   /* Check if all required fields in a wizard step are filled (skips hidden fields) */
   function checkStepFields(stepId){
@@ -722,7 +731,7 @@
     var fields=panel.querySelectorAll('[data-required="true"]');
     var ok=true;
     fields.forEach(function(f){
-      if(!isFieldVisible(f))return;
+      if(!isFieldVisible(f,panel))return;
       if(f.type==='checkbox'){if(!f.checked)ok=false}
       else if(f.tagName==='SELECT'){if(!f.value)ok=false}
       else{if(!f.value.trim())ok=false}

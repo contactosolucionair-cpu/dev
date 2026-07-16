@@ -396,16 +396,24 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /* ============ PROGRESS ============ */
-  /* Un campo data-required solo cuenta si está visible (no dentro de un contenedor
-     con display:none ni de una .ctype-sub inactiva). offsetParent es null en ambos casos. */
-  function isFieldVisible(f) { return f.offsetParent !== null; }
+  /* Un campo data-required solo cuenta si está visible: se camina de abajo hacia
+     arriba hasta `boundary` (sin incluirlo) buscando display:none, así el chequeo
+     no depende de si el propio wz-panel está activo en este momento. */
+  function isFieldVisible(f, boundary) {
+    var el = f;
+    while (el && el !== boundary) {
+      if (getComputedStyle(el).display === 'none') return false;
+      el = el.parentElement;
+    }
+    return true;
+  }
 
   function getReq() {
     var active = document.querySelector('.wz-panel.active');
     if (!active) return [];
     var result = [];
     active.querySelectorAll('[data-required="true"]').forEach(function (f) {
-      if (!isFieldVisible(f)) return;
+      if (!isFieldVisible(f, active)) return;
       result.push(f);
     });
     return result;
