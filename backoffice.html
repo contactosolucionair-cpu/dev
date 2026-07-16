@@ -516,6 +516,44 @@
       </div>
     </div>
 
+    <!-- Agregar espera -->
+    <div class="cm-ov" id="espera-ov">
+      <div class="cm" style="max-width:400px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Agregar espera</div>
+          <button class="detail__close" id="espera-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <select id="esp-tipo" class="firma-select"></select>
+          <select id="esp-responsable" class="firma-select"></select>
+        </div>
+        <input id="esp-detalle" class="firma-select" style="width:100%;margin-bottom:10px" placeholder="Detalle (opcional)">
+        <div class="detail__label" style="margin-bottom:6px">Vence (opcional)</div>
+        <input id="esp-vence" type="date" class="firma-select" style="width:100%;font-family:var(--fm)">
+        <div id="msg-espera" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
+        <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
+          <button class="cm__btn cm__btn--cancel" id="espera-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="btn-add-espera" type="button">Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fecha de mediación -->
+    <div class="cm-ov" id="fmediacion-ov">
+      <div class="cm" style="max-width:360px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Fecha de mediación</div>
+          <button class="detail__close" id="fmediacion-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <input id="inp-fmediacion" type="datetime-local" class="firma-select" style="width:100%;font-family:var(--fm)">
+        <div id="msg-fmediacion" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
+        <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
+          <button class="cm__btn cm__btn--cancel" id="fmediacion-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="btn-save-fmediacion" type="button">Guardar</button>
+        </div>
+      </div>
+    </div>
+
     <div class="panel-overlay" id="panel-overlay"></div>
     <div class="detail" id="detail-panel">
       <div class="detail__top"><span class="detail__title" id="detail-title">Detalle</span><button class="detail__close" id="detail-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
@@ -573,7 +611,7 @@
       return 'badge--en_gestion';
     }
     function esperasAbiertas(c){return (Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return !e.resuelta})}
-    /** Responsable "de la pelota" derivado de la posición del caso (sin contar esperas ad-hoc). */
+    /** Responsable principal derivado de la posición del caso (sin contar esperas ad-hoc). */
     function pelotaPrincipal(c,pos){
       if(pos.instancia==='cerrado')return null;
       if(pos.momento==='presentado')return pos.instancia==='mediacion'?'mediador':'aerolinea';
@@ -711,7 +749,7 @@
       }
 
       var ALERT_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
-      var html='<table><thead><tr><th class="cb-cell"><input type="checkbox" id="cb-all"/></th><th style="width:20px"></th><th>Ref</th><th>Pasajero</th><th>Canal</th><th>Tipo</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha vuelo</th><th>Etapa</th><th>Pelota</th><th id="th-dias" style="cursor:pointer" title="Ordenar por días">Días'+(sortDias?(sortDias==='asc'?' ▲':' ▼'):'')+'</th><th></th></tr></thead><tbody>';
+      var html='<table><thead><tr><th class="cb-cell"><input type="checkbox" id="cb-all"/></th><th style="width:20px"></th><th>Ref</th><th>Pasajero</th><th>Canal</th><th>Tipo</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha vuelo</th><th>Etapa</th><th>Responsable</th><th id="th-dias" style="cursor:pointer" title="Ordenar por días">Días'+(sortDias?(sortDias==='asc'?' ▲':' ▼'):'')+'</th><th></th></tr></thead><tbody>';
       rows.forEach(function(c,i){
         var pos=getInstancia(c);
         var bc=etapaBadgeClass(pos.instancia,pos.resultado);
@@ -829,7 +867,7 @@
       var abiertas=esperasAbiertas(c);
       var resueltas=(Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return e.resuelta});
       var firmaVal=c.firma_estado||'no_aplica';
-      var h='<div class="action-field" style="margin-top:8px"><div class="detail__label">Esperas</div>';
+      var h='<div class="action-field" style="margin-top:8px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0"><div class="detail__label" style="margin-bottom:0">Esperas</div><button class="btn btn--ghost" id="btn-open-espera" type="button" style="font-size:.68rem;padding:3px 9px">+ Agregar espera</button></div>';
       if(firmaVal==='pendiente_envio')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Autorización pendiente de envío</span><span class="badge badge--en_gestion">Nosotros</span></div>';
       if(firmaVal==='enviada')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Esperando firma del pasajero</span><span class="badge badge--en_gestion">Pasajero</span></div>';
       if(!abiertas.length&&firmaVal!=='pendiente_envio'&&firmaVal!=='enviada')h+='<p style="font-size:.72rem;color:var(--t4);margin:6px 0">Sin esperas abiertas.</p>';
@@ -843,15 +881,6 @@
         h+='<button class="btn btn--ghost" data-espera-resolver="'+esc(e.id)+'" type="button" style="font-size:.66rem;white-space:nowrap">Resolver</button>';
         h+='</div>';
       });
-      h+='<div style="margin-top:10px;padding:10px;border:1px solid var(--bdl);border-radius:8px">';
-      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">';
-      h+='<select id="esp-tipo" class="firma-select">'+Object.keys(TIPO_ESPERA_LABELS).map(function(t){return '<option value="'+t+'">'+TIPO_ESPERA_LABELS[t]+'</option>'}).join('')+'</select>';
-      h+='<select id="esp-responsable" class="firma-select">'+Object.keys(RESPONSABLE_ESPERA_LABELS).map(function(r){return '<option value="'+r+'">'+RESPONSABLE_ESPERA_LABELS[r]+'</option>'}).join('')+'</select>';
-      h+='</div>';
-      h+='<input id="esp-detalle" class="firma-select" style="width:100%;margin-bottom:6px" placeholder="Detalle (opcional)">';
-      h+='<div style="display:flex;gap:6px;align-items:center"><input id="esp-vence" type="date" class="firma-select" style="flex:1;font-family:var(--fm)"><button class="btn btn--ghost" id="btn-add-espera" type="button" style="font-size:.72rem;white-space:nowrap">+ Agregar espera</button></div>';
-      h+='<div id="msg-espera" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div>';
-      h+='</div>';
       if(resueltas.length){
         h+='<details style="margin-top:8px"><summary style="font-size:.7rem;color:var(--t4);cursor:pointer">Esperas resueltas ('+resueltas.length+')</summary>';
         resueltas.slice().reverse().forEach(function(e){
@@ -1024,11 +1053,10 @@
         }
       }
       h+='</div>';
-      /* Fecha de mediación (solo mientras el caso esté en el grupo Mediación) */
+      /* Fecha de mediación (solo mientras el caso esté en la instancia Mediación) */
       if(enMediacion){
-        h+='<div class="action-field" style="margin-top:8px"><div class="detail__label">Fecha de mediación</div>';
-        h+='<div style="display:flex;gap:5px;align-items:center"><input id="inp-fmediacion" type="datetime-local" class="firma-select" style="flex:1;font-family:var(--fm)" value="'+toLocalInput(c.fecha_mediacion)+'"><button class="btn btn--ghost" id="btn-save-fmediacion" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
-        h+='<div id="msg-fmediacion" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
+        h+='<div class="action-field" style="margin-top:8px"><div style="display:flex;align-items:center;justify-content:space-between"><div class="detail__label" style="margin-bottom:0">Fecha de mediación</div><button class="btn btn--ghost" id="btn-open-fmediacion" type="button" style="font-size:.68rem;padding:3px 9px">'+(c.fecha_mediacion?'Editar':'+ Asignar')+'</button></div>';
+        h+='<div style="font-size:.78rem;color:'+(c.fecha_mediacion?'var(--t1)':'var(--t4)')+';margin-top:4px">'+(c.fecha_mediacion?fmtFechaHora(c.fecha_mediacion):'Sin asignar')+'</div></div>';
       }
       h+='</div>'; /* section gestión */
 
@@ -1417,21 +1445,8 @@
           }).catch(function(){btn.disabled=false;toast('Error de conexión.',true)});
         });
       });
-      var btnAddEspera=document.getElementById('btn-add-espera');
-      var msgEspera=document.getElementById('msg-espera');
-      if(btnAddEspera)btnAddEspera.addEventListener('click',function(){
-        var tipoE=(document.getElementById('esp-tipo')||{}).value;
-        var respE=(document.getElementById('esp-responsable')||{}).value;
-        var detE=(document.getElementById('esp-detalle')||{}).value||'';
-        var venceE=(document.getElementById('esp-vence')||{}).value||'';
-        btnAddEspera.disabled=true;if(msgEspera)msgEspera.textContent='';
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-espera',tipo:tipoE,responsable:respE,detalle:detE,vence:venceE||null})})
-        .then(function(r){return r.json()}).then(function(d){
-          btnAddEspera.disabled=false;
-          if(d.success){c.esperas=d.esperas;c.novedades=d.novedades;claims.forEach(function(cl){if(cl.id===c.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});toast('Espera agregada.');openDetail(c)}
-          else if(msgEspera){msgEspera.style.color='var(--err)';msgEspera.textContent=d.error||'Error.'}
-        }).catch(function(){btnAddEspera.disabled=false;if(msgEspera){msgEspera.style.color='var(--err)';msgEspera.textContent='Error de conexión.'}});
-      });
+      var btnOpenEspera=document.getElementById('btn-open-espera');
+      if(btnOpenEspera)btnOpenEspera.addEventListener('click',function(){openEsperaModal(c)});
 
       /* --- Checklist de cobro --- */
       var msgCobro=document.getElementById('msg-cobro');
@@ -1448,22 +1463,9 @@
         });
       });
 
-      /* --- Guardar fecha de mediación --- */
-      var btnSaveFmed=document.getElementById('btn-save-fmediacion');
-      var msgFmed=document.getElementById('msg-fmediacion');
-      if(btnSaveFmed)btnSaveFmed.addEventListener('click',function(){
-        var fv=(document.getElementById('inp-fmediacion')||{}).value||'';
-        btnSaveFmed.disabled=true;btnSaveFmed.textContent='...';msgFmed.textContent='';
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-fecha-mediacion',fecha_mediacion:fv||null})})
-        .then(function(r){return r.json()}).then(function(d){
-          btnSaveFmed.disabled=false;btnSaveFmed.textContent='Guardar';
-          if(d.success){
-            c.fecha_mediacion=d.fecha_mediacion;
-            claims.forEach(function(cl){if(cl.id===c.id)cl.fecha_mediacion=d.fecha_mediacion});
-            msgFmed.style.color='#1B9B5A';msgFmed.textContent='Fecha de mediación guardada.';
-          }else{msgFmed.style.color='var(--err)';msgFmed.textContent=d.error||'Error.'}
-        }).catch(function(){btnSaveFmed.disabled=false;btnSaveFmed.textContent='Guardar';msgFmed.style.color='var(--err)';msgFmed.textContent='Error de conexión.'});
-      });
+      /* --- Fecha de mediación --- */
+      var btnOpenFmed=document.getElementById('btn-open-fmediacion');
+      if(btnOpenFmed)btnOpenFmed.addEventListener('click',function(){openFmediacionModal(c)});
 
       /* --- Guardar autorización --- */
       var btnSaveFirma=document.getElementById('btn-save-firma');
@@ -2278,6 +2280,79 @@
           openDetail(cc);
         } else if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
       }).catch(function(){correccionSave.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
+    });
+
+    /* ---- AGREGAR ESPERA ---- */
+    var esperaOv=document.getElementById('espera-ov');
+    var esperaCaseRef=null;
+    function openEsperaModal(caseObj){
+      esperaCaseRef=caseObj;
+      var selT=document.getElementById('esp-tipo'),selR=document.getElementById('esp-responsable');
+      if(selT)selT.innerHTML=Object.keys(TIPO_ESPERA_LABELS).map(function(t){return '<option value="'+t+'">'+TIPO_ESPERA_LABELS[t]+'</option>'}).join('');
+      if(selR)selR.innerHTML=Object.keys(RESPONSABLE_ESPERA_LABELS).map(function(r){return '<option value="'+r+'">'+RESPONSABLE_ESPERA_LABELS[r]+'</option>'}).join('');
+      var det=document.getElementById('esp-detalle');if(det)det.value='';
+      var venc=document.getElementById('esp-vence');if(venc)venc.value='';
+      var msg=document.getElementById('msg-espera');if(msg){msg.style.color='';msg.textContent=''}
+      if(esperaOv)esperaOv.classList.add('open');
+    }
+    var esperaClose=document.getElementById('espera-close'),esperaCancel=document.getElementById('espera-cancel');
+    if(esperaClose)esperaClose.addEventListener('click',function(){esperaOv.classList.remove('open')});
+    if(esperaCancel)esperaCancel.addEventListener('click',function(){esperaOv.classList.remove('open')});
+    if(esperaOv)esperaOv.addEventListener('click',function(e){if(e.target===esperaOv)esperaOv.classList.remove('open')});
+    var btnAddEspera=document.getElementById('btn-add-espera');
+    if(btnAddEspera)btnAddEspera.addEventListener('click',function(){
+      if(!esperaCaseRef)return;
+      var msg=document.getElementById('msg-espera');
+      var tipoE=(document.getElementById('esp-tipo')||{}).value;
+      var respE=(document.getElementById('esp-responsable')||{}).value;
+      var detE=(document.getElementById('esp-detalle')||{}).value||'';
+      var venceE=(document.getElementById('esp-vence')||{}).value||'';
+      btnAddEspera.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
+      var cc=esperaCaseRef;
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:cc.id,action:'set-espera',tipo:tipoE,responsable:respE,detalle:detE,vence:venceE||null})})
+      .then(function(r){return r.json()}).then(function(d){
+        btnAddEspera.disabled=false;
+        if(d.success){
+          cc.esperas=d.esperas;cc.novedades=d.novedades;
+          claims.forEach(function(cl){if(cl.id===cc.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});
+          toast('Espera agregada.');
+          esperaOv.classList.remove('open');
+          openDetail(cc);
+        } else if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
+      }).catch(function(){btnAddEspera.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
+    });
+
+    /* ---- FECHA DE MEDIACIÓN ---- */
+    var fmediacionOv=document.getElementById('fmediacion-ov');
+    var fmediacionCaseRef=null;
+    function openFmediacionModal(caseObj){
+      fmediacionCaseRef=caseObj;
+      var inp=document.getElementById('inp-fmediacion');if(inp)inp.value=toLocalInput(caseObj.fecha_mediacion);
+      var msg=document.getElementById('msg-fmediacion');if(msg){msg.style.color='';msg.textContent=''}
+      if(fmediacionOv)fmediacionOv.classList.add('open');
+    }
+    var fmediacionClose=document.getElementById('fmediacion-close'),fmediacionCancel=document.getElementById('fmediacion-cancel');
+    if(fmediacionClose)fmediacionClose.addEventListener('click',function(){fmediacionOv.classList.remove('open')});
+    if(fmediacionCancel)fmediacionCancel.addEventListener('click',function(){fmediacionOv.classList.remove('open')});
+    if(fmediacionOv)fmediacionOv.addEventListener('click',function(e){if(e.target===fmediacionOv)fmediacionOv.classList.remove('open')});
+    var btnSaveFmed=document.getElementById('btn-save-fmediacion');
+    if(btnSaveFmed)btnSaveFmed.addEventListener('click',function(){
+      if(!fmediacionCaseRef)return;
+      var msg=document.getElementById('msg-fmediacion');
+      var fv=(document.getElementById('inp-fmediacion')||{}).value||'';
+      btnSaveFmed.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
+      var cc=fmediacionCaseRef;
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:cc.id,action:'set-fecha-mediacion',fecha_mediacion:fv||null})})
+      .then(function(r){return r.json()}).then(function(d){
+        btnSaveFmed.disabled=false;
+        if(d.success){
+          cc.fecha_mediacion=d.fecha_mediacion;
+          claims.forEach(function(cl){if(cl.id===cc.id)cl.fecha_mediacion=d.fecha_mediacion});
+          toast('Fecha de mediación guardada.');
+          fmediacionOv.classList.remove('open');
+          openDetail(cc);
+        } else if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
+      }).catch(function(){btnSaveFmed.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
     });
 
     /* ---- NUEVO CASO ---- */
