@@ -212,7 +212,8 @@ document.addEventListener('DOMContentLoaded', function () {
     $$('.doc-extra-row', listEl).forEach(function (row) {
       var tipo = ($('.doc-extra-tipo', row) || {}).value || '';
       var numero = (($('.doc-extra-numero', row) || {}).value || '').trim();
-      if (tipo || numero) out.push({ tipo: tipo, numero: numero });
+      /* Solo pares completos: un documento a medias no sirve y rompe "Hacer principal" */
+      if (tipo && numero) out.push({ tipo: tipo, numero: numero });
     });
     return out;
   }
@@ -227,7 +228,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var v = fViajo ? fViajo.value : '';
     var horasWrap = document.getElementById('inc-viajo-horas-wrap');
     var pasajeBlock = document.getElementById('inc-pasaje-alt');
-    if (horasWrap) horasWrap.style.display = v === 'reubicado' ? '' : 'none';
+    /* Las horas de demora al llegar aplican tanto si lo reubicó la aerolínea
+       como si viajó por sus propios medios */
+    if (horasWrap) horasWrap.style.display = (v === 'reubicado' || v === 'medios_propios') ? '' : 'none';
     if (pasajeBlock) pasajeBlock.style.display = v === 'medios_propios' ? '' : 'none';
   }
   function updateIncidentBlocks() {
@@ -735,10 +738,13 @@ document.addEventListener('DOMContentLoaded', function () {
         bagType = gv('fv-bag-type'); bagDesc = gv('fv-bag-desc'); bagValue = gv('fv-bag-value'); bagDelivery = gv('fv-bag-delivery');
       }
     }
+    /* Los campos de equipaje solo viajan si el reclamo incluye equipaje: si el
+       usuario completó la sub-sección y después cambió a "vuelo", se descartan. */
+    if (tipoReclamo === 'vuelo') { bagType = ''; bagDesc = ''; bagValue = ''; bagDelivery = ''; }
     var bagNoEntregadoEl = document.getElementById(bagPrefix + '-no-entregado');
-    var equipajeNoEntregado = !!(bagNoEntregadoEl && bagNoEntregadoEl.checked);
+    var equipajeNoEntregado = tipoReclamo !== 'vuelo' && !!(bagNoEntregadoEl && bagNoEntregadoEl.checked);
     var pirPresentado = tipoReclamo !== 'vuelo' ? gv(bagPrefix + '-pir') : '';
-    var pirNumero = tipoReclamo !== 'vuelo' ? gv(bagPrefix + '-pir-numero') : '';
+    var pirNumero = pirPresentado === 'si' ? gv(bagPrefix + '-pir-numero') : '';
 
     /* Gastos: la sub-sección equipaje tiene sus propios campos (fb-*); vuelo y
        vuelo_equipaje siguen usando los de la sub-sección vuelo (f-*). */
@@ -747,14 +753,24 @@ document.addEventListener('DOMContentLoaded', function () {
     var gastosMonto = gv(gastosPrefix + '-expenses-amount');
     var gastosDetalle = gv(gastosPrefix + '-expenses-detail');
 
-    /* Incidente: horas de retraso viene de f-delay-hours (demora) o f-viajo-horas
-       (reubicado dentro de cancelación/reprogramación/overbooking/denegación). */
-    var horasRetraso = gv('f-incident') === 'demora' ? gv('f-delay-hours') : gv('f-viajo-horas');
+    /* Incidente: solo viajan los campos que aplican al tipo elegido, para no
+       arrastrar valores huérfanos si el usuario cambió de incidencia a mitad
+       de camino (ej. completó cancelación y después eligió demora). */
+    var incidencia = S.claimType === 'equipaje' ? '' : gv('f-incident');
+    var esComun = incidencia === 'cancelacion' || incidencia === 'reprogramacion' || incidencia === 'overbooking' || incidencia === 'denegacion';
+    var viajoFinalmente = esComun ? gv('f-viajo') : '';
+    var horasRetraso = incidencia === 'demora' ? gv('f-delay-hours')
+      : (viajoFinalmente === 'reubicado' || viajoFinalmente === 'medios_propios') ? gv('f-viajo-horas') : '';
+    var anticipacionAviso = (incidencia === 'cancelacion' || incidencia === 'reprogramacion') ? gv('f-notice') : '';
+    var ofrecimientoAerolinea = esComun ? gv('f-refund') : '';
+    var embarquePresentado = (incidencia === 'overbooking' || incidencia === 'denegacion') ? gv('f-embarque') : '';
+    var pasajeAltMonto = viajoFinalmente === 'medios_propios' ? gv('f-pasaje-monto') : '';
+    var pasajeAltMoneda = viajoFinalmente === 'medios_propios' ? gv('f-pasaje-moneda') : '';
 
     var documentosTitular = [{ tipo: gv('f-doctype'), numero: gv('f-docnum') }].concat(collectDocExtras(docExtraList));
     var acompanantes = collectAcompanantes();
 
-    var pasajeAltFiles = S.files.pasajeAlt || [];
+    var pasajeAltFiles = viajoFinalmente === 'medios_propios' ? (S.files.pasajeAlt || []) : [];
 
     filesToB64(dropFiles.concat(pasajeAltFiles)).then(function(convertedDrop) {
       var pasajeAltNames = {};
@@ -787,15 +803,15 @@ document.addEventListener('DOMContentLoaded', function () {
         fecha_vuelo:            gv('f-date'),
         pnr:                    gv('f-pnr'),
         /* Incident (vuelo) */
-        tipo_incidencia:        gv('f-incident'),
+        tipo_incidencia:        incidencia,
         horas_retraso:          horasRetraso,
-        anticipacion_aviso:     gv('f-notice'),
-        ofrecimiento_aerolinea: gv('f-refund'),
-        causa_informada:        gv('f-cause'),
-        viajo_finalmente:       gv('f-viajo'),
-        embarque_presentado:    gv('f-embarque'),
-        pasaje_alternativo_monto:  gv('f-pasaje-monto'),
-        pasaje_alternativo_moneda: gv('f-pasaje-moneda'),
+        anticipacion_aviso:     anticipacionAviso,
+        ofrecimiento_aerolinea: ofrecimientoAerolinea,
+        causa_informada:        incidencia ? gv('f-cause') : '',
+        viajo_finalmente:       viajoFinalmente,
+        embarque_presentado:    embarquePresentado,
+        pasaje_alternativo_monto:  pasajeAltMonto,
+        pasaje_alternativo_moneda: pasajeAltMoneda,
         /* Expenses */
         moneda_gastos:          gastosMoneda,
         monto_gastos:           gastosMonto,

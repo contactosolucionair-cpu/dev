@@ -606,7 +606,7 @@
     showGroup('fg-ofrecimiento', isComun);
     showGroup('fg-viajo', isComun);
     var viajoVal = isComun ? fViajoAg.value : '';
-    showGroup('fg-horas', isDemora || viajoVal === 'reubicado');
+    showGroup('fg-horas', isDemora || viajoVal === 'reubicado' || viajoVal === 'medios_propios');
     showGroup('fg-pasaje-moneda', viajoVal === 'medios_propios');
     showGroup('fg-pasaje-monto', viajoVal === 'medios_propios');
   }
@@ -632,7 +632,7 @@
     var row = document.createElement('div');
     row.className = 'form-grid doc-extra-row';
     row.style.marginTop = '8px';
-    row.innerHTML = '<div class="form-group"><label>Tipo de documento</label><select class="doc-extra-tipo"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option></select></div>'
+    row.innerHTML = '<div class="form-group"><label>Tipo de documento</label><select class="doc-extra-tipo"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select></div>'
       + '<div class="form-group"><label>Nro. de documento</label><input type="text" class="doc-extra-numero" /></div>'
       + '<div class="form-group" style="align-self:flex-end"><button type="button" class="btn btn--ghost doc-extra-remove" style="font-size:.7rem">✕ Quitar</button></div>';
     docExtraList.appendChild(row);
@@ -648,7 +648,8 @@
     docExtraList.querySelectorAll('.doc-extra-row').forEach(function (row) {
       var tipo = (row.querySelector('.doc-extra-tipo') || {}).value || '';
       var numero = ((row.querySelector('.doc-extra-numero') || {}).value || '').trim();
-      if (tipo || numero) out.push({ tipo: tipo, numero: numero });
+      /* Solo pares completos: un documento a medias no sirve y rompe "Hacer principal" */
+      if (tipo && numero) out.push({ tipo: tipo, numero: numero });
     });
     return out;
   }
@@ -755,9 +756,13 @@
     };
 
     if (tipo === 'vuelo') {
+      /* Solo viajan los campos que aplican a la incidencia elegida, para no
+         arrastrar valores huérfanos si se cambió de incidencia a mitad de carga. */
       var incidenciaVal = document.getElementById('f-incidencia').value || '';
-      var viajoVal = document.getElementById('f-viajo').value || '';
-      var horasVal = document.getElementById('f-horas').value || null;
+      var esComun = incidenciaVal === 'cancelacion' || incidenciaVal === 'reprogramacion' || incidenciaVal === 'overbooking' || incidenciaVal === 'denegacion';
+      var viajoVal = esComun ? (document.getElementById('f-viajo').value || '') : '';
+      var horasVal = (incidenciaVal === 'demora' || viajoVal === 'reubicado' || viajoVal === 'medios_propios')
+        ? (document.getElementById('f-horas').value || null) : null;
       Object.assign(payload, {
         aerolinea:           document.getElementById('f-aerolinea').value.trim() || null,
         vuelo_nro:           document.getElementById('f-vuelo-nro').value.trim() || null,
@@ -767,9 +772,9 @@
         destino:             document.getElementById('f-destino').value.trim() || null,
         tipo_incidencia:     incidenciaVal || null,
         horas_retraso:       horasVal,
-        anticipacion_aviso:  document.getElementById('f-anticipacion').value || null,
-        ofrecimiento_aerolinea: document.getElementById('f-ofrecimiento').value || null,
-        embarque_presentado: document.getElementById('f-embarque').value || null,
+        anticipacion_aviso:  (incidenciaVal === 'cancelacion' || incidenciaVal === 'reprogramacion') ? (document.getElementById('f-anticipacion').value || null) : null,
+        ofrecimiento_aerolinea: esComun ? (document.getElementById('f-ofrecimiento').value || null) : null,
+        embarque_presentado: (incidenciaVal === 'overbooking' || incidenciaVal === 'denegacion') ? (document.getElementById('f-embarque').value || null) : null,
         viajo_finalmente:    viajoVal || null,
         pasaje_alternativo_moneda: viajoVal === 'medios_propios' ? (document.getElementById('f-pasaje-moneda').value || null) : null,
         pasaje_alternativo_monto:  viajoVal === 'medios_propios' ? (document.getElementById('f-pasaje-monto').value || null) : null,
@@ -789,7 +794,7 @@
         equipaje_no_entregado: !!document.getElementById('fe-no-entregado').checked,
         valor_equipaje:      document.getElementById('fe-valor').value || null,
         pir_presentado:      document.getElementById('fe-pir').value || null,
-        pir_numero:          document.getElementById('fe-pir-numero').value.trim() || null,
+        pir_numero:          document.getElementById('fe-pir').value === 'si' ? (document.getElementById('fe-pir-numero').value.trim() || null) : null,
         descripcion_equipaje: document.getElementById('fe-descripcion').value.trim() || null,
       });
     }

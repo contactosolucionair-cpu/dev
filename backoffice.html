@@ -2526,7 +2526,7 @@
     function ncSetDisp(id,show){var e=document.getElementById(id);if(e)e.style.display=show?'':'none'}
     function ncUpdateViajoCascade(){
       var incidencia=ncVal('nc-incidencia'),viajo=ncVal('nc-viajo');
-      ncSetDisp('nc-fg-delay', incidencia==='demora'||viajo==='reubicado');
+      ncSetDisp('nc-fg-delay', incidencia==='demora'||viajo==='reubicado'||viajo==='medios_propios');
       ncSetDisp('nc-fg-pasaje', viajo==='medios_propios');
     }
     function ncUpdateIncidentBlocks(){
@@ -2571,7 +2571,7 @@
       ncDocExtraList.querySelectorAll('.doc-extra-row').forEach(function(row){
         var tipo=(row.querySelector('.doc-extra-tipo')||{}).value||'';
         var numero=((row.querySelector('.doc-extra-numero')||{}).value||'').trim();
-        if(tipo||numero)out.push({tipo:tipo,numero:numero});
+        if(tipo&&numero)out.push({tipo:tipo,numero:numero});
       });
       return out;
     }
@@ -2626,16 +2626,26 @@
       ncSave.disabled=true;ncSave.textContent='Creando...';msg.textContent='';
       var tipo=ncVal('nc-tipo')||'vuelo';
       var ncBagNoEntregadoChecked=!!(document.getElementById('nc-bag-no-entregado')||{}).checked;
+      /* Solo viajan los campos que aplican al tipo elegido: sin valores huérfanos
+         si se cambió de incidencia o de tipo de reclamo a mitad de la carga. */
+      var ncEsVuelo=tipo==='vuelo'||tipo==='vuelo_equipaje';
+      var ncEsEquipaje=tipo==='equipaje'||tipo==='vuelo_equipaje';
+      var ncIncidencia=ncEsVuelo?ncVal('nc-incidencia'):'';
+      var ncEsComun=ncIncidencia==='cancelacion'||ncIncidencia==='reprogramacion'||ncIncidencia==='overbooking'||ncIncidencia==='denegacion';
+      var ncViajo=ncEsComun?ncVal('nc-viajo'):'';
+      var ncHoras=ncIncidencia==='demora'?ncVal('nc-delay'):(ncViajo==='reubicado'||ncViajo==='medios_propios')?ncVal('nc-delay'):'';
       var payload={nombre:nombre,email:email,telefono:ncVal('nc-telefono'),documento_tipo:ncVal('nc-doctype'),documento_numero:ncVal('nc-docnum'),
         documentos:[{tipo:ncVal('nc-doctype'),numero:ncVal('nc-docnum')}].concat(ncCollectDocExtras()),
         aerolinea:ncVal('nc-aerolinea'),vuelo_nro:ncVal('nc-vuelo'),origen:ncVal('nc-origen'),destino:ncVal('nc-destino'),fecha_vuelo:ncVal('nc-fecha'),pnr:ncVal('nc-pnr'),
         tipo_reclamo:tipo,
-        tipo_incidencia:ncVal('nc-incidencia'),horas_retraso:ncVal('nc-delay'),anticipacion_aviso:ncVal('nc-notice'),ofrecimiento_aerolinea:ncVal('nc-refund'),causa_informada:ncVal('nc-causa'),
-        embarque_presentado:ncVal('nc-embarque'),viajo_finalmente:ncVal('nc-viajo'),
-        pasaje_alternativo_moneda:ncVal('nc-viajo')==='medios_propios'?ncVal('nc-pasaje-moneda'):'',pasaje_alternativo_monto:ncVal('nc-viajo')==='medios_propios'?ncVal('nc-pasaje-monto'):'',
+        tipo_incidencia:ncIncidencia,horas_retraso:ncHoras,
+        anticipacion_aviso:(ncIncidencia==='cancelacion'||ncIncidencia==='reprogramacion')?ncVal('nc-notice'):'',
+        ofrecimiento_aerolinea:ncEsComun?ncVal('nc-refund'):'',causa_informada:ncEsVuelo?ncVal('nc-causa'):'',
+        embarque_presentado:(ncIncidencia==='overbooking'||ncIncidencia==='denegacion')?ncVal('nc-embarque'):'',viajo_finalmente:ncViajo,
+        pasaje_alternativo_moneda:ncViajo==='medios_propios'?ncVal('nc-pasaje-moneda'):'',pasaje_alternativo_monto:ncViajo==='medios_propios'?ncVal('nc-pasaje-monto'):'',
         moneda_gastos:ncVal('nc-moneda'),monto_gastos:ncVal('nc-monto'),gastos_detalle:ncVal('nc-gastos-detalle'),
-        tipo_caso_equipaje:ncVal('nc-bag-type'),descripcion_equipaje:ncVal('nc-bag-desc'),valor_equipaje:ncVal('nc-bag-value'),fecha_entrega_equipaje:ncVal('nc-bag-delivery'),
-        equipaje_no_entregado:ncBagNoEntregadoChecked,pir_presentado:ncVal('nc-bag-pir'),pir_numero:ncVal('nc-bag-pir-numero')};
+        tipo_caso_equipaje:ncEsEquipaje?ncVal('nc-bag-type'):'',descripcion_equipaje:ncEsEquipaje?ncVal('nc-bag-desc'):'',valor_equipaje:ncEsEquipaje?ncVal('nc-bag-value'):'',fecha_entrega_equipaje:ncEsEquipaje?ncVal('nc-bag-delivery'):'',
+        equipaje_no_entregado:ncEsEquipaje&&ncBagNoEntregadoChecked,pir_presentado:ncEsEquipaje?ncVal('nc-bag-pir'):'',pir_numero:(ncEsEquipaje&&ncVal('nc-bag-pir')==='si')?ncVal('nc-bag-pir-numero'):''};
       fetch('/api/admin?action=create-case',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(payload)})
       .then(function(r){return r.json()}).then(function(d){
         if(!d.success){ncSave.disabled=false;ncSave.textContent='Crear caso';msg.style.color='var(--err)';msg.textContent=d.error||'Error al crear el caso.';return}

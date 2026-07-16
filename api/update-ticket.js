@@ -137,6 +137,7 @@ export default async function handler(req, res) {
       if (transicion === 'elevar_organismo') {
         newViaReclamo = 'organismo';
         newOrganismo = (body.organismo || '').trim();
+        if (!newOrganismo) return res.status(400).json({ error: 'Nombre del organismo requerido' });
         patch.via_reclamo = newViaReclamo;
         patch.organismo = newOrganismo;
       }
