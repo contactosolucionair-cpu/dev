@@ -12,6 +12,7 @@
  *   sign           GET   URL firmada de un adjunto de un caso asignado
  */
 import { verifyAbogado } from './_utils/abogado-auth.js';
+import { ESTADO_A_INSTANCIA } from './_utils/instancias.js';
 
 export const config = { api: { bodyParser: { sizeLimit: '1mb' } } };
 
@@ -199,23 +200,38 @@ async function handleUpdateEstado(req, res, SB_URL, SB_KEY) {
 
   /* Verificar que el caso esté asignado a este abogado */
   var chkRes = await fetch(
-    SB_URL + '/rest/v1/reclamos?id=eq.' + casoId + '&abogado_id=eq.' + abogado.id + '&select=id,estado_historial&limit=1',
+    SB_URL + '/rest/v1/reclamos?id=eq.' + casoId + '&abogado_id=eq.' + abogado.id + '&select=id,estado_historial,instancia_historial&limit=1',
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
   );
   var chkRows;
   try { chkRows = JSON.parse(await chkRes.text()); } catch (e) { chkRows = []; }
   if (!chkRows.length) return res.status(403).json({ error: 'El caso no está asignado a tu cuenta.' });
 
+  var nowIso = new Date().toISOString();
   var historial = Array.isArray(chkRows[0].estado_historial) ? chkRows[0].estado_historial : [];
-  historial.push({ estado: estado, fecha: new Date().toISOString(), por: 'abogado' });
+  historial.push({ estado: estado, fecha: nowIso, por: 'abogado' });
+
+  /* Además del estado legacy, mapear al modelo nuevo (instancia/momento) */
+  var mapped = ESTADO_A_INSTANCIA[estado] || { instancia: 'mediacion', momento: 'preparacion' };
+  var instHist = Array.isArray(chkRows[0].instancia_historial) ? chkRows[0].instancia_historial : [];
+  instHist.push({ instancia: mapped.instancia, momento: mapped.momento, fecha: nowIso, por: 'abogado' });
+
+  var patch = {
+    estado: estado, estado_historial: historial,
+    instancia: mapped.instancia, momento: mapped.momento, instancia_historial: instHist,
+  };
+  if (estado === 'acuerdo') {
+    patch.acuerdo_instancia = 'mediacion';
+    patch.fecha_acuerdo = nowIso;
+  }
 
   var updRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + casoId, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ estado: estado, estado_historial: historial }),
+    body: JSON.stringify(patch),
   });
   if (!updRes.ok) return res.status(500).json({ error: 'Error al actualizar el estado.' });
-  return res.status(200).json({ success: true, estado: estado, estado_historial: historial });
+  return res.status(200).json({ success: true, estado: estado, estado_historial: historial, instancia: mapped.instancia, momento: mapped.momento });
 }
 
 /* ------------------------------------------------------------------ */
