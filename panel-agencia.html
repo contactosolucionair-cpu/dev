@@ -11,6 +11,16 @@
     html{font-size:15px}body{font-family:var(--f);color:var(--t1);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
     .app{display:flex;min-height:100vh}
 
+    /* Airport autocomplete (data-airport inputs) */
+    .ac-wrap{position:relative;width:100%}
+    .ac-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;background:var(--w);border:1.5px solid var(--bd);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:264px;overflow-y:auto;padding:4px}
+    .ac-menu.open{display:block}
+    .ac-opt{display:flex;flex-direction:column;gap:1px;padding:7px 10px;border-radius:5px;cursor:pointer}
+    .ac-opt:hover,.ac-opt.active{background:var(--g05)}
+    .ac-opt__main{font-size:.82rem;font-weight:600;color:var(--t1);display:flex;align-items:center;gap:7px}
+    .ac-opt__sub{font-size:.7rem;color:var(--t3);line-height:1.2}
+    .ac-code{font-family:var(--fm);font-size:.66rem;font-weight:600;color:var(--g);background:var(--g05);border:1px solid var(--g10);border-radius:5px;padding:1px 5px;letter-spacing:.04em}
+
     /* ---- Sidebar ---- */
     .sidenav{width:210px;background:var(--gd);color:var(--w);padding:22px 14px;display:flex;flex-direction:column;gap:24px;flex-shrink:0}
     .sidenav__brand{display:flex;align-items:center;gap:7px}
@@ -243,6 +253,13 @@
           <div style="margin-top:8px"><button type="button" class="btn btn--ghost" id="doc-add" style="font-size:.72rem">+ Agregar otro documento</button></div>
         </div>
 
+        <!-- Acompañantes -->
+        <div class="form-section">
+          <div class="form-section__title">Acompañantes (opcional)</div>
+          <div id="acomp-list"></div>
+          <button type="button" class="btn btn--ghost" id="acomp-add" style="font-size:.72rem">+ Agregar acompañante</button>
+        </div>
+
         <!-- Tipo de reclamo -->
         <div class="form-section">
           <div class="form-section__title">Tipo de reclamo</div>
@@ -251,6 +268,7 @@
             <select id="f-tipo-reclamo">
               <option value="vuelo">Vuelo (demora / cancelación / overbooking)</option>
               <option value="equipaje">Equipaje (pérdida / daño / demora)</option>
+              <option value="vuelo_equipaje">Vuelo + Equipaje</option>
             </select>
           </div>
         </div>
@@ -263,8 +281,8 @@
             <div class="form-group"><label>Nro. de vuelo</label><input type="text" id="f-vuelo-nro" placeholder="AR 1234" /></div>
             <div class="form-group"><label>Fecha del vuelo</label><input type="date" id="f-fecha-vuelo" /></div>
             <div class="form-group"><label>PNR / Reserva</label><input type="text" id="f-pnr" /></div>
-            <div class="form-group"><label>Origen</label><input type="text" id="f-origen" placeholder="EZE - Buenos Aires" /></div>
-            <div class="form-group"><label>Destino</label><input type="text" id="f-destino" placeholder="MIA - Miami" /></div>
+            <div class="form-group"><label>Origen</label><input type="text" id="f-origen" placeholder="EZE - Buenos Aires" data-airport="true" autocomplete="off" /></div>
+            <div class="form-group"><label>Destino</label><input type="text" id="f-destino" placeholder="MIA - Miami" data-airport="true" autocomplete="off" /></div>
             <div class="form-group"><label>Tipo de incidencia *</label>
               <select id="f-incidencia">
                 <option value="">Seleccionar...</option>
@@ -313,7 +331,7 @@
             <div class="form-group" id="fg-pasaje-monto" style="display:none"><label>Costo del nuevo pasaje</label><input type="number" id="f-pasaje-monto" min="0" step="0.01" /></div>
             <div class="form-group"><label>Causa informada</label><input type="text" id="f-causa" placeholder="ej: condiciones meteorológicas" /></div>
             <div class="form-group"><label>Moneda gastos</label>
-              <select id="f-moneda"><option value="">Sin gastos</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EUR">EUR</option></select>
+              <select id="f-moneda"><option value="">Sin gastos</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="BRL">BRL</option></select>
             </div>
             <div class="form-group"><label>Monto gastos</label><input type="number" id="f-monto-gastos" min="0" step="0.01" /></div>
             <div class="form-group form-group--full"><label>Detalle de gastos</label><textarea id="f-gastos-detalle" rows="2" placeholder="Descripción de los gastos incurridos"></textarea></div>
@@ -332,7 +350,7 @@
               <select id="fe-tipo-caso">
                 <option value="">Seleccionar...</option>
                 <option value="perdida">Pérdida de equipaje</option>
-                <option value="dano">Daño en equipaje</option>
+                <option value="danio">Daño en equipaje</option>
                 <option value="demora">Demora en entrega</option>
               </select>
             </div>
@@ -345,6 +363,13 @@
             </div>
             <div class="form-group" id="fg-fe-pir-numero" style="display:none"><label>Número de PIR</label><input type="text" id="fe-pir-numero" /></div>
             <div class="form-group form-group--full"><label>Descripción</label><textarea id="fe-descripcion" rows="2" placeholder="Describe el contenido y la incidencia"></textarea></div>
+          </div>
+          <div class="form-grid" style="margin-top:12px">
+            <div class="form-group"><label>Moneda gastos</label>
+              <select id="fe-moneda"><option value="">Sin gastos</option><option value="ARS">ARS</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="BRL">BRL</option></select>
+            </div>
+            <div class="form-group"><label>Monto gastos</label><input type="number" id="fe-monto-gastos" min="0" step="0.01" /></div>
+            <div class="form-group form-group--full"><label>Detalle de gastos</label><textarea id="fe-gastos-detalle" rows="2" placeholder="Descripción de los gastos incurridos (ropa, artículos de reposición)"></textarea></div>
           </div>
         </div>
 
@@ -586,9 +611,10 @@
   var secEqp     = document.getElementById('sec-equipaje');
 
   tipoSelect.addEventListener('change', function () {
-    var isEqp = tipoSelect.value === 'equipaje';
-    secVuelo.style.display = isEqp ? 'none' : '';
-    secEqp.style.display   = isEqp ? '' : 'none';
+    var t = tipoSelect.value;
+    secVuelo.style.display = (t === 'vuelo' || t === 'vuelo_equipaje') ? '' : 'none';
+    secEqp.style.display   = (t === 'equipaje' || t === 'vuelo_equipaje') ? '' : 'none';
+    updateAcompBagVisibility();
   });
 
   /* ---- Incidencia: bloques condicionales (mismos values que el form público) ---- */
@@ -654,6 +680,87 @@
     return out;
   }
   if (docAddBtn) docAddBtn.addEventListener('click', addDocExtraRow);
+
+  /* Documentos extra de un acompañante (helper genérico, una lista por fila) */
+  function buildDocExtraRow(listEl, addBtn, max) {
+    if (!listEl || listEl.children.length >= max) return;
+    var row = document.createElement('div');
+    row.className = 'form-grid doc-extra-row';
+    row.style.marginTop = '8px';
+    row.innerHTML = '<div class="form-group"><label>Tipo de documento</label><select class="doc-extra-tipo"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select></div>'
+      + '<div class="form-group"><label>Nro. de documento</label><input type="text" class="doc-extra-numero" /></div>'
+      + '<div class="form-group" style="align-self:flex-end"><button type="button" class="btn btn--ghost doc-extra-remove" style="font-size:.7rem">✕ Quitar</button></div>';
+    listEl.appendChild(row);
+    row.querySelector('.doc-extra-remove').addEventListener('click', function () { listEl.removeChild(row); if (addBtn) addBtn.style.display = (listEl.children.length >= max) ? 'none' : ''; });
+    if (addBtn) addBtn.style.display = (listEl.children.length >= max) ? 'none' : '';
+  }
+  function collectDocExtrasFrom(listEl) {
+    var out = [];
+    if (!listEl) return out;
+    listEl.querySelectorAll('.doc-extra-row').forEach(function (row) {
+      var tipo = (row.querySelector('.doc-extra-tipo') || {}).value || '';
+      var numero = ((row.querySelector('.doc-extra-numero') || {}).value || '').trim();
+      if (tipo && numero) out.push({ tipo: tipo, numero: numero });
+    });
+    return out;
+  }
+
+  /* ---- Acompañantes (pasajeros adicionales del mismo caso) ---- */
+  var acompList = document.getElementById('acomp-list');
+  var acompAddBtn = document.getElementById('acomp-add');
+  function updateAcompBagVisibility() {
+    var show = tipoSelect.value === 'equipaje' || tipoSelect.value === 'vuelo_equipaje';
+    if (acompList) acompList.querySelectorAll('.acomp-bag-wrap').forEach(function (w) { w.style.display = show ? '' : 'none'; });
+  }
+  function addAcompRow() {
+    if (!acompList) return;
+    var row = document.createElement('div');
+    row.className = 'acomp-row';
+    row.style.cssText = 'border-top:1px solid var(--bdl);padding-top:12px;margin-bottom:12px';
+    row.innerHTML = '<div class="form-grid">'
+      + '<div class="form-group"><label>Nombre y apellido</label><input type="text" class="acomp-nombre" placeholder="Nombre del acompañante" /></div>'
+      + '<div class="form-group"><label>Tipo de documento</label><select class="acomp-doctype"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select></div>'
+      + '<div class="form-group"><label>Número de documento</label><input type="text" class="acomp-docnum" /></div>'
+      + '<div class="form-group" style="justify-content:flex-end"><label style="display:flex;align-items:center;gap:6px;font-size:.76rem;font-weight:400"><input type="checkbox" class="acomp-menor" /> Es menor de edad</label></div>'
+      + '</div>'
+      + '<div class="acomp-doc-extra-list"></div>'
+      + '<div style="margin:8px 0"><button type="button" class="btn btn--ghost acomp-doc-add" style="font-size:.7rem">+ Agregar otro documento</button></div>'
+      + '<div class="acomp-bag-wrap form-grid" style="display:none">'
+      + '<div class="form-group"><label>Equipaje: tipo de incidencia</label><select class="acomp-bag-type"><option value="">Seleccionar...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select></div>'
+      + '<div class="form-group"><label>Valor estimado (USD)</label><input type="number" min="0" class="acomp-bag-value" placeholder="500" /></div>'
+      + '<div class="form-group form-group--full"><label>Descripción del incidente</label><textarea rows="2" class="acomp-bag-desc" placeholder="Qué pasó con el equipaje de esta persona"></textarea></div>'
+      + '</div>'
+      + '<div style="text-align:right"><button type="button" class="btn btn--ghost acomp-remove" style="font-size:.7rem">✕ Quitar acompañante</button></div>';
+    acompList.appendChild(row);
+    row.querySelector('.acomp-remove').addEventListener('click', function () { acompList.removeChild(row); });
+    var adl = row.querySelector('.acomp-doc-extra-list'), adb = row.querySelector('.acomp-doc-add');
+    adb.addEventListener('click', function () { buildDocExtraRow(adl, adb, 2); });
+    updateAcompBagVisibility();
+  }
+  if (acompAddBtn) acompAddBtn.addEventListener('click', addAcompRow);
+  function collectAcompanantes() {
+    if (!acompList) return [];
+    var esEquipaje = tipoSelect.value === 'equipaje' || tipoSelect.value === 'vuelo_equipaje';
+    var out = [];
+    acompList.querySelectorAll('.acomp-row').forEach(function (row) {
+      var nombre = ((row.querySelector('.acomp-nombre') || {}).value || '').trim();
+      var doctype = (row.querySelector('.acomp-doctype') || {}).value || '';
+      var docnum = ((row.querySelector('.acomp-docnum') || {}).value || '').trim();
+      if (!nombre && !doctype && !docnum) return;
+      var item = {
+        nombre: nombre, documento_tipo: doctype, documento_numero: docnum,
+        documentos: [{ tipo: doctype, numero: docnum }].concat(collectDocExtrasFrom(row.querySelector('.acomp-doc-extra-list'))),
+        es_menor: !!((row.querySelector('.acomp-menor') || {}).checked),
+        equipaje: null,
+      };
+      if (esEquipaje) {
+        var bt = (row.querySelector('.acomp-bag-type') || {}).value || '';
+        if (bt) item.equipaje = { tipo: bt, descripcion: ((row.querySelector('.acomp-bag-desc') || {}).value || '').trim(), valor: (row.querySelector('.acomp-bag-value') || {}).value || '' };
+      }
+      out.push(item);
+    });
+    return out;
+  }
 
   /* Upload / scan */
   var fileInput   = document.getElementById('file-input');
@@ -751,11 +858,15 @@
       documento_tipo:  document.getElementById('f-doc-tipo').value || null,
       documento_numero: document.getElementById('f-doc-num').value.trim() || null,
       documentos: [{ tipo: document.getElementById('f-doc-tipo').value || '', numero: document.getElementById('f-doc-num').value.trim() }].concat(collectDocExtras()),
+      acompanantes: collectAcompanantes(),
       cliente_autorizacion_declarada: true,
       scanned_files: scannedFiles,
     };
 
-    if (tipo === 'vuelo') {
+    var esVuelo = (tipo === 'vuelo' || tipo === 'vuelo_equipaje');
+    var esEquipaje = (tipo === 'equipaje' || tipo === 'vuelo_equipaje');
+
+    if (esVuelo) {
       /* Solo viajan los campos que aplican a la incidencia elegida, para no
          arrastrar valores huérfanos si se cambió de incidencia a mitad de carga. */
       var incidenciaVal = document.getElementById('f-incidencia').value || '';
@@ -783,12 +894,10 @@
         monto_gastos:        document.getElementById('f-monto-gastos').value || null,
         gastos_detalle:      document.getElementById('f-gastos-detalle').value.trim() || null,
       });
-    } else {
-      Object.assign(payload, {
-        aerolinea:           document.getElementById('fe-aerolinea').value.trim() || null,
-        vuelo_nro:           document.getElementById('fe-vuelo-nro').value.trim() || null,
-        fecha_vuelo:         document.getElementById('fe-fecha-vuelo').value || null,
-        pnr:                 document.getElementById('fe-pnr').value.trim() || null,
+    }
+
+    if (esEquipaje) {
+      var eqPayload = {
         tipo_caso_equipaje:  document.getElementById('fe-tipo-caso').value || null,
         fecha_entrega_equipaje: document.getElementById('fe-fecha-entrega').value || null,
         equipaje_no_entregado: !!document.getElementById('fe-no-entregado').checked,
@@ -796,7 +905,21 @@
         pir_presentado:      document.getElementById('fe-pir').value || null,
         pir_numero:          document.getElementById('fe-pir').value === 'si' ? (document.getElementById('fe-pir-numero').value.trim() || null) : null,
         descripcion_equipaje: document.getElementById('fe-descripcion').value.trim() || null,
-      });
+      };
+      if (!esVuelo) {
+        /* Reclamo solo por equipaje: los datos del vuelo y los gastos vienen de esta sección
+           (en el combo vuelo+equipaje, el vuelo y los gastos ya viajan desde la sección de vuelo). */
+        Object.assign(eqPayload, {
+          aerolinea:           document.getElementById('fe-aerolinea').value.trim() || null,
+          vuelo_nro:           document.getElementById('fe-vuelo-nro').value.trim() || null,
+          fecha_vuelo:         document.getElementById('fe-fecha-vuelo').value || null,
+          pnr:                 document.getElementById('fe-pnr').value.trim() || null,
+          moneda_gastos:       document.getElementById('fe-moneda').value || null,
+          monto_gastos:        document.getElementById('fe-monto-gastos').value || null,
+          gastos_detalle:      document.getElementById('fe-gastos-detalle').value.trim() || null,
+        });
+      }
+      Object.assign(payload, eqPayload);
     }
 
     btn.disabled = true; btn.textContent = 'Cargando caso...';
@@ -816,6 +939,7 @@
         document.getElementById('f-nombre').value = '';
         document.getElementById('f-email').value  = '';
         document.getElementById('f-autorizado').checked = false;
+        if (acompList) acompList.innerHTML = '';
         scannedFiles = []; renderUploadList();
       } else {
         msg.className = 'form-msg form-msg--err';
@@ -841,5 +965,6 @@
   loadStats();
 })();
 </script>
+<script src="/src/js/airport-select.js"></script>
 </body>
 </html>

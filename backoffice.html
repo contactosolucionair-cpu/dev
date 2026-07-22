@@ -7,6 +7,15 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
     :root{--g:#2D4A3E;--gl:#3A6154;--gd:#1E332B;--g10:rgba(45,74,62,.10);--g05:rgba(45,74,62,.05);--au:#D4A853;--aul:#E0BE7A;--bg:#F5F3EE;--bgd:#EDE9E1;--w:#FFF;--t1:#111;--t2:#3A3A3A;--t3:#6B6B6B;--t4:#999;--bd:#E0DCD4;--bdl:#EDEAE4;--ok:#1B9B5A;--okbg:#EDF9F0;--err:#C0392B;--errbg:#FDF0EE;--warn:#D4A853;--warnbg:#FDF8EE;--f:'Inter',system-ui,sans-serif;--fh:'Plus Jakarta Sans','Inter',sans-serif;--fm:'JetBrains Mono',monospace;--ez:cubic-bezier(.4,0,.2,1)}
+    /* Airport autocomplete (data-airport inputs) */
+    .ac-wrap{position:relative;width:100%}
+    .ac-menu{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;background:var(--w);border:1.5px solid var(--bd);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:264px;overflow-y:auto;padding:4px}
+    .ac-menu.open{display:block}
+    .ac-opt{display:flex;flex-direction:column;gap:1px;padding:7px 10px;border-radius:5px;cursor:pointer}
+    .ac-opt:hover,.ac-opt.active{background:var(--g05)}
+    .ac-opt__main{font-size:.82rem;font-weight:600;color:var(--t1);display:flex;align-items:center;gap:7px}
+    .ac-opt__sub{font-size:.7rem;color:var(--t3);line-height:1.2}
+    .ac-code{font-family:var(--fm);font-size:.66rem;font-weight:600;color:var(--g);background:var(--g05);border:1px solid var(--g10);border-radius:5px;padding:1px 5px;letter-spacing:.04em}
     /* Auth gate */
     .auth-gate{display:none;position:fixed;inset:0;z-index:600;background:var(--gd);align-items:center;justify-content:center}
     .auth-gate.open{display:flex}
@@ -300,6 +309,10 @@
         <div id="nc-doc-extra-list"></div>
         <div style="margin-bottom:14px"><button type="button" class="btn btn--ghost" id="nc-doc-add" style="font-size:.72rem">+ Agregar otro documento</button></div>
 
+        <div class="detail__label" style="margin-bottom:6px">Acompañantes (opcional)</div>
+        <div id="nc-acomp-list"></div>
+        <div style="margin-bottom:14px"><button type="button" class="btn btn--ghost" id="nc-acomp-add" style="font-size:.72rem">+ Agregar acompañante</button></div>
+
         <div class="detail__label" style="margin-bottom:6px">Tipo de reclamo</div>
         <select id="nc-tipo" class="firma-select" style="width:100%;margin-bottom:14px"><option value="vuelo">Reclamo por vuelo</option><option value="equipaje">Reclamo por equipaje</option><option value="vuelo_equipaje">Vuelo + Equipaje</option></select>
 
@@ -307,8 +320,8 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
           <input id="nc-aerolinea" class="firma-select" placeholder="Aerolínea">
           <input id="nc-vuelo" class="firma-select" placeholder="Número de vuelo">
-          <input id="nc-origen" class="firma-select" placeholder="Origen">
-          <input id="nc-destino" class="firma-select" placeholder="Destino">
+          <input id="nc-origen" class="firma-select" placeholder="Origen" data-airport="true" autocomplete="off">
+          <input id="nc-destino" class="firma-select" placeholder="Destino" data-airport="true" autocomplete="off">
           <input id="nc-fecha" type="date" class="firma-select">
           <input id="nc-pnr" class="firma-select" placeholder="PNR">
         </div>
@@ -355,6 +368,12 @@
           </div>
           <div id="nc-bag-pir-numero-wrap" style="display:none;margin-bottom:8px"><input id="nc-bag-pir-numero" class="firma-select" style="width:100%" placeholder="Número de PIR"></div>
           <textarea id="nc-bag-desc" class="firma-select" rows="2" style="width:100%;margin-bottom:14px;resize:vertical" placeholder="Descripción del incidente"></textarea>
+          <div class="detail__label" style="margin-bottom:6px">Gastos</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <select id="nc-eq-moneda" class="firma-select"><option value="ARS">ARS (Peso argentino)</option><option value="USD">USD (Dólar)</option><option value="EUR">EUR (Euro)</option><option value="BRL">BRL (Real)</option></select>
+            <input id="nc-eq-monto" type="number" min="0" step="0.01" class="firma-select" placeholder="Monto total">
+          </div>
+          <textarea id="nc-eq-gastos-detalle" class="firma-select" rows="2" style="width:100%;margin-bottom:14px;resize:vertical" placeholder="Detalle de gastos"></textarea>
         </div>
 
         <div class="detail__label" style="margin-bottom:6px">Adjuntos</div>
@@ -2522,6 +2541,7 @@
       var secV=document.getElementById('nc-sec-vuelo');var secE=document.getElementById('nc-sec-equipaje');
       if(secV)secV.style.display=(t==='vuelo'||t==='vuelo_equipaje')?'':'none';
       if(secE)secE.style.display=(t==='equipaje'||t==='vuelo_equipaje')?'':'none';
+      ncUpdateAcompBagVisibility();
     }
     function ncSetDisp(id,show){var e=document.getElementById(id);if(e)e.style.display=show?'':'none'}
     function ncUpdateViajoCascade(){
@@ -2576,21 +2596,103 @@
       return out;
     }
     if(ncDocAddBtn)ncDocAddBtn.addEventListener('click',ncAddDocExtraRow);
+
+    /* Documentos extra de un acompañante (helper genérico, reutilizado por fila) */
+    function ncBuildDocExtraRow(listEl,addBtn,max){
+      if(!listEl||listEl.children.length>=max)return;
+      var row=document.createElement('div');
+      row.className='doc-extra-row';
+      row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px';
+      row.innerHTML='<select class="firma-select doc-extra-tipo"><option value="">Tipo de documento...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>'
+        +'<div style="display:flex;gap:6px"><input class="firma-select doc-extra-numero" style="flex:1" placeholder="Número de documento"><button type="button" class="btn btn--ghost doc-extra-remove" style="font-size:.68rem">✕</button></div>';
+      listEl.appendChild(row);
+      row.querySelector('.doc-extra-remove').addEventListener('click',function(){listEl.removeChild(row);if(addBtn)addBtn.style.display=(listEl.children.length>=max)?'none':''});
+      if(addBtn)addBtn.style.display=(listEl.children.length>=max)?'none':'';
+    }
+    function ncCollectDocExtrasFrom(listEl){
+      var out=[];
+      if(!listEl)return out;
+      listEl.querySelectorAll('.doc-extra-row').forEach(function(row){
+        var tipo=(row.querySelector('.doc-extra-tipo')||{}).value||'';
+        var numero=((row.querySelector('.doc-extra-numero')||{}).value||'').trim();
+        if(tipo&&numero)out.push({tipo:tipo,numero:numero});
+      });
+      return out;
+    }
+
+    /* Acompañantes (pasajeros adicionales del mismo caso) */
+    var ncAcompList=document.getElementById('nc-acomp-list');
+    var ncAcompAddBtn=document.getElementById('nc-acomp-add');
+    function ncUpdateAcompBagVisibility(){
+      var show=ncVal('nc-tipo')==='equipaje'||ncVal('nc-tipo')==='vuelo_equipaje';
+      if(ncAcompList)ncAcompList.querySelectorAll('.acomp-bag-wrap').forEach(function(w){w.style.display=show?'':'none'});
+    }
+    function ncAddAcompRow(){
+      if(!ncAcompList)return;
+      var row=document.createElement('div');
+      row.className='acomp-row';
+      row.style.cssText='border-top:1px solid var(--bdl);padding-top:10px;margin-bottom:10px';
+      row.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+        +'<input class="firma-select acomp-nombre" placeholder="Nombre y apellido">'
+        +'<select class="firma-select acomp-doctype"><option value="">Tipo de documento...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>'
+        +'<input class="firma-select acomp-docnum" placeholder="Número de documento">'
+        +'<label style="display:flex;align-items:center;gap:6px;font-size:.72rem"><input type="checkbox" class="acomp-menor"> Es menor de edad</label>'
+        +'</div>'
+        +'<div class="acomp-doc-extra-list"></div>'
+        +'<div style="margin-bottom:8px"><button type="button" class="btn btn--ghost acomp-doc-add" style="font-size:.68rem">+ Agregar otro documento</button></div>'
+        +'<div class="acomp-bag-wrap" style="display:none;margin-bottom:8px">'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+        +'<select class="firma-select acomp-bag-type"><option value="">Equipaje: tipo de incidencia...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select>'
+        +'<input class="firma-select acomp-bag-value" type="number" min="0" placeholder="Valor estimado (USD)">'
+        +'</div>'
+        +'<textarea class="firma-select acomp-bag-desc" rows="2" style="width:100%;resize:vertical" placeholder="Descripción del incidente (equipaje)"></textarea>'
+        +'</div>'
+        +'<div style="text-align:right"><button type="button" class="btn btn--ghost acomp-remove" style="font-size:.68rem">✕ Quitar acompañante</button></div>';
+      ncAcompList.appendChild(row);
+      var rm=row.querySelector('.acomp-remove');if(rm)rm.addEventListener('click',function(){ncAcompList.removeChild(row)});
+      var adl=row.querySelector('.acomp-doc-extra-list'),adb=row.querySelector('.acomp-doc-add');
+      if(adb)adb.addEventListener('click',function(){ncBuildDocExtraRow(adl,adb,2)});
+      ncUpdateAcompBagVisibility();
+    }
+    if(ncAcompAddBtn)ncAcompAddBtn.addEventListener('click',ncAddAcompRow);
+    function ncCollectAcompanantes(){
+      if(!ncAcompList)return [];
+      var esEquipaje=ncVal('nc-tipo')==='equipaje'||ncVal('nc-tipo')==='vuelo_equipaje';
+      var out=[];
+      ncAcompList.querySelectorAll('.acomp-row').forEach(function(row){
+        var nombre=((row.querySelector('.acomp-nombre')||{}).value||'').trim();
+        var doctype=(row.querySelector('.acomp-doctype')||{}).value||'';
+        var docnum=((row.querySelector('.acomp-docnum')||{}).value||'').trim();
+        if(!nombre&&!doctype&&!docnum)return;
+        var item={nombre:nombre,documento_tipo:doctype,documento_numero:docnum,
+          documentos:[{tipo:doctype,numero:docnum}].concat(ncCollectDocExtrasFrom(row.querySelector('.acomp-doc-extra-list'))),
+          es_menor:!!((row.querySelector('.acomp-menor')||{}).checked),equipaje:null};
+        if(esEquipaje){
+          var bt=(row.querySelector('.acomp-bag-type')||{}).value||'';
+          if(bt)item.equipaje={tipo:bt,descripcion:((row.querySelector('.acomp-bag-desc')||{}).value||'').trim(),valor:(row.querySelector('.acomp-bag-value')||{}).value||''};
+        }
+        out.push(item);
+      });
+      return out;
+    }
+
     function ncRenderFiles(){
       var el=document.getElementById('nc-files-list');if(!el)return;
       el.innerHTML=ncFiles.map(function(f,i){return '<div class="upload-item"><span class="upload-item__name">'+esc(f.name)+'</span><button data-ncf="'+i+'" type="button" class="btn-del" title="Quitar">✕</button></div>'}).join('');
       el.querySelectorAll('[data-ncf]').forEach(function(b){b.addEventListener('click',function(){ncFiles.splice(parseInt(b.getAttribute('data-ncf')),1);ncRenderFiles()})});
     }
     function ncReset(){
-      ['nc-nombre','nc-email','nc-telefono','nc-docnum','nc-aerolinea','nc-vuelo','nc-origen','nc-destino','nc-fecha','nc-pnr','nc-delay','nc-notice','nc-monto','nc-gastos-detalle','nc-bag-value','nc-bag-desc','nc-bag-delivery','nc-embarque','nc-viajo','nc-pasaje-monto','nc-bag-pir-numero'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
+      ['nc-nombre','nc-email','nc-telefono','nc-docnum','nc-aerolinea','nc-vuelo','nc-origen','nc-destino','nc-fecha','nc-pnr','nc-delay','nc-notice','nc-monto','nc-gastos-detalle','nc-bag-value','nc-bag-desc','nc-bag-delivery','nc-embarque','nc-viajo','nc-pasaje-monto','nc-bag-pir-numero','nc-eq-monto','nc-eq-gastos-detalle'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
       ['nc-doctype','nc-incidencia','nc-refund','nc-causa','nc-bag-type','nc-bag-pir'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
       var t=document.getElementById('nc-tipo');if(t)t.value='vuelo';
       var m=document.getElementById('nc-moneda');if(m)m.value='ARS';
       var pm=document.getElementById('nc-pasaje-moneda');if(pm)pm.value='ARS';
+      var em=document.getElementById('nc-eq-moneda');if(em)em.value='ARS';
       var bne=document.getElementById('nc-bag-no-entregado');if(bne)bne.checked=false;
       var bd2=document.getElementById('nc-bag-delivery');if(bd2)bd2.disabled=false;
       ncFiles=[];ncRenderFiles();ncToggleSecciones();
       if(ncDocExtraList)ncDocExtraList.innerHTML='';ncUpdateDocAddBtn();
+      if(ncAcompList)ncAcompList.innerHTML='';
       ncSetDisp('nc-bag-delivery-wrap',false);ncSetDisp('nc-bag-pir-numero-wrap',false);
       ncUpdateIncidentBlocks();
     }
@@ -2634,8 +2736,12 @@
       var ncEsComun=ncIncidencia==='cancelacion'||ncIncidencia==='reprogramacion'||ncIncidencia==='overbooking'||ncIncidencia==='denegacion';
       var ncViajo=ncEsComun?ncVal('nc-viajo'):'';
       var ncHoras=ncIncidencia==='demora'?ncVal('nc-delay'):(ncViajo==='reubicado'||ncViajo==='medios_propios')?ncVal('nc-delay'):'';
+      /* Gastos: la sub-sección equipaje-solo tiene su propio bloque (nc-eq-*); vuelo
+         y vuelo_equipaje siguen usando el de la sub-sección vuelo (nc-*), igual regla que el form público. */
+      var ncGastosEquipaje=tipo==='equipaje';
       var payload={nombre:nombre,email:email,telefono:ncVal('nc-telefono'),documento_tipo:ncVal('nc-doctype'),documento_numero:ncVal('nc-docnum'),
         documentos:[{tipo:ncVal('nc-doctype'),numero:ncVal('nc-docnum')}].concat(ncCollectDocExtras()),
+        acompanantes:ncCollectAcompanantes(),
         aerolinea:ncVal('nc-aerolinea'),vuelo_nro:ncVal('nc-vuelo'),origen:ncVal('nc-origen'),destino:ncVal('nc-destino'),fecha_vuelo:ncVal('nc-fecha'),pnr:ncVal('nc-pnr'),
         tipo_reclamo:tipo,
         tipo_incidencia:ncIncidencia,horas_retraso:ncHoras,
@@ -2643,7 +2749,7 @@
         ofrecimiento_aerolinea:ncEsComun?ncVal('nc-refund'):'',causa_informada:ncEsVuelo?ncVal('nc-causa'):'',
         embarque_presentado:(ncIncidencia==='overbooking'||ncIncidencia==='denegacion')?ncVal('nc-embarque'):'',viajo_finalmente:ncViajo,
         pasaje_alternativo_moneda:ncViajo==='medios_propios'?ncVal('nc-pasaje-moneda'):'',pasaje_alternativo_monto:ncViajo==='medios_propios'?ncVal('nc-pasaje-monto'):'',
-        moneda_gastos:ncVal('nc-moneda'),monto_gastos:ncVal('nc-monto'),gastos_detalle:ncVal('nc-gastos-detalle'),
+        moneda_gastos:ncGastosEquipaje?ncVal('nc-eq-moneda'):ncVal('nc-moneda'),monto_gastos:ncGastosEquipaje?ncVal('nc-eq-monto'):ncVal('nc-monto'),gastos_detalle:ncGastosEquipaje?ncVal('nc-eq-gastos-detalle'):ncVal('nc-gastos-detalle'),
         tipo_caso_equipaje:ncEsEquipaje?ncVal('nc-bag-type'):'',descripcion_equipaje:ncEsEquipaje?ncVal('nc-bag-desc'):'',valor_equipaje:ncEsEquipaje?ncVal('nc-bag-value'):'',fecha_entrega_equipaje:ncEsEquipaje?ncVal('nc-bag-delivery'):'',
         equipaje_no_entregado:ncEsEquipaje&&ncBagNoEntregadoChecked,pir_presentado:ncEsEquipaje?ncVal('nc-bag-pir'):'',pir_numero:(ncEsEquipaje&&ncVal('nc-bag-pir')==='si')?ncVal('nc-bag-pir-numero'):''};
       fetch('/api/admin?action=create-case',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(payload)})
@@ -2803,5 +2909,6 @@
       <div class="auth-card__err" id="gate-err"></div>
     </div>
   </div>
+  <script src="/src/js/airport-select.js"></script>
 </body>
 </html>

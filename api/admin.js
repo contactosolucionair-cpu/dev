@@ -409,6 +409,7 @@ async function createCase(req, res, SB_URL, SB_KEY) {
     pir_presentado:   body.pir_presentado || null,
     pir_numero:       body.pir_numero || null,
     documentos:       Array.isArray(body.documentos) ? body.documentos : [],
+    acompanantes:     Array.isArray(body.acompanantes) ? body.acompanantes : [],
     ref_code: refCode, estado: 'pendiente', fecha_carga: nowIso,
     estado_historial: [{ estado: 'pendiente', fecha: nowIso, por: 'admin' }],
   };
