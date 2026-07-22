@@ -479,7 +479,7 @@
 
     <!-- Editar un campo del caso -->
     <div class="cm-ov" id="editcampo-ov">
-      <div class="cm" style="max-width:420px;text-align:left">
+      <div class="cm" style="max-width:460px;text-align:left">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <div class="cm__title" style="margin:0">Editar un campo del caso</div>
           <button class="detail__close" id="editcampo-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -487,6 +487,10 @@
         <div style="display:flex;flex-direction:column;gap:8px">
           <select id="edit-campo-sel" class="firma-select" style="width:100%"></select>
           <input id="edit-campo-val" class="firma-select" style="width:100%" placeholder="Nuevo valor">
+          <div id="editcampo-docs" style="display:none">
+            <div id="ec-doc-list"></div>
+            <div style="margin-top:8px"><button type="button" class="btn btn--ghost" id="ec-doc-add" style="font-size:.68rem">+ Agregar documento</button></div>
+          </div>
         </div>
         <div id="msg-editcampo" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
         <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
@@ -698,11 +702,12 @@
       if(pos.instancia==='cobro')return 15;
       return null;
     }
-    /* documento_tipo/documento_numero quedan afuera a propósito: son solo un espejo de
-       documentos[0] y editarlos acá desincroniza el array. Se editan desde "Documentos
-       del titular" en el panel de detalle (usa la acción set-documentos). */
+    /* documento_tipo/documento_numero quedan afuera del editor de texto libre a propósito:
+       son solo un espejo de documentos[0] y patchearlos directo desincroniza el array.
+       Se editan con la opción "__documentos__" de abajo, que usa la acción set-documentos. */
     var CAMPOS_EDITABLES=[
       {campo:'nombre',label:'Nombre'},{campo:'email',label:'Email'},{campo:'telefono',label:'Teléfono'},
+      {campo:'__documentos__',label:'Documentos del titular (agregar / editar / reordenar)'},
       {campo:'pnr',label:'PNR'},{campo:'aerolinea',label:'Aerolínea'},{campo:'vuelo_nro',label:'Número de vuelo'},
       {campo:'fecha_vuelo',label:'Fecha del vuelo'},{campo:'origen',label:'Origen'},{campo:'destino',label:'Destino'},
       {campo:'tipo_incidencia',label:'Tipo de incidencia'},{campo:'causa_informada',label:'Causa informada'},{campo:'horas_retraso',label:'Horas de retraso'},
@@ -1012,47 +1017,19 @@
       h+='</div>';
       h+='<div class="detail__divider"></div>';
 
-      /* Documentos del titular: editor inline (tipo, número, hacer principal, agregar/quitar).
-         Siempre viaja como array vía la acción set-documentos — nunca se patchea
-         documento_tipo/documento_numero directo para no desincronizarlo. */
-      var documentosTitular=Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[{tipo:'',numero:''}]);
+      /* Documentos + acompañantes: resumen compacto de solo lectura. La edición
+         (agregar/editar/reordenar documentos) vive en el modal "Editar un campo del caso". */
+      var documentosTitular=Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[]);
       var acompArrDoc=Array.isArray(c.acompanantes)?c.acompanantes:[];
-      function docTipoOptions(sel){
-        return ['DNI','Pasaporte','ID'].map(function(t){return '<option value="'+t+'"'+(sel===t?' selected':'')+'>'+(t==='ID'?'ID / Cédula':t)+'</option>'}).join('');
+      h+='<div class="detail__grid">';
+      if(documentosTitular.length){
+        h+='<div class="detail__section"><div class="detail__label">Documento</div><div class="detail__value">'+esc(documentosTitular[0].tipo||'—')+' '+esc(documentosTitular[0].numero||'—')+(documentosTitular.length>1?' <span style="color:var(--t4)">(+'+(documentosTitular.length-1)+' más)</span>':'')+'</div></div>';
+      } else {
+        h+='<div class="detail__section"><div class="detail__label">Documento</div><div class="detail__value" style="color:var(--t4)">Sin cargar</div></div>';
       }
-      h+='<div class="detail__section"><div class="detail__label" style="margin-bottom:6px">Documentos del titular</div>';
-      h+='<div id="doc-mgmt-list">';
-      documentosTitular.forEach(function(d,di){
-        h+='<div class="doc-mgmt-row" style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--bdl)">';
-        h+='<span style="width:14px;flex-shrink:0;color:var(--au)">'+(di===0?'★':'')+'</span>';
-        h+='<select class="firma-select doc-mgmt-tipo" style="flex:0 0 110px"><option value="">Tipo...</option>'+docTipoOptions(d.tipo)+'</select>';
-        h+='<input class="firma-select doc-mgmt-numero" style="flex:1" placeholder="Número" value="'+esc(d.numero||'')+'">';
-        h+='<button class="btn btn--ghost doc-mgmt-principal" type="button" style="font-size:.62rem;padding:2px 7px"'+(di===0?' disabled':'')+'>Hacer principal</button>';
-        h+='<button class="btn btn--ghost doc-mgmt-quitar" type="button" style="font-size:.62rem;padding:2px 7px">✕</button>';
-        h+='</div>';
-      });
+      if(acompArrDoc.length)h+='<div class="detail__section"><div class="detail__label">Acompañantes</div><div class="detail__value">'+acompArrDoc.length+'</div></div>';
       h+='</div>';
-      h+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">';
-      h+='<button class="btn btn--ghost" id="doc-mgmt-add" type="button" style="font-size:.68rem">+ Agregar documento</button>';
-      h+='<button class="btn btn--primary" id="doc-mgmt-save" type="button" style="font-size:.68rem">Guardar documentos</button>';
-      h+='<span id="doc-mgmt-msg" style="font-family:var(--fm);font-size:.62rem"></span>';
-      h+='</div>';
-      /* Acompañantes: documentos de solo lectura (se editan volviendo a cargar el caso) */
-      if(acompArrDoc.some(function(a){return Array.isArray(a.documentos)&&a.documentos.length})){
-        h+='<div style="margin-top:10px">';
-        acompArrDoc.forEach(function(a){
-          var docsA=Array.isArray(a.documentos)&&a.documentos.length?a.documentos:(a.documento_tipo||a.documento_numero?[{tipo:a.documento_tipo,numero:a.documento_numero}]:[]);
-          if(!docsA.length)return;
-          h+='<div class="detail__value" style="font-size:.72rem;color:var(--t3);margin:8px 0 4px">'+esc(a.nombre||'Acompañante')+'</div>';
-          docsA.forEach(function(d,di){
-            h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bdl);font-size:.78rem">';
-            h+='<span>'+(di===0?'★ ':'')+esc(d.tipo||'—')+' '+esc(d.numero||'—')+'</span>';
-            h+='</div>';
-          });
-        });
-        h+='</div>';
-      }
-      h+='</div><div class="detail__divider"></div>';
+      h+='<div class="detail__divider"></div>';
 
       /* Vuelo */
       h+='<div class="detail__grid">';
@@ -1570,87 +1547,6 @@
       });
       var linkCorreccion=document.getElementById('link-correccion');
       if(linkCorreccion)linkCorreccion.addEventListener('click',function(e){e.preventDefault();openCorreccionModal(c,pos)});
-
-      /* --- Documentos del titular: editor inline (tipo/número, hacer principal, agregar/quitar) ---
-         "Hacer principal" y "Quitar"/"Agregar" solo reordenan el DOM; todo se persiste junto
-         al apretar "Guardar documentos" (una sola llamada a set-documentos con el array final). */
-      var docMgmtList=detailBody.querySelector('#doc-mgmt-list');
-      function docMgmtRenumber(){
-        if(!docMgmtList)return;
-        var rows=docMgmtList.querySelectorAll('.doc-mgmt-row');
-        rows.forEach(function(row,i){
-          row.querySelector('span').textContent=i===0?'★':'';
-          var pBtn=row.querySelector('.doc-mgmt-principal');if(pBtn)pBtn.disabled=(i===0);
-          var qBtn=row.querySelector('.doc-mgmt-quitar');if(qBtn)qBtn.disabled=(rows.length<=1);
-        });
-      }
-      function docMgmtWireRow(row){
-        var principalBtn=row.querySelector('.doc-mgmt-principal');
-        if(principalBtn)principalBtn.addEventListener('click',function(){
-          if(!docMgmtList)return;
-          docMgmtList.insertBefore(row,docMgmtList.firstChild);
-          docMgmtRenumber();
-        });
-        var quitarBtn=row.querySelector('.doc-mgmt-quitar');
-        if(quitarBtn)quitarBtn.addEventListener('click',function(){
-          if(!docMgmtList||docMgmtList.querySelectorAll('.doc-mgmt-row').length<=1)return;
-          docMgmtList.removeChild(row);
-          docMgmtRenumber();
-        });
-      }
-      if(docMgmtList)docMgmtList.querySelectorAll('.doc-mgmt-row').forEach(docMgmtWireRow);
-      docMgmtRenumber();
-      var docMgmtAddBtn=detailBody.querySelector('#doc-mgmt-add');
-      if(docMgmtAddBtn)docMgmtAddBtn.addEventListener('click',function(){
-        if(!docMgmtList)return;
-        var row=document.createElement('div');
-        row.className='doc-mgmt-row';
-        row.style.cssText='display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--bdl)';
-        row.innerHTML='<span style="width:14px;flex-shrink:0;color:var(--au)"></span>'
-          +'<select class="firma-select doc-mgmt-tipo" style="flex:0 0 110px"><option value="">Tipo...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>'
-          +'<input class="firma-select doc-mgmt-numero" style="flex:1" placeholder="Número">'
-          +'<button class="btn btn--ghost doc-mgmt-principal" type="button" style="font-size:.62rem;padding:2px 7px">Hacer principal</button>'
-          +'<button class="btn btn--ghost doc-mgmt-quitar" type="button" style="font-size:.62rem;padding:2px 7px">✕</button>';
-        docMgmtList.appendChild(row);
-        docMgmtWireRow(row);
-        docMgmtRenumber();
-        var numInp=row.querySelector('.doc-mgmt-numero');if(numInp)numInp.focus();
-      });
-      var docMgmtSaveBtn=detailBody.querySelector('#doc-mgmt-save');
-      var docMgmtMsg=detailBody.querySelector('#doc-mgmt-msg');
-      if(docMgmtSaveBtn)docMgmtSaveBtn.addEventListener('click',function(){
-        if(!docMgmtList)return;
-        var docs=[];
-        var rows=docMgmtList.querySelectorAll('.doc-mgmt-row');
-        for(var ri=0;ri<rows.length;ri++){
-          var tipo=(rows[ri].querySelector('.doc-mgmt-tipo')||{}).value||'';
-          var numero=((rows[ri].querySelector('.doc-mgmt-numero')||{}).value||'').trim();
-          if(!tipo&&!numero)continue; /* fila vacía sin usar: se descarta */
-          if(!tipo||!numero){
-            if(docMgmtMsg){docMgmtMsg.style.color='var(--err)';docMgmtMsg.textContent='Cada documento necesita tipo y número.'}
-            return;
-          }
-          docs.push({tipo:tipo,numero:numero});
-        }
-        if(!docs.length){
-          if(docMgmtMsg){docMgmtMsg.style.color='var(--err)';docMgmtMsg.textContent='Necesitás al menos un documento.'}
-          return;
-        }
-        docMgmtSaveBtn.disabled=true;
-        if(docMgmtMsg){docMgmtMsg.style.color='';docMgmtMsg.textContent='Guardando...'}
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-documentos',documentos:docs})})
-        .then(function(r){return r.json()}).then(function(d){
-          docMgmtSaveBtn.disabled=false;
-          if(d.success){
-            c.documentos=d.documentos;c.documento_tipo=d.documento_tipo;c.documento_numero=d.documento_numero;
-            claims.forEach(function(cl){if(cl.id===c.id){cl.documentos=d.documentos;cl.documento_tipo=d.documento_tipo;cl.documento_numero=d.documento_numero}});
-            toast('Documentos actualizados.');
-            openDetail(c);
-          } else {
-            if(docMgmtMsg){docMgmtMsg.style.color='var(--err)';docMgmtMsg.textContent=d.error||'Error al guardar.'}
-          }
-        }).catch(function(){docMgmtSaveBtn.disabled=false;if(docMgmtMsg){docMgmtMsg.style.color='var(--err)';docMgmtMsg.textContent='Error de conexión.'}});
-      });
 
       /* --- Esperas --- */
       detailBody.querySelectorAll('[data-espera-resolver]').forEach(function(btn){
@@ -2400,10 +2296,83 @@
     var editCampoCase=null;
     var selCampo=document.getElementById('edit-campo-sel');
     if(selCampo)selCampo.innerHTML=CAMPOS_EDITABLES.map(function(cf){return '<option value="'+cf.campo+'">'+esc(cf.label)+'</option>'}).join('');
+
+    /* ---- Documentos del titular: sub-editor dentro de "Editar un campo del caso" ---
+       "Hacer principal"/"Quitar"/"Agregar" solo tocan el DOM; todo se persiste junto
+       al apretar "Guardar" (una sola llamada a set-documentos con el array final). */
+    var ecDocList=document.getElementById('ec-doc-list');
+    var ecDocAddBtn=document.getElementById('ec-doc-add');
+    function ecDocRowHtml(tipo,numero){
+      return '<div class="doc-mgmt-row" style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--bdl)">'
+        +'<span style="width:14px;flex-shrink:0;color:var(--au)"></span>'
+        +'<select class="firma-select doc-mgmt-tipo" style="flex:0 0 110px"><option value="">Tipo...</option><option value="DNI"'+(tipo==='DNI'?' selected':'')+'>DNI</option><option value="Pasaporte"'+(tipo==='Pasaporte'?' selected':'')+'>Pasaporte</option><option value="ID"'+(tipo==='ID'?' selected':'')+'>ID / Cédula</option></select>'
+        +'<input class="firma-select doc-mgmt-numero" style="flex:1" placeholder="Número" value="'+esc(numero||'')+'">'
+        +'<button class="btn btn--ghost doc-mgmt-principal" type="button" style="font-size:.62rem;padding:2px 7px">Hacer principal</button>'
+        +'<button class="btn btn--ghost doc-mgmt-quitar" type="button" style="font-size:.62rem;padding:2px 7px">✕</button>'
+        +'</div>';
+    }
+    function ecRenumber(){
+      if(!ecDocList)return;
+      var rows=ecDocList.querySelectorAll('.doc-mgmt-row');
+      rows.forEach(function(row,i){
+        row.querySelector('span').textContent=i===0?'★':'';
+        var pBtn=row.querySelector('.doc-mgmt-principal');if(pBtn)pBtn.disabled=(i===0);
+        var qBtn=row.querySelector('.doc-mgmt-quitar');if(qBtn)qBtn.disabled=(rows.length<=1);
+      });
+    }
+    function ecWireRow(row){
+      var principalBtn=row.querySelector('.doc-mgmt-principal');
+      if(principalBtn)principalBtn.addEventListener('click',function(){if(ecDocList){ecDocList.insertBefore(row,ecDocList.firstChild);ecRenumber()}});
+      var quitarBtn=row.querySelector('.doc-mgmt-quitar');
+      if(quitarBtn)quitarBtn.addEventListener('click',function(){if(ecDocList&&ecDocList.querySelectorAll('.doc-mgmt-row').length>1){ecDocList.removeChild(row);ecRenumber()}});
+    }
+    function ecRenderDocs(caseObj){
+      if(!ecDocList)return;
+      var docs=Array.isArray(caseObj.documentos)&&caseObj.documentos.length?caseObj.documentos:(caseObj.documento_tipo||caseObj.documento_numero?[{tipo:caseObj.documento_tipo,numero:caseObj.documento_numero}]:[{tipo:'',numero:''}]);
+      ecDocList.innerHTML=docs.map(function(d){return ecDocRowHtml(d.tipo,d.numero)}).join('');
+      ecDocList.querySelectorAll('.doc-mgmt-row').forEach(ecWireRow);
+      ecRenumber();
+    }
+    if(ecDocAddBtn)ecDocAddBtn.addEventListener('click',function(){
+      if(!ecDocList)return;
+      var wrap=document.createElement('div');
+      wrap.innerHTML=ecDocRowHtml('','');
+      var row=wrap.firstChild;
+      ecDocList.appendChild(row);
+      ecWireRow(row);
+      ecRenumber();
+      var numInp=row.querySelector('.doc-mgmt-numero');if(numInp)numInp.focus();
+    });
+    function ecCollectDocs(){
+      var out=[];
+      if(!ecDocList)return out;
+      var rows=ecDocList.querySelectorAll('.doc-mgmt-row');
+      for(var ri=0;ri<rows.length;ri++){
+        var tipo=(rows[ri].querySelector('.doc-mgmt-tipo')||{}).value||'';
+        var numero=((rows[ri].querySelector('.doc-mgmt-numero')||{}).value||'').trim();
+        if(!tipo&&!numero)continue; /* fila vacía sin usar: se descarta */
+        if(!tipo||!numero)return null; /* incompleta: error de validación */
+        out.push({tipo:tipo,numero:numero});
+      }
+      return out;
+    }
+
+    function ecUpdateMode(){
+      var isDocs=selCampo.value==='__documentos__';
+      var valEl=document.getElementById('edit-campo-val');
+      var docsEl=document.getElementById('editcampo-docs');
+      if(valEl)valEl.style.display=isDocs?'none':'';
+      if(docsEl)docsEl.style.display=isDocs?'':'none';
+      if(isDocs&&editCampoCase)ecRenderDocs(editCampoCase);
+    }
+    if(selCampo)selCampo.addEventListener('change',ecUpdateMode);
+
     function openEditCampoModal(caseObj){
       editCampoCase=caseObj;
       var msg=document.getElementById('msg-editcampo'); if(msg){msg.style.color='';msg.textContent=''}
       var inp=document.getElementById('edit-campo-val'); if(inp)inp.value='';
+      if(selCampo)selCampo.value='nombre';
+      ecUpdateMode();
       if(editcampoOv)editcampoOv.classList.add('open');
     }
     var editcampoClose=document.getElementById('editcampo-close'),editcampoCancel=document.getElementById('editcampo-cancel');
@@ -2417,6 +2386,28 @@
     if(btnSaveCampo)btnSaveCampo.addEventListener('click',function(){
       if(!editCampoCase)return;
       var campo=selCampo.value;
+
+      if(campo==='__documentos__'){
+        var docs=ecCollectDocs();
+        if(docs===null){if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Cada documento necesita tipo y número.'}return}
+        if(!docs.length){if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Necesitás al menos un documento.'}return}
+        btnSaveCampo.disabled=true;
+        if(msgEditCampo){msgEditCampo.style.color='';msgEditCampo.textContent='Guardando...'}
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editCampoCase.id,action:'set-documentos',documentos:docs})})
+        .then(function(r){return r.json()}).then(function(d){
+          btnSaveCampo.disabled=false;
+          if(d.success){
+            editCampoCase.documentos=d.documentos;editCampoCase.documento_tipo=d.documento_tipo;editCampoCase.documento_numero=d.documento_numero;
+            claims.forEach(function(cl){if(cl.id===editCampoCase.id){cl.documentos=d.documentos;cl.documento_tipo=d.documento_tipo;cl.documento_numero=d.documento_numero}});
+            if(msgEditCampo){msgEditCampo.style.color='var(--ok)';msgEditCampo.textContent='✓ Guardado'}
+            ecRenderDocs(editCampoCase);
+          } else {
+            if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent=d.error||'Error al guardar'}
+          }
+        }).catch(function(){btnSaveCampo.disabled=false;if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Error de red'}});
+        return;
+      }
+
       var valor=inpCampoVal.value;
       btnSaveCampo.disabled=true;
       if(msgEditCampo){msgEditCampo.style.color='';msgEditCampo.textContent='Guardando...'}
