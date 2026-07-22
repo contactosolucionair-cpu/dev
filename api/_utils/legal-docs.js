@@ -28,16 +28,26 @@ function fechaLetras() {
   return { dia: String(d.getDate()), mes: MESES[d.getMonth()], anio: String(d.getFullYear()) };
 }
 
+/* documento_tipo convive con dos convenciones de casing en la app (los forms de carga
+   guardan 'DNI'/'Pasaporte'/'ID'; el modal de patrocinio guarda 'dni'/'pasaporte' en
+   minúscula) — comparar siempre normalizado para no depender de cuál se usó. */
+function esPasaporte(tipo) {
+  return String(tipo || '').trim().toLowerCase() === 'pasaporte';
+}
+function esDni(tipo) {
+  return String(tipo || '').trim().toLowerCase() === 'dni';
+}
+
 /* Con DNI: "DNI N° 12.345.678" · Con pasaporte: "Pasaporte N° AB1234567" */
 function composeDocumento(tipo, numero) {
   if (!numero) return '';
-  return tipo === 'pasaporte' ? ('Pasaporte N° ' + numero) : ('DNI N° ' + numero);
+  return esPasaporte(tipo) ? ('Pasaporte N° ' + numero) : ('DNI N° ' + numero);
 }
 
 /* Residente/argentino con DNI: "DNI X, CUIT/CUIL Y" · Extranjero con pasaporte:
    "Pasaporte X (emitido por <país>), identificación fiscal: <id>" */
 function composeClienteIdentificacion(r) {
-  if (r.documento_tipo === 'pasaporte') {
+  if (esPasaporte(r.documento_tipo)) {
     if (!r.documento_numero || !r.pais_emisor || !r.id_fiscal_extranjero) return '';
     return 'Pasaporte ' + r.documento_numero + ' (emitido por ' + r.pais_emisor + '), identificación fiscal: ' + r.id_fiscal_extranjero;
   }
@@ -81,10 +91,10 @@ function buildPatrocinioData(reclamo, abogado) {
   if (!reclamo.nombre) faltantes.push('Nombre del cliente');
   if (!reclamo.documento_tipo) faltantes.push('Tipo de documento del cliente (DNI o pasaporte)');
   if (!reclamo.documento_numero) faltantes.push('Número de documento del cliente');
-  if (reclamo.documento_tipo === 'pasaporte') {
+  if (esPasaporte(reclamo.documento_tipo)) {
     if (!reclamo.pais_emisor) faltantes.push('País emisor del pasaporte');
     if (!reclamo.id_fiscal_extranjero) faltantes.push('Identificación fiscal del país emisor');
-  } else if (reclamo.documento_tipo === 'dni') {
+  } else if (esDni(reclamo.documento_tipo)) {
     if (!reclamo.cuil) faltantes.push('CUIT/CUIL del cliente');
   }
   if (!reclamo.fecha_nacimiento) faltantes.push('Fecha de nacimiento del cliente');
