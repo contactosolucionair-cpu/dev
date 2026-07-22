@@ -18,8 +18,13 @@ function interpolate(template, data) {
 
 function fmtFecha(v) {
   if (!v) return '';
-  var d = new Date(v);
-  if (isNaN(d.getTime())) return String(v);
+  var s = String(v);
+  /* Fechas ISO (solo día o con hora) se formatean por sus componentes, sin pasar por
+     new Date(), que interpreta 'YYYY-MM-DD' como UTC y correría el día en AR (UTC-3). */
+  var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if (m) return m[3] + '/' + m[2] + '/' + m[1];
+  var d = new Date(s);
+  if (isNaN(d.getTime())) return s;
   return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
 }
 
@@ -69,29 +74,29 @@ function composeClienteIdentificacion(r) {
   return 'DNI ' + r.documento_numero + ', CUIT/CUIL ' + r.cuil;
 }
 
-function buildPoderData(reclamo, idioma) {
+function buildPoderData(persona, idioma) {
   var faltantes = [];
-  if (!reclamo.nombre) faltantes.push('Nombre del pasajero');
-  if (!reclamo.documento_numero) faltantes.push('Documento del pasajero (número)');
-  if (!reclamo.email) faltantes.push('Email del pasajero');
-  if (!reclamo.aerolinea) faltantes.push('Aerolínea');
-  if (!reclamo.vuelo_nro) faltantes.push('Número de vuelo');
-  if (!reclamo.fecha_vuelo) faltantes.push('Fecha del vuelo');
-  if (!reclamo.origen || !reclamo.destino) faltantes.push('Origen y destino del vuelo');
+  if (!persona.nombre) faltantes.push('Nombre del pasajero');
+  if (!persona.documento_numero) faltantes.push('Documento del pasajero (número)');
+  if (!persona.email) faltantes.push('Email del pasajero');
+  if (!persona.aerolinea) faltantes.push('Aerolínea');
+  if (!persona.vuelo_nro) faltantes.push('Número de vuelo');
+  if (!persona.fecha_vuelo) faltantes.push('Fecha del vuelo');
+  if (!persona.origen || !persona.destino) faltantes.push('Origen y destino del vuelo');
 
   var data = {
-    otorgante_nombre: reclamo.nombre || '',
-    otorgante_documento: composeDocumento(reclamo.documento_tipo, reclamo.documento_numero, idioma),
-    otorgante_email: reclamo.email || '',
-    vuelo_aerolinea: reclamo.aerolinea || '',
-    vuelo_numero: reclamo.vuelo_nro || '',
-    vuelo_fecha: fmtFecha(reclamo.fecha_vuelo) || reclamo.fecha_vuelo || '',
-    vuelo_ruta: [reclamo.origen, reclamo.destino].filter(Boolean).join(idioma === 'en' ? ' to ' : ' > '),
+    otorgante_nombre: persona.nombre || '',
+    otorgante_documento: composeDocumento(persona.documento_tipo, persona.documento_numero, idioma),
+    otorgante_email: persona.email || '',
+    vuelo_aerolinea: persona.aerolinea || '',
+    vuelo_numero: persona.vuelo_nro || '',
+    vuelo_fecha: fmtFecha(persona.fecha_vuelo) || persona.fecha_vuelo || '',
+    vuelo_ruta: [persona.origen, persona.destino].filter(Boolean).join(idioma === 'en' ? ' to ' : ' > '),
   };
   return { data: data, faltantes: faltantes };
 }
 
-function buildPatrocinioData(reclamo, abogado) {
+function buildPatrocinioData(persona, abogado) {
   var faltantes = [];
   if (!abogado) {
     faltantes.push('Abogado asignado al caso');
@@ -102,77 +107,198 @@ function buildPatrocinioData(reclamo, abogado) {
     if (!abogado.domicilio) faltantes.push('Domicilio del abogado');
     if (!abogado.email) faltantes.push('Email del abogado');
   }
-  if (!reclamo.nombre) faltantes.push('Nombre del cliente');
-  if (!reclamo.documento_tipo) faltantes.push('Tipo de documento del cliente (DNI o pasaporte)');
-  if (!reclamo.documento_numero) faltantes.push('Número de documento del cliente');
-  if (esPasaporte(reclamo.documento_tipo)) {
-    if (!reclamo.pais_emisor) faltantes.push('País emisor del pasaporte');
-    if (!reclamo.id_fiscal_extranjero) faltantes.push('Identificación fiscal del país emisor');
-  } else if (esDni(reclamo.documento_tipo)) {
-    if (!reclamo.cuil) faltantes.push('CUIT/CUIL del cliente');
+  if (!persona.nombre) faltantes.push('Nombre del cliente');
+  if (!persona.documento_tipo) faltantes.push('Tipo de documento del cliente (DNI o pasaporte)');
+  if (!persona.documento_numero) faltantes.push('Número de documento del cliente');
+  if (esPasaporte(persona.documento_tipo)) {
+    if (!persona.pais_emisor) faltantes.push('País emisor del pasaporte');
+    if (!persona.id_fiscal_extranjero) faltantes.push('Identificación fiscal del país emisor');
+  } else if (esDni(persona.documento_tipo)) {
+    if (!persona.cuil) faltantes.push('CUIT/CUIL del cliente');
   }
-  if (!reclamo.fecha_nacimiento) faltantes.push('Fecha de nacimiento del cliente');
-  if (!reclamo.domicilio_real) faltantes.push('Domicilio real del cliente');
-  if (!reclamo.telefono) faltantes.push('Celular del cliente');
-  if (!reclamo.email) faltantes.push('Email del cliente');
-  if (!reclamo.aerolinea) faltantes.push('Aerolínea');
-  if (!reclamo.vuelo_nro) faltantes.push('Número de vuelo');
+  if (!persona.fecha_nacimiento) faltantes.push('Fecha de nacimiento del cliente');
+  if (!persona.domicilio_real) faltantes.push('Domicilio real del cliente');
+  if (!persona.telefono) faltantes.push('Celular del cliente');
+  if (!persona.email) faltantes.push('Email del cliente');
+  if (!persona.aerolinea) faltantes.push('Aerolínea');
+  if (!persona.vuelo_nro) faltantes.push('Número de vuelo');
 
-  var fecha = fechaLetras();
   var data = {
+    cliente_nombre: persona.nombre || '',
+    cliente_identificacion: composeClienteIdentificacion(persona),
+    cliente_fecha_nac: fmtFecha(persona.fecha_nacimiento) || persona.fecha_nacimiento || '',
+    cliente_domicilio_real: persona.domicilio_real || '',
+    cliente_celular: persona.telefono || '',
+    cliente_email: persona.email || '',
+  };
+  return { data: data, faltantes: faltantes };
+}
+
+/* Datos del abogado + fecha, compartidos por todos los clientes de un patrocinio. */
+function buildAbogadoData(abogado) {
+  var fecha = fechaLetras();
+  return {
     abogado_nombre: abogado ? (abogado.nombre || '') : '',
     abogado_matricula: abogado ? (abogado.matricula || '') : '',
     abogado_colegio: abogado ? (abogado.colegio || '') : '',
     abogado_domicilio: abogado ? (abogado.domicilio || '') : '',
     abogado_email: abogado ? (abogado.email || '') : '',
-    cliente_nombre: reclamo.nombre || '',
-    cliente_identificacion: composeClienteIdentificacion(reclamo),
-    cliente_fecha_nac: fmtFecha(reclamo.fecha_nacimiento) || reclamo.fecha_nacimiento || '',
-    cliente_domicilio_real: reclamo.domicilio_real || '',
-    cliente_celular: reclamo.telefono || '',
-    cliente_email: reclamo.email || '',
-    aerolinea: reclamo.aerolinea || '',
-    vuelo_numero: reclamo.vuelo_nro || '',
     fecha_dia: fecha.dia,
     fecha_mes: fecha.mes,
     fecha_anio: fecha.anio,
   };
-  return { data: data, faltantes: faltantes };
+}
+
+/* Antepone el nombre del pasajero a cada faltante cuando el documento es conjunto,
+   para que el operador sepa a quién le falta cada dato. */
+function etiquetarFaltantes(nombre, faltantes) {
+  var quien = (nombre || '').trim() || 'Pasajero sin nombre';
+  return faltantes.map(function (f) { return quien + ': ' + f; });
+}
+
+/* Bloque de otorgantes (poder conjunto): un párrafo numerado por otorgante, más el
+   cierre que los define colectivamente. */
+function buildOtorgantesBloque(personas, idioma) {
+  var en = idioma === 'en';
+  var titulo = en ? '**Grantors:**' : '**Otorgantes:**';
+  var lineas = personas.map(function (p, i) {
+    var doc = composeDocumento(p.documento_tipo, p.documento_numero, idioma);
+    if (en) {
+      return '(' + (i + 1) + ') Mr./Ms. ' + (p.nombre || '') + ', ' + doc + ', with electronic domicile (e-mail) at ' + (p.email || '') + ';';
+    }
+    return '(' + (i + 1) + ') Sr./Sra. ' + (p.nombre || '') + ', ' + doc + ', con domicilio electrónico (correo) en ' + (p.email || '') + ';';
+  });
+  var cierre = en
+    ? 'jointly and severally, the "Grantors",'
+    : 'en adelante, en forma conjunta e indistinta, los «Otorgantes»,';
+  return titulo + '\n\n' + lineas.join('\n\n') + '\n\n' + cierre;
+}
+
+/* Bloque de firmas (poder conjunto): un bloque por otorgante. */
+function buildFirmasBloque(personas, idioma) {
+  var en = idioma === 'en';
+  var head = en ? '**SIGNATURES**' : '**FIRMAS**';
+  var bloques = personas.map(function (p, i) {
+    var doc = composeDocumento(p.documento_tipo, p.documento_numero, idioma);
+    if (en) {
+      return '**Grantor ' + (i + 1) + '**\n'
+        + 'Signature: __________________________________________\n'
+        + 'Full name: ' + (p.nombre || '') + '\n'
+        + 'ID/Passport: ' + doc;
+    }
+    return '**Otorgante ' + (i + 1) + '**\n'
+      + 'Firma: __________________________________________\n'
+      + 'Aclaración: ' + (p.nombre || '') + '\n'
+      + 'DNI/Pasaporte: ' + doc;
+  });
+  return head + '\n\n' + bloques.join('\n\n');
+}
+
+/* Bloque de clientes (patrocinio conjunto): un párrafo numerado por cliente. */
+function buildClientesBloque(personas) {
+  return personas.map(function (p, i) {
+    return '(' + (i + 1) + ') Sr./Sra. ' + (p.nombre || '') + ', por derecho propio, '
+      + composeClienteIdentificacion(p) + ', fecha de nacimiento ' + (fmtFecha(p.fecha_nacimiento) || p.fecha_nacimiento || '')
+      + ', con domicilio real en ' + (p.domicilio_real || '') + ', celular ' + (p.telefono || '')
+      + ' y correo electrónico ' + (p.email || '') + ';';
+  }).join('\n\n');
+}
+
+function throwFaltantes(faltantes) {
+  var err = new Error('Faltan campos requeridos para generar el documento.');
+  err.faltantes = faltantes;
+  throw err;
 }
 
 /**
- * Genera el PDF legal (poder o patrocinio) a partir del reclamo (+ abogado si
- * corresponde). Lanza un error con `.faltantes` (array de labels) si falta
- * algún campo requerido — nunca genera un PDF con blancos.
+ * Genera el PDF legal (poder o patrocinio) para uno o varios pasajeros.
+ *
+ * @param {Object}   opts
+ * @param {string}   opts.tipo      'poder' | 'patrocinio'
+ * @param {string}   opts.idioma    'es' | 'en' (solo aplica al poder)
+ * @param {Object[]} opts.personas  1..N pasajeros, cada uno con sus datos personales
+ *                                   ya combinados con los datos compartidos del vuelo/caso.
+ * @param {Object}   [opts.abogado] abogado asignado (requerido para patrocinio)
+ * @param {Object}   [opts.reclamo] caso, usado solo para ref_code del pie de página
+ * @returns {{buffer: Buffer, filename: string}}
+ * @throws  error con `.faltantes` (array de labels) si falta algún dato requerido.
  */
-export async function generarDocumentoLegal({ tipo, idioma, reclamo, abogado }) {
-  var built, templateName;
+export async function generarDocumentoLegal({ tipo, idioma, personas, abogado, reclamo }) {
+  var lista = Array.isArray(personas) && personas.length ? personas : (reclamo ? [reclamo] : []);
+  if (!lista.length) throw new Error('No se indicó ningún pasajero para el documento.');
+  var multi = lista.length > 1;
+  var refCode = (reclamo && reclamo.ref_code) || lista[0].ref_code || '';
+
+  var templateName, data, titulo;
+
   if (tipo === 'poder') {
-    built = buildPoderData(reclamo, idioma);
-    templateName = idioma === 'en' ? 'poder_en' : 'poder_es';
+    if (multi) {
+      var faltPoder = [];
+      lista.forEach(function (p) {
+        var b = buildPoderData(p, idioma);
+        if (b.faltantes.length) faltPoder = faltPoder.concat(etiquetarFaltantes(p.nombre, b.faltantes));
+      });
+      if (faltPoder.length) throwFaltantes(faltPoder);
+      var flight = buildPoderData(lista[0], idioma).data;
+      data = {
+        otorgantes_bloque: buildOtorgantesBloque(lista, idioma),
+        vuelo_aerolinea: flight.vuelo_aerolinea,
+        vuelo_numero: flight.vuelo_numero,
+        vuelo_fecha: flight.vuelo_fecha,
+        vuelo_ruta: flight.vuelo_ruta,
+        firmas_bloque: buildFirmasBloque(lista, idioma),
+      };
+      templateName = idioma === 'en' ? 'poder_en_conjunto' : 'poder_es_conjunto';
+    } else {
+      var builtP = buildPoderData(lista[0], idioma);
+      if (builtP.faltantes.length) throwFaltantes(builtP.faltantes);
+      data = builtP.data;
+      templateName = idioma === 'en' ? 'poder_en' : 'poder_es';
+    }
+    titulo = idioma === 'en' ? 'Claim Management Authorization' : 'Autorización de Gestión de Reclamos';
+
   } else if (tipo === 'patrocinio') {
-    built = buildPatrocinioData(reclamo, abogado);
-    templateName = 'patrocinio_es';
+    if (multi) {
+      var faltPat = [];
+      var abogadoFaltantes = null;
+      lista.forEach(function (p, i) {
+        var b = buildPatrocinioData(p, abogado);
+        /* Los faltantes del abogado son compartidos: reportarlos una sola vez, sin etiqueta. */
+        var abog = [], cliente = [];
+        b.faltantes.forEach(function (f) { (/abogado/i.test(f) ? abog : cliente).push(f); });
+        if (i === 0) abogadoFaltantes = abog;
+        if (cliente.length) faltPat = faltPat.concat(etiquetarFaltantes(p.nombre, cliente));
+      });
+      if (abogadoFaltantes && abogadoFaltantes.length) faltPat = abogadoFaltantes.concat(faltPat);
+      if (faltPat.length) throwFaltantes(faltPat);
+      data = buildAbogadoData(abogado);
+      data.clientes_bloque = buildClientesBloque(lista);
+      data.aerolinea = lista[0].aerolinea || '';
+      data.vuelo_numero = lista[0].vuelo_nro || '';
+      templateName = 'patrocinio_es_conjunto';
+    } else {
+      var builtPat = buildPatrocinioData(lista[0], abogado);
+      if (builtPat.faltantes.length) throwFaltantes(builtPat.faltantes);
+      data = Object.assign({}, buildAbogadoData(abogado), builtPat.data, {
+        aerolinea: lista[0].aerolinea || '',
+        vuelo_numero: lista[0].vuelo_nro || '',
+      });
+      templateName = 'patrocinio_es';
+    }
+    titulo = 'Designación de Patrocinio Letrado';
+
   } else {
     throw new Error('Tipo de documento inválido: ' + tipo);
   }
 
-  if (built.faltantes.length) {
-    var err = new Error('Faltan campos requeridos para generar el documento.');
-    err.faltantes = built.faltantes;
-    throw err;
-  }
-
   var template = loadTemplate(templateName);
-  var text = interpolate(template, built.data);
+  var text = interpolate(template, data);
 
-  var titulo = tipo === 'patrocinio'
-    ? 'Designación de Patrocinio Letrado'
-    : (idioma === 'en' ? 'Claim Management Authorization' : 'Autorización de Gestión de Reclamos');
-  var apellido = sanitizeFilenamePart(apellidoDe(reclamo.nombre)) || (reclamo.ref_code || 'Caso');
+  var apellido = sanitizeFilenamePart(apellidoDe(lista[0].nombre)) || (refCode || 'Caso');
+  if (multi) apellido = apellido + ' y otros';
   var tituloCompleto = apellido + ' - ' + titulo;
 
-  var buffer = await renderLegalPdf(text, { refCode: reclamo.ref_code, title: tituloCompleto });
+  var buffer = await renderLegalPdf(text, { refCode: refCode, title: tituloCompleto });
   var filename = tituloCompleto + '.pdf';
   return { buffer: buffer, filename: filename };
 }

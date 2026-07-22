@@ -721,6 +721,7 @@
       + '<div class="form-group"><label>Nombre y apellido</label><input type="text" class="acomp-nombre" placeholder="Nombre del acompañante" /></div>'
       + '<div class="form-group"><label>Tipo de documento</label><select class="acomp-doctype"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select></div>'
       + '<div class="form-group"><label>Número de documento</label><input type="text" class="acomp-docnum" /></div>'
+      + '<div class="form-group"><label>Email (opcional)</label><input type="email" class="acomp-email" placeholder="email@ejemplo.com" /></div>'
       + '<div class="form-group" style="justify-content:flex-end"><label style="display:flex;align-items:center;gap:6px;font-size:.76rem;font-weight:400"><input type="checkbox" class="acomp-menor" /> Es menor de edad</label></div>'
       + '</div>'
       + '<div class="acomp-doc-extra-list"></div>'
@@ -749,6 +750,7 @@
       if (!nombre && !doctype && !docnum) return;
       var item = {
         nombre: nombre, documento_tipo: doctype, documento_numero: docnum,
+        email: ((row.querySelector('.acomp-email') || {}).value || '').trim(),
         documentos: [{ tipo: doctype, numero: docnum }].concat(collectDocExtrasFrom(row.querySelector('.acomp-doc-extra-list'))),
         es_menor: !!((row.querySelector('.acomp-menor') || {}).checked),
         equipaje: null,

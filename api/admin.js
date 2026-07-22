@@ -518,8 +518,35 @@ async function generarDocumento(req, res, SB_URL, SB_KEY) {
     if (Array.isArray(abogRows) && abogRows.length) abogado = abogRows[0];
   }
 
+  /* Pasajeros seleccionados para el documento: índice 0 = titular, 1..N = acompañantes.
+     El acompañante hereda los datos compartidos del caso (vuelo, ruta, ref) y aporta
+     sus propios datos personales; los campos de patrocinio (fecha nac., domicilio, CUIL,
+     etc.) solo existen si se cargaron a mano desde el backoffice. */
+  var acomps = Array.isArray(reclamo.acompanantes) ? reclamo.acompanantes : [];
+  var SHARED = ['aerolinea', 'vuelo_nro', 'fecha_vuelo', 'origen', 'destino', 'ref_code', 'pnr', 'tipo_reclamo'];
+  var PERSONALES = ['nombre', 'documento_tipo', 'documento_numero', 'email', 'fecha_nacimiento',
+    'domicilio_real', 'cuil', 'telefono', 'pais_emisor', 'id_fiscal_extranjero'];
+  var indices = (Array.isArray(body.pasajeros) && body.pasajeros.length)
+    ? body.pasajeros.map(Number)
+    : [0];
+  var personas = [];
+  for (var i = 0; i < indices.length; i++) {
+    var idx = indices[i];
+    if (idx === 0) { personas.push(reclamo); continue; }
+    var a = acomps[idx - 1];
+    if (!a) return res.status(400).json({ error: 'Pasajero acompañante inexistente (índice ' + idx + ').' });
+    var persona = {};
+    SHARED.forEach(function (k) { persona[k] = reclamo[k]; });
+    PERSONALES.forEach(function (k) { persona[k] = (a[k] != null ? a[k] : ''); });
+    if ((!persona.documento_tipo || !persona.documento_numero) && Array.isArray(a.documentos) && a.documentos[0]) {
+      persona.documento_tipo = persona.documento_tipo || a.documentos[0].tipo || '';
+      persona.documento_numero = persona.documento_numero || a.documentos[0].numero || '';
+    }
+    personas.push(persona);
+  }
+
   try {
-    var out = await generarDocumentoLegal({ tipo: tipo, idioma: idioma, reclamo: reclamo, abogado: abogado });
+    var out = await generarDocumentoLegal({ tipo: tipo, idioma: idioma, reclamo: reclamo, abogado: abogado, personas: personas });
     var COMBINING_MARKS = new RegExp('[̀-ͯ]', 'g');
     var filenameAscii = out.filename.normalize('NFD').replace(COMBINING_MARKS, '');
     res.setHeader('Content-Type', 'application/pdf');

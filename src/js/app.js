@@ -319,6 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
       + '<div class="field"><label class="field__lbl">Nombre y apellido</label><input class="field__in acomp-nombre" type="text" placeholder="Nombre del acompañante" /></div>'
       + '<div class="field"><label class="field__lbl">Tipo de documento</label><select class="field__in acomp-doctype"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select></div>'
       + '<div class="field"><label class="field__lbl">Número de documento</label><input class="field__in acomp-docnum" type="text" placeholder="Número" /></div>'
+      + '<div class="field"><label class="field__lbl">Email (opcional)</label><input class="field__in acomp-email" type="email" placeholder="email@ejemplo.com" /></div>'
       + '<div class="field" style="justify-content:flex-end"><label class="acomp-chk"><input type="checkbox" class="acomp-menor" /> <span>Es menor de edad</span></label></div>'
       + '</div>'
       + '<div class="acomp-doc-extra-list"></div>'
@@ -360,6 +361,7 @@ document.addEventListener('DOMContentLoaded', function () {
         nombre: nombre,
         documento_tipo: doctype,
         documento_numero: docnum,
+        email: (($('.acomp-email', row) || {}).value || '').trim(),
         documentos: [{ tipo: doctype, numero: docnum }].concat(collectDocExtras(row.querySelector('.acomp-doc-extra-list'))),
         es_menor: !!(($('.acomp-menor', row) || {}).checked),
         equipaje: null

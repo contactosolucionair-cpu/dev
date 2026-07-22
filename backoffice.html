@@ -454,26 +454,50 @@
       </div>
     </div>
 
-    <!-- Documentos legales (poder / patrocinio) -->
+    <!-- Documentos legales — generador por pasos (poder / patrocinio, multi-pasajero) -->
     <div class="cm-ov" id="doclegal-ov">
-      <div class="cm" style="max-width:420px;text-align:left">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <div class="cm__title" style="margin:0">Documentos legales</div>
+      <div class="cm" style="max-width:460px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div class="cm__title" style="margin:0">Generar documento legal</div>
           <button class="detail__close" id="doclegal-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
-        <div class="action-field">
-          <div class="detail__label">Poder</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            <select id="sel-poder-idioma" class="firma-select" style="width:auto;flex:0 0 auto"><option value="es">Español</option><option value="en">Inglés</option></select>
-            <button class="btn btn--ghost" id="btn-generar-poder" type="button" style="font-size:.72rem">Generar poder</button>
+        <div id="wz-progress" style="font-size:.62rem;color:var(--t4);margin-bottom:14px;font-family:var(--fm)"></div>
+
+        <!-- Paso 1: documento -->
+        <div class="wz-step" data-step="tipo">
+          <div class="detail__label">¿Qué documento querés generar?</div>
+          <select id="wz-tipo" class="firma-select" style="width:100%;margin-top:6px">
+            <option value="poder">Poder</option>
+            <option value="patrocinio">Patrocinio</option>
+          </select>
+          <div id="wz-pat-hint" style="font-size:.68rem;color:var(--warn);margin-top:6px"></div>
+        </div>
+
+        <!-- Paso 2: pasajeros -->
+        <div class="wz-step" data-step="pasajeros" style="display:none">
+          <div class="detail__label">¿Para qué pasajeros?</div>
+          <div style="font-size:.66rem;color:var(--t4);margin:2px 0 8px">Podés elegir más de uno; se emite un único documento conjunto, firmado por todos.</div>
+          <div id="wz-pasajeros"></div>
+        </div>
+
+        <!-- Paso 3: idioma (solo poder) -->
+        <div class="wz-step" data-step="idioma" style="display:none">
+          <div class="detail__label">Idioma del poder</div>
+          <select id="wz-idioma" class="firma-select" style="width:100%;margin-top:6px">
+            <option value="es">Español</option>
+            <option value="en">Inglés</option>
+          </select>
+        </div>
+
+        <div id="wz-msg" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:12px"></div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-top:14px">
+          <button class="btn btn--ghost" id="wz-back" type="button" style="font-size:.72rem">Atrás</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn--ghost" id="wz-next" type="button" style="font-size:.72rem">Siguiente</button>
+            <button class="cm__btn cm__btn--confirm" id="wz-gen" type="button" style="display:none">Generar</button>
           </div>
         </div>
-        <div class="action-field" style="margin-top:14px">
-          <div class="detail__label">Patrocinio</div>
-          <button class="btn btn--ghost" id="btn-generar-patrocinio" type="button" style="font-size:.72rem">Generar patrocinio</button>
-          <div id="doclegal-patrocinio-hint" style="font-size:.68rem;color:var(--t4);margin-top:4px"></div>
-        </div>
-        <div id="msg-doclegal" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:10px"></div>
       </div>
     </div>
 
@@ -2246,54 +2270,101 @@
       });
     });
 
-    /* ---- DOCUMENTOS LEGALES (poder / patrocinio) ---- */
+    /* ---- DOCUMENTOS LEGALES — generador por pasos (poder/patrocinio, multi-pasajero) ---- */
     var doclegalOv=document.getElementById('doclegal-ov');
     var docLegalCase=null;
+    var wz={seq:[],pos:0};
+
+    /* Lista de pasajeros elegibles: índice 0 = titular, 1..N = acompañantes (en orden). */
+    function wzPasajerosList(){
+      var c=docLegalCase; if(!c)return [];
+      var arr=[{idx:0,nombre:(c.nombre||'(titular sin nombre)')+' — titular'}];
+      var ac=Array.isArray(c.acompanantes)?c.acompanantes:[];
+      ac.forEach(function(a,i){arr.push({idx:i+1,nombre:(a.nombre||'(acompañante '+(i+1)+')')})});
+      return arr;
+    }
+    function wzRenderPasajeros(){
+      var cont=document.getElementById('wz-pasajeros'); if(!cont)return;
+      cont.innerHTML=wzPasajerosList().map(function(p){
+        return '<label style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bdl);font-size:.8rem;cursor:pointer">'
+          +'<input type="checkbox" class="wz-pax" value="'+p.idx+'"'+(p.idx===0?' checked':'')+'> '+esc(p.nombre)+'</label>';
+      }).join('');
+    }
+    function wzTipo(){return (document.getElementById('wz-tipo')||{}).value||'poder'}
+    function wzSelectedIdx(){
+      var out=[];document.querySelectorAll('.wz-pax:checked').forEach(function(cb){out.push(parseInt(cb.value,10))});
+      return out;
+    }
+    function wzBuildSeq(){ wz.seq=wzTipo()==='poder'?['tipo','pasajeros','idioma']:['tipo','pasajeros']; }
+    function wzShow(){
+      wzBuildSeq();
+      if(wz.pos>=wz.seq.length)wz.pos=wz.seq.length-1;
+      var cur=wz.seq[wz.pos];
+      document.querySelectorAll('#doclegal-ov .wz-step').forEach(function(s){s.style.display=(s.getAttribute('data-step')===cur)?'':'none'});
+      var prog=document.getElementById('wz-progress');
+      if(prog)prog.textContent='Paso '+(wz.pos+1)+' de '+wz.seq.length;
+      var back=document.getElementById('wz-back'),next=document.getElementById('wz-next'),gen=document.getElementById('wz-gen');
+      var last=wz.pos===wz.seq.length-1;
+      if(back)back.style.visibility=wz.pos===0?'hidden':'visible';
+      if(next)next.style.display=last?'none':'';
+      if(gen)gen.style.display=last?'':'none';
+      if(cur==='pasajeros')wzRenderPasajeros();
+      var patHint=document.getElementById('wz-pat-hint');
+      if(patHint)patHint.textContent=(wzTipo()==='patrocinio'&&!(docLegalCase&&docLegalCase.abogado_id))?'⚠ Este caso no tiene abogado asignado; el patrocinio va a fallar hasta que asignes uno.':'';
+    }
     function openDoclegalModal(caseObj){
       docLegalCase=caseObj;
-      var msg=document.getElementById('msg-doclegal'); if(msg){msg.style.color='';msg.textContent=''}
-      var btnPat=document.getElementById('btn-generar-patrocinio');
-      var hint=document.getElementById('doclegal-patrocinio-hint');
-      if(btnPat){btnPat.disabled=!caseObj.abogado_id;btnPat.title=caseObj.abogado_id?'':'Asigná un abogado al caso primero'}
-      if(hint)hint.textContent=caseObj.abogado_id?'':'Para generar el patrocinio primero asigná un abogado al caso.';
+      wz.pos=0;
+      var msg=document.getElementById('wz-msg'); if(msg){msg.style.color='';msg.textContent=''}
+      var t=document.getElementById('wz-tipo'); if(t)t.value='poder';
+      var il=document.getElementById('wz-idioma'); if(il)il.value='es';
+      wzShow();
       if(doclegalOv)doclegalOv.classList.add('open');
     }
     var doclegalClose=document.getElementById('doclegal-close');
     if(doclegalClose)doclegalClose.addEventListener('click',function(){doclegalOv.classList.remove('open')});
     if(doclegalOv)doclegalOv.addEventListener('click',function(e){if(e.target===doclegalOv)doclegalOv.classList.remove('open')});
-
-    var btnPoder=document.getElementById('btn-generar-poder');
-    var selPoderIdioma=document.getElementById('sel-poder-idioma');
-    var msgDoclegal=document.getElementById('msg-doclegal');
-    if(btnPoder)btnPoder.addEventListener('click',function(){
+    var wzTipoSel=document.getElementById('wz-tipo');
+    if(wzTipoSel)wzTipoSel.addEventListener('change',function(){wzShow()});
+    var wzBack=document.getElementById('wz-back');
+    if(wzBack)wzBack.addEventListener('click',function(){if(wz.pos>0){wz.pos--;wzShow()}});
+    var wzNext=document.getElementById('wz-next');
+    if(wzNext)wzNext.addEventListener('click',function(){
+      var msg=document.getElementById('wz-msg');if(msg)msg.textContent='';
+      if(wz.seq[wz.pos]==='pasajeros'&&!wzSelectedIdx().length){if(msg){msg.style.color='var(--err)';msg.textContent='Elegí al menos un pasajero.'}return}
+      if(wz.pos<wz.seq.length-1){wz.pos++;wzShow()}
+    });
+    var wzGen=document.getElementById('wz-gen');
+    if(wzGen)wzGen.addEventListener('click',function(){
       if(!docLegalCase)return;
-      var idioma=(selPoderIdioma&&selPoderIdioma.value)||'es';
-      var label=btnPoder.textContent;
-      btnPoder.disabled=true;btnPoder.textContent='Generando...';
-      if(msgDoclegal){msgDoclegal.style.color='';msgDoclegal.textContent=''}
-      fetch('/api/admin?action=generar-documento&tipo=poder&idioma='+encodeURIComponent(idioma)+'&caso_id='+encodeURIComponent(docLegalCase.id),{
-        method:'POST', headers:{'X-Admin-Password':adminPwd}
+      var idx=wzSelectedIdx();
+      var msg=document.getElementById('wz-msg');
+      if(!idx.length){if(msg){msg.style.color='var(--err)';msg.textContent='Elegí al menos un pasajero.'}return}
+      var tipo=wzTipo();
+      var idioma=tipo==='poder'?((document.getElementById('wz-idioma')||{}).value||'es'):'es';
+      var lbl=wzGen.textContent;wzGen.disabled=true;wzGen.textContent='Generando...';
+      if(msg){msg.style.color='';msg.textContent=''}
+      fetch('/api/admin?action=generar-documento&tipo='+encodeURIComponent(tipo)+'&idioma='+encodeURIComponent(idioma)+'&caso_id='+encodeURIComponent(docLegalCase.id),{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
+        body:JSON.stringify({pasajeros:idx})
       }).then(function(r){
-        if(!r.ok)return r.json().then(function(d){throw new Error((d.error||'Error al generar el poder')+(d.faltantes&&d.faltantes.length?' — Faltan: '+d.faltantes.join(', '):''))});
-        return r.blob();
-      }).then(function(blob){
-        var url=URL.createObjectURL(blob);
-        var a=document.createElement('a');
-        a.href=url;a.download=(docLegalCase.ref_code||'caso')+' - '+(idioma==='en'?'Power of Attorney for Claims Management':'Poder Especial para Gestión de Reclamo')+'.pdf';
+        if(!r.ok)return r.json().then(function(d){throw new Error((d.error||'Error al generar el documento')+(d.faltantes&&d.faltantes.length?' — Faltan: '+d.faltantes.join('; '):''))});
+        var cd=r.headers.get('Content-Disposition')||'';
+        var mm=/filename\*=UTF-8''([^;]+)/.exec(cd);
+        var fname=mm?decodeURIComponent(mm[1]):((docLegalCase.ref_code||'caso')+' - documento.pdf');
+        return r.blob().then(function(blob){return {blob:blob,fname:fname}});
+      }).then(function(res){
+        var url=URL.createObjectURL(res.blob);
+        var a=document.createElement('a');a.href=url;a.download=res.fname;
         document.body.appendChild(a);a.click();document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        btnPoder.disabled=false;btnPoder.textContent=label;
+        wzGen.disabled=false;wzGen.textContent=lbl;
+        if(msg){msg.style.color='var(--ok,#2e7d32)';msg.textContent='Documento generado.'}
       }).catch(function(err){
-        if(msgDoclegal){msgDoclegal.style.color='var(--err)';msgDoclegal.textContent=err.message}
-        btnPoder.disabled=false;btnPoder.textContent=label;
+        wzGen.disabled=false;wzGen.textContent=lbl;
+        if(msg){msg.style.color='var(--err)';msg.textContent=err.message}
       });
-    });
-
-    var btnPatrocinio=document.getElementById('btn-generar-patrocinio');
-    if(btnPatrocinio)btnPatrocinio.addEventListener('click',function(){
-      if(btnPatrocinio.disabled||!docLegalCase)return;
-      doclegalOv.classList.remove('open');
-      openPatrocinioModal(docLegalCase);
     });
 
     /* ---- EDITAR UN CAMPO DEL CASO ---- */
@@ -2387,10 +2458,20 @@
         +'<input class="firma-select acomp-nombre" placeholder="Nombre y apellido" value="'+esc(a.nombre||'')+'">'
         +'<select class="firma-select acomp-doctype"><option value="">Tipo de documento...</option><option value="DNI"'+(doctype==='DNI'?' selected':'')+'>DNI</option><option value="Pasaporte"'+(doctype==='Pasaporte'?' selected':'')+'>Pasaporte</option><option value="ID"'+(doctype==='ID'?' selected':'')+'>ID / Cédula</option></select>'
         +'<input class="firma-select acomp-docnum" placeholder="Número de documento" value="'+esc(docnum)+'">'
+        +'<input class="firma-select acomp-email" type="email" placeholder="Email (opcional)" value="'+esc(a.email||'')+'">'
         +'<label style="display:flex;align-items:center;gap:6px;font-size:.72rem"><input type="checkbox" class="acomp-menor"'+(a.es_menor?' checked':'')+'> Es menor de edad</label>'
         +'</div>'
         +'<div class="acomp-doc-extra-list">'+extras.map(function(d){return ecDocExtraRowHtml(d.tipo,d.numero)}).join('')+'</div>'
         +'<div style="margin-bottom:8px"><button type="button" class="btn btn--ghost acomp-doc-add" style="font-size:.68rem">+ Agregar otro documento</button></div>'
+        +'<details class="acomp-patro" style="margin-bottom:8px"><summary style="cursor:pointer;font-size:.7rem;color:var(--t3)">Datos para patrocinio (opcional — solo si este acompañante necesita patrocinio)</summary>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'
+        +'<div><label style="font-size:.64rem;color:var(--t4)">Fecha de nacimiento</label><input class="firma-select acomp-fechanac" type="date" value="'+esc((a.fecha_nacimiento||'').substring(0,10))+'"></div>'
+        +'<div><label style="font-size:.64rem;color:var(--t4)">Teléfono</label><input class="firma-select acomp-telefono" value="'+esc(a.telefono||'')+'"></div>'
+        +'<div style="grid-column:1/-1"><label style="font-size:.64rem;color:var(--t4)">Domicilio real</label><input class="firma-select acomp-domicilio" value="'+esc(a.domicilio_real||'')+'"></div>'
+        +'<div><label style="font-size:.64rem;color:var(--t4)">CUIT/CUIL (si DNI)</label><input class="firma-select acomp-cuil" value="'+esc(a.cuil||'')+'"></div>'
+        +'<div><label style="font-size:.64rem;color:var(--t4)">País emisor (si pasaporte)</label><input class="firma-select acomp-pais" value="'+esc(a.pais_emisor||'')+'"></div>'
+        +'<div style="grid-column:1/-1"><label style="font-size:.64rem;color:var(--t4)">Identificación fiscal extranjera (si pasaporte)</label><input class="firma-select acomp-idfiscal" value="'+esc(a.id_fiscal_extranjero||'')+'"></div>'
+        +'</div></details>'
         +'<div class="acomp-bag-wrap" style="display:none;margin-bottom:8px">'
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
         +'<select class="firma-select acomp-bag-type"><option value="">Equipaje: tipo de incidencia...</option><option value="perdida"'+(eq&&eq.tipo==='perdida'?' selected':'')+'>Pérdida</option><option value="danio"'+(eq&&eq.tipo==='danio'?' selected':'')+'>Daño</option><option value="demora"'+(eq&&eq.tipo==='demora'?' selected':'')+'>Demora en entrega</option></select>'
@@ -2442,6 +2523,13 @@
         if(!nombre&&!doctype&&!docnum)continue; /* fila vacía sin usar: se descarta */
         if(!nombre||!doctype||!docnum)return null; /* incompleta: error de validación */
         var item={nombre:nombre,documento_tipo:doctype,documento_numero:docnum,
+          email:((row.querySelector('.acomp-email')||{}).value||'').trim(),
+          fecha_nacimiento:((row.querySelector('.acomp-fechanac')||{}).value||'').trim()||null,
+          domicilio_real:((row.querySelector('.acomp-domicilio')||{}).value||'').trim(),
+          telefono:((row.querySelector('.acomp-telefono')||{}).value||'').trim(),
+          cuil:((row.querySelector('.acomp-cuil')||{}).value||'').trim(),
+          pais_emisor:((row.querySelector('.acomp-pais')||{}).value||'').trim(),
+          id_fiscal_extranjero:((row.querySelector('.acomp-idfiscal')||{}).value||'').trim(),
           documentos:[{tipo:doctype,numero:docnum}].concat(ncCollectDocExtrasFrom(row.querySelector('.acomp-doc-extra-list'))),
           es_menor:!!((row.querySelector('.acomp-menor')||{}).checked),equipaje:null};
         if(esEquipaje){
@@ -2852,6 +2940,7 @@
         +'<input class="firma-select acomp-nombre" placeholder="Nombre y apellido">'
         +'<select class="firma-select acomp-doctype"><option value="">Tipo de documento...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>'
         +'<input class="firma-select acomp-docnum" placeholder="Número de documento">'
+        +'<input class="firma-select acomp-email" type="email" placeholder="Email (opcional)">'
         +'<label style="display:flex;align-items:center;gap:6px;font-size:.72rem"><input type="checkbox" class="acomp-menor"> Es menor de edad</label>'
         +'</div>'
         +'<div class="acomp-doc-extra-list"></div>'
@@ -2881,6 +2970,7 @@
         var docnum=((row.querySelector('.acomp-docnum')||{}).value||'').trim();
         if(!nombre&&!doctype&&!docnum)return;
         var item={nombre:nombre,documento_tipo:doctype,documento_numero:docnum,
+          email:((row.querySelector('.acomp-email')||{}).value||'').trim(),
           documentos:[{tipo:doctype,numero:docnum}].concat(ncCollectDocExtrasFrom(row.querySelector('.acomp-doc-extra-list'))),
           es_menor:!!((row.querySelector('.acomp-menor')||{}).checked),equipaje:null};
         if(esEquipaje){
