@@ -393,8 +393,11 @@ export default async function handler(req, res) {
     }
 
     /* ---- EDITOR GENÉRICO DE CAMPOS (corrección manual de un dato del caso) ---- */
+    /* documento_tipo/documento_numero excluidos a propósito: son un espejo de
+       documentos[0] y patchearlos acá directo desincroniza el array. Usar la
+       acción set-documentos para eso. */
     var CAMPOS_EDITABLES = [
-      'nombre', 'email', 'telefono', 'documento_tipo', 'documento_numero', 'pnr',
+      'nombre', 'email', 'telefono', 'pnr',
       'aerolinea', 'vuelo_nro', 'fecha_vuelo', 'origen', 'destino',
       'tipo_incidencia', 'causa_informada', 'horas_retraso',
       'moneda_gastos', 'monto_gastos', 'gastos_detalle',

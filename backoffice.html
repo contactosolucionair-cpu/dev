@@ -698,9 +698,11 @@
       if(pos.instancia==='cobro')return 15;
       return null;
     }
+    /* documento_tipo/documento_numero quedan afuera a propósito: son solo un espejo de
+       documentos[0] y editarlos acá desincroniza el array. Se editan desde "Documentos
+       del titular" en el panel de detalle (usa la acción set-documentos). */
     var CAMPOS_EDITABLES=[
       {campo:'nombre',label:'Nombre'},{campo:'email',label:'Email'},{campo:'telefono',label:'Teléfono'},
-      {campo:'documento_tipo',label:'Tipo de documento (dni/pasaporte)'},{campo:'documento_numero',label:'Número de documento'},
       {campo:'pnr',label:'PNR'},{campo:'aerolinea',label:'Aerolínea'},{campo:'vuelo_nro',label:'Número de vuelo'},
       {campo:'fecha_vuelo',label:'Fecha del vuelo'},{campo:'origen',label:'Origen'},{campo:'destino',label:'Destino'},
       {campo:'tipo_incidencia',label:'Tipo de incidencia'},{campo:'causa_informada',label:'Causa informada'},{campo:'horas_retraso',label:'Horas de retraso'},
@@ -1010,19 +1012,35 @@
       h+='</div>';
       h+='<div class="detail__divider"></div>';
 
-      /* Documentos (titular + acompañantes) */
-      var documentosTitular=Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[]);
+      /* Documentos del titular: editor inline (tipo, número, hacer principal, agregar/quitar).
+         Siempre viaja como array vía la acción set-documentos — nunca se patchea
+         documento_tipo/documento_numero directo para no desincronizarlo. */
+      var documentosTitular=Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[{tipo:'',numero:''}]);
       var acompArrDoc=Array.isArray(c.acompanantes)?c.acompanantes:[];
-      if(documentosTitular.length>1||acompArrDoc.some(function(a){return Array.isArray(a.documentos)&&a.documentos.length})){
-        h+='<div class="detail__section"><div class="detail__label" style="margin-bottom:6px">Documentos</div>';
-        h+='<div class="detail__value" style="font-size:.72rem;color:var(--t3);margin-bottom:4px">Titular</div>';
-        documentosTitular.forEach(function(d,di){
-          h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bdl);font-size:.78rem">';
-          h+='<span>'+(di===0?'★ ':'')+esc(d.tipo||'—')+' '+esc(d.numero||'—')+'</span>';
-          if(di>0)h+='<button class="btn btn--ghost" data-doc-principal="titular:'+di+'" type="button" style="font-size:.62rem;padding:2px 7px">Hacer principal</button>';
-          h+='</div>';
-        });
-        acompArrDoc.forEach(function(a,ai){
+      function docTipoOptions(sel){
+        return ['DNI','Pasaporte','ID'].map(function(t){return '<option value="'+t+'"'+(sel===t?' selected':'')+'>'+(t==='ID'?'ID / Cédula':t)+'</option>'}).join('');
+      }
+      h+='<div class="detail__section"><div class="detail__label" style="margin-bottom:6px">Documentos del titular</div>';
+      h+='<div id="doc-mgmt-list">';
+      documentosTitular.forEach(function(d,di){
+        h+='<div class="doc-mgmt-row" style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--bdl)">';
+        h+='<span style="width:14px;flex-shrink:0;color:var(--au)">'+(di===0?'★':'')+'</span>';
+        h+='<select class="firma-select doc-mgmt-tipo" style="flex:0 0 110px"><option value="">Tipo...</option>'+docTipoOptions(d.tipo)+'</select>';
+        h+='<input class="firma-select doc-mgmt-numero" style="flex:1" placeholder="Número" value="'+esc(d.numero||'')+'">';
+        h+='<button class="btn btn--ghost doc-mgmt-principal" type="button" style="font-size:.62rem;padding:2px 7px"'+(di===0?' disabled':'')+'>Hacer principal</button>';
+        h+='<button class="btn btn--ghost doc-mgmt-quitar" type="button" style="font-size:.62rem;padding:2px 7px">✕</button>';
+        h+='</div>';
+      });
+      h+='</div>';
+      h+='<div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">';
+      h+='<button class="btn btn--ghost" id="doc-mgmt-add" type="button" style="font-size:.68rem">+ Agregar documento</button>';
+      h+='<button class="btn btn--primary" id="doc-mgmt-save" type="button" style="font-size:.68rem">Guardar documentos</button>';
+      h+='<span id="doc-mgmt-msg" style="font-family:var(--fm);font-size:.62rem"></span>';
+      h+='</div>';
+      /* Acompañantes: documentos de solo lectura (se editan volviendo a cargar el caso) */
+      if(acompArrDoc.some(function(a){return Array.isArray(a.documentos)&&a.documentos.length})){
+        h+='<div style="margin-top:10px">';
+        acompArrDoc.forEach(function(a){
           var docsA=Array.isArray(a.documentos)&&a.documentos.length?a.documentos:(a.documento_tipo||a.documento_numero?[{tipo:a.documento_tipo,numero:a.documento_numero}]:[]);
           if(!docsA.length)return;
           h+='<div class="detail__value" style="font-size:.72rem;color:var(--t3);margin:8px 0 4px">'+esc(a.nombre||'Acompañante')+'</div>';
@@ -1032,8 +1050,9 @@
             h+='</div>';
           });
         });
-        h+='</div><div class="detail__divider"></div>';
+        h+='</div>';
       }
+      h+='</div><div class="detail__divider"></div>';
 
       /* Vuelo */
       h+='<div class="detail__grid">';
@@ -1552,24 +1571,85 @@
       var linkCorreccion=document.getElementById('link-correccion');
       if(linkCorreccion)linkCorreccion.addEventListener('click',function(e){e.preventDefault();openCorreccionModal(c,pos)});
 
-      /* --- Documentos: hacer principal --- */
-      detailBody.querySelectorAll('[data-doc-principal]').forEach(function(btn){
-        btn.addEventListener('click',function(){
-          var idx=parseInt(btn.getAttribute('data-doc-principal').split(':')[1]);
-          var docs=(Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[])).slice();
-          if(idx<1||idx>=docs.length)return;
-          var reordered=[docs[idx]].concat(docs.slice(0,idx)).concat(docs.slice(idx+1));
-          btn.disabled=true;
-          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-documentos',documentos:reordered})})
-          .then(function(r){return r.json()}).then(function(d){
-            if(d.success){
-              c.documentos=d.documentos;c.documento_tipo=d.documento_tipo;c.documento_numero=d.documento_numero;
-              claims.forEach(function(cl){if(cl.id===c.id){cl.documentos=d.documentos;cl.documento_tipo=d.documento_tipo;cl.documento_numero=d.documento_numero}});
-              toast('Documento principal actualizado.');
-              openDetail(c);
-            } else {btn.disabled=false;toast(d.error||'Error.',true)}
-          }).catch(function(){btn.disabled=false;toast('Error de conexión.',true)});
+      /* --- Documentos del titular: editor inline (tipo/número, hacer principal, agregar/quitar) ---
+         "Hacer principal" y "Quitar"/"Agregar" solo reordenan el DOM; todo se persiste junto
+         al apretar "Guardar documentos" (una sola llamada a set-documentos con el array final). */
+      var docMgmtList=detailBody.querySelector('#doc-mgmt-list');
+      function docMgmtRenumber(){
+        if(!docMgmtList)return;
+        var rows=docMgmtList.querySelectorAll('.doc-mgmt-row');
+        rows.forEach(function(row,i){
+          row.querySelector('span').textContent=i===0?'★':'';
+          var pBtn=row.querySelector('.doc-mgmt-principal');if(pBtn)pBtn.disabled=(i===0);
+          var qBtn=row.querySelector('.doc-mgmt-quitar');if(qBtn)qBtn.disabled=(rows.length<=1);
         });
+      }
+      function docMgmtWireRow(row){
+        var principalBtn=row.querySelector('.doc-mgmt-principal');
+        if(principalBtn)principalBtn.addEventListener('click',function(){
+          if(!docMgmtList)return;
+          docMgmtList.insertBefore(row,docMgmtList.firstChild);
+          docMgmtRenumber();
+        });
+        var quitarBtn=row.querySelector('.doc-mgmt-quitar');
+        if(quitarBtn)quitarBtn.addEventListener('click',function(){
+          if(!docMgmtList||docMgmtList.querySelectorAll('.doc-mgmt-row').length<=1)return;
+          docMgmtList.removeChild(row);
+          docMgmtRenumber();
+        });
+      }
+      if(docMgmtList)docMgmtList.querySelectorAll('.doc-mgmt-row').forEach(docMgmtWireRow);
+      docMgmtRenumber();
+      var docMgmtAddBtn=detailBody.querySelector('#doc-mgmt-add');
+      if(docMgmtAddBtn)docMgmtAddBtn.addEventListener('click',function(){
+        if(!docMgmtList)return;
+        var row=document.createElement('div');
+        row.className='doc-mgmt-row';
+        row.style.cssText='display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--bdl)';
+        row.innerHTML='<span style="width:14px;flex-shrink:0;color:var(--au)"></span>'
+          +'<select class="firma-select doc-mgmt-tipo" style="flex:0 0 110px"><option value="">Tipo...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select>'
+          +'<input class="firma-select doc-mgmt-numero" style="flex:1" placeholder="Número">'
+          +'<button class="btn btn--ghost doc-mgmt-principal" type="button" style="font-size:.62rem;padding:2px 7px">Hacer principal</button>'
+          +'<button class="btn btn--ghost doc-mgmt-quitar" type="button" style="font-size:.62rem;padding:2px 7px">✕</button>';
+        docMgmtList.appendChild(row);
+        docMgmtWireRow(row);
+        docMgmtRenumber();
+        var numInp=row.querySelector('.doc-mgmt-numero');if(numInp)numInp.focus();
+      });
+      var docMgmtSaveBtn=detailBody.querySelector('#doc-mgmt-save');
+      var docMgmtMsg=detailBody.querySelector('#doc-mgmt-msg');
+      if(docMgmtSaveBtn)docMgmtSaveBtn.addEventListener('click',function(){
+        if(!docMgmtList)return;
+        var docs=[];
+        var rows=docMgmtList.querySelectorAll('.doc-mgmt-row');
+        for(var ri=0;ri<rows.length;ri++){
+          var tipo=(rows[ri].querySelector('.doc-mgmt-tipo')||{}).value||'';
+          var numero=((rows[ri].querySelector('.doc-mgmt-numero')||{}).value||'').trim();
+          if(!tipo&&!numero)continue; /* fila vacía sin usar: se descarta */
+          if(!tipo||!numero){
+            if(docMgmtMsg){docMgmtMsg.style.color='var(--err)';docMgmtMsg.textContent='Cada documento necesita tipo y número.'}
+            return;
+          }
+          docs.push({tipo:tipo,numero:numero});
+        }
+        if(!docs.length){
+          if(docMgmtMsg){docMgmtMsg.style.color='var(--err)';docMgmtMsg.textContent='Necesitás al menos un documento.'}
+          return;
+        }
+        docMgmtSaveBtn.disabled=true;
+        if(docMgmtMsg){docMgmtMsg.style.color='';docMgmtMsg.textContent='Guardando...'}
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-documentos',documentos:docs})})
+        .then(function(r){return r.json()}).then(function(d){
+          docMgmtSaveBtn.disabled=false;
+          if(d.success){
+            c.documentos=d.documentos;c.documento_tipo=d.documento_tipo;c.documento_numero=d.documento_numero;
+            claims.forEach(function(cl){if(cl.id===c.id){cl.documentos=d.documentos;cl.documento_tipo=d.documento_tipo;cl.documento_numero=d.documento_numero}});
+            toast('Documentos actualizados.');
+            openDetail(c);
+          } else {
+            if(docMgmtMsg){docMgmtMsg.style.color='var(--err)';docMgmtMsg.textContent=d.error||'Error al guardar.'}
+          }
+        }).catch(function(){docMgmtSaveBtn.disabled=false;if(docMgmtMsg){docMgmtMsg.style.color='var(--err)';docMgmtMsg.textContent='Error de conexión.'}});
       });
 
       /* --- Esperas --- */
