@@ -1643,6 +1643,9 @@
       p('- Canal: '+(c.canal||'B2C'));
       p('- Tipo de reclamo: '+(c.tipo_reclamo||'vuelo'));
       p('- Etapa: '+etapaLabel(getInstancia(c),c.via_reclamo,c.organismo));
+      /* Vía de reclamo: persistente, no depende de en qué instancia esté hoy el caso
+         (etapaLabel solo la muestra mientras sigue en reclamo_directo). */
+      if(c.via_reclamo==='organismo'||c.organismo)p('- Vía de reclamo: Organismo'+(c.organismo?' ('+c.organismo+')':''));
       p('- Ingresado: '+fmtDateEsAR(c.creado_en));
       p('');
       p('## Pasajero');
@@ -1652,6 +1655,28 @@
       var documentosTitularInfo=Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[]);
       if(documentosTitularInfo.length)documentosTitularInfo.forEach(function(d,di){p('- Documento'+(di===0?' (principal)':' adicional')+': '+(d.tipo||'—')+' '+(d.numero||'—'))});
       p('');
+      if(c.cuil||c.fecha_nacimiento||c.domicilio_real||c.pais_emisor||c.id_fiscal_extranjero){
+        p('## Datos para patrocinio/poder');
+        if(c.fecha_nacimiento)p('- Fecha de nacimiento: '+String(c.fecha_nacimiento).substring(0,10));
+        if(c.domicilio_real)p('- Domicilio real: '+c.domicilio_real);
+        if(c.cuil)p('- CUIT/CUIL: '+c.cuil);
+        if(c.pais_emisor)p('- País emisor del pasaporte: '+c.pais_emisor);
+        if(c.id_fiscal_extranjero)p('- Identificación fiscal extranjera: '+c.id_fiscal_extranjero);
+        p('');
+      }
+      var acompInfo=Array.isArray(c.acompanantes)?c.acompanantes:[];
+      if(acompInfo.length){
+        p('## Acompañantes ('+acompInfo.length+')');
+        acompInfo.forEach(function(a,ai){
+          p('- Acompañante '+(ai+1)+': '+(a.nombre||'—')+(a.es_menor?' (menor de edad)':''));
+          var adocs=Array.isArray(a.documentos)&&a.documentos.length?a.documentos:(a.documento_tipo||a.documento_numero?[{tipo:a.documento_tipo,numero:a.documento_numero}]:[]);
+          adocs.forEach(function(d,di){p('  - Documento'+(di===0?' (principal)':' adicional')+': '+(d.tipo||'—')+' '+(d.numero||'—'))});
+          if(a.equipaje&&a.equipaje.tipo){
+            p('  - Equipaje: '+a.equipaje.tipo+(a.equipaje.valor?' · valor USD '+a.equipaje.valor:'')+(a.equipaje.descripcion?' · '+a.equipaje.descripcion:''));
+          }
+        });
+        p('');
+      }
       p('## Vuelo');
       p('- Vuelo: '+(c.vuelo_nro||'—'));
       p('- Aerolínea: '+(c.aerolinea||'—'));
