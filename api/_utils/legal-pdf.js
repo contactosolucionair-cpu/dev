@@ -17,8 +17,9 @@ const TITLE_SIZE = 13;
  *   - a line starting with "# " renders as a centered bold title
  *   - "**text**" renders as an inline bold run
  */
-export async function renderLegalPdf(text, { refCode } = {}) {
+export async function renderLegalPdf(text, { refCode, title } = {}) {
   const doc  = await PDFDocument.create();
+  if (title) doc.setTitle(title);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const reg  = await doc.embedFont(StandardFonts.Helvetica);
 

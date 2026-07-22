@@ -38,10 +38,24 @@ function esDni(tipo) {
   return String(tipo || '').trim().toLowerCase() === 'dni';
 }
 
-/* Con DNI: "DNI N° 12.345.678" · Con pasaporte: "Pasaporte N° AB1234567" */
-function composeDocumento(tipo, numero) {
+/* Con DNI: "DNI N° 12.345.678" · Con pasaporte: "Pasaporte N° AB1234567" (o el
+   equivalente en inglés si el poder se genera en ese idioma). */
+function composeDocumento(tipo, numero, idioma) {
   if (!numero) return '';
-  return esPasaporte(tipo) ? ('Pasaporte N° ' + numero) : ('DNI N° ' + numero);
+  var en = idioma === 'en';
+  if (esPasaporte(tipo)) return (en ? 'Passport No. ' : 'Pasaporte N° ') + numero;
+  return (en ? 'DNI No. ' : 'DNI N° ') + numero;
+}
+
+/* Apellido para el nombre de archivo: última palabra del nombre completo
+   (no hay un campo de apellido separado en el modelo de datos). */
+function apellidoDe(nombre) {
+  var partes = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+  return partes.length ? partes[partes.length - 1] : '';
+}
+
+function sanitizeFilenamePart(s) {
+  return String(s || '').replace(/[\\/:*?"<>|]/g, '').trim();
 }
 
 /* Residente/argentino con DNI: "DNI X, CUIT/CUIL Y" · Extranjero con pasaporte:
@@ -67,7 +81,7 @@ function buildPoderData(reclamo, idioma) {
 
   var data = {
     otorgante_nombre: reclamo.nombre || '',
-    otorgante_documento: composeDocumento(reclamo.documento_tipo, reclamo.documento_numero),
+    otorgante_documento: composeDocumento(reclamo.documento_tipo, reclamo.documento_numero, idioma),
     otorgante_email: reclamo.email || '',
     vuelo_aerolinea: reclamo.aerolinea || '',
     vuelo_numero: reclamo.vuelo_nro || '',
@@ -151,10 +165,14 @@ export async function generarDocumentoLegal({ tipo, idioma, reclamo, abogado }) 
 
   var template = loadTemplate(templateName);
   var text = interpolate(template, built.data);
-  var buffer = await renderLegalPdf(text, { refCode: reclamo.ref_code });
+
   var titulo = tipo === 'patrocinio'
     ? 'Designación de Patrocinio Letrado'
-    : (idioma === 'en' ? 'Power of Attorney for Claims Management' : 'Poder Especial para Gestión de Reclamo');
-  var filename = (reclamo.ref_code || 'caso') + ' - ' + titulo + '.pdf';
+    : (idioma === 'en' ? 'Claim Management Authorization' : 'Autorización de Gestión de Reclamos');
+  var apellido = sanitizeFilenamePart(apellidoDe(reclamo.nombre)) || (reclamo.ref_code || 'Caso');
+  var tituloCompleto = apellido + ' - ' + titulo;
+
+  var buffer = await renderLegalPdf(text, { refCode: reclamo.ref_code, title: tituloCompleto });
+  var filename = tituloCompleto + '.pdf';
   return { buffer: buffer, filename: filename };
 }
