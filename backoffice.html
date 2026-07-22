@@ -479,7 +479,7 @@
 
     <!-- Editar un campo del caso -->
     <div class="cm-ov" id="editcampo-ov">
-      <div class="cm" style="max-width:460px;text-align:left">
+      <div class="cm" style="max-width:540px;max-height:88vh;overflow-y:auto;text-align:left">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <div class="cm__title" style="margin:0">Editar un campo del caso</div>
           <button class="detail__close" id="editcampo-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -490,6 +490,10 @@
           <div id="editcampo-docs" style="display:none">
             <div id="ec-doc-list"></div>
             <div style="margin-top:8px"><button type="button" class="btn btn--ghost" id="ec-doc-add" style="font-size:.68rem">+ Agregar documento</button></div>
+          </div>
+          <div id="editcampo-acomp" style="display:none">
+            <div id="ec-acomp-list"></div>
+            <div style="margin-top:8px"><button type="button" class="btn btn--ghost" id="ec-acomp-add" style="font-size:.68rem">+ Agregar acompañante</button></div>
           </div>
         </div>
         <div id="msg-editcampo" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
@@ -708,6 +712,7 @@
     var CAMPOS_EDITABLES=[
       {campo:'nombre',label:'Nombre'},{campo:'email',label:'Email'},{campo:'telefono',label:'Teléfono'},
       {campo:'__documentos__',label:'Documentos del titular (agregar / editar / reordenar)'},
+      {campo:'__acompanantes__',label:'Acompañantes (agregar / editar / eliminar)'},
       {campo:'pnr',label:'PNR'},{campo:'aerolinea',label:'Aerolínea'},{campo:'vuelo_nro',label:'Número de vuelo'},
       {campo:'fecha_vuelo',label:'Fecha del vuelo'},{campo:'origen',label:'Origen'},{campo:'destino',label:'Destino'},
       {campo:'tipo_incidencia',label:'Tipo de incidencia'},{campo:'causa_informada',label:'Causa informada'},{campo:'horas_retraso',label:'Horas de retraso'},
@@ -2357,13 +2362,108 @@
       return out;
     }
 
+    /* ---- Acompañantes: sub-editor dentro de "Editar un campo del caso" ---
+       Misma fila que en "Nuevo caso" (nombre, documento(s), es menor, equipaje si
+       corresponde), pero acá lee/escribe sobre un caso ya existente vía set-acompanantes. */
+    var ecAcompList=document.getElementById('ec-acomp-list');
+    var ecAcompAddBtn=document.getElementById('ec-acomp-add');
+    function ecDocExtraRowHtml(tipo,numero){
+      return '<div class="doc-extra-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+        +'<select class="firma-select doc-extra-tipo"><option value="">Tipo de documento...</option><option value="DNI"'+(tipo==='DNI'?' selected':'')+'>DNI</option><option value="Pasaporte"'+(tipo==='Pasaporte'?' selected':'')+'>Pasaporte</option><option value="ID"'+(tipo==='ID'?' selected':'')+'>ID / Cédula</option></select>'
+        +'<div style="display:flex;gap:6px"><input class="firma-select doc-extra-numero" style="flex:1" placeholder="Número de documento" value="'+esc(numero||'')+'"><button type="button" class="btn btn--ghost doc-extra-remove" style="font-size:.68rem">✕</button></div>'
+        +'</div>';
+    }
+    function ecWireDocExtraRow(row,listEl,addBtn,max){
+      var rm=row.querySelector('.doc-extra-remove');
+      if(rm)rm.addEventListener('click',function(){listEl.removeChild(row);if(addBtn)addBtn.style.display=(listEl.children.length>=max)?'none':''});
+    }
+    function ecAcompRowHtml(a){
+      a=a||{};
+      var doctype=a.documento_tipo||'',docnum=a.documento_numero||'';
+      var extras=Array.isArray(a.documentos)&&a.documentos.length>1?a.documentos.slice(1):[];
+      var eq=a.equipaje||null;
+      return '<div class="acomp-row" style="border-top:1px solid var(--bdl);padding-top:10px;margin-bottom:10px">'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+        +'<input class="firma-select acomp-nombre" placeholder="Nombre y apellido" value="'+esc(a.nombre||'')+'">'
+        +'<select class="firma-select acomp-doctype"><option value="">Tipo de documento...</option><option value="DNI"'+(doctype==='DNI'?' selected':'')+'>DNI</option><option value="Pasaporte"'+(doctype==='Pasaporte'?' selected':'')+'>Pasaporte</option><option value="ID"'+(doctype==='ID'?' selected':'')+'>ID / Cédula</option></select>'
+        +'<input class="firma-select acomp-docnum" placeholder="Número de documento" value="'+esc(docnum)+'">'
+        +'<label style="display:flex;align-items:center;gap:6px;font-size:.72rem"><input type="checkbox" class="acomp-menor"'+(a.es_menor?' checked':'')+'> Es menor de edad</label>'
+        +'</div>'
+        +'<div class="acomp-doc-extra-list">'+extras.map(function(d){return ecDocExtraRowHtml(d.tipo,d.numero)}).join('')+'</div>'
+        +'<div style="margin-bottom:8px"><button type="button" class="btn btn--ghost acomp-doc-add" style="font-size:.68rem">+ Agregar otro documento</button></div>'
+        +'<div class="acomp-bag-wrap" style="display:none;margin-bottom:8px">'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+        +'<select class="firma-select acomp-bag-type"><option value="">Equipaje: tipo de incidencia...</option><option value="perdida"'+(eq&&eq.tipo==='perdida'?' selected':'')+'>Pérdida</option><option value="danio"'+(eq&&eq.tipo==='danio'?' selected':'')+'>Daño</option><option value="demora"'+(eq&&eq.tipo==='demora'?' selected':'')+'>Demora en entrega</option></select>'
+        +'<input class="firma-select acomp-bag-value" type="number" min="0" placeholder="Valor estimado (USD)" value="'+(eq&&eq.valor!=null?esc(String(eq.valor)):'')+'">'
+        +'</div>'
+        +'<textarea class="firma-select acomp-bag-desc" rows="2" style="width:100%;resize:vertical" placeholder="Descripción del incidente (equipaje)">'+esc(eq?eq.descripcion||'':'')+'</textarea>'
+        +'</div>'
+        +'<div style="text-align:right"><button type="button" class="btn btn--ghost acomp-remove" style="font-size:.68rem">✕ Quitar acompañante</button></div>'
+        +'</div>';
+    }
+    function ecAcompBagVisible(){return !!(editCampoCase&&(editCampoCase.tipo_reclamo==='equipaje'||editCampoCase.tipo_reclamo==='vuelo_equipaje'))}
+    function ecWireAcompRow(row){
+      var rm=row.querySelector('.acomp-remove');
+      if(rm)rm.addEventListener('click',function(){ecAcompList.removeChild(row)});
+      var adl=row.querySelector('.acomp-doc-extra-list'),adb=row.querySelector('.acomp-doc-add');
+      if(adl){
+        adl.querySelectorAll('.doc-extra-row').forEach(function(er){ecWireDocExtraRow(er,adl,adb,2)});
+        if(adb)adb.style.display=(adl.children.length>=2)?'none':'';
+      }
+      if(adb)adb.addEventListener('click',function(){ncBuildDocExtraRow(adl,adb,2)});
+      var bagWrap=row.querySelector('.acomp-bag-wrap');
+      if(bagWrap)bagWrap.style.display=ecAcompBagVisible()?'':'none';
+    }
+    function ecRenderAcomp(caseObj){
+      if(!ecAcompList)return;
+      var list=Array.isArray(caseObj.acompanantes)?caseObj.acompanantes:[];
+      ecAcompList.innerHTML=list.map(function(a){return ecAcompRowHtml(a)}).join('');
+      ecAcompList.querySelectorAll('.acomp-row').forEach(ecWireAcompRow);
+    }
+    if(ecAcompAddBtn)ecAcompAddBtn.addEventListener('click',function(){
+      if(!ecAcompList)return;
+      var wrap=document.createElement('div');
+      wrap.innerHTML=ecAcompRowHtml(null);
+      var row=wrap.firstChild;
+      ecAcompList.appendChild(row);
+      ecWireAcompRow(row);
+      var nameInp=row.querySelector('.acomp-nombre');if(nameInp)nameInp.focus();
+    });
+    function ecCollectAcomp(){
+      var out=[];
+      if(!ecAcompList)return out;
+      var esEquipaje=ecAcompBagVisible();
+      var rows=ecAcompList.querySelectorAll('.acomp-row');
+      for(var ri=0;ri<rows.length;ri++){
+        var row=rows[ri];
+        var nombre=((row.querySelector('.acomp-nombre')||{}).value||'').trim();
+        var doctype=(row.querySelector('.acomp-doctype')||{}).value||'';
+        var docnum=((row.querySelector('.acomp-docnum')||{}).value||'').trim();
+        if(!nombre&&!doctype&&!docnum)continue; /* fila vacía sin usar: se descarta */
+        if(!nombre||!doctype||!docnum)return null; /* incompleta: error de validación */
+        var item={nombre:nombre,documento_tipo:doctype,documento_numero:docnum,
+          documentos:[{tipo:doctype,numero:docnum}].concat(ncCollectDocExtrasFrom(row.querySelector('.acomp-doc-extra-list'))),
+          es_menor:!!((row.querySelector('.acomp-menor')||{}).checked),equipaje:null};
+        if(esEquipaje){
+          var bt=(row.querySelector('.acomp-bag-type')||{}).value||'';
+          if(bt)item.equipaje={tipo:bt,descripcion:((row.querySelector('.acomp-bag-desc')||{}).value||'').trim(),valor:(row.querySelector('.acomp-bag-value')||{}).value||''};
+        }
+        out.push(item);
+      }
+      return out;
+    }
+
     function ecUpdateMode(){
-      var isDocs=selCampo.value==='__documentos__';
+      var mode=selCampo.value;
+      var isDocs=mode==='__documentos__',isAcomp=mode==='__acompanantes__';
       var valEl=document.getElementById('edit-campo-val');
       var docsEl=document.getElementById('editcampo-docs');
-      if(valEl)valEl.style.display=isDocs?'none':'';
+      var acompEl=document.getElementById('editcampo-acomp');
+      if(valEl)valEl.style.display=(isDocs||isAcomp)?'none':'';
       if(docsEl)docsEl.style.display=isDocs?'':'none';
+      if(acompEl)acompEl.style.display=isAcomp?'':'none';
       if(isDocs&&editCampoCase)ecRenderDocs(editCampoCase);
+      if(isAcomp&&editCampoCase)ecRenderAcomp(editCampoCase);
     }
     if(selCampo)selCampo.addEventListener('change',ecUpdateMode);
 
@@ -2401,6 +2501,26 @@
             claims.forEach(function(cl){if(cl.id===editCampoCase.id){cl.documentos=d.documentos;cl.documento_tipo=d.documento_tipo;cl.documento_numero=d.documento_numero}});
             if(msgEditCampo){msgEditCampo.style.color='var(--ok)';msgEditCampo.textContent='✓ Guardado'}
             ecRenderDocs(editCampoCase);
+          } else {
+            if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent=d.error||'Error al guardar'}
+          }
+        }).catch(function(){btnSaveCampo.disabled=false;if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Error de red'}});
+        return;
+      }
+
+      if(campo==='__acompanantes__'){
+        var acomps=ecCollectAcomp();
+        if(acomps===null){if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Cada acompañante necesita nombre, tipo y número de documento.'}return}
+        btnSaveCampo.disabled=true;
+        if(msgEditCampo){msgEditCampo.style.color='';msgEditCampo.textContent='Guardando...'}
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editCampoCase.id,action:'set-acompanantes',acompanantes:acomps})})
+        .then(function(r){return r.json()}).then(function(d){
+          btnSaveCampo.disabled=false;
+          if(d.success){
+            editCampoCase.acompanantes=d.acompanantes;
+            claims.forEach(function(cl){if(cl.id===editCampoCase.id)cl.acompanantes=d.acompanantes});
+            if(msgEditCampo){msgEditCampo.style.color='var(--ok)';msgEditCampo.textContent='✓ Guardado'}
+            ecRenderAcomp(editCampoCase);
           } else {
             if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent=d.error||'Error al guardar'}
           }

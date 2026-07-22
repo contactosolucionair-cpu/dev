@@ -9,6 +9,7 @@
  *   set-cobro          Marca/deshace una fecha del checklist de cobro
  *   set-instancia      Corrección manual de instancia/momento/resultado
  *   set-documentos     Reordena/actualiza los documentos (el primero pasa a ser el principal)
+ *   set-acompanantes   Agrega/edita/elimina los pasajeros adicionales del caso
  *
  * Otras acciones (sin cambios): add-novedad, update-firma, set-fecha-mediacion,
  * update-abogado, confirm-update-cliente, set-campo, dismiss-alerta.
@@ -316,6 +317,20 @@ export default async function handler(req, res) {
         success: true, action: 'set-documentos', documentos: docsArr,
         documento_tipo: sdPatch.documento_tipo, documento_numero: sdPatch.documento_numero,
       });
+    }
+
+    /* ---- SET ACOMPAÑANTES (agregar/editar/eliminar pasajeros adicionales) ---- */
+    if (body.action === 'set-acompanantes') {
+      var acompArr = Array.isArray(body.acompanantes) ? body.acompanantes : null;
+      if (!acompArr) return res.status(400).json({ error: 'acompanantes requerido' });
+      for (var avi = 0; avi < acompArr.length; avi++) {
+        var av = acompArr[avi];
+        if (!av || typeof av !== 'object' || !av.nombre || !av.documento_tipo || !av.documento_numero)
+          return res.status(400).json({ error: 'Cada acompañante requiere nombre, tipo y número de documento' });
+      }
+      var saRes = await patchRow({ acompanantes: acompArr });
+      if (!saRes.ok) return res.status(500).json({ error: 'Error al actualizar los acompañantes' });
+      return res.status(200).json({ success: true, action: 'set-acompanantes', acompanantes: acompArr });
     }
 
     /* ---- UPDATE FIRMA ESTADO ---- */
