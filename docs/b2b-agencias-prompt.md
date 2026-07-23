@@ -1,3 +1,5 @@
+> ⚠️ DOCUMENTO HISTÓRICO. Prompt de la implementación original del portal B2B (ya ejecutada). NO refleja el estado actual del sistema. Para el modelo vigente ver README.md y api/_utils/instancias.js.
+
 # TAREA: Portal B2B de Agencias para SolucionAir
 
 Estás trabajando en `solucionair-web`: sitio de reclamos aéreos. Stack: **HTML estático + JS vanilla + funciones serverless Vercel en `/api/*` + Supabase vía REST API**. NO hay framework ni build step (package.json solo tiene `pdf-lib`). `vercel.json` tiene `cleanUrls:true` (así `/backoffice` sirve `backoffice.html`).

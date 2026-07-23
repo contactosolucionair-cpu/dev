@@ -32,25 +32,34 @@ Módulo de interfaz que reemplaza completamente los popups nativos del navegador
 
 ```
 solucionair-web/
-├── index.html              # Landing page + formulario wizard de 3 pasos
-├── perfil.html             # Panel del cliente (estado de reclamos)
-├── backoffice.html         # Panel de administración (reclamos + config)
-├── vercel.json             # Configuración de Clean URLs
+├── index.html              # Landing page + formulario wizard de 3 pasos (B2C)
+├── perfil.html             # Panel del cliente (sus casos, timeline, cancelar/novedad)
+├── backoffice.html         # Panel admin (reclamos, papelera, agencias, abogados, config)
+├── agencias.html           # Login / registro del portal B2B de agencias
+├── panel-agencia.html      # Panel de la agencia (dashboard, casos, cargar caso)
+├── abogados.html           # Login / registro del portal de abogados
+├── panel-abogado.html      # Panel del abogado (casos en mediación, transiciones)
+├── vercel.json             # Clean URLs + rewrites /api/{agency,abogados,admin}/:action
 ├── src/
-│   ├── css/
-│   │   └── styles.css      # Sistema de diseño con CSS custom properties
-│   └── js/
-│       └── app.js          # Lógica del formulario, AI scanner, wizard, i18n
+│   ├── css/styles.css      # Sistema de diseño con CSS custom properties
+│   └── js/app.js           # Formulario, AI scanner, wizard, i18n
 ├── api/
-│   ├── process-ticket.js   # Procesamiento de reclamos + AI vision
-│   ├── analyze-document.js # Análisis individual de documentos con AI
-│   ├── get-claims.js       # Listado de reclamos desde Supabase
-│   ├── generate-reply.js   # Generación y optimización de respuestas con AI
-│   ├── update-ticket.js    # Actualización de estado y novedades de casos
-│   ├── login.js            # Autenticación de usuarios
-│   ├── get-config.js       # Lectura de configuración dinámica (site_config)
-│   └── save-config.js      # Persistencia de configuración dinámica
-└── README.md
+│   ├── process-ticket.js   # Submit B2C + AI vision (crea caso en instancia 'evaluacion')
+│   ├── get-claims.js       # Lista de reclamos para el backoffice (X-Admin-Password)
+│   ├── my-claims.js        # Casos del cliente autenticado por su JWT (con etapa/etapa_label)
+│   ├── my-actions.js       # Acciones del cliente sobre su caso (cancel / novedad, JWT)
+│   ├── update-ticket.js    # Ciclo de vida del caso (admin, X-Admin-Password)
+│   ├── delete-ticket.js    # Soft-delete / restore / permanent (X-Admin-Password)
+│   ├── agency.js           # Portal B2B: register/login/claims/submit-claim/stats
+│   ├── abogados.js         # Portal abogados: register/login/claims/transicion/sign
+│   ├── admin.js            # Admin: agencias/abogados, comisiones, storage, docs legales
+│   └── _utils/
+│       ├── instancias.js       # Modelo instancia/momento/resultado + transiciones + etapaExterna
+│       ├── cliente-auth.js     # Valida el JWT del cliente (my-claims / my-actions)
+│       ├── agency-auth.js      # Valida el JWT de la agencia
+│       ├── abogado-auth.js     # Valida el JWT del abogado
+│       └── notify-agencia.js   # Mail a la agencia al cambiar la etapa de su caso
+└── supabase/               # Migraciones SQL (correr en el SQL Editor)
 ```
 
 ### Stack Tecnológico
@@ -78,12 +87,33 @@ CREATE TABLE reclamos (
   vuelo_nro     TEXT,
   fecha_vuelo   DATE,
   tipo_reclamo  TEXT NOT NULL DEFAULT 'vuelo',
-  estado        TEXT NOT NULL DEFAULT 'pendiente',
+  instancia     TEXT DEFAULT 'evaluacion',   -- fuente de verdad del ciclo de vida
+  momento       TEXT,                          -- preparacion | presentado | respuesta_recibida
+  resultado     TEXT,                          -- exito | sin_exito | no_apto | abandonado
+  instancia_historial JSONB DEFAULT '[]',
+  estado        TEXT NOT NULL DEFAULT 'pendiente',  -- ESPEJO DERIVADO (deprecado)
+  deleted_at    TIMESTAMPTZ,                    -- soft-delete (papelera)
   ai_raw        JSONB,
   ref_code      TEXT,
   creado_en     TIMESTAMPTZ DEFAULT now()
 );
 ```
+
+**Modelo de estados (importante).** El ciclo de vida del caso se modela con
+`instancia + momento + resultado` (ver `api/_utils/instancias.js`), que es la
+**única fuente de verdad**. La columna `estado` legacy **no se lee ni se filtra**
+en ningún lado: se conserva solo como **espejo derivado**, escrito siempre vía
+`instanciaAEstadoLegacy()` en el mismo PATCH que escribe `instancia`.
+`getInstancia()` deriva la posición de filas antiguas con `instancia` en null, y
+`etapaExterna()` produce la **vista simplificada de 5+3 etapas** que consumen los
+portales externos (agencia y cliente): `evaluacion`, `reclamo`, `mediacion`,
+`acuerdo`, y `cerrado_exito` / `cerrado_sin_exito` / `cerrado_no_viable`.
+
+**Columnas deprecadas** (existen en la base pero ningún código las usa):
+`estado` (reemplazada por instancia/momento/resultado), `monto_compensacion`
+(el concepto vigente es `monto_reclamado` / `monto_acordado`) y las columnas de
+firma electrónica `firma_proveedor` / `firma_zoho_request_id` / `firma_zoho_url`
+(la integración con un proveedor de firma quedó pendiente; ver más abajo).
 
 El campo `ai_raw` (JSONB) almacena la huella SHA-256 del caso (`huella_sha256`), usada como fingerprint de la firma electrónica.
 
@@ -111,6 +141,8 @@ El proyecto utiliza `cleanUrls: true` en `vercel.json`, eliminando la extensión
 | `/perfil` | Panel del cliente |
 | `/agencias` | Portal B2B — login / registro de agencias |
 | `/panel-agencia` | Panel de la agencia (dashboard, casos, cargar caso) |
+| `/abogados` | Portal de abogados — login / registro |
+| `/panel-abogado` | Panel del abogado (casos en mediación, transiciones) |
 
 ## Configuración del Entorno
 
@@ -121,9 +153,10 @@ Variables requeridas en Vercel Dashboard > Settings > Environment Variables:
 | `OPENROUTER_API_KEY` | API key de OpenRouter para modelos de IA (Gemini 2.5 Flash) |
 | `SUPABASE_URL` | URL del proyecto Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key de Supabase con permisos de escritura |
-| `RESEND_API_KEY` | API key de Resend para emails transaccionales |
-| `NOTIFY_EMAIL` | Casilla interna para alertas de nuevos reclamos |
-| `ADMIN_PASSWORD` | Contraseña para acceder al backoffice admin (protege la vista de Agencias) |
+| `RESEND_API_KEY` | API key de Resend para emails transaccionales y aviso de etapa a agencias |
+| `ADMIN_PASSWORD` | Contraseña del backoffice. Protege `admin`, `get-claims`, `update-ticket` y `delete-ticket` (header `X-Admin-Password`). Si no está seteada, esos endpoints responden 500 (no quedan abiertos). |
+
+> Los portales externos (cliente, agencia, abogado) se autentican con el **JWT de Supabase Auth** (header `Authorization: Bearer <token>`), no con `ADMIN_PASSWORD`.
 
 ## Despliegue
 
@@ -140,26 +173,34 @@ npx vercel logs --since 1h --expand
 
 ## Endpoints API
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| POST | `/api/process-ticket` | Scan AI multi-archivo + submit final de reclamo |
-| POST | `/api/analyze-document` | Análisis individual de documento con AI |
-| GET | `/api/get-claims` | Lista todos los reclamos |
-| POST | `/api/generate-reply` | Genera o optimiza respuestas con AI |
-| POST | `/api/update-ticket` | Actualiza estado o agrega novedades |
-| POST | `/api/delete-ticket` | Soft delete, restaurar o eliminar permanentemente |
-| POST | `/api/login` | Autenticación de usuarios |
-| GET | `/api/get-config` | Lee configuración dinámica del sitio |
-| POST | `/api/save-config` | Guarda configuración dinámica |
-| **B2B Agencias** | | |
-| POST | `/api/agency/register` | Registro de nueva agencia (queda pendiente) |
-| POST | `/api/agency/login` | Login de agencia; devuelve estado si está pendiente |
-| GET | `/api/agency/claims` | Casos de la agencia autenticada (JWT-gated) |
-| POST | `/api/agency/submit-claim` | Carga nuevo caso B2B (JWT-gated) |
-| GET | `/api/agency/stats` | KPIs y comisión estimada de la agencia |
-| **Admin** | | |
-| GET | `/api/admin/agencies` | Lista agencias con conteo de casos (requiere `X-Admin-Password`) |
-| POST | `/api/admin/agencies` | Aprobar / suspender / reactivar agencia |
+Los handlers de agencia, abogados y admin son **consolidados**: `vercel.json`
+reescribe `/api/agency/:action → /api/agency?action=:action` (ídem `abogados` y
+`admin`). La columna **Auth** indica qué credencial exige cada endpoint.
+
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| POST | `/api/process-ticket` | — | Scan AI multi-archivo + submit B2C (crea caso en `evaluacion`) |
+| GET | `/api/get-claims` | `X-Admin-Password` | Lista todos los reclamos (backoffice) |
+| POST | `/api/update-ticket` | `X-Admin-Password` | Ciclo de vida del caso (avanzar, esperas, cobro, firma, etc.) |
+| POST | `/api/delete-ticket` | `X-Admin-Password` | Soft-delete / restore / permanent |
+| GET | `/api/my-claims` | `Bearer` (cliente) | Casos del cliente autenticado (con `etapa`/`etapa_label`) |
+| POST | `/api/my-actions` | `Bearer` (cliente) | `cancel` / `novedad` sobre el propio caso |
+| GET/POST | `/api/get-config` · `/api/save-config` | — / admin | Configuración dinámica del sitio |
+| **B2B Agencias** | | | |
+| POST | `/api/agency/register` · `/api/agency/login` | — | Alta / login de agencia |
+| GET | `/api/agency/claims` | `Bearer` (agencia) | Casos de la agencia (con `etapa`/`etapa_label`) |
+| POST | `/api/agency/submit-claim` | `Bearer` (agencia) | Carga de nuevo caso B2B |
+| GET | `/api/agency/stats` | `Bearer` (agencia) | KPIs por etapa + comisión estimada/confirmada |
+| **Abogados** | | | |
+| POST | `/api/abogados/register` · `/api/abogados/login` | — | Alta / login de abogado |
+| GET | `/api/abogados/claims` | `Bearer` (abogado) | Casos asignados (no borrados) |
+| POST | `/api/abogados/transicion` | `Bearer` (abogado) | Avance de mediación (presentar, respuesta_recibida, volver_a_presentar, acuerdo, cerrar_sin_exito) |
+| GET | `/api/abogados/sign` | `Bearer` (abogado) | URL firmada de un adjunto del caso asignado |
+| **Admin** (`?action=`) | | | |
+| GET/POST | `/api/admin?action=agencias\|agencia-accion\|agencia-config` | `X-Admin-Password` | Listar agencias, aprobar/suspender, editar comisión |
+| GET/POST | `/api/admin?action=abogados\|abogado-accion\|abogados-activos` | `X-Admin-Password` | Gestión de abogados |
+| POST | `/api/admin?action=create-case\|generar-documento` | `X-Admin-Password` | Alta manual de caso, generar poder/patrocinio |
+| POST | `/api/admin?action=sign\|upload\|remove\|retag\|download-zip` | `X-Admin-Password` | Gestión de adjuntos en Storage |
 
 ## Flujo del Sistema
 
@@ -183,6 +224,20 @@ Firma electrónica y envío (Paso 3)
     ▼
 Tarjeta de éxito con código CSA correlativo
 ```
+
+## Firma de autorización
+
+El flujo de firma de la autorización es **manual**: el admin genera la
+autorización (poder / convenio de patrocinio) desde el backoffice, la envía al
+pasajero por WhatsApp o email, y una vez firmada actualiza `firma_estado` desde
+el backoffice (`no_aplica` → `pendiente_envio` → `enviada` → `firmada` /
+`rechazada`). Los portales de agencia y cliente muestran ese estado con un texto
+explicativo.
+
+La **integración con un proveedor de firma electrónica está pendiente de
+contratación**. Las columnas `firma_proveedor`, `firma_zoho_request_id` y
+`firma_zoho_url` quedaron en la base de una iteración anterior pero **ningún
+código las escribe**.
 
 ## URLs de Producción
 

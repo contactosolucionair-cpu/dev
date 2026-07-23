@@ -33,10 +33,8 @@ export default async function handler(req, res) {
     if (!id) return res.status(400).json({ error: 'ID requerido' });
 
     if (action === 'soft-delete') {
-      /* Logical deletion: set deleted_at to current timestamp */
-      /* First try updating estado to 'eliminado' as fallback if deleted_at column doesn't exist */
-      var patchBody = { deleted_at: new Date().toISOString() };
-
+      /* Soft-delete: marca deleted_at. La posición del caso (instancia/momento)
+         no se toca; `deleted_at` es la única señal de papelera. */
       var r = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
         headers: {
@@ -45,35 +43,18 @@ export default async function handler(req, res) {
           'Authorization': 'Bearer ' + SB_KEY,
           'Prefer': 'return=minimal',
         },
-        body: JSON.stringify(patchBody),
+        body: JSON.stringify({ deleted_at: new Date().toISOString() }),
       });
-
       var rText = await r.text();
       console.log('[delete-ticket] soft-delete status:', r.status, 'body:', rText.substring(0, 200));
-
-      if (!r.ok) {
-        /* If deleted_at column doesn't exist, fallback to updating estado */
-        console.log('[delete-ticket] PATCH failed, trying estado fallback');
-        var r1b = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SB_KEY,
-            'Authorization': 'Bearer ' + SB_KEY,
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify({ estado: 'eliminado' }),
-        });
-        var r1bText = await r1b.text();
-        console.log('[delete-ticket] fallback status:', r1b.status, 'body:', r1bText.substring(0, 200));
-        if (!r1b.ok) return res.status(500).json({ error: 'No se pudo eliminar. Verificá las políticas RLS y la columna deleted_at en Supabase.' });
-      }
+      if (!r.ok) return res.status(500).json({ error: 'No se pudo eliminar. Verificá las políticas RLS y la columna deleted_at en Supabase.' });
 
       return res.status(200).json({ success: true, action: 'soft-delete' });
     }
 
     if (action === 'restore') {
-      /* Clear deleted_at and restore estado */
+      /* Restaurar: solo limpia deleted_at. La posición del caso la da instancia;
+         no se fuerza ningún estado legacy. */
       var r2 = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
         headers: {
@@ -82,26 +63,11 @@ export default async function handler(req, res) {
           'Authorization': 'Bearer ' + SB_KEY,
           'Prefer': 'return=minimal',
         },
-        body: JSON.stringify({ deleted_at: null, estado: 'pendiente' }),
+        body: JSON.stringify({ deleted_at: null }),
       });
-
       var r2Text = await r2.text();
       console.log('[delete-ticket] restore status:', r2.status, 'body:', r2Text.substring(0, 200));
-
-      if (!r2.ok) {
-        /* Fallback: just update estado */
-        var r2b = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SB_KEY,
-            'Authorization': 'Bearer ' + SB_KEY,
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify({ estado: 'pendiente' }),
-        });
-        if (!r2b.ok) return res.status(500).json({ error: 'No se pudo restaurar.' });
-      }
+      if (!r2.ok) return res.status(500).json({ error: 'No se pudo restaurar.' });
 
       return res.status(200).json({ success: true, action: 'restore' });
     }

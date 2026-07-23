@@ -790,7 +790,7 @@
         claims=json.claims||[];
 
         try{
-          var act=claims.filter(function(c){return !c.deleted_at&&c.estado!=='eliminado'});
+          var act=claims.filter(function(c){return !c.deleted_at});
           document.getElementById('st-activos').textContent=act.filter(function(c){return getInstancia(c).instancia!=='cerrado'}).length;
           document.getElementById('st-evaluacion').textContent=act.filter(function(c){return getInstancia(c).instancia==='evaluacion'}).length;
           document.getElementById('st-pelea').textContent=act.filter(function(c){var i=getInstancia(c).instancia;return i==='reclamo_directo'||i==='mediacion'}).length;
@@ -812,7 +812,7 @@
 
     function renderTabs(){
       var cont=document.getElementById('instancia-tabs');if(!cont)return;
-      var act=claims.filter(function(c){return !c.deleted_at&&c.estado!=='eliminado'});
+      var act=claims.filter(function(c){return !c.deleted_at});
       var counts={};INSTANCIA_ORDEN.forEach(function(i){counts[i]=0});
       act.forEach(function(c){var i=getInstancia(c).instancia;if(counts[i]!=null)counts[i]++});
       var tabs=[['','Todos',act.length]].concat(INSTANCIA_ORDEN.map(function(i){return [i,INSTANCIA_LABELS[i],counts[i]]}));
@@ -828,7 +828,7 @@
       var canalEl=document.getElementById('filter-canal');var canal=canalEl?canalEl.value:'';
       var tipoEl=document.getElementById('filter-tipo');var tipo=tipoEl?tipoEl.value:'';
       filtered=claims.filter(function(c){
-        if(c.deleted_at||c.estado==='eliminado')return false;
+        if(c.deleted_at)return false;
         if(q&&!((c.ref_code||'').toLowerCase().indexOf(q)>-1||(c.nombre||'').toLowerCase().indexOf(q)>-1||(c.email||'').toLowerCase().indexOf(q)>-1))return false;
         if(airline&&c.aerolinea!==airline)return false;
         if(currentTab&&getInstancia(c).instancia!==currentTab)return false;
@@ -1845,7 +1845,7 @@
       trashBody.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
       fetch('/api/get-claims',{headers:{'X-Admin-Password':adminPwd}}).then(function(r){return r.json()}).then(function(json){
         if(!json.success)throw new Error(json.error||'Error');
-        var deleted=(json.claims||[]).filter(function(c){return!!c.deleted_at||c.estado==='eliminado'});
+        var deleted=(json.claims||[]).filter(function(c){return!!c.deleted_at});
         var countEl=document.getElementById('trash-count');
         if(countEl)countEl.textContent=deleted.length+' eliminados';
         if(!deleted.length){trashBody.innerHTML='<div class="state"><p class="state__txt" style="color:var(--t4)">La papelera está vacía.</p></div>';return}
@@ -2013,7 +2013,7 @@
     }
     function computeAlertas(){
       var out=[];
-      var act=claims.filter(function(c){return !c.deleted_at&&c.estado!=='eliminado'});
+      var act=claims.filter(function(c){return !c.deleted_at});
       alertRules.forEach(function(regla){
         if(regla.enabled===false)return;
         act.forEach(function(c){

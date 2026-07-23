@@ -1,12 +1,14 @@
 /**
  * Modelo de 4 dimensiones para el ciclo de vida de un caso (reclamos):
- * instancia + momento + esperas + circuito de cobro.
+ * instancia + momento + esperas + circuito de cobro. Es la ÚNICA fuente de
+ * verdad del ciclo de vida.
  *
- * El campo `estado` legacy se mantiene con doble escritura porque
- * panel-agencia.html lo lee crudo y panel-abogado.html lo escribe vía
- * api/abogados.js?action=update-estado. Este módulo centraliza el mapping
- * directo (estado legacy -> instancia/momento) e inverso (instancia/momento
- * -> estado legacy) para que ambos lados queden siempre consistentes.
+ * El campo `estado` legacy NO se elimina de la base pero pasó a ser solo un
+ * ESPEJO DERIVADO: se escribe siempre vía instanciaAEstadoLegacy() en el mismo
+ * PATCH que escribe instancia, y ningún código vuelve a leerlo para decidir
+ * lógica ni a filtrar por él. getInstancia() se mantiene como red de seguridad
+ * para filas antiguas con `instancia` en null. etapaExterna() deriva la vista
+ * simplificada de 5+3 etapas para los portales externos (agencia y cliente).
  */
 
 /* ---- Mapping directo: estado legacy -> {instancia, momento} ---- */
