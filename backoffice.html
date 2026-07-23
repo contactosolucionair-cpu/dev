@@ -707,6 +707,14 @@
       return 'badge--en_gestion';
     }
     function esperasAbiertas(c){return (Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return !e.resuelta})}
+    /* Resuelve el nombre del abogado asignado (cacheado) y lo escribe en `el`. */
+    var _abogadosCache=null;
+    function resolveAbogadoNombre(abogadoId,el){
+      if(!el||!abogadoId)return;
+      function pick(list){var f=(list||[]).filter(function(a){return a.id===abogadoId})[0];el.textContent=f?(f.nombre||'—')+(f.matricula?' ('+f.matricula+')':''):('ID '+abogadoId)}
+      if(_abogadosCache){pick(_abogadosCache);return}
+      fetch('/api/admin?action=abogados-activos',{headers:{'X-Admin-Password':adminPwd}}).then(function(r){return r.json()}).then(function(d){_abogadosCache=(d&&d.abogados)||[];pick(_abogadosCache)}).catch(function(){el.textContent='ID '+abogadoId});
+    }
     /** Responsable principal derivado de la posición del caso (sin contar esperas ad-hoc). */
     function pelotaPrincipal(c,pos){
       if(pos.instancia==='cerrado')return null;
@@ -1035,6 +1043,10 @@
       h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Referencia</div><div class="detail__value mono">'+(c.ref_code||'—')+'</div></div>';
       h+='<div class="detail__section"><div class="detail__label">Canal</div><div class="detail__value"><span class="badge badge--'+(canalVal==='B2B'?'b2b':'b2c')+'">'+canalVal+'</span></div></div>';
       h+='<div class="detail__section"><div class="detail__label">Ingresado</div><div class="detail__value mono">'+fecha+'</div></div></div>';
+      /* Abogado asignado (visible apenas se abre el caso) */
+      if(c.abogado_id){
+        h+='<div class="detail__section" style="margin-top:8px"><div class="detail__label">Abogado asignado</div><div class="detail__value" style="font-weight:600">⚖ <span id="detail-abogado-nombre">Cargando…</span></div></div>';
+      }
       h+='<div class="detail__divider"></div>';
 
       /* Pasajero */
@@ -1182,10 +1194,10 @@
           h+='<div class="upload-zone" id="deriv-'+dd.tipo+'-zone" style="padding:10px">Subir '+dd.label.toLowerCase()+'</div><input type="file" id="deriv-'+dd.tipo+'-inp" style="display:none">';
           h+='</div>';
         });
-        if(c._derivReassign){
-          h+='<div style="display:flex;gap:6px;margin-top:6px"><button class="btn btn--primary" id="btn-confirmar-reasignacion" type="button">Confirmar reasignación</button><button class="btn btn--ghost" id="btn-cancelar-reasignacion" type="button">Cancelar</button></div>';
-          h+='<div id="msg-reasignacion" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div>';
-        }
+        h+='<div style="display:flex;gap:6px;margin-top:6px"><button class="btn btn--primary" id="btn-confirmar-reasignacion" type="button">'+(c.abogado_id?'Confirmar reasignación':'Asignar abogado')+'</button>';
+        if(c._derivReassign)h+='<button class="btn btn--ghost" id="btn-cancelar-reasignacion" type="button">Cancelar</button>';
+        h+='</div>';
+        h+='<div id="msg-reasignacion" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:4px"></div>';
       }
       h+='</div>';
       /* Fecha de mediación (solo mientras el caso esté en la instancia Mediación) */
@@ -1439,6 +1451,7 @@
         }).catch(function(){selAbogado.innerHTML='<option value="">Error al cargar</option>'});
       }
       if(enMediacion&&!derivLocked)loadAbogadosSelect();
+      resolveAbogadoNombre(c.abogado_id,document.getElementById('detail-abogado-nombre'));
 
       /* Derivación ya asignada: resolver nombre del abogado + reasignar */
       if(derivLocked&&c.abogado_id){
@@ -1467,13 +1480,10 @@
       var btnConfirmarReasig=document.getElementById('btn-confirmar-reasignacion');
       var msgReasig=document.getElementById('msg-reasignacion');
       if(btnConfirmarReasig)btnConfirmarReasig.addEventListener('click',function(){
+        var yaTenia=!!c.abogado_id;
+        var labelBtn=yaTenia?'Confirmar reasignación':'Asignar abogado';
         var nuevoAbogadoId=(document.getElementById('sel-abogado')||{}).value||'';
-        var adjNow=Array.isArray(c.adjuntos)?c.adjuntos:[];
-        var tienePatrocinioR=adjNow.some(function(a){return a.tipo==='patrocinio'});
-        var tieneFichaCasoR=adjNow.some(function(a){return a.tipo==='ficha_caso'});
         if(!nuevoAbogadoId){msgReasig.style.color='var(--err)';msgReasig.textContent='Elegí un abogado.';return}
-        if(!tienePatrocinioR){msgReasig.style.color='var(--err)';msgReasig.textContent='Cargá la designación de patrocinio.';return}
-        if(!tieneFichaCasoR){msgReasig.style.color='var(--err)';msgReasig.textContent='Cargá la ficha de caso.';return}
         btnConfirmarReasig.disabled=true;btnConfirmarReasig.textContent='...';msgReasig.textContent='';
         fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:c.id,action:'update-abogado',abogado_id:nuevoAbogadoId})})
         .then(function(r){return r.json()}).then(function(d){
@@ -1481,14 +1491,14 @@
             c.abogado_id=nuevoAbogadoId;c._derivReassign=false;
             if(d.novedades)c.novedades=d.novedades;
             claims.forEach(function(cl){if(cl.id===c.id){cl.abogado_id=nuevoAbogadoId;if(d.novedades)cl.novedades=d.novedades}});
-            toast('Abogado reasignado.');
+            toast(yaTenia?'Abogado reasignado.':'Abogado asignado.');
             openDetail(c);
           }else{
-            btnConfirmarReasig.disabled=false;btnConfirmarReasig.textContent='Confirmar reasignación';
+            btnConfirmarReasig.disabled=false;btnConfirmarReasig.textContent=labelBtn;
             msgReasig.style.color='var(--err)';msgReasig.textContent=d.error||'Error.';
           }
         }).catch(function(){
-          btnConfirmarReasig.disabled=false;btnConfirmarReasig.textContent='Confirmar reasignación';
+          btnConfirmarReasig.disabled=false;btnConfirmarReasig.textContent=labelBtn;
           msgReasig.style.color='var(--err)';msgReasig.textContent='Error de conexión.';
         });
       });
@@ -1562,10 +1572,9 @@
           if(tr==='presentar'&&pos.instancia==='reclamo_directo'&&pos.momento==='preparacion'&&!c.monto_reclamado){openMontoModal(c,'presentar','monto_reclamado','Monto reclamado',c.monto_reclamado,c.monto_reclamado_moneda);return}
           if(tr==='presentar'&&pos.instancia==='mediacion'&&pos.momento==='preparacion'){
             var adjGate=Array.isArray(c.adjuntos)?c.adjuntos:[];
-            var abogadoIdGate=c.abogado_id||(document.getElementById('sel-abogado')||{}).value||'';
             var tienePat=adjGate.some(function(a){return a.tipo==='patrocinio'});
             var tieneFicha=adjGate.some(function(a){return a.tipo==='ficha_caso'});
-            if(!abogadoIdGate){if(msgTransicion){msgTransicion.style.color='var(--err)';msgTransicion.textContent='Elegí un abogado antes de presentar a mediación.'}return}
+            if(!c.abogado_id){if(msgTransicion){msgTransicion.style.color='var(--err)';msgTransicion.textContent='Asigná un abogado (botón "Asignar abogado") antes de presentar a mediación.'}return}
             if(!tienePat||!tieneFicha){if(msgTransicion){msgTransicion.style.color='var(--err)';msgTransicion.textContent='Cargá la designación de patrocinio y la ficha de caso primero.'}return}
           }
           if(tr==='no_apto'||tr==='cerrar_sin_exito'||tr==='abandonar'){openCierreModal(c,tr,btn.textContent);return}
