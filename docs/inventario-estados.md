@@ -1,8 +1,26 @@
 # Inventario de `estado` legacy y deuda asociada (Fase 0)
 
 > Generado en la Fase 0 del prompt "Migración total de estados + Seguridad + Portal Agencias v2 + Limpieza".
-> **No se editó código en esta fase.** Cada hallazgo tiene una fase asignada. Los ítems se marcan
-> como resueltos (con referencia al commit) recién en la Fase 6.
+> **No se editó código en esta fase.** Cada hallazgo tiene una fase asignada.
+
+## Estado de resolución (Fase 6)
+
+Rama: `feat/migracion-estados-seguridad`. Un commit por fase:
+
+| Fase | Commit | Qué resolvió | Criterio |
+|---|---|---|---|
+| F0 | `ff842cd` | Este inventario | — |
+| F1 | `a65e7ae` | get-claims/update-ticket/delete-ticket con `X-Admin-Password`; `my-claims`/`my-actions` por JWT; perfil migrado; ai_raw fuera de agency | curl sin credencial → 401/500 (código); backoffice manda el header en las 20 llamadas |
+| F2 | `58fce92` | agency/abogados/admin/process-ticket por instancia/momento/resultado; acción `transicion`; D2/D3 | grep F2 ✅ (solo estados de cuenta + red de seguridad) |
+| F3 | `1fc56e7` | panel-agencia/panel-abogado/perfil por etapa/etapa_label + timelines | grep F3 ✅ |
+| F4 | `f2652b8` | comisiones parametrizables (migration_010) + `notify-agencia` | stats por 3 modos; agencia-config; mail best-effort |
+| F5 | `9c4cb3c` | soft-delete solo por deleted_at; docs/README; sin Zoho en código | grep F5 zoho (js/html) ✅ vacío |
+
+**Verificación estática F6 (2026-07-23):** sintaxis de todos los `api/*.js` y de los scripts inline de los 7 HTML OK; greps de aceptación F2/F3/F5 en verde; contrato de respuesta B2C de `process-ticket` sin cambios (solo inserts aditivos). **Pendiente de prueba en vivo** (requiere deploy a preview + Supabase con `migration_010` corrida): flujos de browser de los 6 puntos funcionales de F6.
+
+Los hits residuales de `estado` que quedan y son legítimos (no son deuda):
+- `ab.estado`/`ag.estado` y `?estado=eq.activa` → estado de **cuenta** de agencia/abogado (otra tabla/columna).
+- `getInstancia`/`getPos` con `c.estado` → red de seguridad de derivación para filas viejas con `instancia` null.
 
 Convención de columna "fase":
 - **F1** Seguridad de endpoints · **F2** Migración estados backend · **F3** Migración estados frontend
