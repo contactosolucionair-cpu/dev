@@ -23,6 +23,7 @@ import {
   MOTIVOS_CIERRE, TIPOS_ESPERA, RESPONSABLES_ESPERA,
   INSTANCIAS_VALIDAS, MOMENTOS_VALIDOS, RESULTADOS_VALIDOS, MONEDAS_VALIDAS,
 } from './_utils/instancias.js';
+import { notificarCambioEtapa } from './_utils/notify-agencia.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
 
       var row = await fetchRow('instancia,momento,resultado,estado,estado_historial,instancia_historial,'
         + 'monto_reclamado,monto_acordado,acuerdo_instancia,pago_aerolinea_fecha,comision_cobrada_fecha,'
-        + 'honorarios_abogado_fecha,novedades,via_reclamo,organismo');
+        + 'honorarios_abogado_fecha,novedades,via_reclamo,organismo,agencia_id,ref_code');
       if (!row) return res.status(404).json({ error: 'Reclamo no encontrado' });
 
       var pos = getInstancia(row);
@@ -176,6 +177,14 @@ export default async function handler(req, res) {
         console.error('[update-ticket] avanzar error:', (await updRes.text()).substring(0, 300));
         return res.status(500).json({ error: 'Error al actualizar el caso' });
       }
+
+      /* Notificar a la agencia (B2B) el cambio de etapa. Best-effort: nunca rompe la respuesta. */
+      try {
+        await notificarCambioEtapa(SB_URL, SB_KEY, {
+          agencia_id: row.agencia_id, ref_code: row.ref_code,
+          instancia: newInstancia, momento: newMomento, resultado: newResultado,
+        });
+      } catch (e) { console.error('[update-ticket] notify-agencia error:', e.message); }
 
       if (body.action === 'cancel') return res.status(200).json({ success: true, action: 'cancel' });
       return res.status(200).json({

@@ -326,26 +326,39 @@ async function handleStats(req, res, SB_URL, SB_KEY) {
 
   var claims = JSON.parse(sbText) || [];
   var total  = claims.length;
-  var comisionPct = Number(agencia.comision_pct) || 0;
+  var comisionPct  = Number(agencia.comision_pct) || 0;
+  var modo         = agencia.comision_modo || 'por_exito';
+  var valorFijo    = Number(agencia.comision_valor_fijo) || 0;
 
   var por_etapa = {};
-  var comision_estimada = 0;
-  var comision_confirmada = 0;
   var requieren_accion = 0;
   var comision_moneda = null;
+
+  /* Acumuladores de los dos criterios de comisión */
+  var exito_estimada = 0, exito_confirmada = 0;   /* pct sobre monto_acordado */
+  var viable_estimados = 0, viable_confirmados = 0; /* cantidad de casos viables */
 
   claims.forEach(function (c) {
     /* Conteo por etapa externa (nunca por estado legacy) */
     var et = etapaExterna(c).etapa;
     por_etapa[et] = (por_etapa[et] || 0) + 1;
 
-    /* Comisión por éxito: pct sobre monto_acordado */
+    /* Criterio "por éxito": pct sobre monto_acordado */
     var monto = (c.monto_acordado === null || c.monto_acordado === undefined) ? null : Number(c.monto_acordado);
     if (monto !== null && !isNaN(monto)) {
       var comision = monto * comisionPct / 100;
-      if (c.instancia === 'cobro') comision_estimada += comision;
-      if (c.resultado === 'exito') comision_confirmada += comision;
+      if (c.instancia === 'cobro') exito_estimada += comision;
+      if (c.resultado === 'exito') exito_confirmada += comision;
       if (!comision_moneda && (c.instancia === 'cobro' || c.resultado === 'exito')) comision_moneda = c.monto_acordado_moneda || 'ARS';
+    }
+
+    /* Criterio "por caso viable": superó evaluación (instancia != evaluacion y,
+       si está cerrado, resultado != no_apto). Estimada = todos los que aplican;
+       confirmada = solo los cerrados. */
+    var superoEvaluacion = c.instancia && c.instancia !== 'evaluacion' && !(c.instancia === 'cerrado' && c.resultado === 'no_apto');
+    if (superoEvaluacion) {
+      viable_estimados += 1;
+      if (c.instancia === 'cerrado') viable_confirmados += 1;
     }
 
     /* Requieren tu acción: al menos una espera abierta con responsable 'pasajero' */
@@ -354,10 +367,24 @@ async function handleStats(req, res, SB_URL, SB_KEY) {
     if (pide) requieren_accion += 1;
   });
 
+  /* Comisión final según el modo de la agencia */
+  var comision_estimada = 0, comision_confirmada = 0;
+  if (modo === 'por_exito') {
+    comision_estimada = exito_estimada;
+    comision_confirmada = exito_confirmada;
+  } else if (modo === 'por_caso_viable') {
+    comision_estimada = valorFijo * viable_estimados;
+    comision_confirmada = valorFijo * viable_confirmados;
+  } else { /* mixta */
+    comision_estimada = exito_estimada + valorFijo * viable_estimados;
+    comision_confirmada = exito_confirmada + valorFijo * viable_confirmados;
+  }
+
   return res.status(200).json({
     success: true,
     total: total,
     por_etapa: por_etapa,
+    comision_modo: modo,
     comision_estimada: comision_estimada,
     comision_confirmada: comision_confirmada,
     comision_moneda: comision_moneda || 'ARS',

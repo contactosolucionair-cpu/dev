@@ -3086,9 +3086,12 @@
         var countEl = document.getElementById('ag-count');
         if (countEl) countEl.textContent = ags.length + ' agencias';
         if (!ags.length) { agBody.innerHTML = '<div class="state"><p class="state__txt" style="color:var(--t4)">Sin agencias registradas.</p></div>'; return; }
-        var h = '<table><thead><tr><th>Nombre</th><th>Tipo</th><th>Email</th><th>CUIT/DNI</th><th>Estado</th><th>Casos</th><th>Acciones</th></tr></thead><tbody>';
+        var h = '<table><thead><tr><th>Nombre</th><th>Tipo</th><th>Email</th><th>CUIT/DNI</th><th>Estado</th><th>Casos</th><th>Comisión</th><th>Acciones</th></tr></thead><tbody>';
         ags.forEach(function (ag) {
           var bc = 'ag-badge--' + (ag.estado || 'pendiente');
+          var modo = ag.comision_modo || 'por_exito';
+          var pct = (ag.comision_pct === null || ag.comision_pct === undefined) ? '' : ag.comision_pct;
+          var vf  = (ag.comision_valor_fijo === null || ag.comision_valor_fijo === undefined) ? '' : ag.comision_valor_fijo;
           h += '<tr>';
           h += '<td>' + esc(ag.nombre || '—') + '</td>';
           h += '<td>' + esc(ag.tipo || '—') + '</td>';
@@ -3096,6 +3099,12 @@
           h += '<td class="mono">' + esc(ag.cuit_dni || '—') + '</td>';
           h += '<td><span class="ag-badge ' + bc + '">' + esc(ag.estado || '—') + '</span></td>';
           h += '<td class="mono">' + (ag.num_casos || 0) + '</td>';
+          h += '<td><div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">'
+            + '<select class="ag-com-modo" style="font-size:.68rem;padding:3px 4px"><option value="por_exito"' + (modo === 'por_exito' ? ' selected' : '') + '>Por éxito</option><option value="por_caso_viable"' + (modo === 'por_caso_viable' ? ' selected' : '') + '>Por caso viable</option><option value="mixta"' + (modo === 'mixta' ? ' selected' : '') + '>Mixta</option></select>'
+            + '<input class="ag-com-pct" type="number" min="0" max="100" step="0.1" value="' + pct + '" title="% comisión" placeholder="%" style="width:52px;font-size:.68rem;padding:3px 4px" />'
+            + '<input class="ag-com-vf" type="number" min="0" step="0.01" value="' + vf + '" title="valor fijo por caso" placeholder="fijo" style="width:64px;font-size:.68rem;padding:3px 4px" />'
+            + '<button class="btn-ag ag-com-save" data-agc-id="' + ag.id + '">Guardar</button>'
+            + '</div></td>';
           h += '<td>';
           if (ag.estado === 'pendiente') h += '<button class="btn-ag btn-ag--aprobar" data-ag-id="' + ag.id + '" data-ag-action="aprobar">Aprobar</button>';
           if (ag.estado === 'activa')    h += '<button class="btn-ag btn-ag--suspender" data-ag-id="' + ag.id + '" data-ag-action="suspender">Suspender</button>';
@@ -3104,6 +3113,25 @@
         });
         h += '</tbody></table>';
         agBody.innerHTML = h;
+        /* Guardar configuración de comisión por agencia */
+        agBody.querySelectorAll('.ag-com-save').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var id  = btn.getAttribute('data-agc-id');
+            var row = btn.closest('tr');
+            var modo = row.querySelector('.ag-com-modo').value;
+            var pct  = row.querySelector('.ag-com-pct').value;
+            var vf   = row.querySelector('.ag-com-vf').value;
+            btn.disabled = true; btn.textContent = '...';
+            fetch('/api/admin?action=agencia-config', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Admin-Password': adminPwd },
+              body: JSON.stringify({ id: id, comision_modo: modo, comision_pct: pct, comision_valor_fijo: vf }),
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { btn.disabled = false; btn.textContent = 'Guardar'; if (d.success) toast('Comisión actualizada'); else toast(d.error || 'Error', true); })
+            .catch(function () { btn.disabled = false; btn.textContent = 'Guardar'; toast('Error de conexión', true); });
+          });
+        });
         agBody.querySelectorAll('[data-ag-id]').forEach(function (btn) {
           btn.addEventListener('click', function () {
             var id     = btn.getAttribute('data-ag-id');

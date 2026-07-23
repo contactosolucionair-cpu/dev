@@ -16,6 +16,7 @@ import {
   getInstancia, validarTransicion, instanciaAEstadoLegacy,
   MOTIVOS_CIERRE, MONEDAS_VALIDAS,
 } from './_utils/instancias.js';
+import { notificarCambioEtapa } from './_utils/notify-agencia.js';
 
 export const config = { api: { bodyParser: { sizeLimit: '1mb' } } };
 
@@ -209,7 +210,7 @@ async function handleTransicion(req, res, SB_URL, SB_KEY) {
   /* Verificar que el caso esté asignado a este abogado */
   var chkRes = await fetch(
     SB_URL + '/rest/v1/reclamos?id=eq.' + casoId + '&abogado_id=eq.' + abogado.id + '&deleted_at=is.null'
-      + '&select=id,instancia,momento,resultado,estado,estado_historial,instancia_historial,monto_acordado&limit=1',
+      + '&select=id,instancia,momento,resultado,estado,estado_historial,instancia_historial,monto_acordado,agencia_id,ref_code&limit=1',
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
   );
   var chkRows;
@@ -280,6 +281,15 @@ async function handleTransicion(req, res, SB_URL, SB_KEY) {
     console.error('[abogados/transicion] PATCH error:', (await updRes.text()).substring(0, 300));
     return res.status(500).json({ error: 'Error al aplicar la transición.' });
   }
+
+  /* Notificar a la agencia (B2B) el cambio de etapa. Best-effort: nunca rompe la respuesta. */
+  try {
+    await notificarCambioEtapa(SB_URL, SB_KEY, {
+      agencia_id: caso.agencia_id, ref_code: caso.ref_code,
+      instancia: newInstancia, momento: newMomento, resultado: newResultado,
+    });
+  } catch (e) { console.error('[abogados/transicion] notify-agencia error:', e.message); }
+
   return res.status(200).json({
     success: true, action: 'transicion', transicion: transicion,
     instancia: newInstancia, momento: newMomento, resultado: newResultado,

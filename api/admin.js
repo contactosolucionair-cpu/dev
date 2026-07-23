@@ -66,6 +66,7 @@ export default async function handler(req, res) {
   try {
     if (action === 'agencias')         return await listEntidades(res, SB_URL, SB_KEY, 'agencias');
     if (action === 'agencia-accion')   return await accionEntidad(req, res, SB_URL, SB_KEY, 'agencias');
+    if (action === 'agencia-config')   return await agenciaConfig(req, res, SB_URL, SB_KEY);
     if (action === 'abogados')         return await listEntidades(res, SB_URL, SB_KEY, 'abogados');
     if (action === 'abogado-accion')   return await accionEntidad(req, res, SB_URL, SB_KEY, 'abogados');
     if (action === 'abogados-activos') return await abogadosActivos(res, SB_URL, SB_KEY);
@@ -143,6 +144,49 @@ async function accionEntidad(req, res, SB_URL, SB_KEY, tabla) {
     return res.status(500).json({ error: 'Error al actualizar ' + tabla + '.' });
   }
   return res.status(200).json({ success: true, nuevo_estado: nuevoEstado });
+}
+
+/* ------------------------------------------------------------------ */
+/* Configuración de comisiones de una agencia                          */
+/* ------------------------------------------------------------------ */
+var COMISION_MODOS = ['por_exito', 'por_caso_viable', 'mixta'];
+
+async function agenciaConfig(req, res, SB_URL, SB_KEY) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  var body = await getJson(req);
+  var id = (body.id || '').trim();
+  if (!id) return res.status(400).json({ error: 'id es requerido.' });
+
+  var patch = {};
+
+  if (body.comision_modo !== undefined) {
+    var modo = (body.comision_modo || '').trim();
+    if (COMISION_MODOS.indexOf(modo) === -1) return res.status(400).json({ error: 'comision_modo inválido.' });
+    patch.comision_modo = modo;
+  }
+  if (body.comision_pct !== undefined && body.comision_pct !== null && body.comision_pct !== '') {
+    var pct = Number(body.comision_pct);
+    if (isNaN(pct) || pct < 0 || pct > 100) return res.status(400).json({ error: 'comision_pct debe estar entre 0 y 100.' });
+    patch.comision_pct = pct;
+  }
+  if (body.comision_valor_fijo !== undefined && body.comision_valor_fijo !== null && body.comision_valor_fijo !== '') {
+    var vf = Number(body.comision_valor_fijo);
+    if (isNaN(vf) || vf < 0) return res.status(400).json({ error: 'comision_valor_fijo debe ser un número no negativo.' });
+    patch.comision_valor_fijo = vf;
+  }
+
+  if (!Object.keys(patch).length) return res.status(400).json({ error: 'No hay cambios que guardar.' });
+
+  var patchRes = await fetch(SB_URL + '/rest/v1/agencias?id=eq.' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+    body: JSON.stringify(patch),
+  });
+  if (!patchRes.ok) {
+    console.error('[admin/agencia-config] PATCH error:', (await patchRes.text()).substring(0, 300));
+    return res.status(500).json({ error: 'Error al guardar la configuración de comisión.' });
+  }
+  return res.status(200).json({ success: true, config: patch });
 }
 
 /* ------------------------------------------------------------------ */
