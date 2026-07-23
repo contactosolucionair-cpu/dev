@@ -41,9 +41,26 @@ export var ESTADO_A_INSTANCIA = {
  * `estado` legacy.
  */
 export function getInstancia(c) {
-  if (c && c.instancia) return { instancia: c.instancia, momento: c.momento || null };
+  if (c && c.instancia) return { instancia: c.instancia, momento: c.momento || null, resultado: c.resultado || null };
   var mapped = ESTADO_A_INSTANCIA[(c && c.estado) || 'pendiente'];
-  return mapped ? { instancia: mapped.instancia, momento: mapped.momento } : { instancia: 'evaluacion', momento: null };
+  if (!mapped) return { instancia: 'evaluacion', momento: null, resultado: null };
+  return { instancia: mapped.instancia, momento: mapped.momento, resultado: mapped.resultado || null };
+}
+
+/* Etapa simplificada para portales externos (agencia y cliente).
+   Se deriva SIEMPRE de getInstancia(c), nunca del estado legacy. */
+export function etapaExterna(c) {
+  var pos = getInstancia(c);
+  if (pos.instancia === 'evaluacion')       return { etapa: 'evaluacion',   label: 'En evaluación' };
+  if (pos.instancia === 'reclamo_directo')  return { etapa: 'reclamo',      label: 'Reclamo en curso' };
+  if (pos.instancia === 'mediacion')        return { etapa: 'mediacion',    label: 'En mediación' };
+  if (pos.instancia === 'cobro')            return { etapa: 'acuerdo',      label: 'Acuerdo alcanzado' };
+  /* cerrado */
+  var r = c.resultado || pos.resultado;
+  if (r === 'exito')     return { etapa: 'cerrado_exito',  label: 'Cerrado · Con éxito' };
+  if (r === 'sin_exito') return { etapa: 'cerrado_sin_exito', label: 'Cerrado · Sin éxito' };
+  if (r === 'no_apto')   return { etapa: 'cerrado_no_viable', label: 'Cerrado · No viable' };
+  return { etapa: 'cerrado_otro', label: 'Cerrado' };
 }
 
 /**

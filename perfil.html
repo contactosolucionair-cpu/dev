@@ -34,6 +34,9 @@
     .badge--pendiente{background:var(--warnbg);color:var(--warn)}
     .badge--aprobado,.badge--resuelto{background:var(--okbg);color:var(--ok)}
     .badge--rechazado{background:var(--errbg);color:var(--err)}
+    .badge--en_gestion{background:#E7F0FF;color:#2563EB}
+    .badge--mediacion{background:#EDE7F6;color:#5E35B1}
+    .badge--cobro{background:#FBF3E0;color:#B8860B}
     .case-card__grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     .case-card__field{display:flex;flex-direction:column;gap:2px}
     .case-card__label{font-size:.66rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.06em}
@@ -117,9 +120,25 @@
 
     var container=document.getElementById('case-container');
 
-    fetch('/api/get-claims').then(function(r){return r.json()}).then(function(json){
+    function logoutRedirect(){localStorage.removeItem('sb_token');localStorage.removeItem('sb_email');window.location.href='/';}
+
+    /* Badge por etapa (espejo de api/_utils/instancias.js etapaExterna + mapping F3a) */
+    function badgeClass(etapa){
+      if(etapa==='evaluacion')return 'badge--pendiente';
+      if(etapa==='reclamo')return 'badge--en_gestion';
+      if(etapa==='mediacion')return 'badge--mediacion';
+      if(etapa==='acuerdo')return 'badge--cobro';
+      if(etapa==='cerrado_exito')return 'badge--aprobado';
+      if(etapa==='cerrado_sin_exito'||etapa==='cerrado_no_viable')return 'badge--rechazado';
+      return 'badge--cancelado';
+    }
+
+    fetch('/api/my-claims',{headers:{'Authorization':'Bearer '+token}}).then(function(r){
+      if(r.status===401){logoutRedirect();throw new Error('401')}
+      return r.json();
+    }).then(function(json){
       if(!json.success)throw new Error(json.error||'Error');
-      var claims=(json.claims||[]).filter(function(c){return c.email===email});
+      var claims=json.claims||[];
 
       if(!claims.length){
         container.innerHTML='<div class="empty"><div class="empty__title">No tenés reclamos registrados</div><p class="empty__text">Iniciá tu primer reclamo desde la página principal.</p><a href="/#claim" class="empty__btn">Iniciar reclamo</a></div>';
@@ -128,10 +147,10 @@
 
       var html='';
       claims.forEach(function(c,idx){
-        var estado=c.estado||'pendiente';
-        var isActive=estado==='pendiente'||estado==='en revision';
-        var bc=estado==='aprobado'||estado==='resuelto'?'badge--aprobado':(estado==='rechazado'||estado==='rechazado_aerolinea')?'badge--rechazado':(estado==='cancelado'||estado==='sin_exito')?'badge--cancelado':'badge--pendiente';
-        var estadoLabel=estado==='pendiente'?'En revisión':estado==='aprobado'?'Aprobado':estado==='resuelto'?'Resuelto':(estado==='rechazado'||estado==='rechazado_aerolinea')?'Rechazado':estado==='cancelado'?'Cancelado por el usuario':estado==='sin_exito'?'Sin éxito':estado;
+        var etapa=c.etapa||'evaluacion';
+        var isActive=etapa.indexOf('cerrado')!==0;
+        var bc=badgeClass(etapa);
+        var estadoLabel=c.etapa_label||'—';
         var fecha=c.creado_en?new Date(c.creado_en).toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'}):'—';
 
         html+='<div class="case-card" id="card-'+idx+'" style="margin-bottom:18px">';
@@ -189,8 +208,8 @@
           var text=ta.value.trim();
           if(!text){ok.textContent='Escribí algo antes de enviar.';ok.style.color='#C0392B';return}
           btn.disabled=true;btn.textContent='Enviando...';
-          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:claimId,novedad:text})})
-          .then(function(r){return r.json()})
+          fetch('/api/my-actions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({id:claimId,action:'novedad',texto:text})})
+          .then(function(r){if(r.status===401){logoutRedirect();throw new Error('401')}return r.json()})
           .then(function(d){
             btn.disabled=false;btn.textContent='Enviar Novedad';
             if(d.success){ok.style.color='';ok.textContent='Novedad enviada correctamente.';ta.value='';setTimeout(function(){ok.textContent=''},4000)}
@@ -204,8 +223,8 @@
           var i=btn.getAttribute('data-cancel');
           var claimId=btn.getAttribute('data-id');
           btn.disabled=true;btn.textContent='Cancelando...';
-          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:claimId,action:'cancel'})})
-          .then(function(r){return r.json()})
+          fetch('/api/my-actions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({id:claimId,action:'cancel'})})
+          .then(function(r){if(r.status===401){logoutRedirect();throw new Error('401')}return r.json()})
           .then(function(d){
             if(d.success){
               var badge=document.getElementById('badge-'+i);

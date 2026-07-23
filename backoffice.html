@@ -785,7 +785,7 @@
 
     function load(){
       tblBody.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
-      fetch('/api/get-claims').then(function(r){return r.json()}).then(function(json){
+      fetch('/api/get-claims',{headers:{'X-Admin-Password':adminPwd}}).then(function(r){return r.json()}).then(function(json){
         if(!json.success)throw new Error(json.error||'Error');
         claims=json.claims||[];
 
@@ -1004,7 +1004,7 @@
     /** POST /api/update-ticket action:avanzar y refresca caso + tabla + panel. */
     function doAvanzar(c,transicion,extra,onErr){
       var body=Object.assign({id:c.id,action:'avanzar',transicion:transicion},extra||{});
-      return fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      return fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(body)})
       .then(function(r){return r.json()}).then(function(d){
         if(d.success){
           ['instancia','momento','resultado','estado','estado_historial','instancia_historial','monto_reclamado','monto_acordado','monto_reclamado_moneda','monto_acordado_moneda','acuerdo_instancia','fecha_acuerdo','motivo_cierre','motivo_cierre_detalle','via_reclamo','organismo','novedades'].forEach(function(k){
@@ -1475,7 +1475,7 @@
         if(!tienePatrocinioR){msgReasig.style.color='var(--err)';msgReasig.textContent='Cargá la designación de patrocinio.';return}
         if(!tieneFichaCasoR){msgReasig.style.color='var(--err)';msgReasig.textContent='Cargá la ficha de caso.';return}
         btnConfirmarReasig.disabled=true;btnConfirmarReasig.textContent='...';msgReasig.textContent='';
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'update-abogado',abogado_id:nuevoAbogadoId})})
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:c.id,action:'update-abogado',abogado_id:nuevoAbogadoId})})
         .then(function(r){return r.json()}).then(function(d){
           if(d.success){
             c.abogado_id=nuevoAbogadoId;c._derivReassign=false;
@@ -1532,7 +1532,7 @@
         btnAddNov.disabled=true;btnAddNov.textContent='Guardando...';
         fetch('/api/update-ticket',{
           method:'POST',
-          headers:{'Content-Type':'application/json'},
+          headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
           body:JSON.stringify({id:c.id,action:'add-novedad',texto})
         }).then(function(r){return r.json()}).then(function(d){
           btnAddNov.disabled=false;btnAddNov.textContent='+ Agregar';
@@ -1581,7 +1581,7 @@
       detailBody.querySelectorAll('[data-espera-resolver]').forEach(function(btn){
         btn.addEventListener('click',function(){
           btn.disabled=true;
-          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'resolver-espera',espera_id:btn.getAttribute('data-espera-resolver')})})
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:c.id,action:'resolver-espera',espera_id:btn.getAttribute('data-espera-resolver')})})
           .then(function(r){return r.json()}).then(function(d){
             if(d.success){c.esperas=d.esperas;c.novedades=d.novedades;claims.forEach(function(cl){if(cl.id===c.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});toast('Espera resuelta.');openDetail(c)}
             else{btn.disabled=false;toast(d.error||'Error.',true)}
@@ -1598,7 +1598,7 @@
           var campo=btn.getAttribute('data-cobro-marcar')||btn.getAttribute('data-cobro-undo');
           var fecha=btn.hasAttribute('data-cobro-marcar')?new Date().toISOString():null;
           btn.disabled=true;
-          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'set-cobro',campo:campo,fecha:fecha})})
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:c.id,action:'set-cobro',campo:campo,fecha:fecha})})
           .then(function(r){return r.json()}).then(function(d){
             if(d.success){c[campo]=d.fecha;claims.forEach(function(cl){if(cl.id===c.id)cl[campo]=d.fecha});openDetail(c)}
             else{btn.disabled=false;if(msgCobro){msgCobro.style.color='var(--err)';msgCobro.textContent=d.error||'Error.'}}
@@ -1617,7 +1617,7 @@
         var newFirma=document.getElementById('sel-firma').value;
         if(newFirma===(c.firma_estado||'no_aplica')){msgFirma.style.color='var(--t4)';msgFirma.textContent='Sin cambios.';return}
         btnSaveFirma.disabled=true;btnSaveFirma.textContent='...';msgFirma.textContent='';
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,action:'update-firma',firma_estado:newFirma})})
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:c.id,action:'update-firma',firma_estado:newFirma})})
         .then(function(r){return r.json()}).then(function(d){
           btnSaveFirma.disabled=false;btnSaveFirma.textContent='Guardar';
           if(d.success){
@@ -1825,7 +1825,7 @@
             onConfirm:function(){
               cmConfirm.disabled=true;cmConfirm.textContent='Eliminando...';
               if(row)row.classList.add('row-fade');
-              fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'soft-delete'})})
+              fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:id,action:'soft-delete'})})
               .then(function(r){return r.json()}).then(function(d){
                 cmConfirm.disabled=false;
                 if(d.success){closeModal();toast('Reclamo movido a la papelera');setTimeout(function(){load()},350)}
@@ -1843,7 +1843,7 @@
     function loadTrash(){
       if(!trashBody)return;
       trashBody.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
-      fetch('/api/get-claims').then(function(r){return r.json()}).then(function(json){
+      fetch('/api/get-claims',{headers:{'X-Admin-Password':adminPwd}}).then(function(r){return r.json()}).then(function(json){
         if(!json.success)throw new Error(json.error||'Error');
         var deleted=(json.claims||[]).filter(function(c){return!!c.deleted_at||c.estado==='eliminado'});
         var countEl=document.getElementById('trash-count');
@@ -1873,7 +1873,7 @@
               confirmText:'Restaurar',
               onConfirm:function(){
                 cmConfirm.disabled=true;cmConfirm.textContent='Restaurando...';
-                fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:rid,action:'restore'})})
+                fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:rid,action:'restore'})})
                 .then(function(r){return r.json()}).then(function(d){
                   cmConfirm.disabled=false;
                   if(d.success){closeModal();toast('Reclamo restaurado correctamente');loadTrash()}
@@ -1893,7 +1893,7 @@
               danger:true,
               onConfirm:function(){
                 cmConfirm.disabled=true;cmConfirm.textContent='Eliminando...';
-                fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:pid,action:'permanent'})})
+                fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:pid,action:'permanent'})})
                 .then(function(r){return r.json()}).then(function(d){
                   cmConfirm.disabled=false;
                   if(d.success){closeModal();toast('Reclamo eliminado permanentemente');loadTrash()}
@@ -2053,7 +2053,7 @@
         body.querySelectorAll('[data-update-id]').forEach(function(btn){
           btn.addEventListener('click',function(e){
             e.stopPropagation();var id=btn.getAttribute('data-update-id');btn.disabled=true;btn.textContent='...';
-            fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'confirm-update-cliente'})})
+            fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:id,action:'confirm-update-cliente'})})
             .then(function(r){return r.json()}).then(function(d){
               if(d.success){claims.forEach(function(cl){if(cl.id===id){cl.ultimo_update_cliente=d.ultimo_update_cliente;cl.novedades=d.novedades}});toast('Update registrado');renderAlertas()}
               else{btn.disabled=false;btn.textContent='Confirmé update';toast(d.error||'Error',true)}
@@ -2065,7 +2065,7 @@
             e.stopPropagation();
             if(!confirm('¿Eliminar esta alerta? Reaparecerá solo si la condición se vuelve a gatillar más adelante.'))return;
             var id=btn.getAttribute('data-dismiss-id');var regla=btn.getAttribute('data-dismiss-regla');btn.disabled=true;
-            fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,action:'dismiss-alerta',regla:regla})})
+            fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:id,action:'dismiss-alerta',regla:regla})})
             .then(function(r){return r.json()}).then(function(d){
               if(d.success){claims.forEach(function(cl){if(cl.id===id)cl.alertas_descartadas=d.alertas_descartadas});toast('Alerta eliminada');renderAlertas()}
               else{btn.disabled=false;toast(d.error||'Error',true)}
@@ -2078,7 +2078,7 @@
     if(btnRefreshAlertas)btnRefreshAlertas.addEventListener('click',function(){
       var body=document.getElementById('alertas-body');if(body)body.innerHTML='<div class="state"><div class="state__spin"></div><p class="state__txt">Actualizando...</p></div>';
       alertRulesLoaded=false;
-      fetch('/api/get-claims').then(function(r){return r.json()}).then(function(j){if(j.success){claims=j.claims||[];applyFilters()}renderAlertas()}).catch(function(){renderAlertas()});
+      fetch('/api/get-claims',{headers:{'X-Admin-Password':adminPwd}}).then(function(r){return r.json()}).then(function(j){if(j.success){claims=j.claims||[];applyFilters()}renderAlertas()}).catch(function(){renderAlertas()});
     });
 
     /* ---- Administrar alertas (reglas) ---- */
@@ -2581,7 +2581,7 @@
         if(!docs.length){if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Necesitás al menos un documento.'}return}
         btnSaveCampo.disabled=true;
         if(msgEditCampo){msgEditCampo.style.color='';msgEditCampo.textContent='Guardando...'}
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editCampoCase.id,action:'set-documentos',documentos:docs})})
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:editCampoCase.id,action:'set-documentos',documentos:docs})})
         .then(function(r){return r.json()}).then(function(d){
           btnSaveCampo.disabled=false;
           if(d.success){
@@ -2601,7 +2601,7 @@
         if(acomps===null){if(msgEditCampo){msgEditCampo.style.color='var(--err)';msgEditCampo.textContent='Cada acompañante necesita nombre, tipo y número de documento.'}return}
         btnSaveCampo.disabled=true;
         if(msgEditCampo){msgEditCampo.style.color='';msgEditCampo.textContent='Guardando...'}
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editCampoCase.id,action:'set-acompanantes',acompanantes:acomps})})
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:editCampoCase.id,action:'set-acompanantes',acompanantes:acomps})})
         .then(function(r){return r.json()}).then(function(d){
           btnSaveCampo.disabled=false;
           if(d.success){
@@ -2619,7 +2619,7 @@
       var valor=inpCampoVal.value;
       btnSaveCampo.disabled=true;
       if(msgEditCampo){msgEditCampo.style.color='';msgEditCampo.textContent='Guardando...'}
-      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:editCampoCase.id,action:'set-campo',campo:campo,valor:valor})})
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:editCampoCase.id,action:'set-campo',campo:campo,valor:valor})})
       .then(function(r){return r.json()})
       .then(function(d){
         btnSaveCampo.disabled=false;
@@ -2748,7 +2748,7 @@
       var momentoV=(document.getElementById('correccion-momento')||{}).value||null;
       var resultadoV=(document.getElementById('correccion-resultado')||{}).value||null;
       correccionSave.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
-      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:correccionCaseRef.id,action:'set-instancia',instancia:instanciaV,momento:momentoV,resultado:resultadoV})})
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:correccionCaseRef.id,action:'set-instancia',instancia:instanciaV,momento:momentoV,resultado:resultadoV})})
       .then(function(r){return r.json()}).then(function(d){
         correccionSave.disabled=false;
         if(d.success){
@@ -2789,7 +2789,7 @@
       var venceE=(document.getElementById('esp-vence')||{}).value||'';
       btnAddEspera.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
       var cc=esperaCaseRef;
-      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:cc.id,action:'set-espera',tipo:tipoE,responsable:respE,detalle:detE,vence:venceE||null})})
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:cc.id,action:'set-espera',tipo:tipoE,responsable:respE,detalle:detE,vence:venceE||null})})
       .then(function(r){return r.json()}).then(function(d){
         btnAddEspera.disabled=false;
         if(d.success){
@@ -2822,7 +2822,7 @@
       var fv=(document.getElementById('inp-fmediacion')||{}).value||'';
       btnSaveFmed.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
       var cc=fmediacionCaseRef;
-      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:cc.id,action:'set-fecha-mediacion',fecha_mediacion:fv||null})})
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:cc.id,action:'set-fecha-mediacion',fecha_mediacion:fv||null})})
       .then(function(r){return r.json()}).then(function(d){
         btnSaveFmed.disabled=false;
         if(d.success){
