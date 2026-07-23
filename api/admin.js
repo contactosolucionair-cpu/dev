@@ -436,7 +436,7 @@ async function createCase(req, res, SB_URL, SB_KEY) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + RESEND_KEY },
         body: JSON.stringify({
-          from: 'SolucionAir <onboarding@resend.dev>',
+          from: 'SolucionAir <no-reply@solucionair.com>',
           to: email,
           subject: 'SolucionAir — Reclamo ' + refCode + ' recibido',
           html: '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#FFFFFF">'

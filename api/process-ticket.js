@@ -303,7 +303,7 @@ export default async function handler(req, res) {
       var emailsSent = { internal: false, client: false };
 
       if (RESEND_KEY) {
-        var senderFrom = 'SolucionAir <onboarding@resend.dev>';
+        var senderFrom = 'SolucionAir <no-reply@solucionair.com>';
         var vuelo = body.vuelo_nro || 'N/A';
         var aerolinea = body.aerolinea || 'N/A';
         var panelUrl = 'https://solucionair-web-seven.vercel.app/backoffice';
