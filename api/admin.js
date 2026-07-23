@@ -102,7 +102,7 @@ async function listEntidades(res, SB_URL, SB_KEY, tabla) {
   /* Conteo de casos por entidad */
   var campo  = tabla === 'agencias' ? 'agencia_id' : 'abogado_id';
   var conteo = {};
-  var countRes = await fetch(SB_URL + '/rest/v1/reclamos?estado=neq.eliminado&select=' + campo,
+  var countRes = await fetch(SB_URL + '/rest/v1/reclamos?deleted_at=is.null&select=' + campo,
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
   if (countRes.ok) {
     var rows = JSON.parse(await countRes.text());
@@ -411,7 +411,9 @@ async function createCase(req, res, SB_URL, SB_KEY) {
     documentos:       Array.isArray(body.documentos) ? body.documentos : [],
     acompanantes:     Array.isArray(body.acompanantes) ? body.acompanantes : [],
     ref_code: refCode, estado: 'pendiente', fecha_carga: nowIso,
+    instancia: 'evaluacion', momento: null,
     estado_historial: [{ estado: 'pendiente', fecha: nowIso, por: 'admin' }],
+    instancia_historial: [{ instancia: 'evaluacion', momento: null, fecha: nowIso, por: 'sistema' }],
   };
 
   var insertRes = await fetch(SB_URL + '/rest/v1/reclamos', {

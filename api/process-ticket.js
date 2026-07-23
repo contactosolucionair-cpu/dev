@@ -133,6 +133,9 @@ export default async function handler(req, res) {
         fecha_carga:           new Date().toISOString(),
         fuente:                'Web',
         estado:                'pendiente',
+        instancia:             'evaluacion',
+        momento:               null,
+        instancia_historial:   [{ instancia: 'evaluacion', momento: null, fecha: new Date().toISOString(), por: 'sistema' }],
         ref_code:              refCode,
         /* Consent / electronic signature */
         consent_version:       body.consent_version || null,

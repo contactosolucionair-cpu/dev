@@ -12,6 +12,7 @@
  *   stats         GET   KPIs y comisión estimada
  */
 import { verifyAgency } from './_utils/agency-auth.js';
+import { etapaExterna } from './_utils/instancias.js';
 
 export const config = {
   api: {
@@ -174,7 +175,7 @@ async function handleClaims(req, res, SB_URL, SB_KEY) {
 
   console.log('[agency/claims] Cargando casos para agencia:', agencia.id);
 
-  var fields = 'id,ref_code,nombre,email,telefono,aerolinea,vuelo_nro,fecha_vuelo,origen,destino,tipo_reclamo,tipo_incidencia,estado,firma_estado,agente_nombre,agente_email,creado_en';
+  var fields = 'id,ref_code,nombre,email,telefono,aerolinea,vuelo_nro,fecha_vuelo,origen,destino,tipo_reclamo,tipo_incidencia,estado,firma_estado,agente_nombre,agente_email,creado_en,instancia,momento,resultado,instancia_historial,esperas';
 
   var sbRes = await fetch(
     SB_URL + '/rest/v1/reclamos?agencia_id=eq.' + agencia.id + '&order=creado_en.desc&select=' + fields,
@@ -192,7 +193,12 @@ async function handleClaims(req, res, SB_URL, SB_KEY) {
   }
 
   var parsed = JSON.parse(sbText);
-  return res.status(200).json({ success: true, claims: Array.isArray(parsed) ? parsed : [] });
+  /* Adjuntar la vista externa de etapa (derivada de instancia/momento/resultado) */
+  var claims = (Array.isArray(parsed) ? parsed : []).map(function (c) {
+    var e = etapaExterna(c);
+    return Object.assign({}, c, { etapa: e.etapa, etapa_label: e.label });
+  });
+  return res.status(200).json({ success: true, claims: claims });
 }
 
 /* ------------------------------------------------------------------ */
@@ -308,7 +314,8 @@ async function handleStats(req, res, SB_URL, SB_KEY) {
   console.log('[agency/stats] Stats para agencia:', agencia.id);
 
   var sbRes = await fetch(
-    SB_URL + '/rest/v1/reclamos?agencia_id=eq.' + agencia.id + '&deleted_at=is.null&select=estado',
+    SB_URL + '/rest/v1/reclamos?agencia_id=eq.' + agencia.id
+      + '&deleted_at=is.null&select=instancia,momento,resultado,estado,monto_acordado,monto_acordado_moneda,esperas',
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
   );
   var sbText = await sbRes.text();
@@ -319,11 +326,41 @@ async function handleStats(req, res, SB_URL, SB_KEY) {
 
   var claims = JSON.parse(sbText) || [];
   var total  = claims.length;
-  var por_estado = {};
+  var comisionPct = Number(agencia.comision_pct) || 0;
+
+  var por_etapa = {};
+  var comision_estimada = 0;
+  var comision_confirmada = 0;
+  var requieren_accion = 0;
+  var comision_moneda = null;
+
   claims.forEach(function (c) {
-    var e = c.estado || 'pendiente';
-    por_estado[e] = (por_estado[e] || 0) + 1;
+    /* Conteo por etapa externa (nunca por estado legacy) */
+    var et = etapaExterna(c).etapa;
+    por_etapa[et] = (por_etapa[et] || 0) + 1;
+
+    /* Comisión por éxito: pct sobre monto_acordado */
+    var monto = (c.monto_acordado === null || c.monto_acordado === undefined) ? null : Number(c.monto_acordado);
+    if (monto !== null && !isNaN(monto)) {
+      var comision = monto * comisionPct / 100;
+      if (c.instancia === 'cobro') comision_estimada += comision;
+      if (c.resultado === 'exito') comision_confirmada += comision;
+      if (!comision_moneda && (c.instancia === 'cobro' || c.resultado === 'exito')) comision_moneda = c.monto_acordado_moneda || 'ARS';
+    }
+
+    /* Requieren tu acción: al menos una espera abierta con responsable 'pasajero' */
+    var esperas = Array.isArray(c.esperas) ? c.esperas : [];
+    var pide = esperas.some(function (e) { return !e.resuelta && e.responsable === 'pasajero'; });
+    if (pide) requieren_accion += 1;
   });
 
-  return res.status(200).json({ success: true, total: total, por_estado: por_estado });
+  return res.status(200).json({
+    success: true,
+    total: total,
+    por_etapa: por_etapa,
+    comision_estimada: comision_estimada,
+    comision_confirmada: comision_confirmada,
+    comision_moneda: comision_moneda || 'ARS',
+    requieren_accion: requieren_accion,
+  });
 }

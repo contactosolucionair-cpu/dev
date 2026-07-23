@@ -5,19 +5,23 @@
  * /api/abogados/:action → /api/abogados?action=:action
  *
  * Acciones:
- *   register       POST  Alta de abogado (estado pendiente)
- *   login          POST  Autenticación
- *   claims         GET   Casos asignados al abogado autenticado
- *   update-estado  POST  Cambia el estado de mediación de un caso asignado
- *   sign           GET   URL firmada de un adjunto de un caso asignado
+ *   register    POST  Alta de abogado (estado pendiente)
+ *   login       POST  Autenticación
+ *   claims      GET   Casos asignados al abogado autenticado
+ *   transicion  POST  Avance de la mediación por transición del modelo instancia/momento
+ *   sign        GET   URL firmada de un adjunto de un caso asignado
  */
 import { verifyAbogado } from './_utils/abogado-auth.js';
-import { ESTADO_A_INSTANCIA } from './_utils/instancias.js';
+import {
+  getInstancia, validarTransicion, instanciaAEstadoLegacy,
+  MOTIVOS_CIERRE, MONEDAS_VALIDAS,
+} from './_utils/instancias.js';
 
 export const config = { api: { bodyParser: { sizeLimit: '1mb' } } };
 
-/* Estados que el abogado puede setear (avance de la mediación) */
-var ESTADOS_ABOGADO = ['derivado_mediacion', 'mediacion_notificada', 'en_mediacion', 'acuerdo'];
+/* Transiciones que el abogado puede ejecutar, y SOLO desde instancia 'mediacion'.
+   Se valida esta whitelist ANTES de llamar a validarTransicion. */
+var TRANSICIONES_ABOGADO = ['presentar', 'respuesta_recibida', 'volver_a_presentar', 'acuerdo', 'cerrar_sin_exito'];
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -36,7 +40,7 @@ export default async function handler(req, res) {
     if (action === 'register')      return await handleRegister(req, res, SB_URL, SB_KEY);
     if (action === 'login')         return await handleLogin(req, res, SB_URL, SB_KEY);
     if (action === 'claims')        return await handleClaims(req, res, SB_URL, SB_KEY);
-    if (action === 'update-estado') return await handleUpdateEstado(req, res, SB_URL, SB_KEY);
+    if (action === 'transicion')    return await handleTransicion(req, res, SB_URL, SB_KEY);
     if (action === 'sign')          return await handleSign(req, res, SB_URL, SB_KEY);
     return res.status(404).json({ error: 'Acción no encontrada: ' + action });
   } catch (err) {
@@ -169,10 +173,11 @@ async function handleClaims(req, res, SB_URL, SB_KEY) {
   var fields = 'id,ref_code,nombre,email,telefono,aerolinea,vuelo_nro,fecha_vuelo,origen,destino,pnr,'
     + 'tipo_reclamo,tipo_incidencia,causa_informada,horas_retraso,moneda_gastos,monto_gastos,gastos_detalle,'
     + 'tipo_caso_equipaje,descripcion_equipaje,valor_equipaje,acompanantes,'
-    + 'estado,estado_historial,fecha_mediacion,adjuntos,creado_en';
+    + 'estado,estado_historial,fecha_mediacion,adjuntos,creado_en,'
+    + 'instancia,momento,resultado,motivo_cierre,instancia_historial,monto_acordado';
 
   var sbRes = await fetch(
-    SB_URL + '/rest/v1/reclamos?abogado_id=eq.' + abogado.id + '&estado=neq.eliminado&order=creado_en.desc&select=' + fields,
+    SB_URL + '/rest/v1/reclamos?abogado_id=eq.' + abogado.id + '&deleted_at=is.null&order=creado_en.desc&select=' + fields,
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
   );
   var sbText = await sbRes.text();
@@ -185,53 +190,102 @@ async function handleClaims(req, res, SB_URL, SB_KEY) {
 }
 
 /* ------------------------------------------------------------------ */
-/* UPDATE ESTADO (avance de mediación)                                */
+/* TRANSICION (avance de la mediación por el modelo instancia/momento)  */
 /* ------------------------------------------------------------------ */
-async function handleUpdateEstado(req, res, SB_URL, SB_KEY) {
+async function handleTransicion(req, res, SB_URL, SB_KEY) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   var abogado = await verifyAbogado(req, SB_URL, SB_KEY);
   if (!abogado) return res.status(401).json({ error: 'No autorizado.' });
 
   var body = req.body || {};
   var casoId = (body.id || '').trim();
-  var estado = (body.estado || '').trim();
+  var transicion = (body.transicion || '').trim();
   if (!casoId) return res.status(400).json({ error: 'id de caso requerido.' });
-  if (ESTADOS_ABOGADO.indexOf(estado) === -1) return res.status(400).json({ error: 'Estado no permitido.' });
+
+  /* Whitelist del abogado ANTES de mirar el modelo */
+  if (TRANSICIONES_ABOGADO.indexOf(transicion) === -1)
+    return res.status(400).json({ error: 'Transición no permitida para el abogado.' });
 
   /* Verificar que el caso esté asignado a este abogado */
   var chkRes = await fetch(
-    SB_URL + '/rest/v1/reclamos?id=eq.' + casoId + '&abogado_id=eq.' + abogado.id + '&select=id,estado_historial,instancia_historial&limit=1',
+    SB_URL + '/rest/v1/reclamos?id=eq.' + casoId + '&abogado_id=eq.' + abogado.id + '&deleted_at=is.null'
+      + '&select=id,instancia,momento,resultado,estado,estado_historial,instancia_historial,monto_acordado&limit=1',
     { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } }
   );
   var chkRows;
   try { chkRows = JSON.parse(await chkRes.text()); } catch (e) { chkRows = []; }
   if (!chkRows.length) return res.status(403).json({ error: 'El caso no está asignado a tu cuenta.' });
+  var caso = chkRows[0];
+
+  var pos = getInstancia(caso);
+  /* El abogado solo opera dentro de mediación */
+  if (pos.instancia !== 'mediacion')
+    return res.status(400).json({ error: 'El caso no está en mediación.' });
+
+  var check = validarTransicion(pos.instancia, pos.momento, transicion);
+  if (!check.ok) return res.status(400).json({ error: check.error });
+  var def = check.def;
+
+  var patch = {};
+  var newInstancia = def.to.instancia;
+  var newMomento = def.to.momento;
+  var newResultado = def.closes || null;
+
+  /* acuerdo: requiere monto_acordado */
+  if (transicion === 'acuerdo') {
+    var monto = body.monto_acordado;
+    if (monto === undefined || monto === null || monto === '' || isNaN(Number(monto)))
+      return res.status(400).json({ error: 'Monto acordado requerido.' });
+    patch.monto_acordado = Number(monto);
+    var moneda = (body.monto_acordado_moneda || '').trim().toUpperCase();
+    patch.monto_acordado_moneda = MONEDAS_VALIDAS.indexOf(moneda) !== -1 ? moneda : 'ARS';
+    patch.acuerdo_instancia = 'mediacion';
+    patch.fecha_acuerdo = new Date().toISOString();
+  }
+
+  /* cerrar_sin_exito: requiere motivo_cierre válido (+ detalle opcional) */
+  var motivo = null, motivoDetalle = null;
+  if (transicion === 'cerrar_sin_exito') {
+    motivo = (body.motivo_cierre || '').trim();
+    if (MOTIVOS_CIERRE.indexOf(motivo) === -1) return res.status(400).json({ error: 'Motivo de cierre inválido.' });
+    motivoDetalle = (body.motivo_cierre_detalle || '').trim() || null;
+  }
 
   var nowIso = new Date().toISOString();
-  var historial = Array.isArray(chkRows[0].estado_historial) ? chkRows[0].estado_historial : [];
-  historial.push({ estado: estado, fecha: nowIso, por: 'abogado' });
-
-  /* Además del estado legacy, mapear al modelo nuevo (instancia/momento) */
-  var mapped = ESTADO_A_INSTANCIA[estado] || { instancia: 'mediacion', momento: 'preparacion' };
-  var instHist = Array.isArray(chkRows[0].instancia_historial) ? chkRows[0].instancia_historial : [];
-  instHist.push({ instancia: mapped.instancia, momento: mapped.momento, fecha: nowIso, por: 'abogado' });
-
-  var patch = {
-    estado: estado, estado_historial: historial,
-    instancia: mapped.instancia, momento: mapped.momento, instancia_historial: instHist,
-  };
-  if (estado === 'acuerdo') {
-    patch.acuerdo_instancia = 'mediacion';
-    patch.fecha_acuerdo = nowIso;
+  patch.instancia = newInstancia;
+  patch.momento = newMomento;
+  if (def.closes) {
+    patch.resultado = newResultado;
+    patch.motivo_cierre = motivo;
+    patch.motivo_cierre_detalle = motivoDetalle;
   }
+
+  /* Espejo del estado legacy (única escritura de estado permitida acá) */
+  var estadoLegacy = instanciaAEstadoLegacy(newInstancia, newMomento, newResultado);
+  patch.estado = estadoLegacy;
+  var estadoHist = Array.isArray(caso.estado_historial) ? caso.estado_historial : [];
+  estadoHist.push({ estado: estadoLegacy, fecha: nowIso, por: 'abogado' });
+  patch.estado_historial = estadoHist;
+
+  var instHist = Array.isArray(caso.instancia_historial) ? caso.instancia_historial : [];
+  instHist.push({ instancia: newInstancia, momento: newMomento, fecha: nowIso, por: 'abogado' });
+  patch.instancia_historial = instHist;
 
   var updRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + casoId, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
     body: JSON.stringify(patch),
   });
-  if (!updRes.ok) return res.status(500).json({ error: 'Error al actualizar el estado.' });
-  return res.status(200).json({ success: true, estado: estado, estado_historial: historial, instancia: mapped.instancia, momento: mapped.momento });
+  if (!updRes.ok) {
+    console.error('[abogados/transicion] PATCH error:', (await updRes.text()).substring(0, 300));
+    return res.status(500).json({ error: 'Error al aplicar la transición.' });
+  }
+  return res.status(200).json({
+    success: true, action: 'transicion', transicion: transicion,
+    instancia: newInstancia, momento: newMomento, resultado: newResultado,
+    motivo_cierre: patch.motivo_cierre || null, monto_acordado: patch.monto_acordado,
+    estado: estadoLegacy, estado_historial: estadoHist, instancia_historial: instHist,
+  });
 }
 
 /* ------------------------------------------------------------------ */
