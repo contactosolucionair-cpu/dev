@@ -113,10 +113,35 @@
   var detailTitle=document.getElementById('detail-title');
   var detailBody=document.getElementById('detail-body');
 
-  var ESTADO_LABELS={derivado_mediacion:'Derivado a mediación',mediacion_notificada:'Mediación notificada',en_mediacion:'En mediación',acuerdo:'Acuerdo alcanzado',cobro_pasajero_pendiente:'Cobro pasajero pendiente',cobro_comision_pendiente:'Cobro comisión pendiente',cerrado:'Cerrado',rechazado:'Rechazado Aerolínea',rechazado_aerolinea:'Rechazado Aerolínea',sin_exito:'Sin éxito'};
-  var MED_OPCIONES=['derivado_mediacion','mediacion_notificada','en_mediacion','acuerdo'];
-  function estadoLabel(e){return ESTADO_LABELS[e]||e||'—'}
-  function estadoBadge(e){return e==='acuerdo'||e==='cerrado'?'badge--aprobado':'badge--mediacion'}
+  /* Espejo de api/_utils/instancias.js: deriva posición del caso desde instancia/momento (fallback estado legacy) */
+  var ESTADO_A_INSTANCIA={pendiente:{instancia:'evaluacion',momento:null},en_revision:{instancia:'evaluacion',momento:null},esperando_info:{instancia:'evaluacion',momento:null},autorizacion_pendiente:{instancia:'evaluacion',momento:null},en_gestion:{instancia:'reclamo_directo',momento:'preparacion'},reclamado_aerolinea:{instancia:'reclamo_directo',momento:'presentado'},negociacion:{instancia:'reclamo_directo',momento:'respuesta_recibida'},rechazado_aerolinea:{instancia:'reclamo_directo',momento:'respuesta_recibida'},rechazado:{instancia:'reclamo_directo',momento:'respuesta_recibida'},derivado_mediacion:{instancia:'mediacion',momento:'preparacion'},mediacion_notificada:{instancia:'mediacion',momento:'presentado'},en_mediacion:{instancia:'mediacion',momento:'presentado'},acuerdo:{instancia:'cobro',momento:null},cobro_pasajero_pendiente:{instancia:'cobro',momento:null},cobro_comision_pendiente:{instancia:'cobro',momento:null},cerrado:{instancia:'cerrado',momento:null,resultado:'exito'},aprobado:{instancia:'cerrado',momento:null,resultado:'exito'},resuelto:{instancia:'cerrado',momento:null,resultado:'exito'},sin_exito:{instancia:'cerrado',momento:null,resultado:'sin_exito'},no_apto:{instancia:'cerrado',momento:null,resultado:'no_apto'},cancelado:{instancia:'cerrado',momento:null,resultado:'abandonado'}};
+  function getPos(c){if(c&&c.instancia)return{instancia:c.instancia,momento:c.momento||null,resultado:c.resultado||null};var m=ESTADO_A_INSTANCIA[(c&&c.estado)||'pendiente']||{instancia:'evaluacion',momento:null};return{instancia:m.instancia,momento:m.momento||null,resultado:m.resultado||null};}
+  function posLabel(pos){
+    if(pos.instancia==='cerrado'){
+      if(pos.resultado==='exito')return 'Cerrado · Con éxito';
+      if(pos.resultado==='sin_exito')return 'Cerrado · Sin éxito';
+      if(pos.resultado==='no_apto')return 'Cerrado · No viable';
+      if(pos.resultado==='abandonado')return 'Cerrado · Desistido';
+      return 'Cerrado';
+    }
+    if(pos.instancia==='cobro')return 'Acuerdo alcanzado';
+    if(pos.instancia==='mediacion'){
+      if(pos.momento==='preparacion')return 'Preparación';
+      if(pos.momento==='presentado')return 'Presentado · esperando respuesta';
+      if(pos.momento==='respuesta_recibida')return 'Respuesta recibida';
+      return 'En mediación';
+    }
+    if(pos.instancia==='evaluacion')return 'En evaluación';
+    if(pos.instancia==='reclamo_directo')return 'Reclamo directo';
+    return pos.instancia||'—';
+  }
+  function posBadge(pos){
+    if(pos.instancia==='cerrado')return pos.resultado==='exito'?'badge--aprobado':'badge--pendiente';
+    if(pos.instancia==='cobro')return 'badge--aprobado';
+    return 'badge--mediacion';
+  }
+  var MOTIVOS_CIERRE=['rechazo_definitivo','monto_inviable','documentacion_insuficiente','no_elegible','prescripto','pasajero_no_responde','desistimiento_pasajero','aerolinea_no_pago','otro'];
+  var MOTIVO_LABELS={rechazo_definitivo:'Rechazo definitivo',monto_inviable:'Monto inviable',documentacion_insuficiente:'Documentación insuficiente',no_elegible:'No elegible',prescripto:'Prescripto',pasajero_no_responde:'El pasajero no responde',desistimiento_pasajero:'Desistimiento del pasajero',aerolinea_no_pago:'La aerolínea no pagó',otro:'Otro'};
   function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
   function fmtFechaHora(d){if(!d)return '—';try{return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return '—'}}
 
@@ -141,7 +166,7 @@
         h+='<td>'+esc(c.nombre||'—')+'</td>';
         h+='<td class="mono">'+(c.vuelo_nro||'—')+'</td>';
         h+='<td>'+esc(c.aerolinea||'—')+'</td>';
-        h+='<td><span class="badge '+estadoBadge(c.estado)+'">'+estadoLabel(c.estado)+'</span></td>';
+        h+='<td><span class="badge '+posBadge(getPos(c))+'">'+esc(posLabel(getPos(c)))+'</span></td>';
         h+='<td class="mono">'+(c.fecha_mediacion?fmtFechaHora(c.fecha_mediacion):'—')+'</td>';
         h+='</tr>';
       });
@@ -181,7 +206,7 @@
     detailTitle.textContent='Caso '+(c.ref_code||'');
     var h='';
     h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Referencia</div><div class="detail__value mono">'+(c.ref_code||'—')+'</div></div>';
-    h+='<div class="detail__section"><div class="detail__label">Estado</div><div class="detail__value"><span class="badge '+estadoBadge(c.estado)+'">'+estadoLabel(c.estado)+'</span></div></div></div>';
+    h+='<div class="detail__section"><div class="detail__label">Estado</div><div class="detail__value"><span class="badge '+posBadge(getPos(c))+'">'+esc(posLabel(getPos(c)))+'</span></div></div></div>';
     h+='<div class="detail__divider"></div>';
     h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">'+esc(c.nombre||'—')+'</div></div>';
     h+='<div class="detail__section"><div class="detail__label">Email</div><div class="detail__value mono">'+esc(c.email||'—')+'</div></div>';
@@ -202,18 +227,14 @@
     /* Documentos */
     h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label" style="margin-bottom:8px">Documento de derivación y respaldo</div><div id="abo-docs"></div></div>';
 
-    /* Avance de mediación */
-    h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label" style="margin-bottom:6px">Avance de la mediación</div>';
-    h+='<div style="display:flex;gap:6px"><select id="sel-med" class="sel" style="flex:1">';
-    MED_OPCIONES.forEach(function(v){h+='<option value="'+v+'"'+(v===c.estado?' selected':'')+'>'+estadoLabel(v)+'</option>'});
-    h+='</select><button class="btn btn--primary" id="btn-med" type="button">Guardar</button></div>';
-    h+='<div class="msg" id="msg-med"></div></div>';
+    /* Avance de la mediación (botones por posición actual) */
+    h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label" style="margin-bottom:6px">Avance de la mediación</div><div id="med-actions"></div><div class="msg" id="msg-med"></div></div>';
 
-    /* Historial */
-    var hist=Array.isArray(c.estado_historial)?c.estado_historial:[];
+    /* Historial (instancia_historial) */
+    var hist=Array.isArray(c.instancia_historial)?c.instancia_historial:[];
     if(hist.length){
       h+='<div class="detail__divider"></div><div class="detail__section"><div class="detail__label" style="margin-bottom:8px">Historial</div>';
-      hist.slice().reverse().forEach(function(ev){h+='<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--bdl)"><span class="mono" style="font-size:.64rem;color:var(--t4);white-space:nowrap">'+fmtFechaHora(ev.fecha)+'</span><span style="font-size:.74rem">'+estadoLabel(ev.estado)+(ev.por?' <span style="color:var(--t4)">('+esc(ev.por)+')</span>':'')+'</span></div>'});
+      hist.slice().reverse().forEach(function(ev){h+='<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--bdl)"><span class="mono" style="font-size:.64rem;color:var(--t4);white-space:nowrap">'+fmtFechaHora(ev.fecha)+'</span><span style="font-size:.74rem">'+esc(posLabel({instancia:ev.instancia,momento:ev.momento,resultado:ev.resultado}))+(ev.por?' <span style="color:var(--t4)">('+esc(ev.por)+')</span>':'')+'</span></div>'});
       h+='</div>';
     }
 
@@ -255,19 +276,62 @@
       });
     }
 
-    /* Guardar estado de mediación */
-    var btnMed=document.getElementById('btn-med');var msgMed=document.getElementById('msg-med');
-    btnMed.addEventListener('click',function(){
-      var nuevo=document.getElementById('sel-med').value;
-      if(nuevo===c.estado){msgMed.style.color='var(--t4)';msgMed.textContent='Sin cambios.';return}
-      btnMed.disabled=true;btnMed.textContent='...';msgMed.textContent='';
-      authFetch('/api/abogados/update-estado',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:c.id,estado:nuevo})})
-      .then(function(r){return r.json()}).then(function(d){
-        btnMed.disabled=false;btnMed.textContent='Guardar';
-        if(d.success){c.estado=nuevo;if(d.estado_historial)c.estado_historial=d.estado_historial;claims.forEach(function(cl){if(cl.id===c.id){cl.estado=nuevo;cl.estado_historial=c.estado_historial}});toast('Estado actualizado');load();openDetail(c);}
-        else{msgMed.style.color='var(--err)';msgMed.textContent=d.error||'Error.'}
-      }).catch(function(){btnMed.disabled=false;btnMed.textContent='Guardar';msgMed.style.color='var(--err)';msgMed.textContent='Error de conexión.'});
-    });
+    /* Avance de la mediación: botones según la posición actual → /api/abogados/transicion */
+    var CAMPOS_SYNC=['instancia','momento','resultado','estado','estado_historial','instancia_historial','monto_acordado','motivo_cierre'];
+    function doTransicion(transicion,extra,btn){
+      var msg=document.getElementById('msg-med');
+      if(btn)btn.disabled=true;
+      msg.style.color='';msg.textContent='Aplicando...';
+      authFetch('/api/abogados/transicion',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({id:c.id,transicion:transicion},extra||{}))})
+      .then(function(r){if(r.status===401){logout();throw new Error('401')}return r.json()}).then(function(d){
+        if(d.success){
+          CAMPOS_SYNC.forEach(function(k){if(d[k]!==undefined)c[k]=d[k]});
+          claims.forEach(function(cl){if(cl.id===c.id)CAMPOS_SYNC.forEach(function(k){if(d[k]!==undefined)cl[k]=d[k]})});
+          toast('Caso actualizado');load();openDetail(c);
+        } else { if(btn)btn.disabled=false; msg.style.color='var(--err)';msg.textContent=d.error||'Error.'; }
+      }).catch(function(err){if(err.message==='401')return;if(btn)btn.disabled=false;msg.style.color='var(--err)';msg.textContent='Error de conexión.';});
+    }
+    function renderMedActions(){
+      var el=document.getElementById('med-actions');
+      var pos=getPos(c);
+      if(pos.instancia!=='mediacion'){
+        el.innerHTML='<p style="font-size:.76rem;color:var(--t4)">'+(pos.instancia==='cobro'||pos.instancia==='cerrado'?'Este caso ya no admite avances de mediación.':'El caso todavía no está en mediación.')+'</p>';
+        return;
+      }
+      var defs=[];
+      if(pos.momento==='preparacion')defs=[{t:'presentar',l:'Presentar a mediación',k:'primary'}];
+      else if(pos.momento==='presentado')defs=[{t:'respuesta_recibida',l:'Respuesta recibida',k:'primary'},{t:'acuerdo',l:'Acuerdo',k:'ghost',form:'acuerdo'},{t:'cerrar_sin_exito',l:'Cerrar sin acuerdo',k:'ghost',form:'cierre'}];
+      else if(pos.momento==='respuesta_recibida')defs=[{t:'volver_a_presentar',l:'Volver a presentar',k:'primary'},{t:'acuerdo',l:'Acuerdo',k:'ghost',form:'acuerdo'},{t:'cerrar_sin_exito',l:'Cerrar sin acuerdo',k:'ghost',form:'cierre'}];
+      var html='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+      defs.forEach(function(d){html+='<button class="btn btn--'+d.k+'" type="button" data-t="'+d.t+'"'+(d.form?' data-form="'+d.form+'"':'')+'>'+esc(d.l)+'</button>'});
+      html+='</div>';
+      html+='<div id="med-form-acuerdo" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--bdl);border-radius:8px"><div class="detail__label" style="margin-bottom:6px">Monto acordado</div><div style="display:flex;gap:6px"><input id="ac-monto" type="number" min="0" step="0.01" class="sel" style="flex:1" placeholder="Monto" /><select id="ac-moneda" class="sel" style="width:90px"><option>ARS</option><option>USD</option><option>EUR</option><option>BRL</option></select></div><button class="btn btn--primary" type="button" id="ac-confirm" style="margin-top:8px">Confirmar acuerdo</button></div>';
+      html+='<div id="med-form-cierre" style="display:none;margin-top:10px;padding:12px;border:1px solid var(--bdl);border-radius:8px"><div class="detail__label" style="margin-bottom:6px">Motivo de cierre</div><select id="ci-motivo" class="sel">';
+      MOTIVOS_CIERRE.forEach(function(m){html+='<option value="'+m+'">'+esc(MOTIVO_LABELS[m]||m)+'</option>'});
+      html+='</select><textarea id="ci-detalle" class="sel" style="margin-top:6px;min-height:60px" placeholder="Detalle (opcional)"></textarea><button class="btn btn--primary" type="button" id="ci-confirm" style="margin-top:8px">Cerrar sin acuerdo</button></div>';
+      el.innerHTML=html;
+      el.querySelectorAll('button[data-t]').forEach(function(b){
+        b.addEventListener('click',function(){
+          var form=b.getAttribute('data-form');
+          if(form){
+            var fa=document.getElementById('med-form-acuerdo'),fc=document.getElementById('med-form-cierre');
+            fa.style.display=(form==='acuerdo'&&fa.style.display==='none')?'block':'none';
+            fc.style.display=(form==='cierre'&&fc.style.display==='none')?'block':'none';
+          } else { doTransicion(b.getAttribute('data-t'),null,b); }
+        });
+      });
+      var acC=document.getElementById('ac-confirm');
+      if(acC)acC.addEventListener('click',function(){
+        var monto=document.getElementById('ac-monto').value;
+        if(!monto){var m=document.getElementById('msg-med');m.style.color='var(--err)';m.textContent='Ingresá el monto acordado.';return}
+        doTransicion('acuerdo',{monto_acordado:monto,monto_acordado_moneda:document.getElementById('ac-moneda').value},acC);
+      });
+      var ciC=document.getElementById('ci-confirm');
+      if(ciC)ciC.addEventListener('click',function(){
+        doTransicion('cerrar_sin_exito',{motivo_cierre:document.getElementById('ci-motivo').value,motivo_cierre_detalle:document.getElementById('ci-detalle').value},ciC);
+      });
+    }
+    renderMedActions();
 
     overlay.classList.add('open');panel.classList.add('open');
   }

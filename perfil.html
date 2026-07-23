@@ -132,6 +132,18 @@
       if(etapa==='cerrado_sin_exito'||etapa==='cerrado_no_viable')return 'badge--rechazado';
       return 'badge--cancelado';
     }
+    /* Espejo de api/_utils/instancias.js etapaExterna: label de etapa por instancia/momento/resultado */
+    function etapaExternaDe(instancia,momento,resultado){
+      if(instancia==='evaluacion')return{etapa:'evaluacion',label:'En evaluación'};
+      if(instancia==='reclamo_directo')return{etapa:'reclamo',label:'Reclamo en curso'};
+      if(instancia==='mediacion')return{etapa:'mediacion',label:'En mediación'};
+      if(instancia==='cobro')return{etapa:'acuerdo',label:'Acuerdo alcanzado'};
+      if(resultado==='exito')return{etapa:'cerrado_exito',label:'Cerrado · Con éxito'};
+      if(resultado==='sin_exito')return{etapa:'cerrado_sin_exito',label:'Cerrado · Sin éxito'};
+      if(resultado==='no_apto')return{etapa:'cerrado_no_viable',label:'Cerrado · No viable'};
+      return{etapa:'cerrado_otro',label:'Cerrado'};
+    }
+    function fmtFechaHora(d){if(!d)return '—';try{return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return '—'}}
 
     fetch('/api/my-claims',{headers:{'Authorization':'Bearer '+token}}).then(function(r){
       if(r.status===401){logoutRedirect();throw new Error('401')}
@@ -165,6 +177,16 @@
         html+='</div>';
         html+='<div class="case-card__divider"></div>';
         html+='<p class="case-card__note">Nuestro equipo legal y nuestra IA están trabajando en tu caso. Te notificaremos cada avance por email.</p>';
+
+        var hist=Array.isArray(c.instancia_historial)?c.instancia_historial:[];
+        if(hist.length){
+          html+='<div class="case-card__divider"></div>';
+          html+='<div class="case-card__label" style="margin-bottom:8px">Historial del caso</div>';
+          hist.slice().reverse().forEach(function(ev){
+            var lbl=etapaExternaDe(ev.instancia,ev.momento,ev.resultado).label;
+            html+='<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--bdl)"><span class="mono" style="font-size:.72rem;color:var(--t4);white-space:nowrap">'+fmtFechaHora(ev.fecha)+'</span><span style="font-size:.8rem;color:var(--t2)">'+lbl+'</span></div>';
+          });
+        }
 
         if(isActive){
           html+='<div class="case-card__actions" id="actions-'+idx+'">';

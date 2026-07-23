@@ -72,6 +72,9 @@
     .badge--aprobado,.badge--resuelto{background:var(--okbg);color:var(--ok)}
     .badge--rechazado{background:var(--errbg);color:var(--err)}
     .badge--cancelado{background:#F0F0F0;color:#888}
+    .badge--en_gestion{background:#E7F0FF;color:#2563EB}
+    .badge--mediacion{background:#EDE7F6;color:#5E35B1}
+    .badge--cobro{background:#FBF3E0;color:#B8860B}
     .badge--pendiente_envio{background:#EEF0FF;color:#6366F1}
     .badge--enviada{background:#E0F0FF;color:#2563EB}
     .badge--firmada{background:var(--okbg);color:var(--ok)}
@@ -184,11 +187,14 @@
       <div class="main__header"><h1 class="main__title">Dashboard</h1><button class="btn btn--ghost" id="btn-refresh-stats" type="button">Actualizar</button></div>
       <div class="stats">
         <div class="stat"><div class="stat__label">Total casos</div><div class="stat__val" id="st-total">—</div></div>
-        <div class="stat"><div class="stat__label">Pendientes</div><div class="stat__val stat__val--warn" id="st-pend">—</div></div>
-        <div class="stat"><div class="stat__label">Aprobados</div><div class="stat__val stat__val--ok" id="st-aprobados">—</div></div>
+        <div class="stat"><div class="stat__label">Requieren tu acción</div><div class="stat__val stat__val--warn" id="st-accion">—</div></div>
+        <div class="stat"><div class="stat__label">En gestión</div><div class="stat__val" id="st-gestion">—</div></div>
+        <div class="stat"><div class="stat__label">Ganados</div><div class="stat__val stat__val--ok" id="st-ganados">—</div></div>
+        <div class="stat"><div class="stat__label">Comisión estimada</div><div class="stat__val" id="st-com-est">—</div></div>
+        <div class="stat"><div class="stat__label">Comisión confirmada</div><div class="stat__val stat__val--ok" id="st-com-conf">—</div></div>
       </div>
       <div class="tbl-wrap" style="max-width:340px">
-        <div class="tbl-bar"><span class="tbl-bar__title">Por estado</span></div>
+        <div class="tbl-bar"><span class="tbl-bar__title">Por etapa</span></div>
         <div id="st-breakdown" style="padding:16px;font-size:.78rem;color:var(--t3)">Cargando...</div>
       </div>
     </div>
@@ -203,7 +209,7 @@
         </div>
         <div class="filters">
           <input class="filters__input" id="filter-q" type="text" placeholder="Buscar por Ref, Pasajero..." />
-          <select class="filters__select" id="filter-estado"><option value="">Todos los estados</option><option value="pendiente">Pendiente</option><option value="aprobado">Aprobado</option><option value="resuelto">Resuelto</option><option value="rechazado_aerolinea">Rechazado Aerolínea</option><option value="cancelado">Cancelado</option><option value="sin_exito">Sin éxito</option></select>
+          <select class="filters__select" id="filter-estado"><option value="">Todas las etapas</option><option value="evaluacion">En evaluación</option><option value="reclamo">Reclamo en curso</option><option value="mediacion">En mediación</option><option value="acuerdo">Acuerdo alcanzado</option><option value="cerrado_exito">Cerrado · Con éxito</option><option value="cerrado_sin_exito">Cerrado · Sin éxito</option><option value="cerrado_no_viable">Cerrado · No viable</option></select>
         </div>
         <div class="tbl-scroll"><div id="claims-body"><div class="state"><div class="state__spin"></div><p class="state__txt">Cargando casos...</p></div></div></div>
       </div>
@@ -452,38 +458,86 @@
   overlay.addEventListener('click', closeDetail);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDetail(); });
   function closeDetail() { overlay.classList.remove('open'); detailPanel.classList.remove('open'); }
+  var FIRMA_TXT = {
+    pendiente_envio: 'SolucionAir enviará la autorización al pasajero para su firma',
+    enviada: 'Autorización enviada al pasajero, pendiente de firma',
+    firmada: 'Autorización firmada',
+    rechazada: 'El pasajero rechazó la autorización. Contactate con SolucionAir',
+  };
   function openDetail(c) {
     detailTitle.textContent = 'Reclamo ' + (c.ref_code || '');
-    var estado = c.estado || 'pendiente';
-    var bc = badgeClass(estado);
     var firmaEstado = c.firma_estado || 'no_aplica';
-    var fecha = c.creado_en ? new Date(c.creado_en).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    var fecha = c.creado_en ? fmtFechaHora(c.creado_en) : '—';
     var h = '';
-    h += '<div class="detail__section"><div class="detail__label">Estado</div><div class="detail__value"><span class="badge ' + bc + '">' + esc(estado) + '</span></div></div>';
+    h += '<div class="detail__section"><div class="detail__label">Etapa</div><div class="detail__value"><span class="badge ' + badgeClass(c.etapa) + '">' + esc(c.etapa_label || '—') + '</span></div></div>';
     h += '<div class="detail__grid"><div class="detail__section"><div class="detail__label">Referencia</div><div class="detail__value mono">' + esc(c.ref_code || '—') + '</div></div><div class="detail__section"><div class="detail__label">Creado</div><div class="detail__value mono">' + fecha + '</div></div></div>';
+
+    /* Requiere tu acción: esperas abiertas cuyo responsable es el pasajero */
+    var esperasPasajero = (Array.isArray(c.esperas) ? c.esperas : []).filter(function (e) { return !e.resuelta && e.responsable === 'pasajero'; });
+    if (esperasPasajero.length) {
+      h += '<div class="detail__divider"></div><div style="background:var(--warnbg);border:1px solid rgba(212,168,83,.3);border-radius:8px;padding:12px 14px">';
+      h += '<div class="detail__label" style="color:var(--warn);margin-bottom:6px">Requiere tu acción</div>';
+      esperasPasajero.forEach(function (e) {
+        var tl = ESPERA_LABELS[e.tipo] || e.tipo;
+        h += '<div style="font-size:.78rem;color:var(--t2);margin-bottom:3px"><strong>' + esc(tl) + '</strong>' + (e.detalle ? ' — ' + esc(e.detalle) : '') + '</div>';
+      });
+      h += '</div>';
+    }
+
     h += '<div class="detail__divider"></div>';
     h += '<div class="detail__grid"><div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">' + esc(c.nombre || '—') + '</div></div><div class="detail__section"><div class="detail__label">Email</div><div class="detail__value mono">' + esc(c.email || '—') + '</div></div><div class="detail__section"><div class="detail__label">Teléfono</div><div class="detail__value mono">' + esc(c.telefono || '—') + '</div></div></div>';
     h += '<div class="detail__divider"></div>';
     h += '<div class="detail__grid"><div class="detail__section"><div class="detail__label">Vuelo</div><div class="detail__value mono">' + esc(c.vuelo_nro || '—') + '</div></div><div class="detail__section"><div class="detail__label">Aerolínea</div><div class="detail__value">' + esc(c.aerolinea || '—') + '</div></div><div class="detail__section"><div class="detail__label">Fecha vuelo</div><div class="detail__value mono">' + esc(c.fecha_vuelo || '—') + '</div></div><div class="detail__section"><div class="detail__label">Tipo</div><div class="detail__value">' + esc(c.tipo_reclamo || '—') + '</div></div></div>';
+
+    /* Autorización */
     h += '<div class="detail__divider"></div>';
-    h += '<div class="detail__section"><div class="detail__label">Estado de firma</div><div class="detail__value"><span class="badge badge--' + esc(firmaEstado) + '">' + esc(firmaEstado.replace(/_/g,' ')) + '</span></div></div>';
-    if (firmaEstado === 'pendiente_envio') {
-      h += '<div style="margin-top:8px;background:var(--warnbg);border:1px solid rgba(212,168,83,.3);border-radius:6px;padding:10px 12px;font-size:.76rem;color:var(--t2)">Recordar enviar autorización por WhatsApp al pasajero: <strong>' + esc(c.telefono || c.email || '—') + '</strong></div>';
+    h += '<div class="detail__section"><div class="detail__label">Estado de firma</div><div class="detail__value"><span class="badge badge--' + esc(firmaEstado) + '">' + esc(firmaEstado.replace(/_/g, ' ')) + '</span></div></div>';
+    if (FIRMA_TXT[firmaEstado]) h += '<div style="font-size:.76rem;color:var(--t3);margin-top:2px">' + esc(FIRMA_TXT[firmaEstado]) + '</div>';
+
+    /* Timeline del caso (instancia_historial) */
+    var hist = Array.isArray(c.instancia_historial) ? c.instancia_historial : [];
+    if (hist.length) {
+      h += '<div class="detail__divider"></div><div class="detail__section"><div class="detail__label" style="margin-bottom:8px">Historial del caso</div>';
+      hist.slice().reverse().forEach(function (ev) {
+        var lbl = etapaExternaDe(ev.instancia, ev.momento, ev.resultado).label;
+        h += '<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--bdl)"><span class="mono" style="font-size:.64rem;color:var(--t4);white-space:nowrap">' + fmtFechaHora(ev.fecha) + '</span><span style="font-size:.74rem">' + esc(lbl) + (ev.por ? ' <span style="color:var(--t4)">(' + esc(ev.por) + ')</span>' : '') + '</span></div>';
+      });
+      h += '</div>';
     }
-    if (c.novedades) {
-      h += '<div class="detail__divider"></div><div class="detail__section"><div class="detail__label">Novedades</div><div class="detail__value" style="white-space:pre-wrap;font-size:.74rem;color:var(--t3)">' + esc(c.novedades) + '</div></div>';
-    }
+
     detailBody.innerHTML = h;
     overlay.classList.add('open'); detailPanel.classList.add('open');
   }
 
-  function badgeClass(estado) {
-    if (estado === 'aprobado' || estado === 'resuelto') return 'badge--aprobado';
-    if (estado === 'rechazado' || estado === 'rechazado_aerolinea') return 'badge--rechazado';
-    if (estado === 'sin_exito') return 'badge--cancelado';
-    if (estado === 'cancelado') return 'badge--cancelado';
-    return 'badge--pendiente';
+  /* Badge por etapa (mapping F3a) */
+  function badgeClass(etapa) {
+    if (etapa === 'evaluacion') return 'badge--pendiente';
+    if (etapa === 'reclamo') return 'badge--en_gestion';
+    if (etapa === 'mediacion') return 'badge--mediacion';
+    if (etapa === 'acuerdo') return 'badge--cobro';
+    if (etapa === 'cerrado_exito') return 'badge--aprobado';
+    if (etapa === 'cerrado_sin_exito' || etapa === 'cerrado_no_viable') return 'badge--rechazado';
+    return 'badge--cancelado';
   }
+  /* Espejo de api/_utils/instancias.js etapaExterna: deriva etapa+label de instancia/momento/resultado */
+  function etapaExternaDe(instancia, momento, resultado) {
+    if (instancia === 'evaluacion') return { etapa: 'evaluacion', label: 'En evaluación' };
+    if (instancia === 'reclamo_directo') return { etapa: 'reclamo', label: 'Reclamo en curso' };
+    if (instancia === 'mediacion') return { etapa: 'mediacion', label: 'En mediación' };
+    if (instancia === 'cobro') return { etapa: 'acuerdo', label: 'Acuerdo alcanzado' };
+    if (resultado === 'exito') return { etapa: 'cerrado_exito', label: 'Cerrado · Con éxito' };
+    if (resultado === 'sin_exito') return { etapa: 'cerrado_sin_exito', label: 'Cerrado · Sin éxito' };
+    if (resultado === 'no_apto') return { etapa: 'cerrado_no_viable', label: 'Cerrado · No viable' };
+    return { etapa: 'cerrado_otro', label: 'Cerrado' };
+  }
+  function fmtFechaHora(d) { if (!d) return '—'; try { return new Date(d).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (e) { return '—'; } }
+  function fmtMoneda(monto, moneda) {
+    if (monto === null || monto === undefined || monto === 0 || isNaN(Number(monto))) return '—';
+    try { return new Intl.NumberFormat('es-AR', { style: 'currency', currency: moneda || 'ARS', maximumFractionDigits: 0 }).format(Number(monto)); }
+    catch (e) { return (moneda || 'ARS') + ' ' + Number(monto).toLocaleString('es-AR'); }
+  }
+  var ESPERA_LABELS = { info_pasajero: 'Información del pasajero', firma_documento: 'Firma de documento' };
+  var ETAPA_LABELS = { evaluacion: 'En evaluación', reclamo: 'Reclamo en curso', mediacion: 'En mediación', acuerdo: 'Acuerdo alcanzado', cerrado_exito: 'Cerrado · Con éxito', cerrado_sin_exito: 'Cerrado · Sin éxito', cerrado_no_viable: 'Cerrado · No viable', cerrado_otro: 'Cerrado' };
   function esc(s) { var d = document.createElement('div'); d.textContent = String(s || ''); return d.innerHTML; }
 
   /* ---- View switching ---- */
@@ -527,20 +581,23 @@
     .then(function (r) { return r.json(); })
     .then(function (d) {
       if (!d.success) return;
-      document.getElementById('st-total').textContent    = d.total || 0;
-      document.getElementById('st-pend').textContent     = (d.por_estado && d.por_estado.pendiente) || 0;
-      var aprobEl = document.getElementById('st-aprobados'); if(aprobEl) aprobEl.textContent = (d.por_estado && ((d.por_estado.aprobado||0)+(d.por_estado.resuelto||0))) || 0;
+      var pe = d.por_etapa || {};
+      var enGestion = (pe.evaluacion || 0) + (pe.reclamo || 0) + (pe.mediacion || 0) + (pe.acuerdo || 0);
+      document.getElementById('st-total').textContent   = d.total || 0;
+      document.getElementById('st-accion').textContent  = d.requieren_accion || 0;
+      document.getElementById('st-gestion').textContent = enGestion;
+      document.getElementById('st-ganados').textContent = pe.cerrado_exito || 0;
+      document.getElementById('st-com-est').textContent  = fmtMoneda(d.comision_estimada, d.comision_moneda);
+      document.getElementById('st-com-conf').textContent = fmtMoneda(d.comision_confirmada, d.comision_moneda);
 
-      if (d.por_estado) {
-        var breakdown = '';
-        Object.keys(d.por_estado).forEach(function (k) {
-          breakdown += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl)">'
-            + '<span>' + esc(k) + '</span>'
-            + '<span class="mono" style="color:var(--g)">' + d.por_estado[k] + '</span>'
-            + '</div>';
-        });
-        document.getElementById('st-breakdown').innerHTML = breakdown || '<span style="color:var(--t4)">Sin casos.</span>';
-      }
+      var breakdown = '';
+      Object.keys(pe).forEach(function (k) {
+        breakdown += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl)">'
+          + '<span>' + esc(ETAPA_LABELS[k] || k) + '</span>'
+          + '<span class="mono" style="color:var(--g)">' + pe[k] + '</span>'
+          + '</div>';
+      });
+      document.getElementById('st-breakdown').innerHTML = breakdown || '<span style="color:var(--t4)">Sin casos.</span>';
     })
     .catch(function () {});
   }
@@ -573,7 +630,7 @@
     var es = filterEst.value;
     var list = allClaims.filter(function (c) {
       if (q && !((c.ref_code || '').toLowerCase().includes(q) || (c.nombre || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q))) return false;
-      if (es && c.estado !== es) return false;
+      if (es && c.etapa !== es) return false;
       return true;
     });
     claimsCount.textContent = list.length + ' de ' + allClaims.length;
@@ -581,7 +638,6 @@
 
     var html = '<table><thead><tr><th>Ref</th><th>Pasajero</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha</th><th>Estado</th><th>Autorización</th></tr></thead><tbody>';
     list.forEach(function (c, i) {
-      var bc  = badgeClass(c.estado || 'pendiente');
       var fe  = c.firma_estado || 'no_aplica';
       html += '<tr data-idx="' + i + '">'
         + '<td class="mono">' + esc(c.ref_code || '—') + '</td>'
@@ -589,7 +645,7 @@
         + '<td class="mono">' + esc(c.vuelo_nro || '—') + '</td>'
         + '<td>' + esc(c.aerolinea || '—') + '</td>'
         + '<td class="mono">' + esc(c.fecha_vuelo || '—') + '</td>'
-        + '<td><span class="badge ' + bc + '">' + esc(c.estado || 'pendiente') + '</span></td>'
+        + '<td><span class="badge ' + badgeClass(c.etapa) + '">' + esc(c.etapa_label || '—') + '</span></td>'
         + '<td><span class="badge badge--' + esc(fe) + '">' + esc(fe.replace(/_/g,' ')) + '</span></td>'
         + '</tr>';
     });
