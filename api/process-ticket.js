@@ -10,12 +10,11 @@
  *   consolidation. Returns structured JSON without database persistence.
  *
  * Mode 2 — Claim Submission:
- *   Receives validated form data, calculates predictive success percentage
- *   based on jurisdiction analysis (ANAC/EU261/DOT), persists the claim
- *   in Supabase, and dispatches notification emails via Resend.
+ *   Receives validated form data, persists the claim in Supabase, generates
+ *   the signed authorization PDF (SHA-256 fingerprinted) and dispatches
+ *   notification emails via Resend.
  *
- * Feature flags are read from site_config table at runtime.
- * Success percentage is stored internally and excluded from client response.
+ * The ai_extraction feature flag is read from site_config table at runtime.
  *
  * @param {Object[]} req.body.images - Array of {base64, mimeType} for multi-file scan
  * @param {boolean} req.body.manualSubmit - Activates claim submission mode
@@ -54,7 +53,6 @@ export default async function handler(req, res) {
 
     /* Fetch feature flags from site_config table (with fallback to enabled) */
     var flagAi = true;
-    var flagPct = true;
     try {
       var cfgRes = await fetch(SB_URL + '/rest/v1/site_config?id=eq.global&select=feature_flags&limit=1', {
         headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
@@ -64,7 +62,6 @@ export default async function handler(req, res) {
         if (cfgRows.length && cfgRows[0].feature_flags) {
           var ff = cfgRows[0].feature_flags;
           flagAi = ff.ai_extraction !== false;
-          flagPct = ff.ai_success_pct !== false;
         }
       }
     } catch (e) { /* Flags default to true if config unavailable */ }
@@ -82,65 +79,7 @@ export default async function handler(req, res) {
       var refCode = 'CSA' + String(caseNum).padStart(5, '0');
       var nombre = body.nombre || 'Sin nombre';
 
-      /* ---- Step 1: Calculate AI success percentage (hidden from user) ---- */
-      var porcentaje_exito = null;
-      var OR_KEY = process.env.OPENROUTER_API_KEY;
-      if (OR_KEY && flagPct) {
-        try {
-          var aiPrompt = 'Sos un analista legal de SolucionAir especializado en reclamos aereos. '
-            + 'Evalua el siguiente caso y devolvé UNICAMENTE un numero entero de 0 a 100 representando el porcentaje de exito estimado. '
-            + 'Reglas estrictas de jurisdiccion:\n'
-            + '- ARGENTINA (ANAC/Decreto 1476/98): Compensacion por demora se gatilla a partir de 4 horas. Cancelaciones sin aviso y overbooking en vuelos nacionales/regionales: 85-95%. Causa meteorologica comprobable: 0%.\n'
-            + '- EUROPA (EU261): Demoras +3hs o cancelaciones en vuelos desde UE o con aerolinea europea: 90-100% por multas automaticas.\n'
-            + '- EEUU (DOT): Vuelos internos sin compensacion obligatoria por demora simple (bajo). Overbooking o cancelacion sin reembolso: 60-80%.\n'
-            + '- Pondera segun el comportamiento historico de la aerolinea en mediaciones (Aerolineas Argentinas, Flybondi, JetSmart, LATAM, Iberia, etc).\n\n'
-            + 'Datos del caso:\n'
-            + '- Aerolinea: ' + (body.aerolinea || 'No especificada') + '\n'
-            + '- Vuelo: ' + (body.vuelo_nro || 'N/A') + '\n'
-            + '- Origen: ' + (body.origen || 'N/A') + '\n'
-            + '- Destino: ' + (body.destino || 'N/A') + '\n'
-            + '- Tipo de incidencia: ' + (body.tipo_incidencia || 'No especificado') + '\n'
-            + '- Horas de retraso: ' + (body.horas_retraso || 'No especificado') + '\n'
-            + '- Causa informada: ' + (body.causa_informada || 'No informada') + '\n'
-            + '- Ofrecieron reembolso: ' + (body.ofrecimiento_aerolinea || 'No informado') + '\n\n'
-            + 'Responde SOLO el numero (ej: 85). Sin texto, sin %, sin explicacion.';
-
-          var aiCalcRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + OR_KEY,
-              'HTTP-Referer': 'https://solucionair.com',
-              'X-Title': 'SolucionAir',
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash',
-              max_tokens: 10,
-              messages: [{ role: 'user', content: aiPrompt }],
-            }),
-          });
-
-          if (aiCalcRes.ok) {
-            var aiCalcJson = JSON.parse(await aiCalcRes.text());
-            var rawNum = (aiCalcJson.choices && aiCalcJson.choices[0] && aiCalcJson.choices[0].message) ? aiCalcJson.choices[0].message.content.trim() : '';
-            var parsed = parseInt(rawNum.replace(/[^0-9]/g, ''));
-            if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) {
-              porcentaje_exito = parsed;
-              console.log('[process-ticket] AI success %:', porcentaje_exito);
-            }
-          }
-        } catch (aiErr) {
-          console.error('[process-ticket] AI success calc error:', aiErr.message);
-        }
-      }
-
-      /* Fallback: if AI didn't return a value, default to 50 */
-      if (porcentaje_exito === null) {
-        porcentaje_exito = 50;
-        console.log('[process-ticket] AI % fallback to default:', porcentaje_exito);
-      }
-
-      /* ---- Step 2: Insert reclamo ---- */
+      /* ---- Step 1: Insert reclamo ---- */
       var ip = (req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim() || null;
 
       var row = {
@@ -203,8 +142,6 @@ export default async function handler(req, res) {
         firma_ts:              body.firma_ts || null,
         user_agent:            body.user_agent || null,
         ip_firmante:           ip,
-        /* AI analysis — only internal scoring */
-        ai_raw: { porcentaje_exito: porcentaje_exito },
       };
 
       console.log('[process-ticket] Inserting row with ref:', refCode, 'email:', email);
@@ -232,7 +169,7 @@ export default async function handler(req, res) {
       var manualRecord = null;
       try { var p = JSON.parse(manualText); manualRecord = Array.isArray(p) ? p[0] : p; } catch(e) { console.error('[process-ticket] Parse error:', e.message); }
 
-      /* ---- Step 3: SHA-256 fingerprint + PDF authorization ---- */
+      /* ---- Step 2: SHA-256 fingerprint + PDF authorization ---- */
       var claimHash = computeClaimHash({
         refCode,
         nombre,
@@ -353,7 +290,7 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
               adjuntos: allAdjuntos,
-              ai_raw:   { porcentaje_exito: porcentaje_exito, huella_sha256: claimHash },
+              ai_raw:   { huella_sha256: claimHash },
             }),
           });
         } catch (patchErr) {
@@ -466,7 +403,6 @@ export default async function handler(req, res) {
         console.log('[process-ticket] RESEND_API_KEY not set, skipping emails');
       }
 
-      /* porcentaje_exito is intentionally EXCLUDED from the response — internal use only */
       return res.status(200).json({ success: true, refCode: refCode, record: manualRecord ? { id: manualRecord.id, ref_code: manualRecord.ref_code } : null, emailsSent: emailsSent });
     }
 

@@ -20,22 +20,13 @@ El motor de traducción preserva elementos hijos del DOM (asteriscos de campos o
 Panel administrativo en el Backoffice que permite controlar en tiempo real:
 - **Paleta de colores**: Modificación de colores primario, secundario, fondo y texto mediante variables CSS (`:root`) que se inyectan dinámicamente al cargar la página.
 - **Textos globales**: Edición de títulos, subtítulos y CTAs en ambos idiomas desde una interfaz visual.
-- **Feature Flags**: Interruptores para activar/desactivar el procesamiento de imágenes con IA y el cálculo automático de tasa de éxito, almacenados en estructura JSONB.
+- **Feature Flags**: Interruptor para activar/desactivar el procesamiento de imágenes con IA, almacenado en estructura JSONB.
 
 ### Módulo de Seguridad de Datos (Soft Delete)
 Sistema de papelera de reciclaje que implementa eliminación lógica (soft delete) mediante campo `deleted_at` en la tabla de reclamos. Los registros eliminados desaparecen de la vista principal con transición suave y se almacenan en una papelera accesible desde el Backoffice, desde donde pueden ser restaurados o eliminados permanentemente. La consulta principal filtra automáticamente los registros con `deleted_at` no nulo.
 
 ### Sistema de Confirmaciones Dinámicas y Notificaciones
 Módulo de interfaz que reemplaza completamente los popups nativos del navegador (`alert`, `confirm`) por modales estilizados con backdrop blur y toast notifications animadas. Los modales adoptan la paleta de colores corporativa mediante CSS custom properties, soportan estados de carga durante operaciones asíncronas y muestran errores inline sin interrumpir el flujo de trabajo. Las notificaciones toast aparecen con animación y se auto-descartan a los 3 segundos.
-
-### Cálculo Predictivo de Éxito
-Algoritmo predictivo basado en IA que analiza parámetros del vuelo (aerolínea, horas de retraso, causa informada, tipo de incidencia) cruzándolos con normativas internacionales para otorgar un porcentaje de viabilidad financiera:
-- **Argentina (ANAC / Decreto 1476/98)**: Umbral de 4 horas para demoras. Cancelaciones sin aviso y overbooking en vuelos nacionales: 85-95%. Causa meteorológica comprobable: 0%.
-- **Europa (EU261)**: Demoras superiores a 3 horas o cancelaciones con aerolínea europea: 90-100% por multas automáticas.
-- **EE.UU. (DOT)**: Sin compensación obligatoria por demora simple. Overbooking o cancelación sin reembolso: 60-80%.
-- **Ponderación por aerolínea**: Ajuste según comportamiento histórico en mediaciones.
-
-El porcentaje se almacena internamente y es visible únicamente para el equipo administrativo en el Backoffice.
 
 ## Arquitectura del Sistema
 
@@ -51,7 +42,7 @@ solucionair-web/
 │   └── js/
 │       └── app.js          # Lógica del formulario, AI scanner, wizard, i18n
 ├── api/
-│   ├── process-ticket.js   # Procesamiento de reclamos + AI vision + % éxito
+│   ├── process-ticket.js   # Procesamiento de reclamos + AI vision
 │   ├── analyze-document.js # Análisis individual de documentos con AI
 │   ├── get-claims.js       # Listado de reclamos desde Supabase
 │   ├── generate-reply.js   # Generación y optimización de respuestas con AI
@@ -94,7 +85,7 @@ CREATE TABLE reclamos (
 );
 ```
 
-El campo `ai_raw` (JSONB) almacena datos extendidos: documento, origen, destino, PNR, incidencia, gastos, causa y porcentaje de éxito.
+El campo `ai_raw` (JSONB) almacena la huella SHA-256 del caso (`huella_sha256`), usada como fingerprint de la firma electrónica.
 
 **Tabla `site_config`** — Configuración dinámica del sitio con estructura JSONB:
 ```sql
@@ -184,8 +175,8 @@ Autocompletado del formulario (Paso 1 + 2)
     ▼
 Firma electrónica y envío (Paso 3)
     │
-    ├── Cálculo predictivo de % éxito (interno)
     ├── Persistencia en Supabase
+    ├── PDF de autorización firmado (huella SHA-256)
     ├── Email de alerta interna (Resend)
     └── Email de confirmación al cliente
     │

@@ -48,14 +48,14 @@ Crear `supabase/migration_002_agencias.sql` con:
 
 ### Fase 4 — Mis casos
 - `GET /api/agency/claims`: valida agencia (Fase 2 helper) → devuelve solo `reclamos` con `agencia_id = agencia.id` y `deleted_at IS NULL`, ordenados por `creado_en desc`.
-- Vista "Mis casos": tabla (Ref, Pasajero, Vuelo, Aerolínea, Fecha, Estado, % éxito, Estado firma) + búsqueda + filtro por estado. Click → drawer read-only con detalle, novedades y estado de firma. Reusar estilos `.tbl-*`, `.badge--*`, `.detail*` de `backoffice.html`.
+- Vista "Mis casos": tabla (Ref, Pasajero, Vuelo, Aerolínea, Fecha, Estado, Estado firma) + búsqueda + filtro por estado. Click → drawer read-only con detalle, novedades y estado de firma. Reusar estilos `.tbl-*`, `.badge--*`, `.detail*` de `backoffice.html`.
 
 ### Fase 5 — Cargar caso (formulario B2B)
 - Vista "Cargar caso" en `panel-agencia.html`: wizard similar al público pero **sin muro de Google**. Campos: datos del **cliente** (nombre, email, teléfono, doc tipo/número), selector vuelo/equipaje + campos correspondientes (reusar la misma estructura de `index.html`), y checkbox obligatorio "Declaro que cuento con autorización del cliente para gestionar este reclamo". Reutilizar el escaneo con IA (`POST /api/process-ticket` modo multiFile ya existe).
 - `POST /api/agency/submit-claim`: valida agencia `activa` → inserta `reclamos` con `canal='B2B'`, `fuente='Agencia'`, `agencia_id`, `agente_nombre`, `agente_email`, `cliente_autorizacion_declarada=true`, `estado='pendiente'`, `firma_estado='pendiente_envio'`, `firma_proveedor='zoho'`, genera `ref_code` (misma lógica que `process-ticket.js`), sube `scanned_files` al bucket (reusar lógica de `process-ticket.js`), y dispara el módulo de firma (Fase 8). Devuelve `{success, refCode}`.
 
 ### Fase 6 — KPIs / comisiones
-- `GET /api/agency/stats`: valida agencia → devuelve `{total, por_estado:{...}, tasa_exito, comision_estimada}`. `comision_estimada` = suma de `monto_compensacion * comision_pct/100` sobre casos resueltos con `monto_compensacion` no nulo.
+- `GET /api/agency/stats`: valida agencia → devuelve `{total, por_estado:{...}, comision_estimada}`. `comision_estimada` = suma de `monto_compensacion * comision_pct/100` sobre casos resueltos con `monto_compensacion` no nulo.
 - Vista Dashboard: tarjetas con esos números (reusar `.stat`/`.stats` de backoffice).
 
 ### Fase 7 — Admin: vista Agencias
