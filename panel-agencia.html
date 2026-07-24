@@ -439,6 +439,14 @@
     return h;
   }
 
+  /* ---- Sesión expirada / no autorizada: limpiar y volver al login ---- */
+  function agencyLogout() {
+    localStorage.removeItem('sa_ag_token');
+    localStorage.removeItem('sa_ag_email');
+    localStorage.removeItem('sa_ag_data');
+    window.location.href = '/agencias';
+  }
+
   /* ---- Toast ---- */
   var toastEl = document.getElementById('toast');
   function toast(msg, isError) {
@@ -568,17 +576,12 @@
     if (navBtns[k]) navBtns[k].addEventListener('click', function () { showView(k); });
   });
 
-  document.getElementById('nav-logout').addEventListener('click', function () {
-    localStorage.removeItem('sa_ag_token');
-    localStorage.removeItem('sa_ag_email');
-    localStorage.removeItem('sa_ag_data');
-    window.location.href = '/agencias';
-  });
+  document.getElementById('nav-logout').addEventListener('click', agencyLogout);
 
   /* ---- Dashboard / Stats ---- */
   function loadStats() {
     fetch('/api/agency/stats', { headers: authHeaders() })
-    .then(function (r) { return r.json(); })
+    .then(function (r) { if (r.status === 401) { agencyLogout(); throw new Error('401'); } return r.json(); })
     .then(function (d) {
       if (!d.success) return;
       var pe = d.por_etapa || {};
@@ -614,13 +617,14 @@
   function loadClaims() {
     claimsBody.innerHTML = '<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
     fetch('/api/agency/claims', { headers: authHeaders() })
-    .then(function (r) { return r.json(); })
+    .then(function (r) { if (r.status === 401) { agencyLogout(); throw new Error('401'); } return r.json(); })
     .then(function (d) {
       if (!d.success) throw new Error(d.error || 'Error');
       allClaims = d.claims || [];
       renderClaims();
     })
     .catch(function (err) {
+      if (err.message === '401') return;
       claimsBody.innerHTML = '<div class="state"><p class="state__txt" style="color:var(--err)">Error: ' + esc(err.message) + '</p></div>';
     });
   }
@@ -986,7 +990,7 @@
       headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
       body: JSON.stringify(payload),
     })
-    .then(function (r) { return r.json(); })
+    .then(function (r) { if (r.status === 401) { agencyLogout(); throw new Error('401'); } return r.json(); })
     .then(function (d) {
       btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Cargar caso';
       if (d.success) {
