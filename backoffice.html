@@ -2167,16 +2167,25 @@
            caso recién ingresado sin esperas ni recordatorios era invisible en To
            Do aunque de hecho esté esperando que lo miremos. Aparece desde el
            mismo día que entra (sin umbral), fechado desde que cayó en esa
-           posición — o desde que se creó la espera, si la pelota viene de una
-           espera propia sin vencimiento cargado. */
-        var pel=pelotaInfo(c,pos);
-        if(pel.responsable==='solucionair'&&!(pel.espera&&pel.espera.vence)){
-          var fRef=pel.espera?pel.espera.creada:fechaInicioInstancia(c);
+           posición — o desde que se creó la espera, si viene de una espera
+           propia sin vencimiento cargado.
+           Importante: se recorren TODAS las esperas abiertas a cargo de
+           SolucionAir sin vencimiento, no solo la más vieja (pelotaInfo). Si
+           había una espera de otra parte todavía abierta y más antigua (p.ej.
+           quedó pendiente de una etapa anterior), esa "ganaba" la pelota y una
+           espera nueva nuestra sin vencer quedaba invisible en To Do aunque
+           esperasAbiertas() la mostrara igual en la ficha del caso. */
+        var abiertasSA=esperasAbiertas(c).filter(function(e){return e.responsable==='solucionair'&&!e.vence});
+        if(abiertasSA.length){
+          abiertasSA.forEach(function(e){
+            var txtSA='Dar curso a: '+(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+(e.detalle?' — '+e.detalle:'');
+            out.push({fecha:e.creada,c:c,tipo:'accion_sa',texto:txtSA,quien:'SolucionAir'});
+          });
+        } else if(!esperasAbiertas(c).length&&pelotaPosicional(c,pos)==='solucionair'){
+          var fRef=fechaInicioInstancia(c);
           if(fRef){
-            var txtSA=pel.espera
-              ?('Dar curso a: '+(TIPO_ESPERA_LABELS[pel.espera.tipo]||pel.espera.tipo)+(pel.espera.detalle?' — '+pel.espera.detalle:''))
-              :('Evaluar / avanzar el caso · '+etapaLabel(pos,c.via_reclamo,c.organismo));
-            out.push({fecha:(fRef instanceof Date?fRef.toISOString():fRef),c:c,tipo:'accion_sa',texto:txtSA,quien:'SolucionAir'});
+            var txtDef='Evaluar / avanzar el caso · '+etapaLabel(pos,c.via_reclamo,c.organismo);
+            out.push({fecha:(fRef instanceof Date?fRef.toISOString():fRef),c:c,tipo:'accion_sa',texto:txtDef,quien:'SolucionAir'});
           }
         }
       });
