@@ -203,6 +203,7 @@
     .upload-item__status{font-size:.68rem;color:var(--t4);white-space:nowrap}
     .upload-item__status.ok{color:#1B9B5A}.upload-item__status.err{color:var(--err)}
 
+    @media(max-width:1024px){#actividad-grid{grid-template-columns:1fr !important}}
     @media(max-width:768px){.sidenav{display:none}.stats{grid-template-columns:1fr}.main{padding:14px}.detail{width:100vw;height:100vh;border-radius:0}.filters{flex-direction:column}}
   </style>
 </head>
@@ -212,6 +213,7 @@
       <div class="sidenav__brand"><img src="/src/img/logo.png" alt="SolucionAir" style="height:60px;width:auto;filter:brightness(0) invert(1)" /><span class="sidenav__tag">Admin</span></div>
       <nav class="sidenav__menu">
         <div class="sidenav__item active" id="nav-reclamos"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Reclamos</div>
+        <div class="sidenav__item" id="nav-actividad"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Actividad</div>
         <div class="sidenav__item" id="nav-alertas"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> Alertas <span id="nav-alertas-count" style="margin-left:auto;font-family:var(--fm);font-size:.6rem;background:var(--err);color:#fff;border-radius:8px;padding:0 6px;display:none"></span></div>
         <div class="sidenav__item" id="nav-trash"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg> Papelera</div>
         <div class="sidenav__item" id="nav-agencias"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> Agencias</div>
@@ -245,6 +247,21 @@
         <div class="main__header"><h1 class="main__title">Alertas</h1><div style="display:flex;gap:8px"><button class="btn btn--ghost" id="btn-admin-alertas" type="button">Administrar alertas</button><button class="btn btn--primary" id="btn-refresh-alertas" type="button">Actualizar</button></div></div>
         <div id="alertas-body"><div class="state"><p class="state__txt">Cargando...</p></div></div>
       </div><!-- /view-alertas -->
+
+      <!-- ACTIVIDAD VIEW (últimos movimientos + to do próximos) -->
+      <div id="view-actividad" style="display:none">
+        <div class="main__header"><h1 class="main__title">Actividad</h1><button class="btn btn--primary" id="btn-refresh-actividad" type="button">Actualizar</button></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="actividad-grid">
+          <div class="tbl-wrap">
+            <div class="tbl-bar"><span class="tbl-bar__title">Últimos movimientos</span><span class="tbl-bar__count" id="mov-count"></span></div>
+            <div id="movimientos-body" style="padding:10px 16px;max-height:70vh;overflow-y:auto"><div class="state"><p class="state__txt">Cargando...</p></div></div>
+          </div>
+          <div class="tbl-wrap">
+            <div class="tbl-bar"><span class="tbl-bar__title">To Do próximos</span><span class="tbl-bar__count" id="todo-count"></span></div>
+            <div id="todo-body" style="padding:10px 16px;max-height:70vh;overflow-y:auto"><div class="state"><p class="state__txt">Cargando...</p></div></div>
+          </div>
+        </div>
+      </div><!-- /view-actividad -->
 
       <!-- AGENCIAS VIEW -->
       <div id="view-agencias" class="ag-view">
@@ -2095,6 +2112,108 @@
       });
     }
 
+    /* ---- ACTIVIDAD: últimos movimientos + to do próximos ----
+       Todo se deriva de los casos ya cargados (instancia_historial, novedades,
+       esperas, recordatorios): sin endpoint nuevo y sin tocar la base. */
+    var MOV_VENTANA_DIAS=30;
+    /** Eventos de los últimos 30 días, del más nuevo al más viejo. */
+    function construirMovimientos(){
+      var desde=Date.now()-MOV_VENTANA_DIAS*86400000;
+      var out=[];
+      claims.filter(function(c){return !c.deleted_at}).forEach(function(c){
+        (Array.isArray(c.instancia_historial)?c.instancia_historial:[]).forEach(function(ev){
+          if(!ev.fecha||new Date(ev.fecha).getTime()<desde)return;
+          var pos={instancia:ev.instancia,momento:ev.momento,resultado:ev.resultado||c.resultado};
+          out.push({fecha:ev.fecha,c:c,tipo:'etapa',texto:etapaLabel(pos,ev.via||c.via_reclamo,ev.organismo||c.organismo),por:ev.por});
+        });
+        (Array.isArray(c.novedades)?c.novedades:[]).forEach(function(n){
+          if(!n.fecha||new Date(n.fecha).getTime()<desde)return;
+          out.push({fecha:n.fecha,c:c,tipo:n.correccion?'correccion':'novedad',texto:n.texto});
+        });
+        (Array.isArray(c.esperas)?c.esperas:[]).forEach(function(e){
+          if(e.resuelta&&new Date(e.resuelta).getTime()>=desde)
+            out.push({fecha:e.resuelta,c:c,tipo:'espera',texto:'Espera resuelta: '+(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)});
+        });
+      });
+      out.sort(function(a,b){return new Date(b.fecha).getTime()-new Date(a.fecha).getTime()});
+      return out;
+    }
+    /** Pendientes hacia adelante. Sin ventana: un vencido de hace 45 días tiene
+        que seguir a la vista, si no se esconde justo lo más urgente. */
+    function construirToDo(){
+      var out=[];
+      claims.filter(function(c){return !c.deleted_at}).forEach(function(c){
+        var pos=getInstancia(c);
+        if(pos.instancia==='cerrado')return;
+        esperasAbiertas(c).forEach(function(e){
+          if(!e.vence)return;
+          out.push({fecha:e.vence,c:c,tipo:'espera',texto:(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+(e.detalle?' — '+e.detalle:''),quien:RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable});
+        });
+        recordatoriosPendientes(c).forEach(function(r){
+          out.push({fecha:r.vence,c:c,tipo:'recordatorio',texto:r.texto,quien:'Recordatorio'});
+        });
+        if(c.fecha_mediacion&&new Date(c.fecha_mediacion).getTime()>=Date.now()-86400000)
+          out.push({fecha:c.fecha_mediacion,c:c,tipo:'audiencia',texto:'Audiencia de mediación',quien:'Mediador'});
+      });
+      out.sort(function(a,b){return new Date(a.fecha).getTime()-new Date(b.fecha).getTime()});
+      return out;
+    }
+    function renderActividad(){
+      var movBody=document.getElementById('movimientos-body'),todoBody=document.getElementById('todo-body');
+      if(!movBody||!todoBody)return;
+
+      var movs=construirMovimientos();
+      var movCnt=document.getElementById('mov-count');
+      if(movCnt)movCnt.textContent='últimos '+MOV_VENTANA_DIAS+' días';
+      if(!movs.length)movBody.innerHTML='<p style="font-size:.74rem;color:var(--t4);margin:0">Sin movimientos en los últimos '+MOV_VENTANA_DIAS+' días.</p>';
+      else{
+        var mh='';
+        movs.slice(0,120).forEach(function(m){
+          var badge=m.tipo==='correccion'?'badge--rechazado':m.tipo==='etapa'?'badge--en_gestion':'badge--pendiente';
+          mh+='<div class="upload-item" style="cursor:pointer;justify-content:space-between;gap:10px" data-act-id="'+m.c.id+'">';
+          mh+='<div style="display:flex;flex-direction:column;gap:3px;min-width:0">';
+          mh+='<span><span class="badge '+badge+'">'+esc(m.texto)+'</span></span>';
+          mh+='<span style="font-size:.72rem;color:var(--t3)"><span class="mono">'+esc(m.c.ref_code||'—')+'</span> · '+esc(m.c.nombre||'—')+(m.por?' <span style="color:var(--t4)">('+esc(m.por)+')</span>':'')+'</span></div>';
+          mh+='<span class="mono" style="font-size:.64rem;color:var(--t4);white-space:nowrap;flex-shrink:0">'+fmtFechaHora(m.fecha)+'</span></div>';
+        });
+        movBody.innerHTML=mh;
+      }
+
+      var todos=construirToDo();
+      var todoCnt=document.getElementById('todo-count');
+      if(todoCnt)todoCnt.textContent=todos.length?todos.length+' pendientes':'';
+      if(!todos.length)todoBody.innerHTML='<p style="font-size:.74rem;color:var(--t4);margin:0">Nada pendiente con fecha. 🎉</p>';
+      else{
+        var hoyISO=new Date().toISOString().slice(0,10);
+        var th='';
+        todos.slice(0,120).forEach(function(t){
+          var vencido=String(t.fecha).slice(0,10)<hoyISO;
+          th+='<div class="upload-item" style="cursor:pointer;justify-content:space-between;gap:10px" data-act-id="'+t.c.id+'">';
+          th+='<div style="display:flex;flex-direction:column;gap:3px;min-width:0">';
+          th+='<span style="font-size:.78rem;color:var(--t1)">'+esc(t.texto)+'</span>';
+          th+='<span style="font-size:.7rem;color:var(--t3)"><span class="mono">'+esc(t.c.ref_code||'—')+'</span> · '+esc(t.quien||'')+'</span></div>';
+          th+='<span class="mono" style="font-size:.66rem;white-space:nowrap;flex-shrink:0;color:'+(vencido?'var(--err)':'var(--t4)')+'">'+(vencido?'Vencido · ':'')+fmtFecha(t.fecha)+'</span></div>';
+        });
+        todoBody.innerHTML=th;
+      }
+
+      [movBody,todoBody].forEach(function(box){
+        box.querySelectorAll('[data-act-id]').forEach(function(row){
+          row.addEventListener('click',function(){
+            var id=row.getAttribute('data-act-id'),c=null;
+            claims.forEach(function(cl){if(cl.id===id)c=cl});
+            if(c)openDetail(c);
+          });
+        });
+      });
+    }
+    var btnRefreshAct=document.getElementById('btn-refresh-actividad');
+    if(btnRefreshAct)btnRefreshAct.addEventListener('click',function(){
+      fetch('/api/get-claims',{headers:{'X-Admin-Password':adminPwd}}).then(function(r){return r.json()}).then(function(j){
+        if(j.success){claims=j.claims||[];applyFilters()}renderActividad();
+      }).catch(function(){renderActividad()});
+    });
+
     /* ---- Soft Delete from main table ---- */
     function bindDeleteBtns(){
       tblBody.querySelectorAll('[data-del-id]').forEach(function(btn){
@@ -2170,19 +2289,26 @@
         trashBody.querySelectorAll('[data-perm-id]').forEach(function(btn){
           btn.addEventListener('click',function(){
             var pid=btn.getAttribute('data-perm-id');
+            var pcase=null;deleted.forEach(function(t){if(t.id===pid)pcase=t});
+            var pref=(pcase&&pcase.ref_code)||'';
+            /* Doble confirmación por tipeo: además de la fila se borran los
+               archivos y la carpeta del caso en Storage, y eso no se deshace. */
             showModal({
               title:'Eliminación permanente',
-              desc:'Esta acción eliminará el reclamo de forma irreversible. No se puede deshacer.',
+              desc:'Se elimina el reclamo '+(pref||'')+' y TODOS sus archivos y carpeta en el storage. Es irreversible y no se puede deshacer.',
               confirmText:'Eliminar permanentemente',
               danger:true,
+              inputs:[{id:'refconf',label:'Escribí '+(pref||'ELIMINAR')+' para confirmar',placeholder:pref||'ELIMINAR'}],
               onConfirm:function(){
+                var esperado=(pref||'ELIMINAR').trim().toUpperCase();
+                if(cmInput('refconf').trim().toUpperCase()!==esperado){modalError('Escribí '+esperado+' para confirmar.');return}
                 cmConfirm.disabled=true;cmConfirm.textContent='Eliminando...';
                 fetch('/api/delete-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:pid,action:'permanent'})})
                 .then(function(r){return r.json()}).then(function(d){
-                  cmConfirm.disabled=false;
-                  if(d.success){closeModal();toast('Reclamo eliminado permanentemente');loadTrash()}
+                  cmConfirm.disabled=false;cmConfirm.textContent='Eliminar permanentemente';
+                  if(d.success){closeModal();toast('Reclamo eliminado'+(d.archivos_borrados?' · '+d.archivos_borrados+' archivo(s) borrado(s)':''));loadTrash()}
                   else{modalError(d.error||'Error al eliminar')}
-                }).catch(function(){cmConfirm.disabled=false;modalError('Error de conexión')});
+                }).catch(function(){cmConfirm.disabled=false;cmConfirm.textContent='Eliminar permanentemente';modalError('Error de conexión')});
               }
             });
           });
@@ -2202,24 +2328,30 @@
     var viewTrash=document.getElementById('view-trash');
     var viewAlertas=document.getElementById('view-alertas');
     var viewAbogados=document.getElementById('view-abogados');
+    var navActividad=document.getElementById('nav-actividad');
+    var viewActividad=document.getElementById('view-actividad');
 
     function showView(view){
       if(viewReclamos)viewReclamos.style.display=view==='reclamos'?'':'none';
       if(viewTrash){viewTrash.style.display=view==='trash'?'block':'none';viewTrash.classList.toggle('visible',view==='trash')}
       if(viewAlertas)viewAlertas.style.display=view==='alertas'?'block':'none';
+      if(viewActividad)viewActividad.style.display=view==='actividad'?'block':'none';
       if(viewAbogados){viewAbogados.style.display=view==='abogados'?'block':'none';viewAbogados.classList.toggle('visible',view==='abogados')}
       if(navReclamos)navReclamos.classList.toggle('active',view==='reclamos');
       if(navTrash)navTrash.classList.toggle('active',view==='trash');
       if(navAlertas)navAlertas.classList.toggle('active',view==='alertas');
+      if(navActividad)navActividad.classList.toggle('active',view==='actividad');
       if(navAbogados)navAbogados.classList.toggle('active',view==='abogados');
       if(view==='trash')loadTrash();
       if(view==='alertas')renderAlertas();
+      if(view==='actividad')renderActividad();
       if(view==='abogados')loadAbogados();
     }
 
     if(navReclamos)navReclamos.addEventListener('click',function(){showView('reclamos')});
     if(navTrash)navTrash.addEventListener('click',function(){showView('trash')});
     if(navAlertas)navAlertas.addEventListener('click',function(){showView('alertas')});
+    if(navActividad)navActividad.addEventListener('click',function(){showView('actividad')});
     if(navAbogados)navAbogados.addEventListener('click',function(){showView('abogados')});
 
     /* ---- ALERTAS (feed único + reglas configurables + descarte manual) ---- */
@@ -3550,8 +3682,9 @@
         if(viewConfig)viewConfig.style.display='none';
         if(viewTrash)viewTrash.style.display='none';
         if(viewAlertas)viewAlertas.style.display='none';
+        if(viewActividad)viewActividad.style.display='none';
         if(viewAbogados)viewAbogados.style.display='none';
-        ['nav-reclamos','nav-trash','nav-alertas','nav-abogados'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.remove('active'); });
+        ['nav-reclamos','nav-trash','nav-alertas','nav-actividad','nav-abogados'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.remove('active'); });
         loadAgencias();
       }
     };

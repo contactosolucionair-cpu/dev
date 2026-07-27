@@ -164,6 +164,30 @@
     return fmtFecha(d) + ' ' + (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
   }
 
+  function acompanantesDe(c){return Array.isArray(c.acompanantes)?c.acompanantes:[]}
+  /* Nombre del titular + "+n" si el caso tiene acompanantes (el tooltip los lista). */
+  function nombreConAcompanantes(c){
+    var base=esc(c.nombre||'—');
+    var ac=acompanantesDe(c);
+    if(!ac.length)return base;
+    var nombres=ac.map(function(a,i){return (a.nombre||'Acompañante '+(i+1))+(a.es_menor?' (menor)':'')}).join(' · ');
+    return base+' <span class="badge badge--pendiente" title="'+esc(nombres)+'">+'+ac.length+'</span>';
+  }
+  /* Ficha de los acompanantes: nombre, documento y menor de edad. */
+  function acompanantesHtml(c){
+    var ac=acompanantesDe(c);
+    if(!ac.length)return '';
+    var h='<div class="detail__section"><div class="detail__label">Acompañantes ('+ac.length+')</div>';
+    ac.forEach(function(a,i){
+      var docs=Array.isArray(a.documentos)&&a.documentos.length?a.documentos:((a.documento_tipo||a.documento_numero)?[{tipo:a.documento_tipo,numero:a.documento_numero}]:[]);
+      h+='<div style="padding:5px 0;border-bottom:1px solid var(--bdl)">';
+      h+='<div style="font-size:.78rem;color:var(--t1)">'+esc(a.nombre||('Acompañante '+(i+1)))+(a.es_menor?' <span class="badge badge--pendiente">Menor</span>':'')+'</div>';
+      if(docs.length)h+='<div class="mono" style="font-size:.68rem;color:var(--t4)">'+docs.map(function(d){return esc((d.tipo||'')+' '+(d.numero||''))}).join(' · ')+'</div>';
+      h+='</div>';
+    });
+    return h+'</div>';
+  }
+
   function authFetch(url,opts){opts=opts||{};opts.headers=opts.headers||{};opts.headers['Authorization']='Bearer '+token;return fetch(url,opts);}
   function logout(){localStorage.removeItem('sa_ab_token');localStorage.removeItem('sa_ab_email');localStorage.removeItem('sa_ab_data');location.href='/abogados';}
   document.getElementById('btn-logout').addEventListener('click',logout);
@@ -182,7 +206,7 @@
       claims.forEach(function(c,i){
         h+='<tr data-i="'+i+'">';
         h+='<td class="mono">'+(c.ref_code||'—')+'</td>';
-        h+='<td>'+esc(c.nombre||'—')+'</td>';
+        h+='<td>'+nombreConAcompanantes(c)+'</td>';
         h+='<td class="mono">'+(c.vuelo_nro||'—')+'</td>';
         h+='<td>'+esc(c.aerolinea||'—')+'</td>';
         h+='<td><span class="badge '+posBadge(getPos(c))+'">'+esc(posLabel(getPos(c)))+'</span></td>';
@@ -227,11 +251,12 @@
     h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Referencia</div><div class="detail__value mono">'+(c.ref_code||'—')+'</div></div>';
     h+='<div class="detail__section"><div class="detail__label">Estado</div><div class="detail__value"><span class="badge '+posBadge(getPos(c))+'">'+esc(posLabel(getPos(c)))+'</span></div></div></div>';
     h+='<div class="detail__divider"></div>';
-    h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">'+esc(c.nombre||'—')+'</div></div>';
+    h+='<div class="detail__grid"><div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">'+nombreConAcompanantes(c)+'</div></div>';
     h+='<div class="detail__section"><div class="detail__label">Email</div><div class="detail__value mono">'+esc(c.email||'—')+'</div></div>';
     h+='<div class="detail__section"><div class="detail__label">Teléfono</div><div class="detail__value mono">'+esc(c.telefono||'—')+'</div></div>';
     h+='<div class="detail__section"><div class="detail__label">Vuelo</div><div class="detail__value mono">'+(c.vuelo_nro||'—')+' · '+esc(c.aerolinea||'—')+'</div></div></div>';
     if(c.origen||c.destino)h+='<div class="detail__section"><div class="detail__label">Ruta</div><div class="detail__value mono">'+esc(c.origen||'?')+' → '+esc(c.destino||'?')+'</div></div>';
+    h+=acompanantesHtml(c);
     if(c.tipo_incidencia||c.causa_informada){
       h+='<div class="detail__grid">';
       if(c.tipo_incidencia)h+='<div class="detail__section"><div class="detail__label">Incidencia</div><div class="detail__value">'+esc(c.tipo_incidencia)+'</div></div>';
