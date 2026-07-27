@@ -20,7 +20,7 @@
  */
 import {
   getInstancia, instanciaAEstadoLegacy, validarTransicion,
-  MOTIVOS_CIERRE, TIPOS_ESPERA, RESPONSABLES_ESPERA, TIPO_ESPERA_LABELS,
+  MOTIVOS_CIERRE, TIPOS_ESPERA, RESPONSABLES_ESPERA, TIPO_ESPERA_LABELS, etapaExterna,
   INSTANCIAS_VALIDAS, MOMENTOS_VALIDOS, RESULTADOS_VALIDOS, MONEDAS_VALIDAS,
 } from './_utils/instancias.js';
 import { notificarCambioEtapa } from './_utils/notify-agencia.js';
@@ -283,6 +283,55 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, action: 'resolver-espera', esperas: esperasRe, novedades: reNov });
     }
 
+    /* ---- RECORDATORIOS (alertas ad-hoc de un caso puntual) ----
+       Deliberadamente separados de `esperas`: una espera significa "estoy
+       bloqueado esperando a alguien" y mueve el responsable del caso; un
+       recordatorio es una nota propia con fecha y no debe mover nada. */
+    if (body.action === 'set-recordatorio') {
+      var recTexto = (body.texto || '').trim();
+      var recVence = (body.vence || '').trim();
+      if (!recTexto) return res.status(400).json({ error: 'El texto del recordatorio no puede estar vacío' });
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(recVence)) return res.status(400).json({ error: 'Fecha inválida (se espera AAAA-MM-DD)' });
+
+      var recRow = await fetchRow('recordatorios');
+      if (!recRow) return res.status(404).json({ error: 'Reclamo no encontrado' });
+      var recs = Array.isArray(recRow.recordatorios) ? recRow.recordatorios : [];
+      recs.push({
+        id: 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+        texto: recTexto, vence: recVence, creado: new Date().toISOString(), hecho: null,
+      });
+      var recPatch = await patchRow({ recordatorios: recs });
+      if (!recPatch.ok) {
+        var recErr = (await recPatch.text()).substring(0, 300);
+        console.error('[update-ticket] set-recordatorio error:', recErr);
+        if (recErr.indexOf('recordatorios') > -1)
+          return res.status(500).json({ error: 'Falta la columna recordatorios. Corré supabase/migration_013.sql.' });
+        return res.status(500).json({ error: 'Error al guardar el recordatorio' });
+      }
+      return res.status(200).json({ success: true, action: 'set-recordatorio', recordatorios: recs });
+    }
+
+    /* Marca un recordatorio como cumplido, o lo elimina si viene borrar:true. */
+    if (body.action === 'resolver-recordatorio') {
+      var recId = (body.recordatorio_id || '').trim();
+      if (!recId) return res.status(400).json({ error: 'recordatorio_id requerido' });
+      var rrRow = await fetchRow('recordatorios');
+      if (!rrRow) return res.status(404).json({ error: 'Reclamo no encontrado' });
+      var rrList = Array.isArray(rrRow.recordatorios) ? rrRow.recordatorios : [];
+      var rrFound = false;
+      if (body.borrar) {
+        var antes = rrList.length;
+        rrList = rrList.filter(function (r) { return r.id !== recId; });
+        rrFound = rrList.length < antes;
+      } else {
+        rrList.forEach(function (r) { if (r.id === recId) { r.hecho = new Date().toISOString(); rrFound = true; } });
+      }
+      if (!rrFound) return res.status(404).json({ error: 'Recordatorio no encontrado' });
+      var rrPatch = await patchRow({ recordatorios: rrList });
+      if (!rrPatch.ok) return res.status(500).json({ error: 'Error al actualizar el recordatorio' });
+      return res.status(200).json({ success: true, action: 'resolver-recordatorio', recordatorios: rrList });
+    }
+
     /* ---- SET COBRO (checklist: pago aerolínea / comisión / honorarios abogado) ---- */
     if (body.action === 'set-cobro') {
       var CAMPOS_COBRO = ['pago_aerolinea_fecha', 'comision_cobrada_fecha', 'honorarios_abogado_fecha'];
@@ -307,7 +356,7 @@ export default async function handler(req, res) {
       if (siInstancia !== 'reclamo_directo' && siInstancia !== 'mediacion') siMomento = null;
       if (siInstancia !== 'cerrado') siResultado = null;
 
-      var siRow = await fetchRow('estado_historial,instancia_historial');
+      var siRow = await fetchRow('estado_historial,instancia_historial,novedades,agencia_id,ref_code');
       if (!siRow) return res.status(404).json({ error: 'Reclamo no encontrado' });
       var siNow = new Date().toISOString();
       var siEstadoLegacy = instanciaAEstadoLegacy(siInstancia, siMomento, siResultado);
@@ -317,18 +366,36 @@ export default async function handler(req, res) {
       var siInstHist = Array.isArray(siRow.instancia_historial) ? siRow.instancia_historial : [];
       siInstHist.push({ instancia: siInstancia, momento: siMomento, fecha: siNow, por: 'admin (corrección)' });
 
+      /* Una corrección manual no deja rastro visible si no se registra: queda un
+         salto de estado sin explicación en el historial. */
+      var siEtapaLabel = etapaExterna({ instancia: siInstancia, momento: siMomento, resultado: siResultado }).label;
+      var siNov = Array.isArray(siRow.novedades) ? siRow.novedades : [];
+      siNov.unshift({ fecha: siNow, texto: 'Corrección manual del estado → ' + siEtapaLabel, correccion: true });
+
       var siPatchBody = {
         instancia: siInstancia, momento: siMomento, resultado: siResultado,
         estado: siEstadoLegacy, estado_historial: siEstHist, instancia_historial: siInstHist,
+        novedades: siNov,
       };
       if (body.motivo_cierre !== undefined) siPatchBody.motivo_cierre = body.motivo_cierre || null;
       if (body.motivo_cierre_detalle !== undefined) siPatchBody.motivo_cierre_detalle = body.motivo_cierre_detalle || null;
 
       var siPatchRes = await patchRow(siPatchBody);
       if (!siPatchRes.ok) return res.status(500).json({ error: 'Error al corregir la instancia' });
+
+      /* Notificar a la agencia. 'avanzar' ya lo hacía y 'set-instancia' no, así que
+         una corrección manual pasaba en silencio. Se marca como corrección para
+         que el mail lo diga explícitamente. */
+      try {
+        await notificarCambioEtapa(SB_URL, SB_KEY, {
+          agencia_id: siRow.agencia_id, ref_code: siRow.ref_code,
+          instancia: siInstancia, momento: siMomento, resultado: siResultado,
+        }, { correccion: true });
+      } catch (e) { console.error('[update-ticket] notify-agencia (corrección) error:', e.message); }
+
       return res.status(200).json({
         success: true, action: 'set-instancia', instancia: siInstancia, momento: siMomento, resultado: siResultado,
-        estado: siEstadoLegacy, estado_historial: siEstHist, instancia_historial: siInstHist,
+        estado: siEstadoLegacy, estado_historial: siEstHist, instancia_historial: siInstHist, novedades: siNov,
       });
     }
 

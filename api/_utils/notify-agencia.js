@@ -10,10 +10,12 @@
  * @param {string} SB_URL
  * @param {string} SB_KEY  service role key
  * @param {Object} caso    debe traer agencia_id, ref_code e instancia/momento/resultado
+ * @param {Object} [opts]  {correccion:true} cuando el cambio viene de una corrección
+ *                         manual del estado y no de una transición del flujo normal
  */
 import { etapaExterna } from './instancias.js';
 
-export async function notificarCambioEtapa(SB_URL, SB_KEY, caso) {
+export async function notificarCambioEtapa(SB_URL, SB_KEY, caso, opts) {
   if (!caso || !caso.agencia_id) {
     console.log('[notify-agencia] Caso sin agencia_id: no se notifica.');
     return { sent: false, reason: 'no_agencia' };
@@ -39,6 +41,13 @@ export async function notificarCambioEtapa(SB_URL, SB_KEY, caso) {
 
   var etapa = etapaExterna(caso);
   var ref = caso.ref_code || 'tu caso';
+  var esCorreccion = !!(opts && opts.correccion);
+
+  /* Una corrección manual se avisa distinto de un avance normal: si llega el
+     mismo mail, la agencia no entiende por qué el caso "volvió atrás". */
+  var lineaPrincipal = esCorreccion
+    ? 'Corregimos manualmente el estado de tu caso <strong>' + ref + '</strong>. El estado correcto es: <strong style="color:#2D4A3E">' + etapa.label + '</strong>.'
+    : 'Tu caso <strong>' + ref + '</strong> pasó a: <strong style="color:#2D4A3E">' + etapa.label + '</strong>.';
 
   var mailRes = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -46,14 +55,15 @@ export async function notificarCambioEtapa(SB_URL, SB_KEY, caso) {
     body: JSON.stringify({
       from: 'SolucionAir <no-reply@solucionair.com>',
       to: agencia.email,
-      subject: 'SolucionAir — Caso ' + ref + ': ' + etapa.label,
+      subject: 'SolucionAir — Caso ' + ref + (esCorreccion ? ': corrección de estado — ' : ': ') + etapa.label,
       html: '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#FFFFFF">'
         + '<div style="background:#2D4A3E;padding:24px 28px;border-radius:8px 8px 0 0">'
         + '<h1 style="color:#D4A853;font-size:20px;margin:0;font-weight:700">SolucionAir</h1>'
         + '<p style="color:#C0D8C8;font-size:12px;margin:5px 0 0">Portal de agencias</p></div>'
         + '<div style="padding:28px;border:1px solid #E0DCD4;border-top:none;border-radius:0 0 8px 8px">'
         + '<p style="color:#3A3A3A;font-size:14px;line-height:1.6;margin:0 0 16px">Hola ' + (agencia.nombre || '') + ',</p>'
-        + '<p style="color:#3A3A3A;font-size:14px;line-height:1.6;margin:0 0 16px">Tu caso <strong>' + ref + '</strong> pasó a: <strong style="color:#2D4A3E">' + etapa.label + '</strong>.</p>'
+        + (esCorreccion ? '<p style="background:#FBF4E4;border-left:3px solid #D4A853;padding:10px 14px;color:#3A3A3A;font-size:13px;line-height:1.6;margin:0 0 16px">Corrección manual de estado</p>' : '')
+        + '<p style="color:#3A3A3A;font-size:14px;line-height:1.6;margin:0 0 16px">' + lineaPrincipal + '</p>'
         + '<p style="color:#3A3A3A;font-size:14px;line-height:1.6;margin:0 0 16px">Podés ver el detalle en tu panel de agencia.</p>'
         + '<p style="margin-top:20px;font-size:13px">Saludos,<br/><strong style="color:#2D4A3E">Equipo SolucionAir</strong></p>'
         + '<hr style="margin-top:24px;border:none;border-top:1px solid #E0DCD4"/>'
