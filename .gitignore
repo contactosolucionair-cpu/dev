@@ -1,3 +1,6 @@
 .vercel
 .env*
 node_modules
+
+# PDFs de prueba que deja el generador legal al correr con rutas absolutas
+UsersUsuarioAppData*.pdf
