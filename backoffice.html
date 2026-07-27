@@ -2154,6 +2154,24 @@
         });
         if(c.fecha_mediacion&&new Date(c.fecha_mediacion).getTime()>=Date.now()-86400000)
           out.push({fecha:c.fecha_mediacion,c:c,tipo:'audiencia',texto:'Audiencia de mediación',quien:'Mediador'});
+
+        /* Si la pelota es nuestra (evaluación, decidir cómo seguir, etc.) y no hay
+           ya un ítem con fecha propia que lo cubra, se genera uno: sin esto, un
+           caso recién ingresado sin esperas ni recordatorios era invisible en To
+           Do aunque de hecho esté esperando que lo miremos. Aparece desde el
+           mismo día que entra (sin umbral), fechado desde que cayó en esa
+           posición — o desde que se creó la espera, si la pelota viene de una
+           espera propia sin vencimiento cargado. */
+        var pel=pelotaInfo(c,pos);
+        if(pel.responsable==='solucionair'&&!(pel.espera&&pel.espera.vence)){
+          var fRef=pel.espera?pel.espera.creada:fechaInicioInstancia(c);
+          if(fRef){
+            var txtSA=pel.espera
+              ?('Dar curso a: '+(TIPO_ESPERA_LABELS[pel.espera.tipo]||pel.espera.tipo)+(pel.espera.detalle?' — '+pel.espera.detalle:''))
+              :('Evaluar / avanzar el caso · '+etapaLabel(pos,c.via_reclamo,c.organismo));
+            out.push({fecha:(fRef instanceof Date?fRef.toISOString():fRef),c:c,tipo:'accion_sa',texto:txtSA,quien:'SolucionAir'});
+          }
+        }
       });
       out.sort(function(a,b){return new Date(a.fecha).getTime()-new Date(b.fecha).getTime()});
       return out;
