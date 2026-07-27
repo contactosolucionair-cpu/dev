@@ -718,8 +718,8 @@
          el responsable histórico de sus casos y tiene que mostrar su nombre. */
       fetch('/api/admin?action=abogados',{headers:{'X-Admin-Password':adminPwd}}).then(function(r){return r.json()}).then(function(d){_abogadosCache=(d&&d.abogados)||[];pick(_abogadosCache)}).catch(function(){el.textContent='ID '+abogadoId});
     }
-    /** Responsable principal derivado de la posición del caso (sin contar esperas ad-hoc). */
-    function pelotaPrincipal(c,pos){
+    /** Responsable que se deriva sólo de dónde está formalmente el expediente. */
+    function pelotaPosicional(c,pos){
       if(pos.instancia==='cerrado')return null;
       if(pos.momento==='presentado'){
         if(pos.instancia==='mediacion')return 'mediador';
@@ -729,6 +729,26 @@
       if(pos.instancia==='cobro')return c.pago_aerolinea_fecha?'solucionair':'aerolinea';
       return 'solucionair';
     }
+    /** Responsable principal ("la pelota").
+        Las esperas abiertas MANDAN sobre la posición: lo que frena el caso es lo
+        que estás esperando, no dónde está formalmente presentado. Con varias
+        esperas abiertas gana la más vieja. Sin esperas, cae al default posicional.
+        Antes esto era sólo posicional, así que una espera del pasajero nunca movía
+        la pelota y al resolverla el caso "volvía" a la aerolínea sin que nadie
+        registrara que la acción siguiente era de SolucionAir. */
+    function pelotaInfo(c,pos){
+      if(pos.instancia==='cerrado')return {responsable:null,espera:null};
+      var abiertas=esperasAbiertas(c);
+      if(abiertas.length){
+        var vieja=abiertas.reduce(function(a,e){
+          if(!a)return e;
+          return new Date(e.creada).getTime()<new Date(a.creada).getTime()?e:a;
+        },null);
+        if(vieja&&vieja.responsable)return {responsable:vieja.responsable,espera:vieja};
+      }
+      return {responsable:pelotaPosicional(c,pos),espera:null};
+    }
+    function pelotaPrincipal(c,pos){return pelotaInfo(c,pos).responsable}
     function fechaInicioInstancia(c){
       var ih=Array.isArray(c.instancia_historial)?c.instancia_historial:[];
       if(ih.length)return new Date(ih[ih.length-1].fecha);
@@ -883,8 +903,11 @@
         if((c.firma_estado||'no_aplica')==='pendiente_envio')alertReasons.push('Autorización pendiente de envío');
         if(pos.instancia==='evaluacion'&&!abiertas.length)alertReasons.push('Caso en evaluación');
         var alertCell=alertReasons.length?'<span title="'+esc(alertReasons.join(' · '))+'" style="color:var(--warn);display:inline-flex">'+ALERT_ICON+'</span>':'';
-        var principal=pelotaPrincipal(c,pos);
-        var otras=principal?abiertas.filter(function(e){return e.responsable!==principal}):abiertas;
+        var pel=pelotaInfo(c,pos);
+        var principal=pel.responsable;
+        /* "Otras" = toda espera abierta salvo la que fijó la pelota. Si la pelota es
+           posicional (sin espera), todas las abiertas cuentan como otras. */
+        var otras=pel.espera?abiertas.filter(function(e){return e.id!==pel.espera.id}):abiertas;
         var pelotaCell=principal?'<span class="badge badge--en_gestion">'+esc(RESPONSABLE_ESPERA_LABELS[principal]||principal)+'</span>':'—';
         if(otras.length)pelotaCell+=' <span title="'+esc(otras.map(function(e){return (TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' ('+(RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable)+')'}).join(' · '))+'" class="badge badge--pendiente">+'+otras.length+'</span>';
         var dias=diasEnInstancia(c);
@@ -1592,12 +1615,13 @@
       /* --- Esperas --- */
       detailBody.querySelectorAll('[data-espera-resolver]').forEach(function(btn){
         btn.addEventListener('click',function(){
-          btn.disabled=true;
-          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:c.id,action:'resolver-espera',espera_id:btn.getAttribute('data-espera-resolver')})})
-          .then(function(r){return r.json()}).then(function(d){
-            if(d.success){c.esperas=d.esperas;c.novedades=d.novedades;claims.forEach(function(cl){if(cl.id===c.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});toast('Espera resuelta.');openDetail(c)}
-            else{btn.disabled=false;toast(d.error||'Error.',true)}
-          }).catch(function(){btn.disabled=false;toast('Error de conexión.',true)});
+          var eid=btn.getAttribute('data-espera-resolver');
+          var esp=null;(Array.isArray(c.esperas)?c.esperas:[]).forEach(function(e){if(e.id===eid)esp=e});
+          /* Resolver una espera de un tercero casi siempre deja una acción NUESTRA
+             pendiente (recibimos la firma → hay que remitirla). Se ofrece crearla
+             en el mismo paso, marcada por defecto, para que la pelota vuelva a SA
+             en vez de caer al default posicional. */
+          openResolverEsperaModal(c,esp);
         });
       });
       var btnOpenEspera=document.getElementById('btn-open-espera');
@@ -1814,18 +1838,32 @@
         else{
           box.style.display='';
           box.innerHTML=ins.map(function(f){
-            return '<div style="margin-bottom:10px;text-align:left">'
+            if(f.type==='checkbox'){
+              return '<div style="margin-bottom:10px;text-align:left;display:flex;gap:7px;align-items:flex-start">'
+                +'<input id="cmin-'+esc(f.id)+'" type="checkbox" style="margin-top:2px"'+(f.checked?' checked':'')+' />'
+                +'<label for="cmin-'+esc(f.id)+'" style="font-size:.76rem;color:var(--t2);cursor:pointer">'+esc(f.label||'')+'</label>'
+                +'</div>';
+            }
+            return '<div style="margin-bottom:10px;text-align:left"'+(f.showIf?' data-show-if="'+esc(f.showIf)+'"':'')+'>'
               +'<label class="detail__label" style="display:block;margin-bottom:4px">'+esc(f.label||'')+'</label>'
-              +'<input id="cmin-'+esc(f.id)+'" type="'+(f.type||'text')+'" class="firma-select" style="width:100%" placeholder="'+esc(f.placeholder||'')+'" autocomplete="off" />'
+              +'<input id="cmin-'+esc(f.id)+'" type="'+(f.type||'text')+'" class="firma-select" style="width:100%" placeholder="'+esc(f.placeholder||'')+'" value="'+esc(f.value||'')+'" autocomplete="off" />'
               +'</div>';
           }).join('');
-          var first=box.querySelector('input');if(first)setTimeout(function(){first.focus()},50);
+          /* Campos que dependen de un checkbox (data-show-if) */
+          box.querySelectorAll('[data-show-if]').forEach(function(wrap){
+            var src=document.getElementById('cmin-'+wrap.getAttribute('data-show-if'));
+            if(!src)return;
+            var sync=function(){wrap.style.display=src.checked?'':'none'};
+            src.addEventListener('change',sync);sync();
+          });
+          var first=box.querySelector('input:not([type=checkbox])');if(first)setTimeout(function(){first.focus()},50);
         }
       }
       cmCallback=opts.onConfirm||null;
       cmOv.classList.add('open');
     }
     function cmInput(id){var el=document.getElementById('cmin-'+id);return el?el.value:''}
+    function cmChecked(id){var el=document.getElementById('cmin-'+id);return !!(el&&el.checked)}
 
     function closeModal(){
       cmOv.classList.remove('open');cmCallback=null;cmErr.textContent='';
@@ -1844,6 +1882,46 @@
     }
 
     function modalError(msg){cmErr.textContent=msg}
+
+    /* ---- Resolver una espera, ofreciendo devolver la pelota a SolucionAir ----
+       Resolver algo que esperabas de un tercero casi nunca cierra el asunto: recibís
+       la autorización firmada y todavía tenés que remitirla. Por eso el seguimiento
+       viene pre-marcado cuando la espera era de otro; si era propia, no. */
+    function openResolverEsperaModal(c,esp){
+      var deTercero=!!(esp&&esp.responsable&&esp.responsable!=='solucionair');
+      var etiqueta=esp?(TIPO_ESPERA_LABELS[esp.tipo]||esp.tipo):'la espera';
+      var sugerido='Dar curso a: '+etiqueta+(esp&&esp.detalle?' — '+esp.detalle:'');
+      var en2dias=new Date(Date.now()+2*86400000).toISOString().slice(0,10);
+      showModal({
+        title:'Resolver espera',
+        desc:'Se marca "'+etiqueta+'" como resuelta'+(deTercero?'. Como la esperabas de '+(RESPONSABLE_ESPERA_LABELS[esp.responsable]||esp.responsable)+', normalmente queda una acción tuya pendiente.':'.'),
+        confirmText:'Resolver',
+        inputs:[
+          {id:'seg',type:'checkbox',label:'Crear espera de seguimiento para SolucionAir',checked:deTercero},
+          {id:'segdet',label:'Qué queda pendiente',placeholder:sugerido,value:sugerido,showIf:'seg'},
+          {id:'segvence',label:'Vence',type:'date',value:en2dias,showIf:'seg'}
+        ],
+        onConfirm:function(){
+          var crear=cmChecked('seg');
+          cmConfirm.disabled=true;cmConfirm.textContent='Resolviendo...';
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({
+            id:c.id,action:'resolver-espera',espera_id:esp?esp.id:'',
+            crear_seguimiento:crear,
+            seguimiento_detalle:crear?cmInput('segdet'):'',
+            seguimiento_vence:crear?(cmInput('segvence')||null):null
+          })})
+          .then(function(r){return r.json()}).then(function(d){
+            cmConfirm.disabled=false;cmConfirm.textContent='Resolver';
+            if(d.success){
+              c.esperas=d.esperas;c.novedades=d.novedades;
+              claims.forEach(function(cl){if(cl.id===c.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});
+              closeModal();toast(crear?'Espera resuelta · seguimiento creado':'Espera resuelta');
+              openDetail(c);renderTable();
+            } else modalError(d.error||'Error');
+          }).catch(function(){cmConfirm.disabled=false;cmConfirm.textContent='Resolver';modalError('Error de conexión')});
+        }
+      });
+    }
 
     /* ---- Acciones de cuentas de portal, compartidas por agencias y abogados ----
        `tipo` es 'agencia' | 'abogado' y arma el nombre de acción en /api/admin. */

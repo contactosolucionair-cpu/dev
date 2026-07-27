@@ -175,6 +175,15 @@ export var MOTIVOS_CIERRE = [
 export var TIPOS_ESPERA = ['info_pasajero', 'firma_documento', 'requerimiento_aerolinea', 'audiencia', 'accion_interna'];
 export var RESPONSABLES_ESPERA = ['solucionair', 'pasajero', 'aerolinea', 'abogado', 'mediador'];
 
+/* Etiquetas legibles. backoffice.html mantiene su propia copia (no puede importar). */
+export var TIPO_ESPERA_LABELS = {
+  info_pasajero: 'Información del pasajero',
+  firma_documento: 'Firma de documento',
+  requerimiento_aerolinea: 'Requerimiento de la aerolínea',
+  audiencia: 'Audiencia',
+  accion_interna: 'Acción interna',
+};
+
 export var INSTANCIAS_VALIDAS = ['evaluacion', 'reclamo_directo', 'mediacion', 'cobro', 'cerrado'];
 export var MOMENTOS_VALIDOS = ['preparacion', 'presentado', 'respuesta_recibida'];
 export var RESULTADOS_VALIDOS = ['exito', 'sin_exito', 'no_apto', 'abandonado'];

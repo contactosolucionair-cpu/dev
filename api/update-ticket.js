@@ -20,7 +20,7 @@
  */
 import {
   getInstancia, instanciaAEstadoLegacy, validarTransicion,
-  MOTIVOS_CIERRE, TIPOS_ESPERA, RESPONSABLES_ESPERA,
+  MOTIVOS_CIERRE, TIPOS_ESPERA, RESPONSABLES_ESPERA, TIPO_ESPERA_LABELS,
   INSTANCIAS_VALIDAS, MOMENTOS_VALIDOS, RESULTADOS_VALIDOS, MONEDAS_VALIDAS,
 } from './_utils/instancias.js';
 import { notificarCambioEtapa } from './_utils/notify-agencia.js';
@@ -246,6 +246,10 @@ export default async function handler(req, res) {
     }
 
     /* ---- RESOLVER ESPERA ---- */
+    /* Con `crear_seguimiento` se abre en el mismo paso una espera de acción interna
+       a cargo de SolucionAir. Sin esto, resolver una espera de un tercero (p. ej.
+       la firma del pasajero) hacía caer la pelota al default posicional y el paso
+       siguiente —que es nuestro— no quedaba registrado en ningún lado. */
     if (body.action === 'resolver-espera') {
       var esperaId = (body.espera_id || '').trim();
       if (!esperaId) return res.status(400).json({ error: 'espera_id requerido' });
@@ -255,11 +259,24 @@ export default async function handler(req, res) {
       var found = null;
       esperasRe.forEach(function (e) { if (e.id === esperaId) found = e; });
       if (!found) return res.status(404).json({ error: 'Espera no encontrada' });
+      if (found.resuelta) return res.status(400).json({ error: 'Esa espera ya estaba resuelta.' });
       var nowRe = new Date().toISOString();
       found.resuelta = nowRe;
 
       var reNov = Array.isArray(reRow.novedades) ? reRow.novedades : [];
       reNov.unshift({ fecha: nowRe, texto: 'Espera resuelta: ' + found.tipo });
+
+      if (body.crear_seguimiento) {
+        var segDetalle = (body.seguimiento_detalle || '').trim()
+          || ('Dar curso a: ' + (TIPO_ESPERA_LABELS[found.tipo] || found.tipo) + (found.detalle ? ' — ' + found.detalle : ''));
+        var segVence = body.seguimiento_vence ? new Date(body.seguimiento_vence).toISOString() : null;
+        esperasRe.push({
+          id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+          tipo: 'accion_interna', detalle: segDetalle, responsable: 'solucionair',
+          creada: nowRe, vence: segVence, resuelta: null, origen_espera: esperaId,
+        });
+        reNov.unshift({ fecha: nowRe, texto: 'Nueva espera: acción interna — ' + segDetalle });
+      }
 
       var rePatch = await patchRow({ esperas: esperasRe, novedades: reNov });
       if (!rePatch.ok) return res.status(500).json({ error: 'Error al resolver la espera' });
