@@ -132,7 +132,7 @@
       return 'En mediación';
     }
     if(pos.instancia==='evaluacion')return 'En evaluación';
-    if(pos.instancia==='reclamo_directo')return 'Reclamo directo';
+    if(pos.instancia==='reclamo_directo')return 'Reclamo administrativo';
     return pos.instancia||'—';
   }
   function posBadge(pos){
@@ -143,7 +143,26 @@
   var MOTIVOS_CIERRE=['rechazo_definitivo','monto_inviable','documentacion_insuficiente','no_elegible','prescripto','pasajero_no_responde','desistimiento_pasajero','aerolinea_no_pago','otro'];
   var MOTIVO_LABELS={rechazo_definitivo:'Rechazo definitivo',monto_inviable:'Monto inviable',documentacion_insuficiente:'Documentación insuficiente',no_elegible:'No elegible',prescripto:'Prescripto',pasajero_no_responde:'El pasajero no responde',desistimiento_pasajero:'Desistimiento del pasajero',aerolinea_no_pago:'La aerolínea no pagó',otro:'Otro'};
   function esc(s){var d=document.createElement('div');d.textContent=s==null?'':s;return d.innerHTML}
-  function fmtFechaHora(d){if(!d)return '—';try{return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return '—'}}
+  /* Formato unico de fecha en toda la web: dd/mmm/aaaa (27/jul/2026).
+     Las fechas sin hora ('YYYY-MM-DD', como fecha_vuelo) se parsean a mano:
+     new Date('2026-07-27') es medianoche UTC y en Argentina (UTC-3) se
+     renderizaria como el 26. */
+  var MESES_ABR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  function fmtFecha(d) {
+    if (!d) return '—';
+    var s = String(d), y, mo, da;
+    var soloFecha = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (soloFecha) { y = +soloFecha[1]; mo = +soloFecha[2]; da = +soloFecha[3]; }
+    else { var dt = new Date(s); if (isNaN(dt.getTime())) return '—'; y = dt.getFullYear(); mo = dt.getMonth() + 1; da = dt.getDate(); }
+    if (!MESES_ABR[mo - 1]) return '—';
+    return (da < 10 ? '0' : '') + da + '/' + MESES_ABR[mo - 1] + '/' + y;
+  }
+  function fmtFechaHora(d) {
+    if (!d) return '—';
+    var dt = new Date(d); if (isNaN(dt.getTime())) return '—';
+    var hh = dt.getHours(), mm = dt.getMinutes();
+    return fmtFecha(d) + ' ' + (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+  }
 
   function authFetch(url,opts){opts=opts||{};opts.headers=opts.headers||{};opts.headers['Authorization']='Bearer '+token;return fetch(url,opts);}
   function logout(){localStorage.removeItem('sa_ab_token');localStorage.removeItem('sa_ab_email');localStorage.removeItem('sa_ab_data');location.href='/abogados';}

@@ -143,7 +143,26 @@
       if(resultado==='no_apto')return{etapa:'cerrado_no_viable',label:'Cerrado · No viable'};
       return{etapa:'cerrado_otro',label:'Cerrado'};
     }
-    function fmtFechaHora(d){if(!d)return '—';try{return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return '—'}}
+  /* Formato unico de fecha en toda la web: dd/mmm/aaaa (27/jul/2026).
+     Las fechas sin hora ('YYYY-MM-DD', como fecha_vuelo) se parsean a mano:
+     new Date('2026-07-27') es medianoche UTC y en Argentina (UTC-3) se
+     renderizaria como el 26. */
+  var MESES_ABR = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  function fmtFecha(d) {
+    if (!d) return '—';
+    var s = String(d), y, mo, da;
+    var soloFecha = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+    if (soloFecha) { y = +soloFecha[1]; mo = +soloFecha[2]; da = +soloFecha[3]; }
+    else { var dt = new Date(s); if (isNaN(dt.getTime())) return '—'; y = dt.getFullYear(); mo = dt.getMonth() + 1; da = dt.getDate(); }
+    if (!MESES_ABR[mo - 1]) return '—';
+    return (da < 10 ? '0' : '') + da + '/' + MESES_ABR[mo - 1] + '/' + y;
+  }
+  function fmtFechaHora(d) {
+    if (!d) return '—';
+    var dt = new Date(d); if (isNaN(dt.getTime())) return '—';
+    var hh = dt.getHours(), mm = dt.getMinutes();
+    return fmtFecha(d) + ' ' + (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+  }
 
     fetch('/api/my-claims',{headers:{'Authorization':'Bearer '+token}}).then(function(r){
       if(r.status===401){logoutRedirect();throw new Error('401')}
@@ -163,7 +182,7 @@
         var isActive=etapa.indexOf('cerrado')!==0;
         var bc=badgeClass(etapa);
         var estadoLabel=c.etapa_label||'—';
-        var fecha=c.creado_en?new Date(c.creado_en).toLocaleDateString('es-AR',{day:'2-digit',month:'long',year:'numeric'}):'—';
+        var fecha=fmtFecha(c.creado_en);
 
         html+='<div class="case-card" id="card-'+idx+'" style="margin-bottom:18px">';
         html+='<div class="case-card__head"><div class="case-card__title">Reclamo '+(c.ref_code||'')+'</div><span class="badge '+bc+'" id="badge-'+idx+'">'+estadoLabel+'</span></div>';
@@ -172,7 +191,7 @@
         html+='<div class="case-card__field"><div class="case-card__label">Pasajero</div><div class="case-card__value">'+(c.nombre||'—')+'</div></div>';
         html+='<div class="case-card__field"><div class="case-card__label">Vuelo</div><div class="case-card__value mono">'+(c.vuelo_nro||'—')+'</div></div>';
         html+='<div class="case-card__field"><div class="case-card__label">Aerolínea</div><div class="case-card__value">'+(c.aerolinea||'—')+'</div></div>';
-        html+='<div class="case-card__field"><div class="case-card__label">Fecha del vuelo</div><div class="case-card__value mono">'+(c.fecha_vuelo||'—')+'</div></div>';
+        html+='<div class="case-card__field"><div class="case-card__label">Fecha del vuelo</div><div class="case-card__value mono">'+fmtFecha(c.fecha_vuelo)+'</div></div>';
         html+='<div class="case-card__field"><div class="case-card__label">Registrado</div><div class="case-card__value mono">'+fecha+'</div></div>';
         html+='</div>';
         html+='<div class="case-card__divider"></div>';

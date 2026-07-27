@@ -666,7 +666,7 @@
     var claims=[],filtered=[];
 
     /* ---- Instancia + momento (reemplaza el pipeline plano de estados) ---- */
-    var INSTANCIA_LABELS={evaluacion:'Evaluación',reclamo_directo:'Reclamo directo',mediacion:'Mediación',cobro:'Cobro',cerrado:'Cerrado'};
+    var INSTANCIA_LABELS={evaluacion:'Evaluación',reclamo_directo:'Reclamo administrativo',mediacion:'Mediación',cobro:'Cobro',cerrado:'Cerrado'};
     var INSTANCIA_ORDEN=['evaluacion','reclamo_directo','mediacion','cobro','cerrado'];
     var MOMENTO_LABELS={preparacion:'Preparación',presentado:'Presentado · esperando respuesta',respuesta_recibida:'Respuesta recibida · a decidir'};
     var RESULTADO_LABELS={exito:'Éxito',sin_exito:'Sin éxito',no_apto:'No apto',abandonado:'Abandonado'};
@@ -806,8 +806,26 @@
     }
     function tipoLabel(t){return t==='vuelo_equipaje'?'Vuelo + Equipaje':t==='equipaje'?'Equipaje':'Vuelo'}
     function tipoBadge(t){return t==='equipaje'?'badge--equipaje':t==='vuelo_equipaje'?'badge--combo':'badge--vuelo'}
-    function fmtFecha(d){if(!d)return '—';try{return new Date(d).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}catch(e){return '—'}}
-    function fmtFechaHora(d){if(!d)return '—';try{return new Date(d).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch(e){return '—'}}
+    /* Formato único de fecha en toda la web: dd/mmm/aaaa (27/jul/2026).
+       Las fechas sin hora ('YYYY-MM-DD', como fecha_vuelo) se parsean a mano:
+       new Date('2026-07-27') es medianoche UTC y en Argentina (UTC-3) se
+       renderizaría como el 26. */
+    var MESES_ABR=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    function fmtFecha(d){
+      if(!d)return '—';
+      var s=String(d),y,mo,da;
+      var soloFecha=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if(soloFecha){y=+soloFecha[1];mo=+soloFecha[2];da=+soloFecha[3]}
+      else{var dt=new Date(s);if(isNaN(dt.getTime()))return '—';y=dt.getFullYear();mo=dt.getMonth()+1;da=dt.getDate()}
+      if(!MESES_ABR[mo-1])return '—';
+      return (da<10?'0':'')+da+'/'+MESES_ABR[mo-1]+'/'+y;
+    }
+    function fmtFechaHora(d){
+      if(!d)return '—';
+      var dt=new Date(d);if(isNaN(dt.getTime()))return '—';
+      var hh=dt.getHours(),mm=dt.getMinutes();
+      return fmtFecha(d)+' '+(hh<10?'0':'')+hh+':'+(mm<10?'0':'')+mm;
+    }
     function toLocalInput(d){if(!d)return '';var dt=new Date(d);if(isNaN(dt.getTime()))return '';var p=function(n){return String(n).padStart(2,'0')};return dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate())+'T'+p(dt.getHours())+':'+p(dt.getMinutes())}
     var tblBody=document.getElementById('tbl-body');
     var overlay=document.getElementById('panel-overlay');
@@ -931,7 +949,7 @@
         html+='<td><span class="badge '+tipoBadge(tipoVal)+'">'+tipoLabel(tipoVal)+'</span></td>';
         html+='<td class="mono">'+(c.vuelo_nro||'—')+'</td>';
         html+='<td>'+(c.aerolinea||'—')+'</td>';
-        html+='<td class="mono">'+(c.fecha_vuelo||'—')+'</td>';
+        html+='<td class="mono">'+fmtFecha(c.fecha_vuelo)+'</td>';
         html+='<td><span class="badge '+bc+'">'+esc(etapaLabel(pos,c.via_reclamo,c.organismo))+'</span></td>';
         html+='<td class="mono">'+pelotaCell+'</td>';
         html+='<td class="mono" style="'+diasStyle+'">'+(dias==null?'—':dias)+'</td>';
@@ -959,7 +977,7 @@
 
     /* ---- Stepper + transiciones + esperas + cobro (helpers de render) ---- */
     function renderStepperHtml(c,pos){
-      var steps=[['evaluacion','Evaluación'],['reclamo_directo','Reclamo directo'],['mediacion','Mediación'],['cobro','Cobro'],['cerrado','Cerrado']];
+      var steps=[['evaluacion','Evaluación'],['reclamo_directo','Reclamo administrativo'],['mediacion','Mediación'],['cobro','Cobro'],['cerrado','Cerrado']];
       var curIdx=INSTANCIA_ORDEN.indexOf(pos.instancia);
       var pasoPorMediacion=pos.instancia==='mediacion'||(Array.isArray(c.instancia_historial)&&c.instancia_historial.some(function(ih){return ih.instancia==='mediacion'}));
       var h='<div class="stepper">';
@@ -976,7 +994,7 @@
     function transicionesDisponibles(pos){
       var key=(pos.instancia==='reclamo_directo'||pos.instancia==='mediacion')?(pos.instancia+'/'+(pos.momento||'')):pos.instancia;
       var TABLA={
-        evaluacion:[['iniciar_reclamo','Iniciar reclamo directo'],['no_apto','Marcar no apto'],['abandonar','Abandonar caso']],
+        evaluacion:[['iniciar_reclamo','Iniciar reclamo administrativo'],['no_apto','Marcar no apto'],['abandonar','Abandonar caso']],
         'reclamo_directo/preparacion':[['presentar','Presentar a la aerolínea'],['abandonar','Abandonar caso']],
         'reclamo_directo/presentado':[['respuesta_recibida','Registrar respuesta recibida'],['vencio_plazo','Marcar plazo vencido'],['acuerdo','Registrar acuerdo'],['abandonar','Abandonar caso']],
         'reclamo_directo/respuesta_recibida':[['volver_a_presentar','Volver a presentar'],['escalar_mediacion','Escalar a mediación'],['elevar_organismo','Elevar a organismo'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
@@ -1111,7 +1129,7 @@
       h+='<div class="detail__grid">';
       h+='<div class="detail__section"><div class="detail__label">Vuelo</div><div class="detail__value mono">'+(c.vuelo_nro||'—')+'</div></div>';
       h+='<div class="detail__section"><div class="detail__label">Aerolínea</div><div class="detail__value">'+(c.aerolinea||'—')+'</div></div>';
-      h+='<div class="detail__section"><div class="detail__label">Fecha vuelo</div><div class="detail__value mono">'+(c.fecha_vuelo||'—')+'</div></div>';
+      h+='<div class="detail__section"><div class="detail__label">Fecha vuelo</div><div class="detail__value mono">'+fmtFecha(c.fecha_vuelo)+'</div></div>';
       if(c.pnr)h+='<div class="detail__section"><div class="detail__label">PNR</div><div class="detail__value mono">'+esc(c.pnr)+'</div></div>';
       h+='</div>';
       if(c.origen||c.destino){h+='<div class="detail__section" style="margin-top:6px"><div class="detail__label">Ruta</div><div class="detail__value mono">'+(c.origen||'?')+' → '+(c.destino||'?')+'</div></div>'}
@@ -1730,7 +1748,7 @@
       p('## Vuelo');
       p('- Vuelo: '+(c.vuelo_nro||'—'));
       p('- Aerolínea: '+(c.aerolinea||'—'));
-      p('- Fecha de vuelo: '+(c.fecha_vuelo||'—'));
+      p('- Fecha de vuelo: '+fmtFecha(c.fecha_vuelo));
       if(c.pnr)p('- PNR: '+c.pnr);
       if(c.origen||c.destino)p('- Ruta: '+(c.origen||'?')+' → '+(c.destino||'?'));
       p('');
@@ -2018,7 +2036,7 @@
         if(!deleted.length){trashBody.innerHTML='<div class="state"><p class="state__txt" style="color:var(--t4)">La papelera está vacía.</p></div>';return}
         var h='<table><thead><tr><th>Ref</th><th>Pasajero</th><th>Email</th><th>Vuelo</th><th>Eliminado</th><th>Acciones</th></tr></thead><tbody>';
         deleted.forEach(function(c){
-          var delDate=c.deleted_at?new Date(c.deleted_at).toLocaleDateString('es-AR'):'—';
+          var delDate=fmtFecha(c.deleted_at);
           h+='<tr>';
           h+='<td class="mono">'+(c.ref_code||'—')+'</td>';
           h+='<td>'+(c.nombre||'—')+'</td>';
@@ -2109,8 +2127,8 @@
     var DAY_MS=86400000;
     var DEFAULT_REGLAS=[
       {id:'evaluacion_dias',label:'Evaluación sin avanzar',tipo:'instancia_dias',instancia:'evaluacion',momento:null,dias:2,enabled:true,builtin:true},
-      {id:'presentado_dias',label:'Reclamo directo presentado sin respuesta (aerolínea)',tipo:'instancia_dias',instancia:'reclamo_directo',momento:'presentado',via:'aerolinea',dias:7,enabled:true,builtin:true},
-      {id:'presentado_organismo',label:'Reclamo directo presentado sin respuesta (organismo)',tipo:'instancia_dias',instancia:'reclamo_directo',momento:'presentado',via:'organismo',dias:20,enabled:true,builtin:true},
+      {id:'presentado_dias',label:'Reclamo administrativo presentado sin respuesta (aerolínea)',tipo:'instancia_dias',instancia:'reclamo_directo',momento:'presentado',via:'aerolinea',dias:7,enabled:true,builtin:true},
+      {id:'presentado_organismo',label:'Reclamo administrativo presentado sin respuesta (organismo)',tipo:'instancia_dias',instancia:'reclamo_directo',momento:'presentado',via:'organismo',dias:20,enabled:true,builtin:true},
       {id:'espera_vencida',label:'Espera vencida',tipo:'espera_vencida',dias:0,enabled:true,builtin:true},
       {id:'espera_pasajero_dias',label:'Espera del pasajero sin resolver',tipo:'espera_responsable_dias',responsable:'pasajero',dias:5,enabled:true,builtin:true},
       /* Sin esta regla, una espera a cargo nuestro y sin fecha de vencimiento era
