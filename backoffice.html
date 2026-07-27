@@ -673,6 +673,23 @@
       </div>
     </div>
 
+    <!-- Documentación compartida con el abogado -->
+    <div class="cm-ov" id="docvis-ov">
+      <div class="cm" style="max-width:420px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="cm__title" style="margin:0">Documentación compartida</div>
+          <button class="detail__close" id="docvis-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div style="font-size:.7rem;color:var(--t3);margin-bottom:10px">Tildá los documentos que el abogado asignado va a poder ver. Los que no tildes quedan ocultos para él.</div>
+        <div id="docvis-list" style="max-height:320px;overflow-y:auto"></div>
+        <div id="msg-docvis" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
+        <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
+          <button class="cm__btn cm__btn--cancel" id="docvis-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="btn-save-docvis" type="button">Guardar</button>
+        </div>
+      </div>
+    </div>
+
     <div class="panel-overlay" id="panel-overlay"></div>
     <div class="detail" id="detail-panel">
       <div class="detail__top"><span class="detail__title" id="detail-title">Detalle</span><button class="detail__close" id="detail-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
@@ -1309,7 +1326,7 @@
       var enMediacion=pos.instancia==='mediacion';
       var derivLocked=!!c.abogado_id && !c._derivReassign;
       h+='<div id="deriv-box" style="margin-top:10px;padding:12px;border:1px solid var(--bdl);border-radius:8px;background:var(--g05);display:'+(enMediacion?'block':'none')+'">';
-      h+='<div class="detail__label" style="margin-bottom:8px">Derivación a mediación</div>';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div class="detail__label" style="margin-bottom:0">Derivación a mediación</div><button class="btn btn--ghost" id="btn-open-docvis" type="button" style="font-size:.68rem;padding:3px 9px">📁 Documentación compartida</button></div>';
       if(derivLocked){
         h+='<div class="detail__value" style="margin-bottom:10px">Abogado asignado: <strong id="deriv-abogado-nombre">Cargando…</strong></div>';
         DERIV_DOCS.forEach(function(dd){
@@ -1802,6 +1819,10 @@
       /* --- Fecha de mediación --- */
       var btnOpenFmed=document.getElementById('btn-open-fmediacion');
       if(btnOpenFmed)btnOpenFmed.addEventListener('click',function(){openFmediacionModal(c)});
+
+      /* --- Documentación compartida con el abogado --- */
+      var btnOpenDocvis=document.getElementById('btn-open-docvis');
+      if(btnOpenDocvis)btnOpenDocvis.addEventListener('click',function(){openDocVisModal(c)});
 
       /* --- Guardar autorización --- */
       var btnSaveFirma=document.getElementById('btn-save-firma');
@@ -3386,6 +3407,53 @@
           openDetail(cc);
         } else if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
       }).catch(function(){btnSaveFmed.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
+    });
+
+    /* ---- DOCUMENTACIÓN COMPARTIDA CON EL ABOGADO ---- */
+    /* Opt-in: un adjunto sin visible_abogado===true queda oculto para el
+       abogado (ver panel-abogado.html). Se puede abrir y editar en cualquier
+       momento mientras el caso está en mediación, asignado o no todavía. */
+    var docvisOv=document.getElementById('docvis-ov');
+    var docvisCaseRef=null;
+    function openDocVisModal(caseObj){
+      docvisCaseRef=caseObj;
+      var adjArr=[];
+      try{if(caseObj.adjuntos)adjArr=Array.isArray(caseObj.adjuntos)?caseObj.adjuntos:JSON.parse(caseObj.adjuntos)}catch(e){}
+      var list=document.getElementById('docvis-list');
+      if(list){
+        if(!adjArr.length)list.innerHTML='<p style="font-size:.72rem;color:var(--t4);margin:0">Sin documentos cargados.</p>';
+        else list.innerHTML=adjArr.map(function(a,ai){
+          return '<label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem;cursor:pointer">'
+            +'<input type="checkbox" class="docvis-cb" data-idx="'+ai+'"'+(a.visible_abogado===true?' checked':'')+'>'
+            +'<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(a.nombre||a.tipo||'Documento')+'</span>'
+          +'</label>';
+        }).join('');
+      }
+      var msg=document.getElementById('msg-docvis');if(msg){msg.style.color='';msg.textContent=''}
+      if(docvisOv)docvisOv.classList.add('open');
+    }
+    var docvisClose=document.getElementById('docvis-close'),docvisCancel=document.getElementById('docvis-cancel');
+    if(docvisClose)docvisClose.addEventListener('click',function(){docvisOv.classList.remove('open')});
+    if(docvisCancel)docvisCancel.addEventListener('click',function(){docvisOv.classList.remove('open')});
+    if(docvisOv)docvisOv.addEventListener('click',function(e){if(e.target===docvisOv)docvisOv.classList.remove('open')});
+    var btnSaveDocvis=document.getElementById('btn-save-docvis');
+    if(btnSaveDocvis)btnSaveDocvis.addEventListener('click',function(){
+      if(!docvisCaseRef)return;
+      var msg=document.getElementById('msg-docvis');
+      var visibles=Array.prototype.slice.call(document.querySelectorAll('.docvis-cb:checked')).map(function(cb){return Number(cb.dataset.idx)});
+      btnSaveDocvis.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
+      var cc=docvisCaseRef;
+      fetch('/api/admin?action=set-visibles-abogado',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:cc.id,visibles:visibles})})
+      .then(function(r){return r.json()}).then(function(d){
+        btnSaveDocvis.disabled=false;
+        if(d.success){
+          cc.adjuntos=d.adjuntos;
+          claims.forEach(function(cl){if(cl.id===cc.id)cl.adjuntos=d.adjuntos});
+          toast('Documentación compartida guardada.');
+          docvisOv.classList.remove('open');
+          openDetail(cc);
+        } else if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
+      }).catch(function(){btnSaveDocvis.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
     });
 
     /* ---- NUEVO CASO ---- */

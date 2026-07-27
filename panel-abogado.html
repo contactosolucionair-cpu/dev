@@ -284,9 +284,11 @@
 
     detailBody.innerHTML=h;
 
-    /* Render docs (derivación primero) */
+    /* Render docs (derivación primero). Opt-in: SolucionAir elige documento por
+       documento qué se comparte con el abogado (ver "Documentación compartida"
+       en el backoffice) — sin ese tilde explícito, el adjunto no se muestra acá. */
     var docsEl=document.getElementById('abo-docs');
-    var adj=Array.isArray(c.adjuntos)?c.adjuntos:[];
+    var adj=(Array.isArray(c.adjuntos)?c.adjuntos:[]).filter(function(a){return a.visible_abogado===true});
     if(!adj.length){docsEl.innerHTML='<p style="font-size:.74rem;color:var(--t4)">Sin documentos.</p>';}
     else{
       var DERIV_LABELS={patrocinio:'Designación de patrocinio',ficha_caso:'Ficha de caso'};

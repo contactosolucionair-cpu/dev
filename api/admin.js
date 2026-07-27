@@ -19,6 +19,10 @@
  *   upload            POST  ?id&filename&tipo&nombre  (body binario) → sube adjunto
  *   remove            POST  {id, index} → quita un adjunto
  *   retag             POST  {id, index, tipo} → reetiqueta un adjunto existente
+ *   set-visibles-abogado POST {id, visibles:[index,...]} → marca qué adjuntos
+ *                           (por índice) se muestran al abogado asignado. El resto
+ *                           queda oculto. Opt-in: un adjunto sin este flag NO se
+ *                           muestra (ver panel-abogado.html).
  *   download-zip      POST  ?id → ZIP con todos los adjuntos del caso
  *   create-case       POST  {datos del caso} → alta manual desde backoffice + mail al cliente
  *   generar-documento POST  ?tipo=poder|patrocinio&idioma=es|en&caso_id= (+ body {overrides})
@@ -84,6 +88,7 @@ export default async function handler(req, res) {
     if (action === 'upload')           return await uploadDoc(req, res, SB_URL, SB_KEY);
     if (action === 'remove')           return await removeAdj(req, res, SB_URL, SB_KEY);
     if (action === 'retag')            return await retagAdj(req, res, SB_URL, SB_KEY);
+    if (action === 'set-visibles-abogado') return await setVisiblesAbogado(req, res, SB_URL, SB_KEY);
     if (action === 'download-zip')     return await downloadZip(req, res, SB_URL, SB_KEY);
     if (action === 'create-case')      return await createCase(req, res, SB_URL, SB_KEY);
     if (action === 'generar-documento') return await generarDocumento(req, res, SB_URL, SB_KEY);
@@ -433,6 +438,34 @@ async function retagAdj(req, res, SB_URL, SB_KEY) {
   var adjuntos = Array.isArray(cases[0].adjuntos) ? cases[0].adjuntos.slice() : [];
   if (!adjuntos[index]) return res.status(400).json({ error: 'Adjunto no encontrado' });
   adjuntos[index] = Object.assign({}, adjuntos[index], { tipo: tipo });
+
+  var patchResp = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
+    method: 'PATCH',
+    headers: { 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ adjuntos: adjuntos }),
+  });
+  if (!patchResp.ok) return res.status(patchResp.status).json({ error: await patchResp.text() });
+  return res.status(200).json({ success: true, adjuntos: adjuntos });
+}
+
+/* ------------------------------------------------------------------ */
+/* Storage: elegir qué adjuntos ve el abogado asignado                 */
+/* ------------------------------------------------------------------ */
+async function setVisiblesAbogado(req, res, SB_URL, SB_KEY) {
+  var body     = await getJson(req);
+  var id       = body.id;
+  var visibles = Array.isArray(body.visibles) ? body.visibles : [];
+  if (!id) return res.status(400).json({ error: 'id requerido' });
+
+  var caseResp = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id + '&select=id,adjuntos',
+    { headers: { 'Authorization': 'Bearer ' + SB_KEY, 'apikey': SB_KEY } });
+  var cases = await caseResp.json();
+  if (!cases.length) return res.status(404).json({ error: 'Caso no encontrado' });
+
+  var adjuntos = Array.isArray(cases[0].adjuntos) ? cases[0].adjuntos.slice() : [];
+  adjuntos = adjuntos.map(function (a, i) {
+    return Object.assign({}, a, { visible_abogado: visibles.indexOf(i) !== -1 });
+  });
 
   var patchResp = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
     method: 'PATCH',
