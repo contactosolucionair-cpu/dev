@@ -736,6 +736,13 @@
       return 'badge--en_gestion';
     }
     function esperasAbiertas(c){return (Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return !e.resuelta})}
+    /** Una espera a cargo de SolucionAir es una acción NUESTRA, no la estamos
+        esperando de un tercero: no tiene sentido darnos un plazo de gracia, así
+        que cuenta como vencida desde que se abre, tenga o no fecha de
+        vencimiento cargada (o aunque esa fecha todavía no haya llegado). Para
+        cualquier otro responsable, vencida sigue significando lo de siempre:
+        pasó la fecha de vencimiento cargada. */
+    function esperaCuentaComoVencida(e){return e.responsable==='solucionair'||!!(e.vence&&new Date(e.vence).getTime()<Date.now())}
     function acompanantesDe(c){return Array.isArray(c.acompanantes)?c.acompanantes:[]}
     /** Nombre del titular + "+n" si el caso tiene acompañantes (el tooltip los lista). */
     /* `nombre` es un único campo de texto libre ("Nombre y apellido"), no hay
@@ -975,7 +982,7 @@
         var canalVal=c.canal||'B2C';
         var tipoVal=c.tipo_reclamo||'vuelo';
         var abiertas=esperasAbiertas(c);
-        var vencidas=abiertas.filter(function(e){return e.vence&&new Date(e.vence).getTime()<Date.now()});
+        var vencidas=abiertas.filter(esperaCuentaComoVencida);
         var alertReasons=[];
         vencidas.forEach(function(e){alertReasons.push((TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' vencida')});
         if((c.firma_estado||'no_aplica')==='pendiente_envio')alertReasons.push('Autorización pendiente de envío');
@@ -1122,7 +1129,7 @@
       if(firmaVal==='enviada')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Esperando firma del pasajero</span><span class="badge badge--en_gestion">Pasajero</span></div>';
       if(!abiertas.length&&firmaVal!=='pendiente_envio'&&firmaVal!=='enviada')h+='<p style="font-size:.72rem;color:var(--t4);margin:6px 0">Sin esperas abiertas.</p>';
       abiertas.forEach(function(e){
-        var vencida=e.vence&&new Date(e.vence).getTime()<Date.now();
+        var vencida=esperaCuentaComoVencida(e);
         var dias=Math.floor((Date.now()-new Date(e.creada).getTime())/86400000);
         h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bdl)">';
         h+='<div style="min-width:0"><span style="font-size:.78rem">'+esc(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' <span class="badge badge--en_gestion">'+esc(RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable)+'</span>'+(vencida?' <span style="color:var(--err)">Vencida</span>':'')+'</span>';
@@ -2152,7 +2159,12 @@
       claims.filter(function(c){return !c.deleted_at}).forEach(function(c){
         var pos=getInstancia(c);
         if(pos.instancia==='cerrado')return;
+        /* Las esperas a cargo de SolucionAir se arman aparte, más abajo: siempre
+           cuentan como urgentes desde que se abren (ver esperaCuentaComoVencida),
+           tengan o no vencimiento cargado. Acá solo van las de terceros, que sí
+           dependen de si les cargamos una fecha de vencimiento. */
         esperasAbiertas(c).forEach(function(e){
+          if(e.responsable==='solucionair')return;
           if(!e.vence)return;
           out.push({fecha:e.vence,c:c,tipo:'espera',texto:(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+(e.detalle?' — '+e.detalle:''),quien:RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable});
         });
@@ -2168,14 +2180,15 @@
            Do aunque de hecho esté esperando que lo miremos. Aparece desde el
            mismo día que entra (sin umbral), fechado desde que cayó en esa
            posición — o desde que se creó la espera, si viene de una espera
-           propia sin vencimiento cargado.
+           propia (tenga o no vencimiento cargado: para nosotros mismos no hay
+           plazo de gracia, "accion_sa" siempre se pinta como vencido).
            Importante: se recorren TODAS las esperas abiertas a cargo de
-           SolucionAir sin vencimiento, no solo la más vieja (pelotaInfo). Si
-           había una espera de otra parte todavía abierta y más antigua (p.ej.
-           quedó pendiente de una etapa anterior), esa "ganaba" la pelota y una
-           espera nueva nuestra sin vencer quedaba invisible en To Do aunque
-           esperasAbiertas() la mostrara igual en la ficha del caso. */
-        var abiertasSA=esperasAbiertas(c).filter(function(e){return e.responsable==='solucionair'&&!e.vence});
+           SolucionAir, no solo la más vieja (pelotaInfo). Si había una espera de
+           otra parte todavía abierta y más antigua (p.ej. quedó pendiente de una
+           etapa anterior), esa "ganaba" la pelota y una espera nueva nuestra
+           quedaba invisible en To Do aunque esperasAbiertas() la mostrara igual
+           en la ficha del caso. */
+        var abiertasSA=esperasAbiertas(c).filter(function(e){return e.responsable==='solucionair'});
         if(abiertasSA.length){
           abiertasSA.forEach(function(e){
             var txtSA='Dar curso a: '+(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+(e.detalle?' — '+e.detalle:'');
@@ -2221,7 +2234,10 @@
         var hoyISO=new Date().toISOString().slice(0,10);
         var th='';
         todos.slice(0,120).forEach(function(t){
-          var vencido=String(t.fecha).slice(0,10)<hoyISO;
+          /* 'accion_sa' siempre se pinta vencido: es una acción a cargo nuestro,
+             sin plazo de gracia, aunque la fecha del ítem (día en que se abrió)
+             sea hoy. */
+          var vencido=t.tipo==='accion_sa'||String(t.fecha).slice(0,10)<hoyISO;
           th+='<div class="upload-item" style="cursor:pointer;justify-content:space-between;gap:10px" data-act-id="'+t.c.id+'">';
           th+='<div style="display:flex;flex-direction:column;gap:3px;min-width:0">';
           th+='<span style="font-size:.78rem;color:var(--t1)">'+esc(t.texto)+'</span>';
@@ -3281,8 +3297,12 @@
     var esperaCaseRef=null;
     /* Plazo por defecto (días) al crear una espera. Sin fecha de vencimiento la
        regla 'espera_vencida' no puede verlas nunca, así que se autocompleta y el
-       usuario la puede pisar o borrar. */
-    var VENCIMIENTO_DEFAULT_DIAS={requerimiento_aerolinea:2,firma_documento:3,info_pasajero:5,audiencia:7,accion_interna:2};
+       usuario la puede pisar o borrar.
+       'accion_interna' queda afuera a propósito: es una acción a cargo nuestro,
+       no de un tercero, así que no tiene sentido darnos a nosotros mismos un
+       plazo de gracia — cuenta como vencida desde el momento en que se abre
+       (ver esperaCuentaComoVencida). */
+    var VENCIMIENTO_DEFAULT_DIAS={requerimiento_aerolinea:2,firma_documento:3,info_pasajero:5,audiencia:7};
     function fechaEnDias(d){return new Date(Date.now()+d*86400000).toISOString().slice(0,10)}
     function syncEsperaVence(){
       var selT=document.getElementById('esp-tipo'),venc=document.getElementById('esp-vence');
@@ -3346,9 +3366,16 @@
       if(!fmediacionCaseRef)return;
       var msg=document.getElementById('msg-fmediacion');
       var fv=(document.getElementById('inp-fmediacion')||{}).value||'';
+      /* El input datetime-local no lleva zona horaria: "2026-07-28T15:30" es
+         hora de Argentina tal como la tipeó el usuario. Si se manda así tal
+         cual, el servidor (que corre en UTC) la reinterpreta como 15:30 UTC y
+         guarda 3hs antes de lo real. Acá, en el navegador, new Date(fv) SÍ la
+         toma como hora local del usuario (Argentina) y arma el instante UTC
+         correcto — por eso la conversión se hace acá y no en el backend. */
+      var fvIso=fv?new Date(fv).toISOString():'';
       btnSaveFmed.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
       var cc=fmediacionCaseRef;
-      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:cc.id,action:'set-fecha-mediacion',fecha_mediacion:fv||null})})
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:cc.id,action:'set-fecha-mediacion',fecha_mediacion:fvIso||null})})
       .then(function(r){return r.json()}).then(function(d){
         btnSaveFmed.disabled=false;
         if(d.success){
