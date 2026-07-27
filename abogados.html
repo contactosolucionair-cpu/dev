@@ -110,6 +110,10 @@
         <label>Contraseña</label>
         <input type="password" id="reg-password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" />
       </div>
+      <div class="form-group">
+        <label>Repetir contraseña</label>
+        <input type="password" id="reg-password2" autocomplete="new-password" placeholder="Volvé a escribirla" />
+      </div>
       <button class="btn btn--primary" id="btn-register" type="button">Solicitar acceso</button>
       <div class="msg" id="register-msg"></div>
     </div>
@@ -174,9 +178,11 @@
     var email = document.getElementById('reg-email').value.trim();
     var telefono = document.getElementById('reg-telefono').value.trim();
     var password = document.getElementById('reg-password').value;
+    var password2 = document.getElementById('reg-password2').value;
     regMsg.textContent = '';
     if (!nombre || !email || !password || !colegio || !domicilio) { regMsg.className = 'msg msg--err'; regMsg.textContent = 'Nombre, email, contraseña, colegio y domicilio son obligatorios.'; return; }
     if (password.length < 8) { regMsg.className = 'msg msg--err'; regMsg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return; }
+    if (password !== password2) { regMsg.className = 'msg msg--err'; regMsg.textContent = 'Las contraseñas no coinciden.'; return; }
     btnReg.disabled = true; btnReg.textContent = 'Enviando solicitud...';
     fetch('/api/abogados/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: nombre, matricula: matricula, colegio: colegio, domicilio: domicilio, email: email, telefono: telefono, password: password }) })
     .then(function (r) { return r.json(); })
@@ -185,7 +191,7 @@
       if (d.success) {
         regMsg.className = 'msg msg--ok';
         regMsg.textContent = 'Solicitud enviada. Te avisaremos cuando tu cuenta sea aprobada.';
-        ['reg-nombre','reg-matricula','reg-colegio','reg-domicilio','reg-email','reg-telefono','reg-password'].forEach(function (id) { document.getElementById(id).value = ''; });
+        ['reg-nombre','reg-matricula','reg-colegio','reg-domicilio','reg-email','reg-telefono','reg-password','reg-password2'].forEach(function (id) { document.getElementById(id).value = ''; });
       } else { regMsg.className = 'msg msg--err'; regMsg.textContent = d.error || 'Error al registrar.'; }
     })
     .catch(function () { btnReg.disabled = false; btnReg.textContent = 'Solicitar acceso'; regMsg.className = 'msg msg--err'; regMsg.textContent = 'Error de conexión.'; });

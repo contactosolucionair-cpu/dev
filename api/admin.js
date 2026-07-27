@@ -6,10 +6,15 @@
  *
  * Acciones:
  *   agencias          GET   Lista agencias + conteo de casos
- *   agencia-accion    POST  {id, action: aprobar|suspender|reactivar}
+ *   agencia-accion    POST  {id, action: aprobar|suspender|reactivar|eliminar}
  *   abogados          GET   Lista abogados + conteo de casos
- *   abogado-accion    POST  {id, action: aprobar|suspender|reactivar}
+ *   abogado-accion    POST  {id, action: aprobar|suspender|reactivar|eliminar}
  *   abogados-activos  GET   Lista abogados activos (para derivar a mediación)
+ *   agencia-reset-password / abogado-reset-password
+ *                     POST  {id, password} → reset asistido de la contraseña
+ *
+ * 'eliminar' es borrado REAL (fila + usuario de Auth) y sólo se permite con cero
+ * casos asociados; sirve para limpiar cuentas de prueba. Ver eliminarEntidad().
  *   sign              POST  ?bucket&path → URL firmada de Storage
  *   upload            POST  ?id&filename&tipo&nombre  (body binario) → sube adjunto
  *   remove            POST  {id, index} → quita un adjunto
@@ -26,6 +31,7 @@
  */
 import JSZip from 'jszip';
 import { generarDocumentoLegal } from './_utils/legal-docs.js';
+import { borrarUsuarioAuth, resetPasswordAuth } from './_utils/cuentas.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -70,6 +76,8 @@ export default async function handler(req, res) {
     if (action === 'abogados')         return await listEntidades(res, SB_URL, SB_KEY, 'abogados');
     if (action === 'abogado-accion')   return await accionEntidad(req, res, SB_URL, SB_KEY, 'abogados');
     if (action === 'abogados-activos') return await abogadosActivos(res, SB_URL, SB_KEY);
+    if (action === 'agencia-reset-password') return await resetPassword(req, res, SB_URL, SB_KEY, 'agencias');
+    if (action === 'abogado-reset-password') return await resetPassword(req, res, SB_URL, SB_KEY, 'abogados');
     if (action === 'alertas-get')      return await alertasGet(res, SB_URL, SB_KEY);
     if (action === 'alertas-save')     return await alertasSave(req, res, SB_URL, SB_KEY);
     if (action === 'sign')             return await signUrl(req, res, SB_URL, SB_KEY);
@@ -127,8 +135,10 @@ async function accionEntidad(req, res, SB_URL, SB_KEY, tabla) {
   var body   = await getJson(req);
   var id     = (body.id     || '').trim();
   var accion = (body.action || '').trim();
-  if (!id || ['aprobar', 'suspender', 'reactivar'].indexOf(accion) === -1)
+  if (!id || ['aprobar', 'suspender', 'reactivar', 'eliminar'].indexOf(accion) === -1)
     return res.status(400).json({ error: 'id y action son requeridos.' });
+
+  if (accion === 'eliminar') return await eliminarEntidad(res, SB_URL, SB_KEY, tabla, id);
 
   var nuevoEstado = accion === 'suspender' ? 'suspendida' : 'activa';
   var patch = { estado: nuevoEstado };
@@ -144,6 +154,93 @@ async function accionEntidad(req, res, SB_URL, SB_KEY, tabla) {
     return res.status(500).json({ error: 'Error al actualizar ' + tabla + '.' });
   }
   return res.status(200).json({ success: true, nuevo_estado: nuevoEstado });
+}
+
+/* ------------------------------------------------------------------ */
+/* Eliminar agencia o abogado (borrado real, sólo si no tiene casos)   */
+/* ------------------------------------------------------------------ */
+/**
+ * Borra la fila + el usuario de Supabase Auth, liberando el email para poder
+ * reutilizarlo. Pensado para limpiar cuentas de prueba.
+ *
+ * Sólo se permite con CERO casos asociados: si tuviera casos, borrar la fila
+ * dejaría `agencia_id`/`abogado_id` apuntando a la nada y el backoffice
+ * mostraría el UUID en vez del nombre. En ese caso el frontend ofrece
+ * "Suspender", que es reversible. El conteo acá NO filtra por deleted_at a
+ * propósito: un caso en la papelera puede restaurarse, así que también cuenta.
+ */
+async function eliminarEntidad(res, SB_URL, SB_KEY, tabla, id) {
+  var campo = tabla === 'agencias' ? 'agencia_id' : 'abogado_id';
+
+  var entRes = await fetch(SB_URL + '/rest/v1/' + tabla + '?id=eq.' + id + '&select=id,nombre,email,auth_user_id&limit=1',
+    { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+  var entRows;
+  try { entRows = JSON.parse(await entRes.text()); } catch (e) { entRows = []; }
+  if (!entRows || !entRows.length) return res.status(404).json({ error: 'No encontrado.' });
+  var entidad = entRows[0];
+
+  /* Conteo incluyendo la papelera. */
+  var casosRes = await fetch(SB_URL + '/rest/v1/reclamos?' + campo + '=eq.' + id + '&select=id',
+    { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+  if (!casosRes.ok) {
+    console.error('[admin/' + tabla + '-eliminar] Error contando casos:', (await casosRes.text()).substring(0, 200));
+    return res.status(500).json({ error: 'No se pudo verificar si tiene casos asociados.' });
+  }
+  var casos;
+  try { casos = JSON.parse(await casosRes.text()); } catch (e) { casos = []; }
+  var numCasos = Array.isArray(casos) ? casos.length : 0;
+
+  if (numCasos > 0) {
+    return res.status(409).json({
+      error: 'No se puede eliminar: tiene ' + numCasos + ' caso(s) asociado(s), incluyendo la papelera. Usá "Suspender".',
+      num_casos: numCasos,
+    });
+  }
+
+  var delRes = await fetch(SB_URL + '/rest/v1/' + tabla + '?id=eq.' + id, {
+    method: 'DELETE',
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+  });
+  if (!delRes.ok) {
+    console.error('[admin/' + tabla + '-eliminar] DELETE error:', (await delRes.text()).substring(0, 300));
+    return res.status(500).json({ error: 'Error al eliminar el registro.' });
+  }
+
+  /* Liberar el email en Auth. Best-effort: la fila ya no existe igual. */
+  var authOk = await borrarUsuarioAuth(SB_URL, SB_KEY, entidad.auth_user_id);
+  console.log('[admin/' + tabla + '-eliminar] Eliminado:', entidad.email, '| usuario Auth borrado:', authOk);
+
+  return res.status(200).json({ success: true, eliminado: true, auth_borrado: authOk });
+}
+
+/* ------------------------------------------------------------------ */
+/* Resetear la contraseña de una agencia o abogado                     */
+/* ------------------------------------------------------------------ */
+/**
+ * Reset asistido: el admin define la contraseña nueva y se la pasa al titular
+ * por fuera (WhatsApp). Es la red de seguridad mientras no exista el flujo de
+ * autogestión "olvidé mi contraseña" por email.
+ */
+async function resetPassword(req, res, SB_URL, SB_KEY, tabla) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  var body = await getJson(req);
+  var id = (body.id || '').trim();
+  var password = body.password || '';
+  if (!id) return res.status(400).json({ error: 'id es requerido.' });
+  if (password.length < 8) return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
+
+  var entRes = await fetch(SB_URL + '/rest/v1/' + tabla + '?id=eq.' + id + '&select=id,email,auth_user_id&limit=1',
+    { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+  var rows;
+  try { rows = JSON.parse(await entRes.text()); } catch (e) { rows = []; }
+  if (!rows || !rows.length) return res.status(404).json({ error: 'No encontrado.' });
+  if (!rows[0].auth_user_id) return res.status(400).json({ error: 'Esta cuenta no tiene usuario de acceso asociado.' });
+
+  var r = await resetPasswordAuth(SB_URL, SB_KEY, rows[0].auth_user_id, password);
+  if (!r.ok) return res.status(500).json({ error: r.error });
+
+  console.log('[admin/' + tabla + '-reset-password] Contraseña actualizada para:', rows[0].email);
+  return res.status(200).json({ success: true, email: rows[0].email });
 }
 
 /* ------------------------------------------------------------------ */

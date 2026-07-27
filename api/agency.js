@@ -13,6 +13,7 @@
  */
 import { verifyAgency } from './_utils/agency-auth.js';
 import { etapaExterna } from './_utils/instancias.js';
+import { emailEnUso, mensajeEmailEnUso, crearUsuarioAuth, borrarUsuarioAuth } from './_utils/cuentas.js';
 
 export const config = {
   api: {
@@ -67,25 +68,19 @@ async function handleRegister(req, res, SB_URL, SB_KEY) {
 
   console.log('[agency/register] Registrando:', email, tipo);
 
-  var signupRes = await fetch(SB_URL + '/auth/v1/signup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY },
-    body: JSON.stringify({ email: email, password: password }),
-  });
-  var signupText = await signupRes.text();
-  console.log('[agency/register] Auth signup status:', signupRes.status);
+  /* Un email = una cuenta, en agencias Y en abogados. El índice UNIQUE de
+     migration_012 y Supabase Auth son la garantía real; este chequeo existe
+     para devolver un mensaje claro antes de crear nada. */
+  var enUso = await emailEnUso(SB_URL, SB_KEY, email);
+  if (enUso.enUso) return res.status(409).json({ error: mensajeEmailEnUso(enUso.tabla) });
 
-  var signupJson;
-  try { signupJson = JSON.parse(signupText); } catch (e) { return res.status(500).json({ error: 'Error al crear usuario.' }); }
-
-  if (!signupRes.ok) {
-    if (signupText.indexOf('already registered') > -1 || signupText.indexOf('already exists') > -1)
-      return res.status(409).json({ error: 'Ya existe una cuenta con ese email.' });
-    return res.status(400).json({ error: signupJson.msg || signupJson.message || 'Error al registrar usuario.' });
+  var alta = await crearUsuarioAuth(SB_URL, SB_KEY, email, password);
+  if (!alta.ok) {
+    console.log('[agency/register] Alta en Auth fallida:', alta.error);
+    if (alta.duplicado) return res.status(409).json({ error: 'Ya existe una cuenta con ese email.' });
+    return res.status(400).json({ error: alta.error });
   }
-
-  var authUserId = signupJson.id || (signupJson.user && signupJson.user.id);
-  if (!authUserId) return res.status(500).json({ error: 'No se pudo obtener el ID de usuario.' });
+  var authUserId = alta.id;
 
   var rowRes = await fetch(SB_URL + '/rest/v1/agencias', {
     method: 'POST',
@@ -103,6 +98,10 @@ async function handleRegister(req, res, SB_URL, SB_KEY) {
   if (!rowRes.ok) {
     var rowErr = await rowRes.text();
     console.error('[agency/register] Insert error:', rowErr.substring(0, 300));
+    /* Rollback: sin esto queda un usuario huérfano en Auth con el email ocupado. */
+    await borrarUsuarioAuth(SB_URL, SB_KEY, authUserId);
+    if (rowErr.indexOf('idx_agencias_email_unico') > -1 || rowErr.indexOf('duplicate key') > -1)
+      return res.status(409).json({ error: 'Ya existe una cuenta con ese email.' });
     return res.status(500).json({ error: 'Error al guardar datos de agencia.' });
   }
 

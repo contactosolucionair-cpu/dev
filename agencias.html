@@ -119,6 +119,10 @@
         <label>Contraseña</label>
         <input type="password" id="reg-password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" />
       </div>
+      <div class="form-group">
+        <label>Repetir contraseña</label>
+        <input type="password" id="reg-password2" autocomplete="new-password" placeholder="Volvé a escribirla" />
+      </div>
       <button class="btn btn--primary" id="btn-register" type="button">Solicitar acceso</button>
       <div class="msg" id="register-msg"></div>
     </div>
@@ -206,7 +210,8 @@
     var cuit_dni = document.getElementById('reg-cuit').value.trim();
     var email    = document.getElementById('reg-email').value.trim();
     var telefono = document.getElementById('reg-telefono').value.trim();
-    var password = document.getElementById('reg-password').value;
+    var password  = document.getElementById('reg-password').value;
+    var password2 = document.getElementById('reg-password2').value;
 
     regMsg.textContent = '';
     if (!nombre || !email || !password) {
@@ -214,6 +219,9 @@
     }
     if (password.length < 8) {
       regMsg.className = 'msg msg--err'; regMsg.textContent = 'La contraseña debe tener al menos 8 caracteres.'; return;
+    }
+    if (password !== password2) {
+      regMsg.className = 'msg msg--err'; regMsg.textContent = 'Las contraseñas no coinciden.'; return;
     }
 
     btnReg.disabled = true; btnReg.textContent = 'Enviando solicitud...';
@@ -231,6 +239,7 @@
         document.getElementById('reg-nombre').value = '';
         document.getElementById('reg-email').value = '';
         document.getElementById('reg-password').value = '';
+        document.getElementById('reg-password2').value = '';
         document.getElementById('reg-cuit').value = '';
         document.getElementById('reg-telefono').value = '';
       } else {

@@ -17,6 +17,7 @@ import {
   MOTIVOS_CIERRE, MONEDAS_VALIDAS,
 } from './_utils/instancias.js';
 import { notificarCambioEtapa } from './_utils/notify-agencia.js';
+import { emailEnUso, mensajeEmailEnUso, crearUsuarioAuth, borrarUsuarioAuth } from './_utils/cuentas.js';
 
 export const config = { api: { bodyParser: { sizeLimit: '1mb' } } };
 
@@ -67,26 +68,18 @@ async function handleRegister(req, res, SB_URL, SB_KEY) {
   if (!nombre || !email || !password || !colegio || !domicilio)
     return res.status(400).json({ error: 'Nombre, email, contraseña, colegio y domicilio son obligatorios.' });
 
+  /* Un email = una cuenta, en abogados Y en agencias. */
+  var enUso = await emailEnUso(SB_URL, SB_KEY, email);
+  if (enUso.enUso) return res.status(409).json({ error: mensajeEmailEnUso(enUso.tabla) });
+
   /* Alta vía endpoint admin (service role) con email ya confirmado: evita el paso de
      confirmación por email y la ofuscación del signup para emails ya existentes. */
-  var signupRes = await fetch(SB_URL + '/auth/v1/admin/users', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
-    body: JSON.stringify({ email: email, password: password, email_confirm: true }),
-  });
-  var signupText = await signupRes.text();
-  var signupJson;
-  try { signupJson = JSON.parse(signupText); } catch (e) { return res.status(500).json({ error: 'Error al crear usuario.' }); }
-
-  if (!signupRes.ok) {
-    var low = signupText.toLowerCase();
-    if (signupRes.status === 422 || low.indexOf('already') > -1 || low.indexOf('exists') > -1 || low.indexOf('registered') > -1)
-      return res.status(409).json({ error: 'Ya existe una cuenta con ese email.' });
-    return res.status(400).json({ error: signupJson.msg || signupJson.message || 'Error al registrar usuario.' });
+  var alta = await crearUsuarioAuth(SB_URL, SB_KEY, email, password);
+  if (!alta.ok) {
+    if (alta.duplicado) return res.status(409).json({ error: 'Ya existe una cuenta con ese email.' });
+    return res.status(400).json({ error: alta.error });
   }
-
-  var authUserId = signupJson.id || (signupJson.user && signupJson.user.id);
-  if (!authUserId) return res.status(500).json({ error: 'No se pudo obtener el ID de usuario.' });
+  var authUserId = alta.id;
 
   var rowRes = await fetch(SB_URL + '/rest/v1/abogados', {
     method: 'POST',
@@ -98,7 +91,12 @@ async function handleRegister(req, res, SB_URL, SB_KEY) {
     }),
   });
   if (!rowRes.ok) {
-    console.error('[abogados/register] Insert error:', (await rowRes.text()).substring(0, 300));
+    var rowErr = await rowRes.text();
+    console.error('[abogados/register] Insert error:', rowErr.substring(0, 300));
+    /* Rollback: sin esto queda un usuario huérfano en Auth con el email ocupado. */
+    await borrarUsuarioAuth(SB_URL, SB_KEY, authUserId);
+    if (rowErr.indexOf('idx_abogados_email_unico') > -1 || rowErr.indexOf('duplicate key') > -1)
+      return res.status(409).json({ error: 'Ya existe una cuenta con ese email.' });
     return res.status(500).json({ error: 'Error al guardar datos del abogado.' });
   }
   return res.status(200).json({ success: true });
