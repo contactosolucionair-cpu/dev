@@ -257,7 +257,7 @@
             <div id="movimientos-body" style="padding:10px 16px;max-height:70vh;overflow-y:auto"><div class="state"><p class="state__txt">Cargando...</p></div></div>
           </div>
           <div class="tbl-wrap">
-            <div class="tbl-bar"><span class="tbl-bar__title">To Do próximos</span><span class="tbl-bar__count" id="todo-count"></span></div>
+            <div class="tbl-bar"><span class="tbl-bar__title">To Do</span><span class="tbl-bar__count" id="todo-count"></span></div>
             <div id="todo-body" style="padding:10px 16px;max-height:70vh;overflow-y:auto"><div class="state"><p class="state__txt">Cargando...</p></div></div>
           </div>
         </div>
@@ -738,6 +738,13 @@
     function esperasAbiertas(c){return (Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return !e.resuelta})}
     function acompanantesDe(c){return Array.isArray(c.acompanantes)?c.acompanantes:[]}
     /** Nombre del titular + "+n" si el caso tiene acompañantes (el tooltip los lista). */
+    /* `nombre` es un único campo de texto libre ("Nombre y apellido"), no hay
+       columna de apellido separada: se toma la última palabra como heurística. */
+    function apellidoDe(nombre){
+      if(!nombre)return '—';
+      var partes=String(nombre).trim().split(/\s+/);
+      return partes[partes.length-1]||'—';
+    }
     function nombreConAcompanantes(c){
       var base=esc(c.nombre||'—');
       var ac=acompanantesDe(c);
@@ -2209,7 +2216,7 @@
           th+='<div class="upload-item" style="cursor:pointer;justify-content:space-between;gap:10px" data-act-id="'+t.c.id+'">';
           th+='<div style="display:flex;flex-direction:column;gap:3px;min-width:0">';
           th+='<span style="font-size:.78rem;color:var(--t1)">'+esc(t.texto)+'</span>';
-          th+='<span style="font-size:.7rem;color:var(--t3)"><span class="mono">'+esc(t.c.ref_code||'—')+'</span> · '+esc(t.quien||'')+'</span></div>';
+          th+='<span style="font-size:.7rem;color:var(--t3)"><span class="mono">'+esc(t.c.ref_code||'—')+'</span> · '+esc(apellidoDe(t.c.nombre))+' · '+esc(t.quien||'')+'</span></div>';
           th+='<span class="mono" style="font-size:.66rem;white-space:nowrap;flex-shrink:0;color:'+(vencido?'var(--err)':'var(--t4)')+'">'+(vencido?'Vencido · ':'')+fmtFecha(t.fecha)+'</span></div>';
         });
         todoBody.innerHTML=th;
