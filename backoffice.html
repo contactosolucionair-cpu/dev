@@ -400,12 +400,21 @@
         </div>
         <div id="alertas-admin-list" style="margin-bottom:16px"></div>
         <div style="border-top:1px solid var(--bdl);padding-top:14px">
-          <div class="detail__label" style="margin-bottom:8px">Nueva alerta — caso en una instancia por más de N días</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <div class="detail__label" style="margin-bottom:8px">Nueva alerta</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+            <select id="nueva-tipo" class="firma-select" style="flex:1;min-width:220px">
+              <option value="instancia_dias">Caso en una instancia por más de N días</option>
+              <option value="espera_responsable_dias">Espera a cargo de alguien por más de N días</option>
+              <option value="espera_tipo_dias">Espera de un tipo por más de N días</option>
+            </select>
             <input id="nueva-label" type="text" class="firma-select" placeholder="Nombre de la alerta" style="flex:1;min-width:150px">
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <select id="nueva-instancia" class="firma-select" style="flex:1;min-width:120px"></select>
             <select id="nueva-momento" class="firma-select" style="flex:1;min-width:130px"><option value="">Cualquier momento</option></select>
-            <input id="nueva-dias" type="number" min="1" class="firma-select" placeholder="Días" style="width:80px;font-family:var(--fm)">
+            <select id="nueva-responsable" class="firma-select" style="flex:1;min-width:130px;display:none"></select>
+            <select id="nueva-esptipo" class="firma-select" style="flex:1;min-width:150px;display:none"></select>
+            <input id="nueva-dias" type="number" min="0" class="firma-select" placeholder="Días" style="width:80px;font-family:var(--fm)">
             <button class="btn btn--ghost" id="btn-nueva-alerta" type="button">+ Agregar</button>
           </div>
           <div id="nueva-alerta-msg" style="font-family:var(--fm);font-size:.66rem;min-height:14px;margin-top:6px"></div>
@@ -2104,6 +2113,9 @@
       {id:'presentado_organismo',label:'Reclamo directo presentado sin respuesta (organismo)',tipo:'instancia_dias',instancia:'reclamo_directo',momento:'presentado',via:'organismo',dias:20,enabled:true,builtin:true},
       {id:'espera_vencida',label:'Espera vencida',tipo:'espera_vencida',dias:0,enabled:true,builtin:true},
       {id:'espera_pasajero_dias',label:'Espera del pasajero sin resolver',tipo:'espera_responsable_dias',responsable:'pasajero',dias:5,enabled:true,builtin:true},
+      /* Sin esta regla, una espera a cargo nuestro y sin fecha de vencimiento era
+         invisible para el motor: ninguna otra regla mira responsable='solucionair'. */
+      {id:'espera_solucionair_dias',label:'Acción pendiente de SolucionAir',tipo:'espera_responsable_dias',responsable:'solucionair',dias:1,enabled:true,builtin:true},
       {id:'cobro_dias',label:'En cobro',tipo:'instancia_dias',instancia:'cobro',momento:null,dias:15,enabled:true,builtin:true},
       {id:'sin_update',label:'Sin update al cliente',tipo:'sin_update',dias:7,enabled:true,builtin:true},
       {id:'firma_pendiente',label:'Autorización pendiente de envío',tipo:'firma_dias',dias:1,enabled:true,builtin:true}
@@ -2148,12 +2160,18 @@
         var refV=venc.reduce(function(a,e){var d=new Date(e.vence);return(!a||d<a)?d:a},null);
         return {ref:refV,texto:venc.length+' espera(s) vencida(s)'};
       }
-      if(regla.tipo==='espera_responsable_dias'){
-        var abr=esperasAbiertas(c).filter(function(e){return e.responsable===regla.responsable});
+      if(regla.tipo==='espera_responsable_dias'||regla.tipo==='espera_tipo_dias'){
+        var porResp=regla.tipo==='espera_responsable_dias';
+        var abr=esperasAbiertas(c).filter(function(e){
+          return porResp?(e.responsable===regla.responsable):(e.tipo===regla.espera_tipo);
+        });
         if(!abr.length)return null;
         var oldest=abr.reduce(function(a,e){var d=new Date(e.creada);return(!a||d<a)?d:a},null);
         var ddr=_diasDesde(oldest);if(ddr==null||ddr<(regla.dias||0))return null;
-        return {ref:oldest,texto:'Espera de '+(RESPONSABLE_ESPERA_LABELS[regla.responsable]||regla.responsable)+' hace '+ddr+' días'};
+        var quien=porResp
+          ?('Espera de '+(RESPONSABLE_ESPERA_LABELS[regla.responsable]||regla.responsable))
+          :((TIPO_ESPERA_LABELS[regla.espera_tipo]||regla.espera_tipo)+' sin resolver');
+        return {ref:oldest,texto:quien+' hace '+ddr+' días'};
       }
       if(regla.tipo==='sin_update'){
         if(pos.instancia==='cerrado')return null;
@@ -2247,19 +2265,21 @@
         var desc=regla.tipo==='instancia_dias'?('"'+(INSTANCIA_LABELS[regla.instancia]||regla.instancia)+(regla.momento?' · '+(MOMENTO_LABELS[regla.momento]||regla.momento):'')+(regla.via?' · vía '+regla.via:'')+'" por más de N días')
           :regla.tipo==='espera_vencida'?('Espera abierta vencida')
           :regla.tipo==='espera_responsable_dias'?('Espera de '+(RESPONSABLE_ESPERA_LABELS[regla.responsable]||regla.responsable)+' abierta por más de N días')
+          :regla.tipo==='espera_tipo_dias'?((TIPO_ESPERA_LABELS[regla.espera_tipo]||regla.espera_tipo)+' abierta por más de N días')
           :regla.tipo==='firma_dias'?('Autorización sin enviar por más de N días')
           :('Sin update al cliente por más de N días');
         h+='<div class="upload-item" style="justify-content:space-between;gap:10px">';
         h+='<div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:.8rem;color:var(--t1)">'+esc(regla.label)+'</span><span style="font-size:.66rem;color:var(--t4)">'+esc(desc)+'</span></div>';
         h+='<div style="display:flex;gap:8px;align-items:center;flex-shrink:0">';
-        h+='<input type="number" min="1" class="firma-select" data-regla-dias="'+idx+'" value="'+regla.dias+'" style="width:64px;font-family:var(--fm)" title="Días">';
+        h+='<input type="number" min="0" class="firma-select" data-regla-dias="'+idx+'" value="'+regla.dias+'" style="width:64px;font-family:var(--fm)" title="Días (0 = apenas exista)">';
         h+='<span class="toggle'+(regla.enabled!==false?' on':'')+'" data-regla-toggle="'+idx+'"></span>';
         if(!regla.builtin)h+='<button class="btn-del" data-regla-del="'+idx+'" type="button" title="Eliminar regla">✕</button>';
         h+='</div></div>';
       });
       cont.innerHTML=h;
       cont.querySelectorAll('[data-regla-toggle]').forEach(function(t){t.addEventListener('click',function(){var i=parseInt(t.getAttribute('data-regla-toggle'));alertRules[i].enabled=!(alertRules[i].enabled!==false);t.classList.toggle('on',alertRules[i].enabled)})});
-      cont.querySelectorAll('[data-regla-dias]').forEach(function(inp){inp.addEventListener('change',function(){var i=parseInt(inp.getAttribute('data-regla-dias'));alertRules[i].dias=parseInt(inp.value)||1})});
+      /* ||1 convertía un 0 legítimo en 1. Con 0 la alerta salta apenas la condición existe. */
+      cont.querySelectorAll('[data-regla-dias]').forEach(function(inp){inp.addEventListener('change',function(){var i=parseInt(inp.getAttribute('data-regla-dias'));var v=parseInt(inp.value);alertRules[i].dias=(isNaN(v)||v<0)?0:v})});
       cont.querySelectorAll('[data-regla-del]').forEach(function(b){b.addEventListener('click',function(){var i=parseInt(b.getAttribute('data-regla-del'));alertRules.splice(i,1);renderReglasAdmin()})});
     }
     var aAdminOv=document.getElementById('alertas-admin-ov');
@@ -2271,9 +2291,23 @@
         if(ni)ni.innerHTML=INSTANCIA_ORDEN.filter(function(i){return i!=='cerrado'}).map(function(i){return '<option value="'+i+'">'+INSTANCIA_LABELS[i]+'</option>'}).join('');
         var nm=document.getElementById('nueva-momento');
         if(nm)nm.innerHTML='<option value="">Cualquier momento</option>'+Object.keys(MOMENTO_LABELS).map(function(m){return '<option value="'+m+'">'+MOMENTO_LABELS[m]+'</option>'}).join('');
+        var nr=document.getElementById('nueva-responsable');
+        if(nr)nr.innerHTML=Object.keys(RESPONSABLE_ESPERA_LABELS).map(function(r){return '<option value="'+r+'">'+RESPONSABLE_ESPERA_LABELS[r]+'</option>'}).join('');
+        var net=document.getElementById('nueva-esptipo');
+        if(net)net.innerHTML=Object.keys(TIPO_ESPERA_LABELS).map(function(t){return '<option value="'+t+'">'+TIPO_ESPERA_LABELS[t]+'</option>'}).join('');
+        syncNuevaAlertaCampos();
         if(aAdminOv)aAdminOv.classList.add('open');
       });
     });
+    /* Muestra sólo los campos que aplican al tipo de regla elegido. */
+    function syncNuevaAlertaCampos(){
+      var t=(document.getElementById('nueva-tipo')||{}).value||'instancia_dias';
+      var map={'nueva-instancia':t==='instancia_dias','nueva-momento':t==='instancia_dias',
+               'nueva-responsable':t==='espera_responsable_dias','nueva-esptipo':t==='espera_tipo_dias'};
+      Object.keys(map).forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=map[id]?'':'none'});
+    }
+    var selNuevaTipo=document.getElementById('nueva-tipo');
+    if(selNuevaTipo)selNuevaTipo.addEventListener('change',syncNuevaAlertaCampos);
     var aAdminClose=document.getElementById('alertas-admin-close');
     var aAdminCancel=document.getElementById('alertas-admin-cancel');
     if(aAdminClose)aAdminClose.addEventListener('click',function(){aAdminOv.classList.remove('open')});
@@ -2281,13 +2315,30 @@
     if(aAdminOv)aAdminOv.addEventListener('click',function(e){if(e.target===aAdminOv)aAdminOv.classList.remove('open')});
     var btnNuevaAlerta=document.getElementById('btn-nueva-alerta');
     if(btnNuevaAlerta)btnNuevaAlerta.addEventListener('click',function(){
+      var tipoN=(document.getElementById('nueva-tipo')||{}).value||'instancia_dias';
       var label=(document.getElementById('nueva-label')||{}).value||'';
-      var instanciaN=(document.getElementById('nueva-instancia')||{}).value||'';
-      var momentoN=(document.getElementById('nueva-momento')||{}).value||null;
-      var diasN=parseInt((document.getElementById('nueva-dias')||{}).value)||0;
+      var diasRaw=(document.getElementById('nueva-dias')||{}).value;
+      var diasN=parseInt(diasRaw);
       var msg=document.getElementById('nueva-alerta-msg');
-      if(!label.trim()||!instanciaN||!diasN){if(msg){msg.style.color='var(--err)';msg.textContent='Completá nombre, instancia y días.'}return}
-      alertRules.push({id:'r'+Date.now(),label:label.trim(),tipo:'instancia_dias',instancia:instanciaN,momento:momentoN,dias:diasN,enabled:true,builtin:false});
+      function err(t){if(msg){msg.style.color='var(--err)';msg.textContent=t}}
+      if(!label.trim())return err('Poné un nombre para la alerta.');
+      /* 0 días es válido: "avisame apenas exista". */
+      if(diasRaw===''||isNaN(diasN)||diasN<0)return err('Indicá los días (0 o más).');
+
+      var regla={id:'r'+Date.now(),label:label.trim(),tipo:tipoN,dias:diasN,enabled:true,builtin:false};
+      if(tipoN==='instancia_dias'){
+        var instanciaN=(document.getElementById('nueva-instancia')||{}).value||'';
+        if(!instanciaN)return err('Elegí la instancia.');
+        regla.instancia=instanciaN;
+        regla.momento=(document.getElementById('nueva-momento')||{}).value||null;
+      } else if(tipoN==='espera_responsable_dias'){
+        regla.responsable=(document.getElementById('nueva-responsable')||{}).value||'';
+        if(!regla.responsable)return err('Elegí el responsable.');
+      } else if(tipoN==='espera_tipo_dias'){
+        regla.espera_tipo=(document.getElementById('nueva-esptipo')||{}).value||'';
+        if(!regla.espera_tipo)return err('Elegí el tipo de espera.');
+      }
+      alertRules.push(regla);
       document.getElementById('nueva-label').value='';document.getElementById('nueva-dias').value='';
       if(msg){msg.style.color='';msg.textContent=''}
       renderReglasAdmin();
@@ -2934,14 +2985,26 @@
     /* ---- AGREGAR ESPERA ---- */
     var esperaOv=document.getElementById('espera-ov');
     var esperaCaseRef=null;
+    /* Plazo por defecto (días) al crear una espera. Sin fecha de vencimiento la
+       regla 'espera_vencida' no puede verlas nunca, así que se autocompleta y el
+       usuario la puede pisar o borrar. */
+    var VENCIMIENTO_DEFAULT_DIAS={requerimiento_aerolinea:2,firma_documento:3,info_pasajero:5,audiencia:7,accion_interna:2};
+    function fechaEnDias(d){return new Date(Date.now()+d*86400000).toISOString().slice(0,10)}
+    function syncEsperaVence(){
+      var selT=document.getElementById('esp-tipo'),venc=document.getElementById('esp-vence');
+      if(!selT||!venc)return;
+      var dias=VENCIMIENTO_DEFAULT_DIAS[selT.value];
+      venc.value=dias?fechaEnDias(dias):'';
+    }
     function openEsperaModal(caseObj){
       esperaCaseRef=caseObj;
       var selT=document.getElementById('esp-tipo'),selR=document.getElementById('esp-responsable');
       if(selT)selT.innerHTML=Object.keys(TIPO_ESPERA_LABELS).map(function(t){return '<option value="'+t+'">'+TIPO_ESPERA_LABELS[t]+'</option>'}).join('');
       if(selR)selR.innerHTML=Object.keys(RESPONSABLE_ESPERA_LABELS).map(function(r){return '<option value="'+r+'">'+RESPONSABLE_ESPERA_LABELS[r]+'</option>'}).join('');
       var det=document.getElementById('esp-detalle');if(det)det.value='';
-      var venc=document.getElementById('esp-vence');if(venc)venc.value='';
       var msg=document.getElementById('msg-espera');if(msg){msg.style.color='';msg.textContent=''}
+      syncEsperaVence();
+      if(selT&&!selT._venceBound){selT.addEventListener('change',syncEsperaVence);selT._venceBound=true}
       if(esperaOv)esperaOv.classList.add('open');
     }
     var esperaClose=document.getElementById('espera-close'),esperaCancel=document.getElementById('espera-cancel');
