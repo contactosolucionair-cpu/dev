@@ -173,6 +173,7 @@
     <nav class="sidenav__menu">
       <button class="sidenav__item active" id="nav-dashboard"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Dashboard</button>
       <button class="sidenav__item" id="nav-casos"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Mis casos</button>
+      <button class="sidenav__item" id="nav-novedades"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> Novedades</button>
       <button class="sidenav__item" id="nav-nuevo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Cargar caso</button>
       <button class="sidenav__item" id="nav-perfil"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Perfil</button>
       <button class="sidenav__item" id="nav-logout" style="margin-top:8px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Cerrar sesión</button>
@@ -187,11 +188,13 @@
       <div class="main__header"><h1 class="main__title">Dashboard</h1><button class="btn btn--ghost" id="btn-refresh-stats" type="button">Actualizar</button></div>
       <div class="stats">
         <div class="stat"><div class="stat__label">Total casos</div><div class="stat__val" id="st-total">—</div></div>
-        <div class="stat"><div class="stat__label">Requieren tu acción</div><div class="stat__val stat__val--warn" id="st-accion">—</div></div>
         <div class="stat"><div class="stat__label">En gestión</div><div class="stat__val" id="st-gestion">—</div></div>
         <div class="stat"><div class="stat__label">Ganados</div><div class="stat__val stat__val--ok" id="st-ganados">—</div></div>
-        <div class="stat"><div class="stat__label">Comisión estimada</div><div class="stat__val" id="st-com-est">—</div></div>
-        <div class="stat"><div class="stat__label">Comisión confirmada</div><div class="stat__val stat__val--ok" id="st-com-conf">—</div></div>
+      </div>
+      <!-- Una fila por moneda: montos en monedas distintas no se suman entre sí. -->
+      <div class="tbl-wrap" style="margin-bottom:16px">
+        <div class="tbl-bar"><span class="tbl-bar__title">Comisiones</span></div>
+        <div id="st-comisiones" style="padding:16px;font-size:.78rem;color:var(--t3)">Cargando...</div>
       </div>
       <div class="tbl-wrap" style="max-width:340px">
         <div class="tbl-bar"><span class="tbl-bar__title">Por etapa</span></div>
@@ -212,6 +215,15 @@
           <select class="filters__select" id="filter-estado"><option value="">Todas las etapas</option><option value="evaluacion">En evaluación</option><option value="reclamo">Reclamo en curso</option><option value="mediacion">En mediación</option><option value="acuerdo">Acuerdo alcanzado</option><option value="cerrado_exito">Cerrado · Con éxito</option><option value="cerrado_sin_exito">Cerrado · Sin éxito</option><option value="cerrado_no_viable">Cerrado · No viable</option></select>
         </div>
         <div class="tbl-scroll"><div id="claims-body"><div class="state"><div class="state__spin"></div><p class="state__txt">Cargando casos...</p></div></div></div>
+      </div>
+    </div>
+
+    <!-- ============ NOVEDADES ============ -->
+    <div id="view-novedades" style="display:none">
+      <div class="main__header"><h1 class="main__title">Novedades</h1><button class="btn btn--ghost" id="btn-refresh-novedades" type="button">Actualizar</button></div>
+      <div class="tbl-wrap">
+        <div class="tbl-bar"><span class="tbl-bar__title">Últimos cambios en tus casos</span><span class="tbl-bar__count" id="nov-count"></span></div>
+        <div id="novedades-body" style="padding:10px 16px"><div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div></div>
       </div>
     </div>
 
@@ -466,41 +478,41 @@
   overlay.addEventListener('click', closeDetail);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDetail(); });
   function closeDetail() { overlay.classList.remove('open'); detailPanel.classList.remove('open'); }
-  var FIRMA_TXT = {
-    pendiente_envio: 'SolucionAir enviará la autorización al pasajero para su firma',
-    enviada: 'Autorización enviada al pasajero, pendiente de firma',
-    firmada: 'Autorización firmada',
-    rechazada: 'El pasajero rechazó la autorización. Contactate con SolucionAir',
-  };
   function openDetail(c) {
     detailTitle.textContent = 'Reclamo ' + (c.ref_code || '');
-    var firmaEstado = c.firma_estado || 'no_aplica';
     var fecha = c.creado_en ? fmtFechaHora(c.creado_en) : '—';
     var h = '';
     h += '<div class="detail__section"><div class="detail__label">Etapa</div><div class="detail__value"><span class="badge ' + badgeClass(c.etapa) + '">' + esc(c.etapa_label || '—') + '</span></div></div>';
     h += '<div class="detail__grid"><div class="detail__section"><div class="detail__label">Referencia</div><div class="detail__value mono">' + esc(c.ref_code || '—') + '</div></div><div class="detail__section"><div class="detail__label">Creado</div><div class="detail__value mono">' + fecha + '</div></div></div>';
-
-    /* Requiere tu acción: esperas abiertas cuyo responsable es el pasajero */
-    var esperasPasajero = (Array.isArray(c.esperas) ? c.esperas : []).filter(function (e) { return !e.resuelta && e.responsable === 'pasajero'; });
-    if (esperasPasajero.length) {
-      h += '<div class="detail__divider"></div><div style="background:var(--warnbg);border:1px solid rgba(212,168,83,.3);border-radius:8px;padding:12px 14px">';
-      h += '<div class="detail__label" style="color:var(--warn);margin-bottom:6px">Requiere tu acción</div>';
-      esperasPasajero.forEach(function (e) {
-        var tl = ESPERA_LABELS[e.tipo] || e.tipo;
-        h += '<div style="font-size:.78rem;color:var(--t2);margin-bottom:3px"><strong>' + esc(tl) + '</strong>' + (e.detalle ? ' — ' + esc(e.detalle) : '') + '</div>';
-      });
-      h += '</div>';
-    }
 
     h += '<div class="detail__divider"></div>';
     h += '<div class="detail__grid"><div class="detail__section"><div class="detail__label">Pasajero</div><div class="detail__value">' + esc(c.nombre || '—') + '</div></div><div class="detail__section"><div class="detail__label">Email</div><div class="detail__value mono">' + esc(c.email || '—') + '</div></div><div class="detail__section"><div class="detail__label">Teléfono</div><div class="detail__value mono">' + esc(c.telefono || '—') + '</div></div></div>';
     h += '<div class="detail__divider"></div>';
     h += '<div class="detail__grid"><div class="detail__section"><div class="detail__label">Vuelo</div><div class="detail__value mono">' + esc(c.vuelo_nro || '—') + '</div></div><div class="detail__section"><div class="detail__label">Aerolínea</div><div class="detail__value">' + esc(c.aerolinea || '—') + '</div></div><div class="detail__section"><div class="detail__label">Fecha vuelo</div><div class="detail__value mono">' + esc(fmtFecha(c.fecha_vuelo)) + '</div></div><div class="detail__section"><div class="detail__label">Tipo</div><div class="detail__value">' + esc(c.tipo_reclamo || '—') + '</div></div></div>';
 
-    /* Autorización */
-    h += '<div class="detail__divider"></div>';
-    h += '<div class="detail__section"><div class="detail__label">Estado de firma</div><div class="detail__value"><span class="badge badge--' + esc(firmaEstado) + '">' + esc(firmaEstado.replace(/_/g, ' ')) + '</span></div></div>';
-    if (FIRMA_TXT[firmaEstado]) h += '<div style="font-size:.76rem;color:var(--t3);margin-top:2px">' + esc(FIRMA_TXT[firmaEstado]) + '</div>';
+    /* Acompañantes del caso */
+    var acomp = Array.isArray(c.acompanantes) ? c.acompanantes : [];
+    if (acomp.length) {
+      h += '<div class="detail__divider"></div><div class="detail__section"><div class="detail__label" style="margin-bottom:6px">Acompañantes (' + acomp.length + ')</div>';
+      acomp.forEach(function (a, i) {
+        var docs = Array.isArray(a.documentos) && a.documentos.length ? a.documentos
+          : ((a.documento_tipo || a.documento_numero) ? [{ tipo: a.documento_tipo, numero: a.documento_numero }] : []);
+        h += '<div style="padding:5px 0;border-bottom:1px solid var(--bdl)">';
+        h += '<div style="font-size:.78rem;color:var(--t1)">' + esc(a.nombre || ('Acompañante ' + (i + 1))) + (a.es_menor ? ' <span class="badge badge--pendiente">Menor</span>' : '') + '</div>';
+        if (docs.length) h += '<div class="mono" style="font-size:.68rem;color:var(--t4)">' + docs.map(function (d) { return esc((d.tipo || '') + ' ' + (d.numero || '')); }).join(' · ') + '</div>';
+        h += '</div>';
+      });
+      h += '</div>';
+    }
+
+    /* Montos y comisión */
+    if (c.monto_reclamado || c.monto_acordado || c.comision) {
+      h += '<div class="detail__divider"></div><div class="detail__grid">';
+      h += '<div class="detail__section"><div class="detail__label">Monto reclamado</div><div class="detail__value mono">' + fmtMoneda(c.monto_reclamado, c.monto_reclamado_moneda) + '</div></div>';
+      h += '<div class="detail__section"><div class="detail__label">Monto total acordado</div><div class="detail__value mono">' + fmtMoneda(c.monto_acordado, c.monto_acordado_moneda) + '</div></div>';
+      h += '<div class="detail__section"><div class="detail__label">Tu comisión</div><div class="detail__value mono" style="color:var(--g)">' + fmtMoneda(c.comision, c.comision_moneda) + '</div></div>';
+      h += '</div>';
+    }
 
     /* Timeline del caso (instancia_historial) */
     var hist = Array.isArray(c.instancia_historial) ? c.instancia_historial : [];
@@ -558,12 +570,32 @@
     var hh = dt.getHours(), mm = dt.getMinutes();
     return fmtFecha(d) + ' ' + (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
   }
+  /* Espejo de las opciones del select #f-incidencia. */
+  var INCIDENCIA_LABELS = {
+    demora: 'Demora', cancelacion: 'Cancelación', reprogramacion: 'Reprogramación',
+    overbooking: 'Overbooking', denegacion: 'Denegación de embarque',
+  };
+  /* Días transcurridos en la instancia actual (misma lógica que el backoffice). */
+  function diasEnInstancia(c) {
+    var ih = Array.isArray(c.instancia_historial) ? c.instancia_historial : [];
+    var ref = ih.length ? ih[ih.length - 1].fecha : c.creado_en;
+    if (!ref) return null;
+    var d = Math.floor((Date.now() - new Date(ref).getTime()) / 86400000);
+    return isNaN(d) ? null : d;
+  }
+  /* Nombre del titular + "+n" si el caso tiene acompañantes. */
+  function nombreConAcompanantes(c) {
+    var base = esc(c.nombre || '—');
+    var ac = Array.isArray(c.acompanantes) ? c.acompanantes : [];
+    if (!ac.length) return base;
+    var nombres = ac.map(function (a, i) { return (a.nombre || 'Acompañante ' + (i + 1)) + (a.es_menor ? ' (menor)' : ''); }).join(' · ');
+    return base + ' <span class="badge" title="' + esc(nombres) + '" style="background:var(--bg);color:var(--t3)">+' + ac.length + '</span>';
+  }
   function fmtMoneda(monto, moneda) {
     if (monto === null || monto === undefined || monto === 0 || isNaN(Number(monto))) return '—';
     try { return new Intl.NumberFormat('es-AR', { style: 'currency', currency: moneda || 'ARS', maximumFractionDigits: 0 }).format(Number(monto)); }
     catch (e) { return (moneda || 'ARS') + ' ' + Number(monto).toLocaleString('es-AR'); }
   }
-  var ESPERA_LABELS = { info_pasajero: 'Información del pasajero', firma_documento: 'Firma de documento' };
   var ETAPA_LABELS = { evaluacion: 'En evaluación', reclamo: 'Reclamo en curso', mediacion: 'En mediación', acuerdo: 'Acuerdo alcanzado', cerrado_exito: 'Cerrado · Con éxito', cerrado_sin_exito: 'Cerrado · Sin éxito', cerrado_no_viable: 'Cerrado · No viable', cerrado_otro: 'Cerrado' };
   function esc(s) { var d = document.createElement('div'); d.textContent = String(s || ''); return d.innerHTML; }
 
@@ -571,12 +603,14 @@
   var views = {
     dashboard: document.getElementById('view-dashboard'),
     casos:     document.getElementById('view-casos'),
+    novedades: document.getElementById('view-novedades'),
     nuevo:     document.getElementById('view-nuevo'),
     perfil:    document.getElementById('view-perfil'),
   };
   var navBtns = {
     dashboard: document.getElementById('nav-dashboard'),
     casos:     document.getElementById('nav-casos'),
+    novedades: document.getElementById('nav-novedades'),
     nuevo:     document.getElementById('nav-nuevo'),
     perfil:    document.getElementById('nav-perfil'),
   };
@@ -588,6 +622,7 @@
     });
     if (name === 'dashboard') loadStats();
     if (name === 'casos')     loadClaims();
+    if (name === 'novedades') loadNovedades();
     if (name === 'perfil')    loadPerfil();
   }
 
@@ -596,6 +631,72 @@
   });
 
   document.getElementById('nav-logout').addEventListener('click', agencyLogout);
+
+  /* ---- Novedades ----
+     Feed derivado de instancia_historial: sólo cambios de etapa y acuerdos. Las
+     novedades internas del caso NO se exponen a la agencia. No hay marca de
+     leído/no leído a propósito: es un registro cronológico, no una bandeja. */
+  function construirNovedades(lista) {
+    var eventos = [];
+    (lista || []).forEach(function (c) {
+      var hist = Array.isArray(c.instancia_historial) ? c.instancia_historial : [];
+      var previa = null;
+      hist.forEach(function (ev) {
+        var et = etapaExternaDe(ev.instancia, ev.momento, ev.resultado);
+        /* Varias posiciones internas colapsan a la misma etapa externa (p. ej.
+           preparación y presentado son ambas "Reclamo en curso"): sin este filtro
+           la agencia vería eventos repetidos que para ella no cambian nada. */
+        if (previa === et.etapa) return;
+        previa = et.etapa;
+        eventos.push({ fecha: ev.fecha, ref: c.ref_code, nombre: c.nombre, etapa: et.etapa, texto: et.label, caso: c });
+      });
+      if (c.monto_acordado && c.fecha_acuerdo) {
+        eventos.push({
+          fecha: c.fecha_acuerdo, ref: c.ref_code, nombre: c.nombre, etapa: 'acuerdo',
+          texto: 'Acuerdo registrado por ' + fmtMoneda(c.monto_acordado, c.monto_acordado_moneda), caso: c,
+        });
+      }
+    });
+    eventos.sort(function (a, b) { return new Date(b.fecha).getTime() - new Date(a.fecha).getTime(); });
+    return eventos;
+  }
+
+  function loadNovedades() {
+    var body = document.getElementById('novedades-body');
+    if (!body) return;
+    function pintar() {
+      var eventos = construirNovedades(allClaims).slice(0, 60);
+      var cnt = document.getElementById('nov-count');
+      if (cnt) cnt.textContent = eventos.length ? eventos.length + ' novedades' : '';
+      if (!eventos.length) { body.innerHTML = '<p style="font-size:.78rem;color:var(--t4);margin:0">Todavía no hay novedades en tus casos.</p>'; return; }
+      var h = '';
+      eventos.forEach(function (e) {
+        h += '<div class="upload-item" style="cursor:pointer;justify-content:space-between;gap:10px" data-nov-ref="' + esc(e.ref || '') + '">';
+        h += '<div style="display:flex;flex-direction:column;gap:3px;min-width:0">';
+        h += '<span><span class="badge ' + badgeClass(e.etapa) + '">' + esc(e.texto) + '</span></span>';
+        h += '<span style="font-size:.76rem;color:var(--t1)"><span class="mono">' + esc(e.ref || '—') + '</span> · ' + esc(e.nombre || '—') + '</span></div>';
+        h += '<span class="mono" style="font-size:.66rem;color:var(--t4);white-space:nowrap;flex-shrink:0">' + fmtFechaHora(e.fecha) + '</span>';
+        h += '</div>';
+      });
+      body.innerHTML = h;
+      body.querySelectorAll('[data-nov-ref]').forEach(function (row) {
+        row.addEventListener('click', function () {
+          var ref = row.getAttribute('data-nov-ref');
+          var c = null; allClaims.forEach(function (cl) { if (cl.ref_code === ref) c = cl; });
+          if (c) openDetail(c);
+        });
+      });
+    }
+    /* Reutiliza los casos ya cargados; si todavía no se pidieron, los pide. */
+    if (allClaims && allClaims.length) return pintar();
+    body.innerHTML = '<div class="state"><div class="state__spin"></div><p class="state__txt">Cargando...</p></div>';
+    fetch('/api/agency/claims', { headers: authHeaders() })
+    .then(function (r) { if (r.status === 401) { agencyLogout(); throw new Error('401'); } return r.json(); })
+    .then(function (d) { if (d.success) { allClaims = d.claims || []; } pintar(); })
+    .catch(function (err) { if (err.message !== '401') body.innerHTML = '<p style="font-size:.78rem;color:var(--err)">No se pudieron cargar las novedades.</p>'; });
+  }
+  var btnRefreshNov = document.getElementById('btn-refresh-novedades');
+  if (btnRefreshNov) btnRefreshNov.addEventListener('click', function () { allClaims = []; loadNovedades(); });
 
   /* ---- Dashboard / Stats ---- */
   function loadStats() {
@@ -606,11 +707,26 @@
       var pe = d.por_etapa || {};
       var enGestion = (pe.evaluacion || 0) + (pe.reclamo || 0) + (pe.mediacion || 0) + (pe.acuerdo || 0);
       document.getElementById('st-total').textContent   = d.total || 0;
-      document.getElementById('st-accion').textContent  = d.requieren_accion || 0;
       document.getElementById('st-gestion').textContent = enGestion;
       document.getElementById('st-ganados').textContent = pe.cerrado_exito || 0;
-      document.getElementById('st-com-est').textContent  = fmtMoneda(d.comision_estimada, d.comision_moneda);
-      document.getElementById('st-com-conf').textContent = fmtMoneda(d.comision_confirmada, d.comision_moneda);
+
+      /* Comisiones desglosadas por moneda (nunca sumadas entre sí). */
+      var comBox = document.getElementById('st-comisiones');
+      var coms = d.comisiones || [];
+      if (!coms.length) {
+        comBox.innerHTML = '<span style="color:var(--t4)">Todavía no hay comisiones.</span>';
+      } else {
+        var ch = '<div style="display:flex;justify-content:space-between;padding:0 0 6px;border-bottom:1px solid var(--bdl);font-size:.66rem;color:var(--t4);text-transform:uppercase;letter-spacing:.06em">'
+          + '<span>Moneda</span><span>Estimada</span><span>Confirmada</span></div>';
+        coms.forEach(function (c) {
+          ch += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bdl)">'
+            + '<span class="mono">' + esc(c.moneda) + '</span>'
+            + '<span class="mono">' + fmtMoneda(c.estimada, c.moneda) + '</span>'
+            + '<span class="mono" style="color:var(--g)">' + fmtMoneda(c.confirmada, c.moneda) + '</span>'
+            + '</div>';
+        });
+        comBox.innerHTML = ch;
+      }
 
       var breakdown = '';
       Object.keys(pe).forEach(function (k) {
@@ -659,17 +775,23 @@
     claimsCount.textContent = list.length + ' de ' + allClaims.length;
     if (!list.length) { claimsBody.innerHTML = '<div class="state"><p class="state__txt">Sin resultados.</p></div>'; return; }
 
-    var html = '<table><thead><tr><th>Ref</th><th>Pasajero</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha vuelo</th><th>Estado</th><th>Autorización</th></tr></thead><tbody>';
+    /* Sin "Autorización": la firma la gestiona SolucionAir directamente con el
+       pasajero, la agencia no interviene. */
+    var html = '<table><thead><tr><th>Ref</th><th>Pasajero</th><th>Incidencia</th><th>Vuelo</th><th>Aerolínea</th><th>Fecha vuelo</th><th>Estado</th><th>Días</th><th>Reclamado</th><th>Acordado</th><th>Comisión</th></tr></thead><tbody>';
     list.forEach(function (c, i) {
-      var fe  = c.firma_estado || 'no_aplica';
+      var dias = diasEnInstancia(c);
       html += '<tr data-idx="' + i + '">'
         + '<td class="mono">' + esc(c.ref_code || '—') + '</td>'
-        + '<td>' + esc(c.nombre || '—') + '</td>'
+        + '<td>' + nombreConAcompanantes(c) + '</td>'
+        + '<td>' + esc(INCIDENCIA_LABELS[c.tipo_incidencia] || c.tipo_incidencia || '—') + '</td>'
         + '<td class="mono">' + esc(c.vuelo_nro || '—') + '</td>'
         + '<td>' + esc(c.aerolinea || '—') + '</td>'
         + '<td class="mono">' + esc(fmtFecha(c.fecha_vuelo)) + '</td>'
         + '<td><span class="badge ' + badgeClass(c.etapa) + '">' + esc(c.etapa_label || '—') + '</span></td>'
-        + '<td><span class="badge badge--' + esc(fe) + '">' + esc(fe.replace(/_/g,' ')) + '</span></td>'
+        + '<td class="mono">' + (dias == null ? '—' : dias) + '</td>'
+        + '<td class="mono">' + fmtMoneda(c.monto_reclamado, c.monto_reclamado_moneda) + '</td>'
+        + '<td class="mono">' + fmtMoneda(c.monto_acordado, c.monto_acordado_moneda) + '</td>'
+        + '<td class="mono" style="color:var(--g)">' + fmtMoneda(c.comision, c.comision_moneda) + '</td>'
         + '</tr>';
     });
     html += '</tbody></table>';

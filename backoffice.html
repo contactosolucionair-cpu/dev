@@ -717,6 +717,31 @@
       return 'badge--en_gestion';
     }
     function esperasAbiertas(c){return (Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return !e.resuelta})}
+    function acompanantesDe(c){return Array.isArray(c.acompanantes)?c.acompanantes:[]}
+    /** Nombre del titular + "+n" si el caso tiene acompañantes (el tooltip los lista). */
+    function nombreConAcompanantes(c){
+      var base=esc(c.nombre||'—');
+      var ac=acompanantesDe(c);
+      if(!ac.length)return base;
+      var nombres=ac.map(function(a,i){return (a.nombre||'Acompañante '+(i+1))+(a.es_menor?' (menor)':'')}).join(' · ');
+      return base+' <span class="badge badge--pendiente" title="'+esc(nombres)+'">+'+ac.length+'</span>';
+    }
+    /** Ficha de los acompañantes: nombre, documento y menor de edad. */
+    function acompanantesHtml(c){
+      var ac=acompanantesDe(c);
+      if(!ac.length)return '';
+      var h='<div class="detail__section"><div class="detail__label">Acompañantes ('+ac.length+')</div>';
+      ac.forEach(function(a,i){
+        var docs=Array.isArray(a.documentos)&&a.documentos.length?a.documentos:((a.documento_tipo||a.documento_numero)?[{tipo:a.documento_tipo,numero:a.documento_numero}]:[]);
+        h+='<div style="padding:5px 0;border-bottom:1px solid var(--bdl)">';
+        h+='<div style="font-size:.78rem;color:var(--t1)">'+esc(a.nombre||'Acompañante '+(i+1))+(a.es_menor?' <span class="badge badge--pendiente">Menor</span>':'')+'</div>';
+        if(docs.length)h+='<div class="mono" style="font-size:.68rem;color:var(--t4)">'+docs.map(function(d){return esc((d.tipo||'')+' '+(d.numero||''))}).join(' · ')+'</div>';
+        else h+='<div style="font-size:.68rem;color:var(--t4)">Sin documento cargado</div>';
+        if(a.email)h+='<div class="mono" style="font-size:.68rem;color:var(--t4)">'+esc(a.email)+'</div>';
+        h+='</div>';
+      });
+      return h+'</div>';
+    }
     /* Resuelve el nombre del abogado asignado (cacheado) y lo escribe en `el`. */
     var _abogadosCache=null;
     function resolveAbogadoNombre(abogadoId,el){
@@ -944,7 +969,7 @@
         html+='<tr data-fidx="'+origIdx+'"><td class="cb-cell"><input type="checkbox" class="cb-row"/></td>';
         html+='<td style="text-align:center">'+alertCell+'</td>';
         html+='<td class="mono">'+(c.ref_code||'—')+'</td>';
-        html+='<td>'+(c.nombre||'—')+'</td>';
+        html+='<td>'+nombreConAcompanantes(c)+'</td>';
         html+='<td><span class="badge badge--'+(canalVal==='B2B'?'b2b':'b2c')+'">'+canalVal+'</span></td>';
         html+='<td><span class="badge '+tipoBadge(tipoVal)+'">'+tipoLabel(tipoVal)+'</span></td>';
         html+='<td class="mono">'+(c.vuelo_nro||'—')+'</td>';
@@ -1114,15 +1139,15 @@
       /* Documentos + acompañantes: resumen compacto de solo lectura. La edición
          (agregar/editar/reordenar documentos) vive en el modal "Editar un campo del caso". */
       var documentosTitular=Array.isArray(c.documentos)&&c.documentos.length?c.documentos:(c.documento_tipo||c.documento_numero?[{tipo:c.documento_tipo,numero:c.documento_numero}]:[]);
-      var acompArrDoc=Array.isArray(c.acompanantes)?c.acompanantes:[];
       h+='<div class="detail__grid">';
       if(documentosTitular.length){
         h+='<div class="detail__section"><div class="detail__label">Documento</div><div class="detail__value">'+esc(documentosTitular[0].tipo||'—')+' '+esc(documentosTitular[0].numero||'—')+(documentosTitular.length>1?' <span style="color:var(--t4)">(+'+(documentosTitular.length-1)+' más)</span>':'')+'</div></div>';
       } else {
         h+='<div class="detail__section"><div class="detail__label">Documento</div><div class="detail__value" style="color:var(--t4)">Sin cargar</div></div>';
       }
-      if(acompArrDoc.length)h+='<div class="detail__section"><div class="detail__label">Acompañantes</div><div class="detail__value">'+acompArrDoc.length+'</div></div>';
       h+='</div>';
+      /* Ficha completa de acompañantes (antes sólo se mostraba la cantidad). */
+      h+=acompanantesHtml(c);
       h+='<div class="detail__divider"></div>';
 
       /* Vuelo */
