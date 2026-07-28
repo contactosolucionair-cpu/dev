@@ -657,6 +657,39 @@
       </div>
     </div>
 
+    <!-- Respuesta de la aerolínea (reclamo directo / presentado) -->
+    <div class="cm-ov" id="respuesta-ov">
+      <div class="cm" style="max-width:420px;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Respuesta de la aerolínea</div>
+          <button class="detail__close" id="respuesta-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="detail__label" style="margin-bottom:6px">¿Qué respondió?</div>
+        <select id="resp-tipo" class="firma-select" style="width:100%;margin-bottom:4px">
+          <option value="rechazo">Rechazo</option>
+          <option value="oferta">Oferta</option>
+          <option value="pedido_info">Pidió información / aclaración</option>
+        </select>
+        <p id="resp-hint" style="font-size:.7rem;color:var(--t4);margin:0 0 10px"></p>
+        <div class="detail__label" style="margin-bottom:6px" id="resp-detalle-label">Detalle (opcional)</div>
+        <input id="resp-detalle" class="firma-select" style="width:100%;margin-bottom:10px">
+        <div id="resp-pedido-campos">
+          <div class="detail__label" style="margin-bottom:6px">¿Quién tiene que responder?</div>
+          <select id="resp-responsable" class="firma-select" style="width:100%;margin-bottom:10px">
+            <option value="solucionair">SolucionAir (nosotros)</option>
+            <option value="pasajero">El pasajero</option>
+          </select>
+          <div class="detail__label" style="margin-bottom:6px">Responder antes de</div>
+          <input id="resp-vence" type="date" class="firma-select" style="width:100%;font-family:var(--fm)">
+        </div>
+        <div id="msg-respuesta" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
+        <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
+          <button class="cm__btn cm__btn--cancel" id="respuesta-cancel" type="button">Cancelar</button>
+          <button class="cm__btn cm__btn--confirm" id="btn-save-respuesta" type="button">Registrar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Fecha de mediación -->
     <div class="cm-ov" id="fmediacion-ov">
       <div class="cm" style="max-width:360px;text-align:left">
@@ -1071,7 +1104,7 @@
       var TABLA={
         evaluacion:[['iniciar_reclamo','Iniciar reclamo administrativo'],['no_apto','Marcar no apto'],['abandonar','Abandonar caso']],
         'reclamo_directo/preparacion':[['presentar','Presentar a la aerolínea'],['abandonar','Abandonar caso']],
-        'reclamo_directo/presentado':[['respuesta_recibida','Registrar respuesta recibida'],['vencio_plazo','Marcar plazo vencido'],['acuerdo','Registrar acuerdo'],['abandonar','Abandonar caso']],
+        'reclamo_directo/presentado':[['respuesta_recibida','Registrar respuesta de la aerolínea'],['vencio_plazo','Marcar plazo vencido'],['acuerdo','Registrar acuerdo'],['abandonar','Abandonar caso']],
         'reclamo_directo/respuesta_recibida':[['volver_a_presentar','Volver a presentar'],['escalar_mediacion','Escalar a mediación'],['elevar_organismo','Elevar a organismo'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
         'mediacion/preparacion':[['presentar','Presentar a mediación'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
         'mediacion/presentado':[['respuesta_recibida','Registrar respuesta / audiencia'],['acuerdo','Registrar acuerdo'],['cerrar_sin_exito','Cerrar sin éxito'],['abandonar','Abandonar caso']],
@@ -1152,7 +1185,7 @@
         h+='<div style="min-width:0"><span style="font-size:.78rem">'+esc(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' <span class="badge badge--en_gestion">'+esc(RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable)+'</span>'+(vencida?' <span style="color:var(--err)">Vencida</span>':'')+'</span>';
         if(e.detalle)h+='<div style="font-size:.7rem;color:var(--t3)">'+esc(e.detalle)+'</div>';
         h+='<div style="font-size:.66rem;color:var(--t4)">'+dias+' días'+(e.vence?' · vence '+fmtFecha(e.vence):'')+'</div></div>';
-        h+='<button class="btn btn--ghost" data-espera-resolver="'+esc(e.id)+'" type="button" style="font-size:.66rem;white-space:nowrap">Resolver</button>';
+        h+='<button class="btn btn--ghost" data-espera-resolver="'+esc(e.id)+'" type="button" style="font-size:.66rem;white-space:nowrap">'+(e.tipo==='requerimiento_aerolinea'?'Responder':'Resolver')+'</button>';
         h+='</div>';
       });
       if(resueltas.length){
@@ -1171,7 +1204,7 @@
       return fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(body)})
       .then(function(r){return r.json()}).then(function(d){
         if(d.success){
-          ['instancia','momento','resultado','estado','estado_historial','instancia_historial','monto_reclamado','monto_acordado','monto_reclamado_moneda','monto_acordado_moneda','acuerdo_instancia','fecha_acuerdo','motivo_cierre','motivo_cierre_detalle','via_reclamo','organismo','novedades'].forEach(function(k){
+          ['instancia','momento','resultado','estado','estado_historial','instancia_historial','monto_reclamado','monto_acordado','monto_reclamado_moneda','monto_acordado_moneda','acuerdo_instancia','fecha_acuerdo','motivo_cierre','motivo_cierre_detalle','via_reclamo','organismo','novedades','esperas'].forEach(function(k){
             if(d[k]!==undefined){c[k]=d[k];claims.forEach(function(cl){if(cl.id===c.id)cl[k]=d[k]})}
           });
           applyFilters();
@@ -1372,7 +1405,8 @@
         hist.slice().reverse().forEach(function(ev){
           var fd=ev.fecha?new Date(ev.fecha).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
           var evPos={instancia:ev.instancia,momento:ev.momento,resultado:ev.instancia==='cerrado'?c.resultado:null};
-          h+='<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--bdl)"><span style="font-family:var(--fm);font-size:.66rem;color:var(--t4);white-space:nowrap;padding-top:2px">'+fd+'</span><span style="font-size:.76rem;color:var(--t1)"><span class="badge '+etapaBadgeClass(evPos.instancia,evPos.resultado)+'">'+esc(etapaLabel(evPos,ev.via,ev.organismo))+'</span>'+(ev.por?' <span style="color:var(--t4);font-size:.7rem">('+esc(ev.por)+')</span>':'')+'</span></div>';
+          var evNota=ev.motivo==='respuesta_requerimiento'?' <span style="color:var(--t4);font-size:.7rem">· requerimiento respondido</span>':'';
+          h+='<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--bdl)"><span style="font-family:var(--fm);font-size:.66rem;color:var(--t4);white-space:nowrap;padding-top:2px">'+fd+'</span><span style="font-size:.76rem;color:var(--t1)"><span class="badge '+etapaBadgeClass(evPos.instancia,evPos.resultado)+'">'+esc(etapaLabel(evPos,ev.via,ev.organismo))+'</span>'+evNota+(ev.por?' <span style="color:var(--t4);font-size:.7rem">('+esc(ev.por)+')</span>':'')+'</span></div>';
         });
         h+='</div></div>';
       }
@@ -1725,6 +1759,7 @@
           if(btn.disabled)return;
           var tr=btn.getAttribute('data-transicion');
           if(msgTransicion)msgTransicion.textContent='';
+          if(tr==='respuesta_recibida'&&pos.instancia==='reclamo_directo'){openRespuestaModal(c);return}
           if(tr==='acuerdo'){openMontoModal(c,'acuerdo','monto_acordado','Monto total acordado',c.monto_acordado,c.monto_reclamado_moneda);return}
           if(tr==='presentar'&&pos.instancia==='reclamo_directo'&&pos.momento==='preparacion'&&!c.monto_reclamado){openMontoModal(c,'presentar','monto_reclamado','Monto reclamado',c.monto_reclamado,c.monto_reclamado_moneda);return}
           if(tr==='presentar'&&pos.instancia==='mediacion'&&pos.momento==='preparacion'){
@@ -2067,14 +2102,18 @@
        viene pre-marcado cuando la espera era de otro; si era propia, no. */
     function openResolverEsperaModal(c,esp){
       var deTercero=!!(esp&&esp.responsable&&esp.responsable!=='solucionair');
+      var esReq=!!(esp&&esp.tipo==='requerimiento_aerolinea');
+      var reiniciaPlazo=esReq&&getInstancia(c).momento==='presentado';
       var etiqueta=esp?(TIPO_ESPERA_LABELS[esp.tipo]||esp.tipo):'la espera';
       var sugerido='Dar curso a: '+etiqueta+(esp&&esp.detalle?' — '+esp.detalle:'');
       var en2dias=new Date(Date.now()+2*86400000).toISOString().slice(0,10);
+      var btnLabel=esReq?'Registrar':'Resolver';
       showModal({
-        title:'Resolver espera',
-        desc:'Se marca "'+etiqueta+'" como resuelta'+(deTercero?'. Como la esperabas de '+(RESPONSABLE_ESPERA_LABELS[esp.responsable]||esp.responsable)+', normalmente queda una acción tuya pendiente.':'.'),
-        confirmText:'Resolver',
+        title:esReq?'Responder requerimiento':'Resolver espera',
+        desc:'Se marca "'+etiqueta+'" como resuelta'+(deTercero?'. Como la esperabas de '+(RESPONSABLE_ESPERA_LABELS[esp.responsable]||esp.responsable)+', normalmente queda una acción tuya pendiente.':'.')+(reiniciaPlazo?' Se reinicia el plazo de respuesta de la aerolínea.':''),
+        confirmText:btnLabel,
         inputs:[
+          {id:'nota',label:esReq?'Qué se contestó (opcional, va a la bitácora)':'Nota para la bitácora (opcional)',placeholder:esReq?'ej: se envió la tarjeta de embarque por mail':''},
           {id:'seg',type:'checkbox',label:'Crear espera de seguimiento para SolucionAir',checked:deTercero},
           {id:'segdet',label:'Qué queda pendiente',placeholder:sugerido,value:sugerido,showIf:'seg'},
           {id:'segvence',label:'Vence',type:'date',value:en2dias,showIf:'seg'}
@@ -2084,19 +2123,21 @@
           cmConfirm.disabled=true;cmConfirm.textContent='Resolviendo...';
           fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({
             id:c.id,action:'resolver-espera',espera_id:esp?esp.id:'',
+            nota:cmInput('nota').trim(),
             crear_seguimiento:crear,
             seguimiento_detalle:crear?cmInput('segdet'):'',
             seguimiento_vence:crear?(cmInput('segvence')||null):null
           })})
           .then(function(r){return r.json()}).then(function(d){
-            cmConfirm.disabled=false;cmConfirm.textContent='Resolver';
+            cmConfirm.disabled=false;cmConfirm.textContent=btnLabel;
             if(d.success){
               c.esperas=d.esperas;c.novedades=d.novedades;
-              claims.forEach(function(cl){if(cl.id===c.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});
-              closeModal();toast(crear?'Espera resuelta · seguimiento creado':'Espera resuelta');
+              if(d.instancia_historial)c.instancia_historial=d.instancia_historial;
+              claims.forEach(function(cl){if(cl.id===c.id){cl.esperas=d.esperas;cl.novedades=d.novedades;if(d.instancia_historial)cl.instancia_historial=d.instancia_historial}});
+              closeModal();toast(crear?'Espera resuelta · seguimiento creado':(esReq?'Requerimiento respondido':'Espera resuelta'));
               openDetail(c);renderTable();
             } else modalError(d.error||'Error');
-          }).catch(function(){cmConfirm.disabled=false;cmConfirm.textContent='Resolver';modalError('Error de conexión')});
+          }).catch(function(){cmConfirm.disabled=false;cmConfirm.textContent=btnLabel;modalError('Error de conexión')});
         }
       });
     }
@@ -2159,7 +2200,9 @@
         (Array.isArray(c.instancia_historial)?c.instancia_historial:[]).forEach(function(ev){
           if(!ev.fecha||new Date(ev.fecha).getTime()<desde)return;
           var pos={instancia:ev.instancia,momento:ev.momento,resultado:ev.resultado||c.resultado};
-          out.push({fecha:ev.fecha,c:c,tipo:'etapa',texto:etapaLabel(pos,ev.via||c.via_reclamo,ev.organismo||c.organismo),por:ev.por});
+          var evTexto=etapaLabel(pos,ev.via||c.via_reclamo,ev.organismo||c.organismo);
+          if(ev.motivo==='respuesta_requerimiento')evTexto+=' · requerimiento respondido';
+          out.push({fecha:ev.fecha,c:c,tipo:'etapa',texto:evTexto,por:ev.por});
         });
         (Array.isArray(c.novedades)?c.novedades:[]).forEach(function(n){
           if(!n.fecha||new Date(n.fecha).getTime()<desde)return;
@@ -3367,6 +3410,60 @@
           openDetail(cc);
         } else if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
       }).catch(function(){btnAddEspera.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
+    });
+
+    /* ---- RESPUESTA DE LA AEROLÍNEA (reclamo directo / presentado) ----
+       Rechazo y oferta son respuestas de fondo: mueven el caso a "a decidir".
+       Un pedido de información NO lo mueve: el expediente sigue presentado y
+       se registra como espera requerimiento_aerolinea (la pelota pasa a quien
+       deba responder). El backend resuelve la diferencia por tipo_respuesta. */
+    var respuestaOv=document.getElementById('respuesta-ov');
+    var respuestaCaseRef=null;
+    var RESP_HINTS={
+      rechazo:'El caso pasa a "Respuesta recibida · a decidir" para definir el próximo paso.',
+      oferta:'El caso pasa a "Respuesta recibida · a decidir" para evaluar la oferta.',
+      pedido_info:'El caso sigue presentado: se crea una espera "Requerimiento de la aerolínea" y la pelota pasa a quien deba responder.'
+    };
+    function syncRespuestaCampos(){
+      var t=(document.getElementById('resp-tipo')||{}).value;
+      var hint=document.getElementById('resp-hint');if(hint)hint.textContent=RESP_HINTS[t]||'';
+      var ped=document.getElementById('resp-pedido-campos');if(ped)ped.style.display=t==='pedido_info'?'':'none';
+      var detLabel=document.getElementById('resp-detalle-label');
+      if(detLabel)detLabel.textContent=t==='pedido_info'?'Qué pidieron':'Detalle (opcional, va a la bitácora)';
+      var det=document.getElementById('resp-detalle');
+      if(det)det.placeholder=t==='pedido_info'?'ej: tarjeta de embarque del pasajero':'ej: rechazan por meteorología / ofrecen voucher USD 300';
+    }
+    function openRespuestaModal(caseObj){
+      respuestaCaseRef=caseObj;
+      var selT=document.getElementById('resp-tipo');if(selT)selT.value='rechazo';
+      var det=document.getElementById('resp-detalle');if(det)det.value='';
+      var selR=document.getElementById('resp-responsable');if(selR)selR.value='solucionair';
+      var venc=document.getElementById('resp-vence');if(venc)venc.value=fechaEnDias(VENCIMIENTO_DEFAULT_DIAS.requerimiento_aerolinea);
+      var msg=document.getElementById('msg-respuesta');if(msg){msg.style.color='';msg.textContent=''}
+      syncRespuestaCampos();
+      if(selT&&!selT._respBound){selT.addEventListener('change',syncRespuestaCampos);selT._respBound=true}
+      if(respuestaOv)respuestaOv.classList.add('open');
+    }
+    var respuestaClose=document.getElementById('respuesta-close'),respuestaCancel=document.getElementById('respuesta-cancel');
+    if(respuestaClose)respuestaClose.addEventListener('click',function(){respuestaOv.classList.remove('open')});
+    if(respuestaCancel)respuestaCancel.addEventListener('click',function(){respuestaOv.classList.remove('open')});
+    if(respuestaOv)respuestaOv.addEventListener('click',function(e){if(e.target===respuestaOv)respuestaOv.classList.remove('open')});
+    var btnSaveRespuesta=document.getElementById('btn-save-respuesta');
+    if(btnSaveRespuesta)btnSaveRespuesta.addEventListener('click',function(){
+      if(!respuestaCaseRef)return;
+      var msg=document.getElementById('msg-respuesta');
+      var tipoR=(document.getElementById('resp-tipo')||{}).value;
+      var detR=((document.getElementById('resp-detalle')||{}).value||'').trim();
+      var extra={tipo_respuesta:tipoR,detalle_respuesta:detR};
+      if(tipoR==='pedido_info'){
+        if(!detR){if(msg){msg.style.color='var(--err)';msg.textContent='Contá qué pidió la aerolínea: es lo que va a ver quien tenga que responder.'}return}
+        extra.responsable=(document.getElementById('resp-responsable')||{}).value||'solucionair';
+        extra.vence=(document.getElementById('resp-vence')||{}).value||null;
+      }
+      btnSaveRespuesta.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
+      doAvanzar(respuestaCaseRef,'respuesta_recibida',extra,function(err){
+        btnSaveRespuesta.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent=err}
+      }).then(function(d){if(d&&d.success){respuestaOv.classList.remove('open');btnSaveRespuesta.disabled=false}});
     });
 
     /* ---- FECHA DE MEDIACIÓN ---- */

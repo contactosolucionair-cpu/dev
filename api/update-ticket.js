@@ -70,13 +70,45 @@ export default async function handler(req, res) {
 
       var row = await fetchRow('instancia,momento,resultado,estado,estado_historial,instancia_historial,'
         + 'monto_reclamado,monto_acordado,acuerdo_instancia,pago_aerolinea_fecha,comision_cobrada_fecha,'
-        + 'honorarios_abogado_fecha,novedades,via_reclamo,organismo,agencia_id,ref_code');
+        + 'honorarios_abogado_fecha,novedades,esperas,via_reclamo,organismo,agencia_id,ref_code');
       if (!row) return res.status(404).json({ error: 'Reclamo no encontrado' });
 
       var pos = getInstancia(row);
       var check = validarTransicion(pos.instancia, pos.momento, transicion);
       if (!check.ok) return res.status(400).json({ error: check.error });
       var def = check.def;
+
+      /* 'respuesta_recibida' distingue el tipo de respuesta: rechazo/oferta son
+         respuestas de fondo y mueven el caso a "a decidir"; un pedido de
+         información NO lo mueve — el expediente sigue presentado y lo que cambia
+         es la pelota, que se registra como espera requerimiento_aerolinea. */
+      var tipoRespuesta = null, detalleRespuesta = null;
+      if (transicion === 'respuesta_recibida' && body.tipo_respuesta) {
+        tipoRespuesta = String(body.tipo_respuesta).trim();
+        if (['rechazo', 'oferta', 'pedido_info'].indexOf(tipoRespuesta) === -1)
+          return res.status(400).json({ error: 'tipo_respuesta inválido' });
+        detalleRespuesta = (body.detalle_respuesta || '').trim() || null;
+      }
+      if (tipoRespuesta === 'pedido_info') {
+        if (!detalleRespuesta) return res.status(400).json({ error: 'Detallá qué pidió la aerolínea' });
+        var reqResponsable = (body.responsable || 'solucionair').trim();
+        if (['solucionair', 'pasajero'].indexOf(reqResponsable) === -1) reqResponsable = 'solucionair';
+        var nowPi = new Date().toISOString();
+        var esperasPi = Array.isArray(row.esperas) ? row.esperas : [];
+        esperasPi.push({
+          id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+          tipo: 'requerimiento_aerolinea', detalle: detalleRespuesta, responsable: reqResponsable,
+          creada: nowPi, vence: body.vence ? new Date(body.vence).toISOString() : null, resuelta: null,
+        });
+        var novPi = Array.isArray(row.novedades) ? row.novedades : [];
+        novPi.unshift({ fecha: nowPi, texto: 'La aerolínea pidió información: ' + detalleRespuesta });
+        var piPatch = await patchRow({ esperas: esperasPi, novedades: novPi });
+        if (!piPatch.ok) return res.status(500).json({ error: 'Error al registrar el pedido de información' });
+        return res.status(200).json({
+          success: true, action: 'avanzar', transicion: 'respuesta_recibida', tipo_respuesta: 'pedido_info',
+          esperas: esperasPi, novedades: novPi,
+        });
+      }
 
       var patch = {};
 
@@ -162,13 +194,16 @@ export default async function handler(req, res) {
         instEntry.via = newViaReclamo;
         if (newViaReclamo === 'organismo' && newOrganismo) instEntry.organismo = newOrganismo;
       }
+      if (tipoRespuesta) instEntry.tipo_respuesta = tipoRespuesta;
       var instHist = Array.isArray(row.instancia_historial) ? row.instancia_historial : [];
       instHist.push(instEntry);
       patch.instancia_historial = instHist;
 
       var novedades = Array.isArray(row.novedades) ? row.novedades : [];
-      if (def.novedad) {
-        novedades.unshift({ fecha: nowIso, texto: def.novedad });
+      var novedadTexto = def.novedad || null;
+      if (tipoRespuesta) novedadTexto = 'Respuesta de la aerolínea — ' + (tipoRespuesta === 'oferta' ? 'oferta' : 'rechazo') + (detalleRespuesta ? ': ' + detalleRespuesta : '');
+      if (novedadTexto) {
+        novedades.unshift({ fecha: nowIso, texto: novedadTexto });
         patch.novedades = novedades;
       }
 
@@ -253,7 +288,7 @@ export default async function handler(req, res) {
     if (body.action === 'resolver-espera') {
       var esperaId = (body.espera_id || '').trim();
       if (!esperaId) return res.status(400).json({ error: 'espera_id requerido' });
-      var reRow = await fetchRow('esperas,novedades');
+      var reRow = await fetchRow('esperas,novedades,instancia,momento,estado,instancia_historial,via_reclamo,organismo');
       if (!reRow) return res.status(404).json({ error: 'Reclamo no encontrado' });
       var esperasRe = Array.isArray(reRow.esperas) ? reRow.esperas : [];
       var found = null;
@@ -263,8 +298,32 @@ export default async function handler(req, res) {
       var nowRe = new Date().toISOString();
       found.resuelta = nowRe;
 
+      var notaRe = (body.nota || '').trim() || null;
       var reNov = Array.isArray(reRow.novedades) ? reRow.novedades : [];
-      reNov.unshift({ fecha: nowRe, texto: 'Espera resuelta: ' + found.tipo });
+      var textoRe;
+      if (found.tipo === 'requerimiento_aerolinea') {
+        textoRe = 'Requerimiento respondido' + (found.detalle ? ' («' + found.detalle + '»)' : '') + (notaRe ? ': ' + notaRe : '');
+      } else {
+        textoRe = 'Espera resuelta: ' + (TIPO_ESPERA_LABELS[found.tipo] || found.tipo)
+          + (found.detalle ? ' — ' + found.detalle : '') + (notaRe ? ' · ' + notaRe : '');
+      }
+      reNov.unshift({ fecha: nowRe, texto: textoRe });
+
+      /* Contestar un requerimiento con el expediente presentado reinicia el plazo
+         de respuesta de la aerolínea: se agrega al historial una entrada de la
+         MISMA posición, que es desde donde se cuentan los días en instancia. */
+      var reHistPatch = null;
+      var posRe = getInstancia(reRow);
+      if (found.tipo === 'requerimiento_aerolinea' && posRe.momento === 'presentado') {
+        var reHist = Array.isArray(reRow.instancia_historial) ? reRow.instancia_historial : [];
+        var reEntry = { instancia: posRe.instancia, momento: 'presentado', fecha: nowRe, por: 'admin', motivo: 'respuesta_requerimiento' };
+        if (posRe.instancia === 'reclamo_directo') {
+          reEntry.via = reRow.via_reclamo || 'aerolinea';
+          if (reEntry.via === 'organismo' && reRow.organismo) reEntry.organismo = reRow.organismo;
+        }
+        reHist.push(reEntry);
+        reHistPatch = reHist;
+      }
 
       if (body.crear_seguimiento) {
         var segDetalle = (body.seguimiento_detalle || '').trim()
@@ -278,9 +337,13 @@ export default async function handler(req, res) {
         reNov.unshift({ fecha: nowRe, texto: 'Nueva espera: acción interna — ' + segDetalle });
       }
 
-      var rePatch = await patchRow({ esperas: esperasRe, novedades: reNov });
+      var rePatchBody = { esperas: esperasRe, novedades: reNov };
+      if (reHistPatch) rePatchBody.instancia_historial = reHistPatch;
+      var rePatch = await patchRow(rePatchBody);
       if (!rePatch.ok) return res.status(500).json({ error: 'Error al resolver la espera' });
-      return res.status(200).json({ success: true, action: 'resolver-espera', esperas: esperasRe, novedades: reNov });
+      var reResp = { success: true, action: 'resolver-espera', esperas: esperasRe, novedades: reNov };
+      if (reHistPatch) reResp.instancia_historial = reHistPatch;
+      return res.status(200).json(reResp);
     }
 
     /* ---- RECORDATORIOS (alertas ad-hoc de un caso puntual) ----
