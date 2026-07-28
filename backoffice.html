@@ -639,7 +639,7 @@
     <div class="cm-ov" id="espera-ov">
       <div class="cm" style="max-width:400px;text-align:left">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <div class="cm__title" style="margin:0">Agregar espera</div>
+          <div class="cm__title" style="margin:0" id="espera-title">Agregar espera</div>
           <button class="detail__close" id="espera-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
@@ -647,7 +647,11 @@
           <select id="esp-responsable" class="firma-select"></select>
         </div>
         <input id="esp-detalle" class="firma-select" style="width:100%;margin-bottom:10px" placeholder="Detalle (opcional)">
-        <div class="detail__label" style="margin-bottom:6px">Vence (opcional)</div>
+        <div class="detail__label" style="margin-bottom:6px">Vencimiento</div>
+        <select id="esp-cuando" class="firma-select" style="width:100%;margin-bottom:8px">
+          <option value="fecha">En fecha</option>
+          <option value="ahora">Ahora — pendiente desde ya</option>
+        </select>
         <input id="esp-vence" type="date" class="firma-select" style="width:100%;font-family:var(--fm)">
         <div id="msg-espera" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:8px"></div>
         <div class="cm__btns" style="justify-content:flex-end;margin-top:10px">
@@ -740,7 +744,10 @@
     var MOMENTO_LABELS={preparacion:'Preparación',presentado:'Presentado · esperando respuesta',respuesta_recibida:'Respuesta recibida · a decidir'};
     var RESULTADO_LABELS={exito:'Éxito',sin_exito:'Sin éxito',no_apto:'No apto',abandonado:'Abandonado'};
     var MOTIVO_CIERRE_LABELS={rechazo_definitivo:'Rechazo definitivo',monto_inviable:'Monto inviable',documentacion_insuficiente:'Documentación insuficiente',no_elegible:'No elegible',prescripto:'Prescripto',pasajero_no_responde:'Pasajero no responde',desistimiento_pasajero:'Desistimiento del pasajero',aerolinea_no_pago:'Aerolínea no pagó',otro:'Otro'};
-    var TIPO_ESPERA_LABELS={info_pasajero:'Información del pasajero',firma_documento:'Firma de documento',requerimiento_aerolinea:'Requerimiento de la aerolínea',audiencia:'Audiencia',accion_interna:'Acción interna'};
+    /* 'compromiso_tercero' = algo que un tercero se comprometió a hacer o mandarnos
+       (la aerolínea acepta enviar el formulario bancario). Es el inverso de
+       'requerimiento_aerolinea', que es lo que la aerolínea nos exige a nosotros. */
+    var TIPO_ESPERA_LABELS={info_pasajero:'Información del pasajero',firma_documento:'Firma de documento',requerimiento_aerolinea:'Requerimiento de la aerolínea',compromiso_tercero:'Compromiso asumido',audiencia:'Audiencia',accion_interna:'Acción interna'};
     var RESPONSABLE_ESPERA_LABELS={solucionair:'SolucionAir',pasajero:'Pasajero',aerolinea:'Aerolínea',abogado:'Abogado',mediador:'Mediador'};
     /* Valores canónicos nuevos + fallback a valores viejos del form (no migrados) */
     var ANTICIPACION_LABELS={mas_14_dias:'Más de 14 días','7_a_14_dias':'Entre 7 y 14 días',menos_7_dias:'Menos de 7 días',menos_24h:'Menos de 24 horas',en_aeropuerto:'En el aeropuerto, sin aviso previo',sin_aviso:'Sin aviso previo (valor anterior)',menos_14:'Menos de 14 días (valor anterior)','14_a_21':'14 a 21 días (valor anterior)',mas_21:'Más de 21 días (valor anterior)'};
@@ -786,13 +793,18 @@
       return 'badge--en_gestion';
     }
     function esperasAbiertas(c){return (Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return !e.resuelta})}
-    /** Una espera a cargo de SolucionAir es una acción NUESTRA, no la estamos
-        esperando de un tercero: no tiene sentido darnos un plazo de gracia, así
-        que cuenta como vencida desde que se abre, tenga o no fecha de
-        vencimiento cargada (o aunque esa fecha todavía no haya llegado). Para
-        cualquier otro responsable, vencida sigue significando lo de siempre:
-        pasó la fecha de vencimiento cargada. */
-    function esperaCuentaComoVencida(e){return e.responsable==='solucionair'||!!(e.vence&&new Date(e.vence).getTime()<Date.now())}
+    /** La fecha de vencimiento manda: si está cargada, vencida significa lo de
+        siempre (ya pasó). Sin fecha, una espera a cargo de SolucionAir cuenta como
+        vencida desde que se abre —es una acción NUESTRA, no se la estamos esperando
+        a nadie, no tiene sentido darnos un plazo de gracia—; la de un tercero, no.
+        Esos son los dos modos que ofrece el selector "Vencimiento" del modal:
+        "Ahora" (sin fecha) y "En fecha". Antes el responsable 'solucionair'
+        cortocircuitaba el cálculo y una acción propia programada para dentro de una
+        semana aparecía vencida desde el minuto 0, ignorando la fecha cargada. */
+    function esperaCuentaComoVencida(e){
+      if(e.vence)return new Date(e.vence).getTime()<Date.now();
+      return e.responsable==='solucionair';
+    }
     function acompanantesDe(c){return Array.isArray(c.acompanantes)?c.acompanantes:[]}
     /** Nombre del titular + "+n" si el caso tiene acompañantes (el tooltip los lista). */
     /* `nombre` es un único campo de texto libre ("Nombre y apellido"), no hay
@@ -1185,7 +1197,10 @@
         h+='<div style="min-width:0"><span style="font-size:.78rem">'+esc(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' <span class="badge badge--en_gestion">'+esc(RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable)+'</span>'+(vencida?' <span style="color:var(--err)">Vencida</span>':'')+'</span>';
         if(e.detalle)h+='<div style="font-size:.7rem;color:var(--t3)">'+esc(e.detalle)+'</div>';
         h+='<div style="font-size:.66rem;color:var(--t4)">'+dias+' días'+(e.vence?' · vence '+fmtFecha(e.vence):'')+'</div></div>';
+        h+='<div style="display:flex;gap:4px;flex-shrink:0;align-items:center">';
+        h+='<button class="btn btn--ghost" data-espera-editar="'+esc(e.id)+'" type="button" title="Editar espera" style="font-size:.66rem;padding:3px 7px">✎</button>';
         h+='<button class="btn btn--ghost" data-espera-resolver="'+esc(e.id)+'" type="button" style="font-size:.66rem;white-space:nowrap">'+(e.tipo==='requerimiento_aerolinea'?'Responder':'Resolver')+'</button>';
+        h+='</div>';
         h+='</div>';
       });
       if(resueltas.length){
@@ -1790,6 +1805,16 @@
           openResolverEsperaModal(c,esp);
         });
       });
+      /* Corregir una espera mal cargada (responsable, plazo, tipo, detalle) sin
+         tener que resolverla y volver a crearla, que ensucia la bitácora y pierde
+         la antigüedad con la que se calcula la pelota. */
+      detailBody.querySelectorAll('[data-espera-editar]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var eid=btn.getAttribute('data-espera-editar');
+          var esp=null;(Array.isArray(c.esperas)?c.esperas:[]).forEach(function(e){if(e.id===eid)esp=e});
+          if(esp)openEsperaModal(c,esp);
+        });
+      });
       var btnOpenEspera=document.getElementById('btn-open-espera');
       if(btnOpenEspera)btnOpenEspera.addEventListener('click',function(){openEsperaModal(c)});
 
@@ -2057,17 +2082,36 @@
                 +'<label for="cmin-'+esc(f.id)+'" style="font-size:.76rem;color:var(--t2);cursor:pointer">'+esc(f.label||'')+'</label>'
                 +'</div>';
             }
-            return '<div style="margin-bottom:10px;text-align:left"'+(f.showIf?' data-show-if="'+esc(f.showIf)+'"':'')+'>'
-              +'<label class="detail__label" style="display:block;margin-bottom:4px">'+esc(f.label||'')+'</label>'
+            var head='<div style="margin-bottom:10px;text-align:left"'+(f.showIf?' data-show-if="'+esc(f.showIf)+'"':'')+'>'
+              +'<label class="detail__label" style="display:block;margin-bottom:4px">'+esc(f.label||'')+'</label>';
+            if(f.type==='select'){
+              return head+'<select id="cmin-'+esc(f.id)+'" class="firma-select" style="width:100%">'
+                +(f.options||[]).map(function(o){
+                  return '<option value="'+esc(o.value)+'"'+(o.value===f.value?' selected':'')+'>'+esc(o.label)+'</option>';
+                }).join('')
+                +'</select></div>';
+            }
+            return head
               +'<input id="cmin-'+esc(f.id)+'" type="'+(f.type||'text')+'" class="firma-select" style="width:100%" placeholder="'+esc(f.placeholder||'')+'" value="'+esc(f.value||'')+'" autocomplete="off" />'
               +'</div>';
           }).join('');
-          /* Campos que dependen de un checkbox (data-show-if) */
+          /* Visibilidad condicional (data-show-if). Cada condición es "campo" (un
+             checkbox marcado) o "campo=valor" (un select en ese valor); separadas
+             por coma se exigen todas, que es lo que necesita un campo anidado como
+             la fecha del seguimiento: visible sólo si el seguimiento está marcado Y
+             además es "en fecha". */
           box.querySelectorAll('[data-show-if]').forEach(function(wrap){
-            var src=document.getElementById('cmin-'+wrap.getAttribute('data-show-if'));
-            if(!src)return;
-            var sync=function(){wrap.style.display=src.checked?'':'none'};
-            src.addEventListener('change',sync);sync();
+            var conds=wrap.getAttribute('data-show-if').split(',').map(function(cond){
+              var eq=cond.indexOf('='),key=eq===-1?cond:cond.slice(0,eq),val=eq===-1?null:cond.slice(eq+1);
+              return {src:document.getElementById('cmin-'+key.trim()),val:val};
+            }).filter(function(x){return !!x.src});
+            if(!conds.length)return;
+            var sync=function(){
+              var ok=conds.every(function(x){return x.val===null?x.src.checked:x.src.value===x.val});
+              wrap.style.display=ok?'':'none';
+            };
+            conds.forEach(function(x){x.src.addEventListener('change',sync)});
+            sync();
           });
           var first=box.querySelector('input:not([type=checkbox])');if(first)setTimeout(function(){first.focus()},50);
         }
@@ -2096,37 +2140,52 @@
 
     function modalError(msg){cmErr.textContent=msg}
 
-    /* ---- Resolver una espera, ofreciendo devolver la pelota a SolucionAir ----
+    /* ---- Resolver una espera, ofreciendo dejar abierto lo que quede pendiente ----
        Resolver algo que esperabas de un tercero casi nunca cierra el asunto: recibís
        la autorización firmada y todavía tenés que remitirla. Por eso el seguimiento
-       viene pre-marcado cuando la espera era de otro; si era propia, no. */
+       viene pre-marcado cuando la espera era de otro; si era propia, no.
+       Lo pendiente NO siempre es nuestro: la aerolínea corrige el status del caso y
+       queda comprometida a mandarnos el formulario bancario. Por eso se elige el
+       responsable (antes esto creaba siempre una acción interna de SolucionAir). */
     function openResolverEsperaModal(c,esp){
       var deTercero=!!(esp&&esp.responsable&&esp.responsable!=='solucionair');
       var esReq=!!(esp&&esp.tipo==='requerimiento_aerolinea');
       var reiniciaPlazo=esReq&&getInstancia(c).momento==='presentado';
       var etiqueta=esp?(TIPO_ESPERA_LABELS[esp.tipo]||esp.tipo):'la espera';
-      var sugerido='Dar curso a: '+etiqueta+(esp&&esp.detalle?' — '+esp.detalle:'');
+      var colaEsp=etiqueta+(esp&&esp.detalle?' — '+esp.detalle:'');
       var en2dias=new Date(Date.now()+2*86400000).toISOString().slice(0,10);
       var btnLabel=esReq?'Registrar':'Resolver';
+      /* Sólo se sugiere el texto cuando el pendiente es nuestro ("dar curso a lo que
+         acaba de llegar"). Si queda a cargo de un tercero, lo que falta es algo que
+         se comprometió a hacer y sólo lo sabe quien está cargando: campo vacío con
+         un ejemplo como placeholder. */
+      function sugerenciaDet(resp){return resp==='solucionair'?'Dar curso a: '+colaEsp:''}
+      function placeholderDet(resp){return resp==='solucionair'?'Dar curso a: '+colaEsp:'ej: enviar el formulario de datos bancarios'}
       showModal({
         title:esReq?'Responder requerimiento':'Resolver espera',
-        desc:'Se marca "'+etiqueta+'" como resuelta'+(deTercero?'. Como la esperabas de '+(RESPONSABLE_ESPERA_LABELS[esp.responsable]||esp.responsable)+', normalmente queda una acción tuya pendiente.':'.')+(reiniciaPlazo?' Se reinicia el plazo de respuesta de la aerolínea.':''),
+        desc:'Se marca "'+etiqueta+'" como resuelta'+(deTercero?'. Como la esperabas de '+(RESPONSABLE_ESPERA_LABELS[esp.responsable]||esp.responsable)+', normalmente queda algo pendiente.':'.')+(reiniciaPlazo?' Se reinicia el plazo de respuesta de la aerolínea.':''),
         confirmText:btnLabel,
         inputs:[
           {id:'nota',label:esReq?'Qué se contestó (opcional, va a la bitácora)':'Nota para la bitácora (opcional)',placeholder:esReq?'ej: se envió la tarjeta de embarque por mail':''},
-          {id:'seg',type:'checkbox',label:'Crear espera de seguimiento para SolucionAir',checked:deTercero},
-          {id:'segdet',label:'Qué queda pendiente',placeholder:sugerido,value:sugerido,showIf:'seg'},
-          {id:'segvence',label:'Vence',type:'date',value:en2dias,showIf:'seg'}
+          {id:'seg',type:'checkbox',label:'Queda algo pendiente: dejar una espera abierta',checked:deTercero},
+          {id:'segresp',type:'select',label:'¿A cargo de quién?',value:'solucionair',showIf:'seg',
+            options:Object.keys(RESPONSABLE_ESPERA_LABELS).map(function(r){return {value:r,label:RESPONSABLE_ESPERA_LABELS[r]}})},
+          {id:'segdet',label:'Qué queda pendiente',placeholder:placeholderDet('solucionair'),value:sugerenciaDet('solucionair'),showIf:'seg'},
+          {id:'segcuando',type:'select',label:'Vencimiento',value:'fecha',showIf:'seg',
+            options:[{value:'fecha',label:'En fecha'},{value:'ahora',label:etiquetaSinFecha('solucionair')}]},
+          {id:'segvence',label:'Vence',type:'date',value:en2dias,showIf:'seg,segcuando=fecha'}
         ],
         onConfirm:function(){
           var crear=cmChecked('seg');
+          var segSinFecha=crear&&cmInput('segcuando')==='ahora';
           cmConfirm.disabled=true;cmConfirm.textContent='Resolviendo...';
           fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({
             id:c.id,action:'resolver-espera',espera_id:esp?esp.id:'',
             nota:cmInput('nota').trim(),
             crear_seguimiento:crear,
+            seguimiento_responsable:crear?(cmInput('segresp')||'solucionair'):'solucionair',
             seguimiento_detalle:crear?cmInput('segdet'):'',
-            seguimiento_vence:crear?(cmInput('segvence')||null):null
+            seguimiento_vence:(crear&&!segSinFecha)?(cmInput('segvence')||null):null
           })})
           .then(function(r){return r.json()}).then(function(d){
             cmConfirm.disabled=false;cmConfirm.textContent=btnLabel;
@@ -2140,6 +2199,21 @@
           }).catch(function(){cmConfirm.disabled=false;cmConfirm.textContent=btnLabel;modalError('Error de conexión')});
         }
       });
+      /* El texto sugerido y el sentido de "sin fecha" dependen de a cargo de quién
+         queda: se resincronizan al cambiar el responsable, pisando la sugerencia
+         anterior sólo si el usuario no escribió lo suyo. */
+      var selSegResp=document.getElementById('cmin-segresp'),
+          inSegDet=document.getElementById('cmin-segdet'),
+          selSegCuando=document.getElementById('cmin-segcuando');
+      if(selSegResp&&inSegDet&&selSegCuando){
+        var respPrevio='solucionair';
+        selSegResp.addEventListener('change',function(){
+          if(inSegDet.value===sugerenciaDet(respPrevio))inSegDet.value=sugerenciaDet(selSegResp.value);
+          inSegDet.placeholder=placeholderDet(selSegResp.value);
+          etiquetarOpcionSinFecha(selSegCuando,selSegResp.value);
+          respPrevio=selSegResp.value;
+        });
+      }
     }
 
     /* ---- Acciones de cuentas de portal, compartidas por agencias y abogados ----
@@ -2223,14 +2297,18 @@
       claims.filter(function(c){return !c.deleted_at}).forEach(function(c){
         var pos=getInstancia(c);
         if(pos.instancia==='cerrado')return;
-        /* Las esperas a cargo de SolucionAir se arman aparte, más abajo: siempre
-           cuentan como urgentes desde que se abren (ver esperaCuentaComoVencida),
-           tengan o no vencimiento cargado. Acá solo van las de terceros, que sí
-           dependen de si les cargamos una fecha de vencimiento. */
+        /* Toda espera CON fecha de vencimiento entra acá, sea de un tercero o
+           nuestra: el ítem va fechado en `vence` y se pinta vencido cuando esa
+           fecha pasa. Una espera propia "En fecha" es trabajo programado, no algo
+           urgente desde que se abre. Las propias SIN fecha (modo "Ahora") se arman
+           más abajo como 'accion_sa'; las de terceros sin fecha no generan ítem
+           (no les pusimos plazo, no hay nada que chequear). */
         esperasAbiertas(c).forEach(function(e){
-          if(e.responsable==='solucionair')return;
           if(!e.vence)return;
-          out.push({fecha:e.vence,c:c,tipo:'espera',texto:(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+(e.detalle?' — '+e.detalle:''),quien:RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable});
+          var etiquetaE=(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+(e.detalle?' — '+e.detalle:'');
+          out.push({fecha:e.vence,c:c,tipo:'espera',
+            texto:(e.responsable==='solucionair'?'Dar curso a: ':'')+etiquetaE,
+            quien:RESPONSABLE_ESPERA_LABELS[e.responsable]||e.responsable});
         });
         recordatoriosPendientes(c).forEach(function(r){
           out.push({fecha:r.vence,c:c,tipo:'recordatorio',texto:r.texto,quien:'Recordatorio'});
@@ -2243,16 +2321,18 @@
            caso recién ingresado sin esperas ni recordatorios era invisible en To
            Do aunque de hecho esté esperando que lo miremos. Aparece desde el
            mismo día que entra (sin umbral), fechado desde que cayó en esa
-           posición — o desde que se creó la espera, si viene de una espera
-           propia (tenga o no vencimiento cargado: para nosotros mismos no hay
-           plazo de gracia, "accion_sa" siempre se pinta como vencido).
+           posición — o desde que se creó la espera, si viene de una espera propia
+           en modo "Ahora" (sin fecha: para nosotros mismos no hay plazo de gracia,
+           "accion_sa" siempre se pinta como vencido). Las esperas propias con fecha
+           quedan afuera de este branch: ya las tomó el bucle de arriba, fechadas en
+           su vencimiento.
            Importante: se recorren TODAS las esperas abiertas a cargo de
            SolucionAir, no solo la más vieja (pelotaInfo). Si había una espera de
            otra parte todavía abierta y más antigua (p.ej. quedó pendiente de una
            etapa anterior), esa "ganaba" la pelota y una espera nueva nuestra
            quedaba invisible en To Do aunque esperasAbiertas() la mostrara igual
            en la ficha del caso. */
-        var abiertasSA=esperasAbiertas(c).filter(function(e){return e.responsable==='solucionair'});
+        var abiertasSA=esperasAbiertas(c).filter(function(e){return e.responsable==='solucionair'&&!e.vence});
         if(abiertasSA.length){
           abiertasSA.forEach(function(e){
             var txtSA='Dar curso a: '+(TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+(e.detalle?' — '+e.detalle:'');
@@ -3356,33 +3436,92 @@
       }).catch(function(){correccionSave.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
     });
 
-    /* ---- AGREGAR ESPERA ---- */
+    /* ---- AGREGAR / EDITAR ESPERA ---- */
     var esperaOv=document.getElementById('espera-ov');
     var esperaCaseRef=null;
-    /* Plazo por defecto (días) al crear una espera. Sin fecha de vencimiento la
-       regla 'espera_vencida' no puede verlas nunca, así que se autocompleta y el
-       usuario la puede pisar o borrar.
-       'accion_interna' queda afuera a propósito: es una acción a cargo nuestro,
-       no de un tercero, así que no tiene sentido darnos a nosotros mismos un
-       plazo de gracia — cuenta como vencida desde el momento en que se abre
-       (ver esperaCuentaComoVencida). */
-    var VENCIMIENTO_DEFAULT_DIAS={requerimiento_aerolinea:2,firma_documento:3,info_pasajero:5,audiencia:7};
+    /* Id de la espera que se está editando, o null si el modal está en modo alta. */
+    var esperaEditId=null;
+    /* Plazo por defecto (días) al crear una espera, según el tipo. Sin fecha de
+       vencimiento la regla 'espera_vencida' no puede verlas nunca, así que se
+       autocompleta y el usuario la puede pisar o pasar a "Ahora".
+       'accion_interna' queda afuera a propósito: es una acción a cargo nuestro y
+       por defecto se asume que hay que hacerla ya (modo "Ahora"). Si en cambio es
+       trabajo programado —un followup dentro de una semana— se elige "En fecha" y
+       esa fecha se respeta (ver esperaCuentaComoVencida). */
+    var VENCIMIENTO_DEFAULT_DIAS={requerimiento_aerolinea:2,firma_documento:3,info_pasajero:5,compromiso_tercero:7,audiencia:7};
     function fechaEnDias(d){return new Date(Date.now()+d*86400000).toISOString().slice(0,10)}
-    function syncEsperaVence(){
-      var selT=document.getElementById('esp-tipo'),venc=document.getElementById('esp-vence');
-      if(!selT||!venc)return;
-      var dias=VENCIMIENTO_DEFAULT_DIAS[selT.value];
-      venc.value=dias?fechaEnDias(dias):'';
+    /* Una espera sin fecha significa cosas distintas según de quién sea: la nuestra
+       cuenta como vencida desde que se abre, la de un tercero simplemente no genera
+       To Do (no le pusimos plazo, no hay nada que chequear). Misma opción, dos
+       nombres, para que el selector no mienta. */
+    function etiquetaSinFecha(resp){return resp==='solucionair'?'Ahora — pendiente desde ya':'Sin plazo — no genera To Do'}
+    function etiquetarOpcionSinFecha(sel,resp){
+      if(!sel)return;
+      for(var i=0;i<sel.options.length;i++){
+        if(sel.options[i].value==='ahora')sel.options[i].textContent=etiquetaSinFecha(resp);
+      }
     }
-    function openEsperaModal(caseObj){
+    /* Muestra u oculta el campo de fecha y renombra la opción "sin fecha". Seguro de
+       llamar siempre: no pisa valores cargados. */
+    function syncEsperaCuando(){
+      var selC=document.getElementById('esp-cuando'),venc=document.getElementById('esp-vence'),
+          selR=document.getElementById('esp-responsable');
+      if(!selC||!venc)return;
+      etiquetarOpcionSinFecha(selC,selR?selR.value:'solucionair');
+      venc.style.display=selC.value==='ahora'?'none':'';
+    }
+    /* Aplica el plazo por defecto del tipo elegido. En modo edición no corre: quien
+       está corrigiendo una espera no quiere que cambiar el tipo le pise la fecha. */
+    function syncEsperaVence(){
+      var selT=document.getElementById('esp-tipo'),venc=document.getElementById('esp-vence'),
+          selC=document.getElementById('esp-cuando');
+      if(!selT||!venc)return;
+      if(!esperaEditId){
+        var dias=VENCIMIENTO_DEFAULT_DIAS[selT.value];
+        venc.value=dias?fechaEnDias(dias):'';
+        if(selC)selC.value=dias?'fecha':'ahora';
+      }
+      syncEsperaCuando();
+    }
+    /* `esp` presente = modo edición sobre esa espera; ausente = alta. */
+    function openEsperaModal(caseObj,esp){
       esperaCaseRef=caseObj;
-      var selT=document.getElementById('esp-tipo'),selR=document.getElementById('esp-responsable');
+      esperaEditId=esp?esp.id:null;
+      var selT=document.getElementById('esp-tipo'),selR=document.getElementById('esp-responsable'),
+          selC=document.getElementById('esp-cuando'),venc=document.getElementById('esp-vence');
       if(selT)selT.innerHTML=Object.keys(TIPO_ESPERA_LABELS).map(function(t){return '<option value="'+t+'">'+TIPO_ESPERA_LABELS[t]+'</option>'}).join('');
       if(selR)selR.innerHTML=Object.keys(RESPONSABLE_ESPERA_LABELS).map(function(r){return '<option value="'+r+'">'+RESPONSABLE_ESPERA_LABELS[r]+'</option>'}).join('');
-      var det=document.getElementById('esp-detalle');if(det)det.value='';
+      var det=document.getElementById('esp-detalle');
+      var titulo=document.getElementById('espera-title');
+      var btn=document.getElementById('btn-add-espera');
+      if(titulo)titulo.textContent=esp?'Editar espera':'Agregar espera';
+      if(btn)btn.textContent=esp?'Guardar':'Agregar';
+      if(esp){
+        /* Si la espera tiene un tipo/responsable que ya no está en la lista (datos
+           viejos), se agrega la opción al vuelo: sin esto el select caería a la
+           primera opción y editar el detalle cambiaría el tipo sin avisar. */
+        var conservar=function(sel,val){
+          if(!sel||!val)return;
+          sel.value=val;
+          if(sel.value!==val){
+            sel.insertAdjacentHTML('afterbegin','<option value="'+esc(val)+'">'+esc(val)+' (valor anterior)</option>');
+            sel.value=val;
+          }
+        };
+        conservar(selT,esp.tipo);
+        conservar(selR,esp.responsable);
+        if(det)det.value=esp.detalle||'';
+        if(venc)venc.value=esp.vence?String(esp.vence).slice(0,10):'';
+        if(selC)selC.value=esp.vence?'fecha':'ahora';
+        syncEsperaCuando();
+      } else {
+        if(det)det.value='';
+        syncEsperaVence();
+      }
       var msg=document.getElementById('msg-espera');if(msg){msg.style.color='';msg.textContent=''}
-      syncEsperaVence();
       if(selT&&!selT._venceBound){selT.addEventListener('change',syncEsperaVence);selT._venceBound=true}
+      if(selC&&!selC._cuandoBound){selC.addEventListener('change',syncEsperaCuando);selC._cuandoBound=true}
+      if(selR&&!selR._cuandoBound){selR.addEventListener('change',syncEsperaCuando);selR._cuandoBound=true}
       if(esperaOv)esperaOv.classList.add('open');
     }
     var esperaClose=document.getElementById('espera-close'),esperaCancel=document.getElementById('espera-cancel');
@@ -3396,18 +3535,24 @@
       var tipoE=(document.getElementById('esp-tipo')||{}).value;
       var respE=(document.getElementById('esp-responsable')||{}).value;
       var detE=(document.getElementById('esp-detalle')||{}).value||'';
-      var venceE=(document.getElementById('esp-vence')||{}).value||'';
+      /* En modo "Ahora" no se manda fecha aunque el input tenga una vieja cargada:
+         la ausencia de `vence` ES el modo. */
+      var cuandoE=(document.getElementById('esp-cuando')||{}).value||'fecha';
+      var venceE=cuandoE==='ahora'?'':((document.getElementById('esp-vence')||{}).value||'');
+      var editando=esperaEditId;
       btnAddEspera.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
       var cc=esperaCaseRef;
-      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:cc.id,action:'set-espera',tipo:tipoE,responsable:respE,detalle:detE,vence:venceE||null})})
+      var cuerpo={id:cc.id,action:editando?'editar-espera':'set-espera',tipo:tipoE,responsable:respE,detalle:detE,vence:venceE||null};
+      if(editando)cuerpo.espera_id=editando;
+      fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(cuerpo)})
       .then(function(r){return r.json()}).then(function(d){
         btnAddEspera.disabled=false;
         if(d.success){
           cc.esperas=d.esperas;cc.novedades=d.novedades;
           claims.forEach(function(cl){if(cl.id===cc.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});
-          toast('Espera agregada.');
+          toast(editando?(d.sin_cambios?'Sin cambios.':'Espera actualizada.'):'Espera agregada.');
           esperaOv.classList.remove('open');
-          openDetail(cc);
+          openDetail(cc);renderTable();
         } else if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error.'}
       }).catch(function(){btnAddEspera.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
     });

@@ -5,6 +5,7 @@
  *   avanzar          Transición válida entre instancia/momento (ver api/_utils/instancias.js)
  *   cancel            Alias de avanzar con transición 'abandonar' (usado por perfil.html)
  *   set-espera        Agrega una espera abierta
+ *   editar-espera      Corrige tipo/responsable/detalle/vencimiento de una espera abierta
  *   resolver-espera    Marca una espera como resuelta
  *   set-cobro          Marca/deshace una fecha del checklist de cobro
  *   set-instancia      Corrección manual de instancia/momento/resultado
@@ -20,7 +21,8 @@
  */
 import {
   getInstancia, instanciaAEstadoLegacy, validarTransicion,
-  MOTIVOS_CIERRE, TIPOS_ESPERA, RESPONSABLES_ESPERA, TIPO_ESPERA_LABELS, etapaExterna,
+  MOTIVOS_CIERRE, TIPOS_ESPERA, RESPONSABLES_ESPERA, TIPO_ESPERA_LABELS,
+  RESPONSABLE_ESPERA_LABELS, etapaExterna,
   INSTANCIAS_VALIDAS, MOMENTOS_VALIDOS, RESULTADOS_VALIDOS, MONEDAS_VALIDAS,
 } from './_utils/instancias.js';
 import { notificarCambioEtapa } from './_utils/notify-agencia.js';
@@ -280,11 +282,66 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, action: 'set-espera', esperas: esperas, novedades: seNov });
     }
 
+    /* ---- EDITAR ESPERA ---- */
+    /* Corrección de una espera abierta: se cargó mal el responsable, el plazo o el
+       detalle. No se toca `creada` (es el dato con el que se calcula la antigüedad
+       y la pelota) ni `resuelta`: para eso están resolver-espera y set-espera. */
+    if (body.action === 'editar-espera') {
+      var edId = (body.espera_id || '').trim();
+      if (!edId) return res.status(400).json({ error: 'espera_id requerido' });
+      var edTipo = (body.tipo || '').trim();
+      var edResp = (body.responsable || '').trim();
+      if (TIPOS_ESPERA.indexOf(edTipo) === -1) return res.status(400).json({ error: 'Tipo de espera inválido' });
+      if (RESPONSABLES_ESPERA.indexOf(edResp) === -1) return res.status(400).json({ error: 'Responsable inválido' });
+      var edDetalle = (body.detalle || '').trim() || null;
+      var edVence = body.vence ? new Date(body.vence).toISOString() : null;
+
+      var edRow = await fetchRow('esperas,novedades');
+      if (!edRow) return res.status(404).json({ error: 'Reclamo no encontrado' });
+      var esperasEd = Array.isArray(edRow.esperas) ? edRow.esperas : [];
+      var foundEd = null;
+      esperasEd.forEach(function (e) { if (e.id === edId) foundEd = e; });
+      if (!foundEd) return res.status(404).json({ error: 'Espera no encontrada' });
+      if (foundEd.resuelta) return res.status(400).json({ error: 'Esa espera ya está resuelta: no se puede editar.' });
+
+      /* Diff legible para la bitácora: sin esto, "Espera corregida" a secas no deja
+         rastro de qué se cambió. */
+      var fmtVence = function (v) { return v ? String(v).slice(0, 10) : 'sin fecha'; };
+      var cambios = [];
+      if (foundEd.tipo !== edTipo) {
+        cambios.push('tipo: ' + (TIPO_ESPERA_LABELS[foundEd.tipo] || foundEd.tipo) + ' → ' + (TIPO_ESPERA_LABELS[edTipo] || edTipo));
+      }
+      if (foundEd.responsable !== edResp) {
+        cambios.push('responsable: ' + (RESPONSABLE_ESPERA_LABELS[foundEd.responsable] || foundEd.responsable)
+          + ' → ' + (RESPONSABLE_ESPERA_LABELS[edResp] || edResp));
+      }
+      if ((foundEd.detalle || null) !== edDetalle) cambios.push('detalle: «' + (edDetalle || '—') + '»');
+      if (fmtVence(foundEd.vence) !== fmtVence(edVence)) {
+        cambios.push('vence: ' + fmtVence(foundEd.vence) + ' → ' + fmtVence(edVence));
+      }
+      if (!cambios.length) {
+        return res.status(200).json({ success: true, action: 'editar-espera', esperas: esperasEd, novedades: edRow.novedades || [], sin_cambios: true });
+      }
+
+      foundEd.tipo = edTipo;
+      foundEd.responsable = edResp;
+      foundEd.detalle = edDetalle;
+      foundEd.vence = edVence;
+
+      var nowEd = new Date().toISOString();
+      var edNov = Array.isArray(edRow.novedades) ? edRow.novedades : [];
+      edNov.unshift({ fecha: nowEd, texto: 'Espera corregida (' + cambios.join('; ') + ')' });
+
+      var edPatch = await patchRow({ esperas: esperasEd, novedades: edNov });
+      if (!edPatch.ok) return res.status(500).json({ error: 'Error al editar la espera' });
+      return res.status(200).json({ success: true, action: 'editar-espera', esperas: esperasEd, novedades: edNov });
+    }
+
     /* ---- RESOLVER ESPERA ---- */
-    /* Con `crear_seguimiento` se abre en el mismo paso una espera de acción interna
-       a cargo de SolucionAir. Sin esto, resolver una espera de un tercero (p. ej.
-       la firma del pasajero) hacía caer la pelota al default posicional y el paso
-       siguiente —que es nuestro— no quedaba registrado en ningún lado. */
+    /* Con `crear_seguimiento` se abre en el mismo paso una espera nueva por lo que
+       quedó pendiente, a cargo de quien indique `seguimiento_responsable`. Sin esto,
+       resolver una espera de un tercero (p. ej. la firma del pasajero) hacía caer la
+       pelota al default posicional y el paso siguiente no quedaba registrado. */
     if (body.action === 'resolver-espera') {
       var esperaId = (body.espera_id || '').trim();
       if (!esperaId) return res.status(400).json({ error: 'espera_id requerido' });
@@ -326,15 +383,28 @@ export default async function handler(req, res) {
       }
 
       if (body.crear_seguimiento) {
+        /* El seguimiento no siempre es nuestro: resolver una espera puede dejar la
+           pelota en un tercero (la aerolínea corrige el status y queda comprometida
+           a mandarnos el formulario bancario). Antes esto era siempre
+           accion_interna/solucionair, así que ese caso se registraba como una
+           acción propia que además nacía vencida. El tipo se deriva del
+           responsable: nuestro → acción interna, ajeno → compromiso asumido. */
+        var segResp = (body.seguimiento_responsable || 'solucionair').trim();
+        if (RESPONSABLES_ESPERA.indexOf(segResp) === -1) return res.status(400).json({ error: 'Responsable del seguimiento inválido' });
+        var segTipo = segResp === 'solucionair' ? 'accion_interna' : 'compromiso_tercero';
         var segDetalle = (body.seguimiento_detalle || '').trim()
           || ('Dar curso a: ' + (TIPO_ESPERA_LABELS[found.tipo] || found.tipo) + (found.detalle ? ' — ' + found.detalle : ''));
         var segVence = body.seguimiento_vence ? new Date(body.seguimiento_vence).toISOString() : null;
         esperasRe.push({
           id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-          tipo: 'accion_interna', detalle: segDetalle, responsable: 'solucionair',
+          tipo: segTipo, detalle: segDetalle, responsable: segResp,
           creada: nowRe, vence: segVence, resuelta: null, origen_espera: esperaId,
         });
-        reNov.unshift({ fecha: nowRe, texto: 'Nueva espera: acción interna — ' + segDetalle });
+        reNov.unshift({
+          fecha: nowRe,
+          texto: 'Nueva espera: ' + (TIPO_ESPERA_LABELS[segTipo] || segTipo).toLowerCase()
+            + ' (' + (RESPONSABLE_ESPERA_LABELS[segResp] || segResp) + ') — ' + segDetalle,
+        });
       }
 
       var rePatchBody = { esperas: esperasRe, novedades: reNov };

@@ -172,7 +172,12 @@ export var MOTIVOS_CIERRE = [
   'prescripto', 'pasajero_no_responde', 'desistimiento_pasajero', 'aerolinea_no_pago', 'otro',
 ];
 
-export var TIPOS_ESPERA = ['info_pasajero', 'firma_documento', 'requerimiento_aerolinea', 'audiencia', 'accion_interna'];
+/* 'compromiso_tercero' cubre el caso inverso a 'requerimiento_aerolinea': algo que
+   un tercero se comprometió a hacer o mandarnos (p. ej. la aerolínea acepta enviar
+   el formulario de datos bancarios). Los otros cuatro tipos no lo expresaban:
+   'requerimiento_aerolinea' va en la dirección contraria —la aerolínea nos exige
+   algo a nosotros— y al resolverlo reinicia el plazo de respuesta. */
+export var TIPOS_ESPERA = ['info_pasajero', 'firma_documento', 'requerimiento_aerolinea', 'compromiso_tercero', 'audiencia', 'accion_interna'];
 export var RESPONSABLES_ESPERA = ['solucionair', 'pasajero', 'aerolinea', 'abogado', 'mediador'];
 
 /* Etiquetas legibles. backoffice.html mantiene su propia copia (no puede importar). */
@@ -180,8 +185,17 @@ export var TIPO_ESPERA_LABELS = {
   info_pasajero: 'Información del pasajero',
   firma_documento: 'Firma de documento',
   requerimiento_aerolinea: 'Requerimiento de la aerolínea',
+  compromiso_tercero: 'Compromiso asumido',
   audiencia: 'Audiencia',
   accion_interna: 'Acción interna',
+};
+
+export var RESPONSABLE_ESPERA_LABELS = {
+  solucionair: 'SolucionAir',
+  pasajero: 'Pasajero',
+  aerolinea: 'Aerolínea',
+  abogado: 'Abogado',
+  mediador: 'Mediador',
 };
 
 export var INSTANCIAS_VALIDAS = ['evaluacion', 'reclamo_directo', 'mediacion', 'cobro', 'cerrado'];
