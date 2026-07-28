@@ -6,6 +6,7 @@
  *   cancel            Alias de avanzar con transición 'abandonar' (usado por perfil.html)
  *   set-espera        Agrega una espera abierta
  *   editar-espera      Corrige tipo/responsable/detalle/vencimiento de una espera abierta
+ *   eliminar-espera    Borra una espera cargada por error (deja rastro en la bitácora)
  *   resolver-espera    Marca una espera como resuelta
  *   set-cobro          Marca/deshace una fecha del checklist de cobro
  *   set-instancia      Corrección manual de instancia/momento/resultado
@@ -335,6 +336,36 @@ export default async function handler(req, res) {
       var edPatch = await patchRow({ esperas: esperasEd, novedades: edNov });
       if (!edPatch.ok) return res.status(500).json({ error: 'Error al editar la espera' });
       return res.status(200).json({ success: true, action: 'editar-espera', esperas: esperasEd, novedades: edNov });
+    }
+
+    /* ---- ELIMINAR ESPERA ---- */
+    /* Para lo que se cargó por error. Resolver es "esto pasó" y queda en el historial
+       de esperas resueltas; eliminar es "esto nunca debió existir" y la saca del
+       array. Igual deja novedad: una espera que desaparece sin rastro se lleva
+       puesta la explicación de por qué la pelota estaba donde estaba. */
+    if (body.action === 'eliminar-espera') {
+      var delId = (body.espera_id || '').trim();
+      if (!delId) return res.status(400).json({ error: 'espera_id requerido' });
+      var delRow = await fetchRow('esperas,novedades');
+      if (!delRow) return res.status(404).json({ error: 'Reclamo no encontrado' });
+      var esperasDel = Array.isArray(delRow.esperas) ? delRow.esperas : [];
+      var foundDel = null;
+      esperasDel.forEach(function (e) { if (e.id === delId) foundDel = e; });
+      if (!foundDel) return res.status(404).json({ error: 'Espera no encontrada' });
+
+      var esperasRestantes = esperasDel.filter(function (e) { return e.id !== delId; });
+      var nowDel = new Date().toISOString();
+      var delNov = Array.isArray(delRow.novedades) ? delRow.novedades : [];
+      delNov.unshift({
+        fecha: nowDel,
+        texto: 'Espera eliminada: ' + (TIPO_ESPERA_LABELS[foundDel.tipo] || foundDel.tipo)
+          + ' (' + (RESPONSABLE_ESPERA_LABELS[foundDel.responsable] || foundDel.responsable) + ')'
+          + (foundDel.detalle ? ' — ' + foundDel.detalle : ''),
+      });
+
+      var delPatch = await patchRow({ esperas: esperasRestantes, novedades: delNov });
+      if (!delPatch.ok) return res.status(500).json({ error: 'Error al eliminar la espera' });
+      return res.status(200).json({ success: true, action: 'eliminar-espera', esperas: esperasRestantes, novedades: delNov });
     }
 
     /* ---- RESOLVER ESPERA ---- */

@@ -1200,6 +1200,7 @@
         h+='<div style="display:flex;gap:4px;flex-shrink:0;align-items:center">';
         h+='<button class="btn btn--ghost" data-espera-editar="'+esc(e.id)+'" type="button" title="Editar espera" style="font-size:.66rem;padding:3px 7px">✎</button>';
         h+='<button class="btn btn--ghost" data-espera-resolver="'+esc(e.id)+'" type="button" style="font-size:.66rem;white-space:nowrap">'+(e.tipo==='requerimiento_aerolinea'?'Responder':'Resolver')+'</button>';
+        h+='<button class="btn-del" data-espera-del="'+esc(e.id)+'" type="button" title="Eliminar espera">✕</button>';
         h+='</div>';
         h+='</div>';
       });
@@ -1813,6 +1814,36 @@
           var eid=btn.getAttribute('data-espera-editar');
           var esp=null;(Array.isArray(c.esperas)?c.esperas:[]).forEach(function(e){if(e.id===eid)esp=e});
           if(esp)openEsperaModal(c,esp);
+        });
+      });
+      /* Eliminar ≠ resolver: resolver es "esto pasó" y queda en el historial de
+         resueltas; eliminar es "se cargó por error" y la saca. Pide confirmación
+         porque el botón queda al lado de Resolver y cambia la pelota del caso. */
+      detailBody.querySelectorAll('[data-espera-del]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          var eid=btn.getAttribute('data-espera-del');
+          var esp=null;(Array.isArray(c.esperas)?c.esperas:[]).forEach(function(e){if(e.id===eid)esp=e});
+          if(!esp)return;
+          var etiquetaDel=(TIPO_ESPERA_LABELS[esp.tipo]||esp.tipo)+(esp.detalle?' — '+esp.detalle:'');
+          showModal({
+            title:'Eliminar espera',
+            desc:'Se borra «'+etiquetaDel+'» ('+(RESPONSABLE_ESPERA_LABELS[esp.responsable]||esp.responsable)+'). Queda registrada la eliminación en la bitácora, pero la espera no se puede recuperar. Si lo que pasó es que ya se cumplió, usá Resolver en vez de eliminar.',
+            confirmText:'Eliminar',
+            danger:true,
+            onConfirm:function(){
+              cmConfirm.disabled=true;cmConfirm.textContent='Eliminando...';
+              fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:c.id,action:'eliminar-espera',espera_id:eid})})
+              .then(function(r){return r.json()}).then(function(d){
+                cmConfirm.disabled=false;cmConfirm.textContent='Eliminar';
+                if(d.success){
+                  c.esperas=d.esperas;c.novedades=d.novedades;
+                  claims.forEach(function(cl){if(cl.id===c.id){cl.esperas=d.esperas;cl.novedades=d.novedades}});
+                  closeModal();toast('Espera eliminada');
+                  openDetail(c);renderTable();
+                } else modalError(d.error||'Error');
+              }).catch(function(){cmConfirm.disabled=false;cmConfirm.textContent='Eliminar';modalError('Error de conexión')});
+            }
+          });
         });
       });
       var btnOpenEspera=document.getElementById('btn-open-espera');
