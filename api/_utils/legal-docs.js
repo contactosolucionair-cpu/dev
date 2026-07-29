@@ -298,7 +298,11 @@ export async function generarDocumentoLegal({ tipo, idioma, personas, abogado, r
   if (multi) apellido = apellido + ' y otros';
   var tituloCompleto = apellido + ' - ' + titulo;
 
-  var buffer = await renderLegalPdf(text, { refCode: refCode, title: tituloCompleto });
+  /* Membrete sólo en el poder: el convenio de patrocinio se celebra entre el
+     cliente y el/la profesional, y SolucionAir no es parte de ese contrato. */
+  var buffer = await renderLegalPdf(text, {
+    refCode: refCode, title: tituloCompleto, logo: tipo === 'poder',
+  });
   var filename = tituloCompleto + '.pdf';
   return { buffer: buffer, filename: filename };
 }

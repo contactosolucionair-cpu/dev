@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 const C_GREEN = rgb(0.176, 0.290, 0.243);
@@ -8,6 +10,13 @@ const PAGE_W = 595, PAGE_H = 842, MARGIN = 56;
 const BODY_SIZE = 9.5, LINE_GAP = 4.5, PARA_GAP = 6;
 const TITLE_SIZE = 13;
 
+/* Membrete. src/img/logo-doc.png es el logo ya recortado (el logo.png del sitio
+   es 3175x3175 y casi todo aire: embeberlo sumaba ~145 KB por PDF sin verse
+   mejor). LOGO_H es la altura impresa; el ancho sale del aspecto real del PNG.
+   LOGO_GAP es el aire entre el logo y donde arranca el texto. */
+const LOGO_PATH = path.join(process.cwd(), 'src', 'img', 'logo-doc.png');
+const LOGO_H = 30, LOGO_GAP = 14;
+
 /**
  * Renders a plain-text legal template (already interpolated) into a paginated
  * A4 PDF. Same pdf-lib pattern as pdf-receipt.js (PDFDocument.create, standard
@@ -17,19 +26,34 @@ const TITLE_SIZE = 13;
  *   - a line starting with "# " renders as a centered bold title
  *   - "**text**" renders as an inline bold run
  */
-export async function renderLegalPdf(text, { refCode, title } = {}) {
+export async function renderLegalPdf(text, { refCode, title, logo = false } = {}) {
   const doc  = await PDFDocument.create();
   if (title) doc.setTitle(title);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const reg  = await doc.embedFont(StandardFonts.Helvetica);
 
+  /* Se embebe una sola vez y se dibuja en cada página al final (mismo patrón que
+     el pie). Si el archivo no está, el documento sale sin membrete en vez de
+     fallar: un poder sin logo sirve igual, uno que no se genera no. */
+  let logoImg = null;
+  if (logo) {
+    try {
+      logoImg = await doc.embedPng(fs.readFileSync(LOGO_PATH));
+    } catch (e) {
+      console.error('[legal-pdf] no pude embeber el logo:', e.message);
+    }
+  }
+  /* El texto arranca más abajo sólo si el logo entró: sin esto el membrete se
+     superpone con el título. */
+  const topY = PAGE_H - MARGIN - (logoImg ? LOGO_H + LOGO_GAP : 0);
+
   let page = doc.addPage([PAGE_W, PAGE_H]);
-  let y = PAGE_H - MARGIN;
+  let y = topY;
   const maxW = PAGE_W - MARGIN * 2;
 
   function newPage() {
     page = doc.addPage([PAGE_W, PAGE_H]);
-    y = PAGE_H - MARGIN;
+    y = topY;
   }
   function ensureSpace(h) {
     if (y - h < MARGIN + 24) newPage();
@@ -149,6 +173,10 @@ export async function renderLegalPdf(text, { refCode, title } = {}) {
 
   const pages = doc.getPages();
   pages.forEach((p, i) => {
+    if (logoImg) {
+      const lw = LOGO_H * (logoImg.width / logoImg.height);
+      p.drawImage(logoImg, { x: MARGIN, y: PAGE_H - MARGIN - LOGO_H, width: lw, height: LOGO_H });
+    }
     p.drawText(
       'SolucionAir' + (refCode ? '  .  Caso ' + refCode : '') + '  .  Pagina ' + (i + 1) + '/' + pages.length,
       { x: MARGIN, y: 24, size: 7, font: reg, color: C_GRAY }
