@@ -1,0 +1,189 @@
+%%version: TYC-SA-v2.3-2026
+%% Traducción al inglés del texto que vive en index.html (TYC_HTML + PRIVACY_HTML).
+%% La versión de arriba se compara contra CONSENT_VERSION al generar el documento: si
+%% no coinciden, la generación en inglés falla a propósito, para no mandar a firmar una
+%% traducción vieja. Al tocar una cláusula en index.html hay que actualizar las dos.
+%% Las líneas que empiezan con %% no salen en el PDF.
+
+# SolucionAir Terms and Conditions of Service
+
+**1. Parties and execution of the Agreement**
+1.1. This Agreement is entered into between SolucionAir (hereinafter, "SolucionAir" or "SA"), with domicile at Malabia 2425, 7, City of Buenos Aires, Argentina, and the Applicant identified at the time of electronic execution.
+1.2. For the purposes hereof, "Applicant" means both the Passenger who executes this Agreement directly and the travel Agency that executes it in the name and on behalf of the Passenger pursuant to clause 18.
+1.3. This Agreement is perfected upon the Applicant's electronic acceptance under clause 21 and governs the set of services rendered by SA described in this instrument.
+
+**2. Definitions**
+For the purposes of this Agreement, capitalized terms shall have the following meaning:
+**Passenger:** natural person who has suffered a disruption on a commercial flight in respect of which SA's service is requested.
+**Agency:** legal entity authorized to market tourism services that executes this Agreement in the name and on behalf of the Passenger.
+**Applicant:** as defined in clause 1.2.
+**Case:** the set of claims arising from a specific disruption on a given flight of the Passenger, the management of which the Applicant entrusts to SA under this Agreement.
+**Compensation:** any monetary sum effectively received as a result of SA's management —whether by the Applicant, by the Passenger, or by SA for the account and order of either of them pursuant to clause 6—, including fixed compensation, refunds, damages, interest and any other monetary item.
+**Collection Account:** the bank account held by SA identified in the special power of attorney granted by the Applicant, into which the Compensation may be credited when SA collects it for the account and order of the Applicant or the Passenger.
+**Settlement:** the transfer to the Passenger, or to the Applicant where applicable, of the amount of the Compensation received by SA in a Direct Claim, net of the commission provided for in paragraph 6.1.
+**Direct Claim:** administrative management, or management through a Complementary Judicial channel, that SA directs to the airline concerned.
+**Complementary Administrative or Judicial channel:** channel additional to the Direct Claim that SA may use depending on the jurisdiction of the Case, including filings before competent administrative bodies and European Union small-claims proceedings, where available.
+**SolucionAir Professional Network:** the group of admitted lawyers who collaborate with SA under an autonomous professional collaboration framework.
+**Designated Professional:** lawyer of the Network assigned to take on the legal representation of the Case at the Mediation stage.
+**Mediation:** the mandatory pre-litigation mediation stage in Argentina, conducted by electronic means, in accordance with applicable regulations.
+**Mediation Agreement:** an agreement entered into within the Mediation that puts a total or partial end to the Case.
+
+**3. Purpose and scope of the service**
+3.1. SA provides the Applicant with a comprehensive service for the management of passenger claims against commercial airlines for disruptions such as cancellations, delays, denied boarding, lost or damaged baggage, refusals of compensation and any other events contemplated by the regulations applicable to each Case.
+3.2. The service comprises: (i) initial assessment of the Case, at no cost to the Applicant; (ii) management of the Direct Claim of the Case pursuant to clause 4; (iii) where the Case so warrants and the conditions of paragraph 3.3 are met, contact with and Referral to a Professional of the Network for the continuation of the Case.
+3.3. Management of the Case as a Direct Claim is not limited by the route or jurisdiction of the flight. Referral is available only in respect of flights departing from or arriving in the Argentine Republic.
+3.4. SA does not guarantee any result, assuming solely a best-efforts obligation and not an obligation of result. SA undertakes to deploy the reasonable technical and professional means, in accordance with the applicable regulations and industry practice, for the Passenger to obtain fair Compensation.
+3.5. SA shall inform the Applicant of the amount to be claimed in accordance with the analysis of the Case. The inclusion of an item in the claim does not imply any guarantee as to its merits or its final quantification.
+
+**4. Direct Claim and Referral**
+4.1. Direct Claim and complementary channels. SA manages the Case before the airline by means of a Direct Claim. At its sole discretion, and depending on the jurisdiction and features of the Case, SA may additionally or alternatively resort to the Complementary Administrative or Judicial channels available in the applicable jurisdiction. The choice of tools is SA's prerogative, and the Applicant may not require the use of any particular channel.
+4.2. Referral. Where the Case is not satisfactorily resolved through the Direct Claim and the flight departs from or arrives in the Argentine Republic, SA may offer the Applicant the referral of the Case to a Professional of the Network for its continuation in Mediation. Referral is subject to the Applicant's execution of the instrument appointing legal counsel and the contingency-fee agreement with the Professional, pursuant to clause 8.
+4.3. Closing of the service. Once the Direct Claim and the Mediation (where applicable) have concluded under clause 13, SA's service shall be deemed completed.
+
+**5. Commercial policy — Success-fee principle**
+5.1. SolucionAir applies a success-fee commercial policy. The Applicant pays SA no amount whatsoever in respect of commissions, fees or expenses —neither by direct payment nor by deduction from the Compensation under clause 6— if the Case does not end with Compensation being received.
+5.2. In particular: (a) the initial assessment is free of charge; (b) management of the Direct Claim creates no payment obligation for the Applicant in the absence of Compensation; (c) the costs associated with the Mediation referred to in clause 7 are borne entirely by SA, with no reimbursement payable by the Applicant; (d) if the Referral ends without a Mediation Agreement, SA receives no commission from the Applicant.
+
+**6. SA's fees and commissions. Collection and Settlement of the Compensation**
+6.1. Where Compensation is obtained through a Direct Claim, the Applicant shall pay SA a commission equal to twenty percent (20%) of the Compensation effectively collected.
+6.2. Where Compensation is obtained following a Referral by means of a Mediation Agreement, the Applicant shall pay: (i) to SA, a commission equal to fifteen percent (15%) of the Compensation effectively collected; and (ii) to the Designated Professional, as a contingency fee, five percent (5%) of the Compensation effectively collected, in accordance with the instrument executed separately between the Applicant and the Professional.
+6.3. SA's commission and the Professional's contingency fee are invoiced separately and directly to the Applicant by each of them, without prejudice to the deduction mechanism provided for in paragraph 6.6.
+6.4. Calculation basis. SA's commission and the Professional's contingency fee are calculated on the Compensation as defined in clause 2; that is, on every monetary item obtained, including fixed compensation, refunds, damages (including moral damages where applicable), interest and any other monetary item, irrespective of whether it is received by the Applicant, by the Passenger or by SA on their behalf.
+6.5. Collection on the Applicant's behalf in a Direct Claim. Pursuant to the special power of attorney granted by the Applicant to SA, and exclusively in respect of Compensation obtained through a Direct Claim, SA is empowered to collect it for the account and order of the Applicant or the Passenger by having it credited to the Collection Account. Payment made by the airline, the authority or the paying third party into the Collection Account has full discharging effect and releases the payer vis-a-vis the Applicant and the Passenger to the extent of the amount so paid.
+6.6. Deduction and Settlement. Once the Compensation has been credited to the Collection Account, SA shall deduct the commission under paragraph 6.1 and transfer the balance within ten (10) business days from the effective crediting of the funds. SA shall make available to the Applicant the details of the Settlement carried out, together with the corresponding invoice.
+6.7. Compensation obtained in Mediation. Compensation resulting from a Mediation Agreement is received directly by the Applicant or the Passenger. SA neither collects nor withholds it, and no Settlement applies to it: the Applicant shall pay the commission under paragraph 6.2 (i) to SA and the contingency fee under paragraph 6.2 (ii) to the Designated Professional, directly and separately to each of them, within ten (10) business days from receipt of the Compensation.
+6.8. Nature of the funds collected. Sums collected by SA on behalf of the Applicant or the Passenger do not form part of SA's estate and belong to them until Settlement. SA may not apply them to any other purpose nor set them off against claims unrelated to this Agreement.
+6.9. Settlement details. The Applicant undertakes to provide SA with a bank account held by the Passenger —or by the Applicant where both are the same person— for the purposes of the Settlement. The period under paragraph 6.6 is suspended for as long as SA does not have those details, or where the bank rejects the transfer for reasons beyond SA's control, and resumes once the impediment has been remedied.
+6.10. Direct payment in a Direct Claim. If, by reason of the currency, the jurisdiction or the airline's policy, Compensation under a Direct Claim is nonetheless paid directly to the Applicant or the Passenger, there shall be no Settlement and the commission under paragraph 6.1 shall be paid to SA by the mechanism of paragraph 6.7.
+
+**7. Costs associated with the Mediation**
+7.1. Where a Referral takes place, as part of its management service SA bears at its sole cost the expenses associated with conducting the Mediation, including: (i) the cost of any formal letters required; (ii) the Mediation filing fee; (iii) the mediator's provisional and, where applicable, final fees under the applicable scale where the Mediation ends without an Agreement.
+7.2. SA absorbs in full the costs referred to in paragraph 7.1, whatever the outcome of the Mediation, with no right to reimbursement or claim of any kind against the Applicant on those grounds.
+
+**8. Referral to the SolucionAir Professional Network**
+8.1. The Applicant gives advance consent to the mechanics of referral to a Professional of the Network for the continuation of the Case should SA consider it appropriate. The referral takes effect upon the appointment of a specific Professional and the Applicant's execution of the instrument appointing legal counsel and the contingency-fee agreement with that Professional.
+8.2. SA shall deliver the Case file to the Designated Professional in order to enable the legal representation. The Applicant expressly consents to the transmission of the information and documentation necessary for that purpose.
+8.3. The Professional acts with full professional autonomy. SA shall not give technical instructions to the Professional nor does it assume responsibility for the procedural decisions the Professional adopts in the exercise of the representation.
+8.4. The Client authorizes the Lawyer who takes on the representation in the Mediation to report to SolucionAir the relevant developments of the Case and to forward copies of the minutes, offers and other instruments generated, for the operational and administrative purposes of the Case under this Agreement. This authorization operates exclusively in favor of SolucionAir, without affecting the Lawyer's professional and confidentiality duties towards third parties.
+
+**9. The Professional's fees payable by the airline**
+9.1. In accordance with professional practice and as a usual condition for closing the Mediation Agreement, the Designated Professional may require the airline to agree to pay the Professional's fees as a separate amount borne by the airline.
+9.2. Such professional fees, where agreed to be borne by the airline, constitute separate amounts. They are not deducted from the Compensation received by the Applicant, are not deducted from any other amount due to the Applicant, and do not form part of the calculation basis of SA's commission or of the Professional's contingency fee under this Agreement.
+
+**10. Decision to close where the airline refuses to pay the Professional's fees**
+10.1. If the airline does not agree to pay separate fees to the Professional under clause 9, the Professional shall decide, in the exercise of professional autonomy, whether or not to sign the Mediation Agreement nonetheless.
+10.2. Without prejudice to the foregoing, the Applicant retains the right to revoke the Professional's representation at any time in accordance with the instrument executed with the Professional.
+
+**11. Good-faith conduct of the Applicant**
+11.1. The Applicant undertakes to consider in good faith any offers that the Designated Professional presents as reasonable during the Mediation.
+11.2. If the Professional qualifies an offer as reasonable and the Applicant chooses to reject it, that circumstance shall be recorded in the Case file, without prejudice to the Applicant's right to decide freely on the signing of the Mediation Agreement.
+
+**12. Truthful information and cooperation of the Applicant**
+12.1. The Applicant undertakes to provide SA with all documentation and information necessary for the management of the Case, in a complete and truthful manner.
+12.2. The Applicant undertakes to notify SA immediately of any direct contact received from the airline in respect of the Case, as well as of any offer of compensation the airline makes to the Applicant by any means.
+12.3. During the term of this Agreement, the Applicant shall not enter into direct settlements with the airline in respect of the Case without prior notice to SA. If the Applicant enters into a direct settlement in breach of this clause and as a result of SA's prior management, the commissions under clause 6 shall apply to the amount effectively received.
+12.4. The Applicant undertakes to keep its contact details up to date.
+12.5. The Applicant undertakes not to initiate a parallel claim against the airline while this Agreement is in force.
+12.6. While the Case is managed as a Direct Claim, the Applicant undertakes not to instruct the airline, the authority or the paying third party to pay the Compensation into an account other than the Collection Account without prior notice to SA. If the Compensation is nonetheless received by another route, paragraph 6.10 shall apply.
+
+**13. Closing of the service**
+13.1. SA's service shall be deemed completed in any of the following events:
+(a) Conclusion of the Direct Claim with Compensation effectively received and, where SA has collected it on the Applicant's behalf, settled in accordance with paragraph 6.6.
+(b) Conclusion of the Direct Claim without a favorable outcome and without Referral, whether because the Case is not eligible for Referral or by the Applicant's decision not to continue.
+(c) Conclusion of a Referral with a Mediation Agreement and effective receipt of the Compensation by the Applicant under paragraph 6.7.
+(d) Conclusion of a Referral by closing of the Mediation without agreement.
+13.2. In any of the events under paragraph 13.1, SA shall receive from the Applicant no amount over and above those corresponding under clauses 6 and 7. In particular, in events (b) and (d), SA shall receive no commission, fee or reimbursement whatsoever from the Applicant.
+13.3. If the Applicant decides to pursue the Case through further channels (including, without limitation, litigation), it does so by its own means. SA is out of the Case and the terms the Applicant agrees with third parties for such stages are unrelated to SA.
+13.4. By way of cooperation and without implying an extension of the service, SA may deliver the Case file to the Professional or to the Applicant in order to facilitate continuity.
+13.5. The closing of the service does not release SA from its obligation to settle, in accordance with paragraph 6.6, any amount collected on behalf of the Applicant or the Passenger. This obligation subsists until fully performed.
+
+**14. Processing of personal data**
+14.1. The processing of the Applicant's and the Passenger's personal data by SA is governed by SolucionAir's Privacy and Personal Data Protection Policy, which the Applicant declares to have read and accepted at the time of execution of this Agreement, and which is incorporated herein by reference.
+14.2. The Applicant expressly consents to the transmission of personal data to the Designated Professional within the framework of the referral, in accordance with clause 8 and the Policy referred to above.
+
+**15. Confidentiality**
+15.1. The information of the Case and the documentation provided by the Applicant shall be treated confidentially by SA and shall be shared with third parties only to the extent necessary for the provision of the service, in particular: the Designated Professional, the intervening mediator and, where applicable, the airline itself or the competent administrative or judicial authority.
+15.2. The confidentiality obligation subsists after the completion of the service.
+
+**16. Right of withdrawal**
+16.1. The Applicant, as a consumer, is entitled to withdraw its acceptance of this Agreement within ten (10) calendar days from its execution or from the delivery of the service, whichever occurs later, in accordance with sections 34 and related provisions of Argentine Law No. 24,240. Withdrawal is exercised by notifying SA by any reliable means, without the need to state a reason and without any penalty.
+16.2. Withdrawal entails the revocation of the special power of attorney granted to SA and, in particular, of the power to collect provided for in paragraph 6.5. This does not affect SA's obligation to settle, in accordance with paragraph 6.6, the amounts it has already collected on behalf of the Applicant or the Passenger, nor the commissions already accrued under clause 6.
+
+**17. Notices**
+17.1. Communications between the parties shall be made by electronic means. The Applicant establishes as its electronic domicile the e-mail address declared at the time of execution, where all communications addressed to it by SA shall be deemed validly received, save notice of change.
+17.2. SA establishes as its electronic domicile contacto@solucionair.com.
+
+**18. Execution by an Agency acting as representative**
+18.1. Where this Agreement is executed by an Agency, the Agency declares under its sole responsibility that: (i) it acts in the name and on behalf of the Passenger identified in the intake form; (ii) it has sufficient authorization from the Passenger to execute this Agreement and to bind the Passenger to its terms; (iii) it has informed the Passenger of the scope of the service and of the commissions, fees and costs provided for in this Agreement.
+18.2. The Passenger shall be the final recipient of any Compensation obtained. Where SA collects it in a Direct Claim under paragraph 6.5, the Settlement shall be made to a bank account held by the Passenger. The Agency is not the recipient of the Compensation or of its Settlement, save upon express instruction of the Passenger received by SA.
+18.3. The Agency shall hold SA harmless against any claim by the Passenger based on defects of representation, lack of authorization or falsity of the declarations under paragraph 18.1.
+18.4. SA may, at any time, request from the Agency and/or the Passenger documentation evidencing the mandate. Failure to provide it within the reasonable period set by SA shall entitle SA to suspend or terminate the service without liability.
+
+**19. Term, amendments and termination**
+19.1. This Agreement enters into force upon its electronic acceptance and remains in force until the closing of the service under clause 13.
+19.2. SA may amend the terms of this Agreement in respect of new Cases. Amendments do not affect Cases in progress under an earlier version of the Agreement, save express acceptance by the Applicant.
+19.3. The Applicant may terminate this Agreement at any time without stating a reason. Termination does not oblige the Applicant to pay any amount in respect of Cases in which Compensation has not yet been obtained. In respect of Cases in which Compensation has been or is obtained as a result of SA's prior management, the commissions under clause 6 shall apply. In all cases, SA's obligation to carry out the Settlement under paragraph 6.6 subsists.
+19.4. SA may terminate this Agreement for breach by the Applicant of its obligations of truthful information and cooperation (clause 12), after prior notice to remedy the breach within a reasonable period.
+
+**20. Governing law and jurisdiction**
+20.1. This Agreement is governed by the laws of the Argentine Republic.
+20.2. Any dispute arising herefrom shall be submitted to the ordinary courts with jurisdiction over the actual domicile of the Applicant as consumer, an unwaivable jurisdiction under section 36 of Argentine Law No. 24,240.
+
+**21. Electronic signature**
+21.1. The Applicant agrees to execute this Agreement by electronic signature in accordance with sections 286 and 288 of the Argentine Civil and Commercial Code and Law No. 25,506. Electronic acceptance hereof, implemented by the means enabled by SA, constitutes a valid and sufficient expression of consent.
+21.2. The Applicant declares to have read this Agreement and the Privacy and Personal Data Protection Policy in full prior to its acceptance, and declares to understand the economic and legal effects of their content.
+
+**22. Legal person — SA**
+For the purposes hereof, it is placed on record that "SolucionAir" is a commercial denomination identifying Juan Pablo Mario Adaniya, DNI 37.806.475, and Tomas Gregorio Dicranian, DNI 37.606.877, who act jointly under such denomination and assume, jointly and severally, the obligations undertaken herein.
+
+# Privacy and Personal Data Protection Policy
+
+Argentine Law No. 25,326 on the Protection of Personal Data
+
+**1. Data Controller**
+SolucionAir, contact e-mail: contacto@solucionair.com (the "Controller").
+
+**2. Scope**
+This policy describes the processing carried out by the Controller of the personal data of passengers ("Passengers") provided by travel and tourism agencies ("Agencies") or directly by the Passengers themselves, within the framework of the airline claim management service (the "Service"). "Applicant" means the party that interacts with the Controller for the intake and management of the case, whether the Agency or the Passenger who accesses the Service directly.
+Personal data may be provided by the Agency acting as intermediary or directly by the Passenger who accesses the Service without the involvement of an Agency.
+
+**3. Personal Data Processed**
+Within the framework of the Service, the Controller may process the following categories of the Passenger's personal data, as provided by the Applicant:
+**Identifying data:** full name, identity document or passport number, nationality.
+**Contact data:** e-mail address, telephone, domicile.
+**Flight and disruption data:** airline, flight number, date, route, booking reference, type of disruption.
+**Supporting documentation:** boarding passes, expense receipts, prior communications with the airline, or other documentation related to the claim.
+**Bank details:** the details of the account into which the Passenger receives the settlement of the Compensation obtained (account holder, CBU/IBAN or equivalent identifier and banking institution), processed exclusively for that purpose.
+
+**4. Purpose of the Processing**
+Personal data shall be processed exclusively for the following purposes: assessment of the admissibility of the claim under the applicable regulations; preparation, filing and follow-up of the claim before the airline and, where applicable, before the competent regulatory body; communication with the Applicant regarding the status of the claim; collection of the compensation on the Passenger's behalf and its subsequent settlement, in accordance with clause 6 of the Terms and Conditions; and aggregate, anonymized statistical analysis for internal service evaluation purposes.
+
+**5. Legal Basis for the Processing**
+The processing of personal data is based on the Passenger's consent, as provided in section 5 of Law No. 25,326 on the Protection of Personal Data. Where the Passenger accesses the Service directly, consent is given by accepting the Terms and Conditions and this Privacy Policy. Where the case is referred by an Agency, consent is obtained and managed by the Agency within the framework of its commercial relationship with the Passenger.
+Where the case is referred by an Agency, the Agency represents and warrants that it holds the authorizations necessary from the Passenger to share the Passenger's personal data with the Controller, for the specific purposes of the claim management service. The Agency assumes responsibility for the validity and currency of such consent. Should a Passenger dispute the existence or scope of the consent given, the Agency shall hold the Controller harmless from any claim or consequence arising therefrom.
+
+**6. Sharing of Data with Third Parties**
+The Passenger's personal data may be shared with: the airline against which the claim is directed, to the extent necessary for its management; civil aviation or consumer protection regulatory bodies of the competent jurisdiction, where the Controller deems it appropriate; and technology service providers operating on behalf of the Controller (web hosting, e-mail services), who shall be bound by confidentiality obligations.
+The Passenger's bank details are not shared with the airline, with any authority or with any third party unrelated to the execution of the settlement transfer.
+The Controller does not sell, assign or trade personal data to third parties for marketing, advertising or any other purpose unrelated to the Service.
+
+**7. International Transfer of Data**
+Given the nature of the Service, the Passenger's personal data may be transferred to airlines and/or regulatory authorities based abroad (European Union, United States, Brazil, among others), to the extent strictly necessary for the management of the claim.
+Such transfers are made under the exceptions provided for in section 12 of Law No. 25,326, in particular where the transfer is necessary for the performance of a service requested by the data subject, or where the data subject has given express consent, whether directly or through the Agency.
+
+**8. Retention Period**
+Personal data shall be retained for the duration of the management of the claim and for an additional period of five (5) years from the completion of such management, in order to address any related queries or requests. Once that period has elapsed, the data shall be deleted or anonymized.
+
+**9. Rights of the Data Subject**
+The Passenger has the right to request access to, rectification, updating, erasure and confidentiality of personal data, as provided in sections 14 and 16 of Law No. 25,326.
+These rights may be exercised directly before the Controller, by communication to the contact e-mail address provided, or through the Agency where the Agency acted as intermediary.
+The Argentine National Directorate for the Protection of Personal Data, the supervisory authority under Law No. 25,326, is empowered to handle complaints and claims filed in connection with breaches of personal data protection rules.
+
+**10. Security Measures**
+The Controller adopts reasonable technical and organizational measures to protect personal data against unauthorized access, alteration, disclosure or destruction, in accordance with Resolution 11/2006 of the Argentine National Directorate for the Protection of Personal Data.
+
+**11. Cookies and Tracking Technologies**
+The Controller's website may use functional and analytical cookies in order to improve the browsing experience and obtain aggregate usage statistics. No cookies are used for advertising or profiling purposes. Users may configure their browser to reject cookies, which shall not affect the essential operation of the site.
+
+**12. Amendments**
+The Controller reserves the right to update this policy. Amendments shall be published on the website and, in the event of substantial changes, shall be communicated to Applicants with whom a relationship is in force.

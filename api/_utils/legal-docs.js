@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { renderLegalPdf } from './legal-pdf.js';
+import { loadTycText, toWinAnsi } from './tyc-text.js';
 
 const TEMPLATES_DIR = path.join(process.cwd(), 'templates');
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
@@ -174,24 +175,93 @@ function buildOtorgantesBloque(personas, idioma) {
   return titulo + '\n\n' + lineas.join('\n\n') + '\n\n' + cierre;
 }
 
-/* Bloque de firmas (poder conjunto): un bloque por otorgante. */
-function buildFirmasBloque(personas, idioma) {
+/* Bloque de firmas: un bloque por firmante. `rol` distingue en qué carácter firma
+   (otorgante del poder, solicitante de los T&C); se numera sólo si son varios. */
+function buildFirmasBloque(personas, idioma, rol) {
   var en = idioma === 'en';
-  var head = en ? '**SIGNATURES**' : '**FIRMAS**';
+  var head = en ? (personas.length > 1 ? '**SIGNATURES**' : '**SIGNATURE**') : (personas.length > 1 ? '**FIRMAS**' : '**FIRMA**');
+  var label = rol || (en ? 'Grantor' : 'Otorgante');
   var bloques = personas.map(function (p, i) {
     var doc = composeDocumento(p.documento_tipo, p.documento_numero, idioma);
+    var titulo = '**' + label + (personas.length > 1 ? ' ' + (i + 1) : '') + '**\n';
     if (en) {
-      return '**Grantor ' + (i + 1) + '**\n'
+      return titulo
         + 'Signature: __________________________________________\n'
         + 'Full name: ' + (p.nombre || '') + '\n'
         + 'ID/Passport: ' + doc;
     }
-    return '**Otorgante ' + (i + 1) + '**\n'
+    return titulo
       + 'Firma: __________________________________________\n'
       + 'Aclaración: ' + (p.nombre || '') + '\n'
       + 'DNI/Pasaporte: ' + doc;
   });
   return head + '\n\n' + bloques.join('\n\n');
+}
+
+/* ---- Términos y Condiciones ---- */
+
+/* El castellano se lee de index.html (única fuente: lo que se firma tiene que decir
+   lo mismo que lo publicado). El inglés no existe ahí, así que vive en
+   templates/tyc_en.txt con la versión que tradujo declarada en el encabezado: si esa
+   versión quedó atrás respecto de CONSENT_VERSION se corta la generación, porque
+   mandar a firmar una traducción vieja es peor que no poder generarla. */
+function loadTycEn(versionEs) {
+  var raw = loadTemplate('tyc_en');
+  var m = /^%%version:\s*(\S+)/m.exec(raw);
+  var ver = m ? m[1] : '';
+  if (!ver || (versionEs && ver !== versionEs)) {
+    var err = new Error('La traducción al inglés de los T&C está desactualizada (plantilla: '
+      + (ver || 'sin versión declarada') + ' · vigente: ' + (versionEs || 'desconocida') + ').');
+    err.faltantes = ['Actualizar templates/tyc_en.txt a la versión ' + (versionEs || 'vigente')
+      + ' (o generar los T&C en español)'];
+    throw err;
+  }
+  var body = raw.split('\n').filter(function (l) { return l.slice(0, 2) !== '%%'; }).join('\n').trim();
+  return toWinAnsi(body);
+}
+
+/* Encabezado del instrumento: quién acepta y sobre qué caso. Sin esto el PDF sería
+   el texto publicado sin firmante identificado, que no prueba nada. */
+function buildTycEncabezado(personas, idioma, version) {
+  var en = idioma === 'en';
+  var multi = personas.length > 1;
+  var titulo = en
+    ? (multi ? '**Applicants:**' : '**Applicant:**')
+    : (multi ? '**Solicitantes:**' : '**Solicitante:**');
+  var lineas = personas.map(function (p, i) {
+    var doc = composeDocumento(p.documento_tipo, p.documento_numero, idioma);
+    var pref = multi ? '(' + (i + 1) + ') ' : '';
+    if (en) return pref + 'Mr./Ms. ' + (p.nombre || '') + ', ' + doc + ', with electronic domicile (e-mail) at ' + (p.email || '') + (multi ? ';' : '');
+    return pref + 'Sr./Sra. ' + (p.nombre || '') + ', ' + doc + ', con domicilio electrónico (correo) en ' + (p.email || '') + (multi ? ';' : '');
+  });
+  var cierre = en
+    ? (multi ? 'jointly and severally, the "Applicants",' : '(the "Applicant"),')
+    : (multi ? 'en adelante, en forma conjunta e indistinta, los «Solicitantes»,' : '(en adelante, el «Solicitante»),');
+  var declaracion = en
+    ? 'DECLARES having read in full, and ACCEPTS, the SolucionAir Terms and Conditions of Service and the Privacy and Personal Data Protection Policy transcribed below, in their version ' + version + ', in respect of the case identified at the foot of this instrument. This document is an English translation provided for convenience; the Spanish version published at solucionair.com prevails, and the Agreement is governed by the laws of the Argentine Republic (clause 20.1).'
+    : 'DECLARA haber leído íntegramente y ACEPTA los Términos y Condiciones del Servicio de SolucionAir y la Política de Privacidad y Protección de Datos Personales que se transcriben a continuación, en su versión ' + version + ', respecto del caso que se identifica al pie del presente.';
+  if (multi) declaracion = en ? declaracion.replace('DECLARES', 'DECLARE') : declaracion.replace('DECLARA ', 'DECLARAN ');
+  return titulo + '\n\n' + lineas.join('\n\n') + '\n\n' + cierre + '\n\n' + declaracion;
+}
+
+/* Datos del caso al pie: atan la aceptación a una incidencia concreta. */
+function buildTycCaso(persona, idioma) {
+  var en = idioma === 'en';
+  var ruta = [persona.origen, persona.destino].filter(Boolean).join(en ? ' to ' : ' > ');
+  if (en) {
+    return '**CASE DATA**\n\n'
+      + 'SolucionAir reference: ' + (persona.ref_code || '') + '\n'
+      + 'Airline: ' + (persona.aerolinea || '') + '\n'
+      + 'Flight No.: ' + (persona.vuelo_nro || '') + '\n'
+      + 'Date: ' + (fmtFecha(persona.fecha_vuelo) || '') + '\n'
+      + 'Route: ' + ruta;
+  }
+  return '**DATOS DEL CASO**\n\n'
+    + 'Referencia SolucionAir: ' + (persona.ref_code || '') + '\n'
+    + 'Aerolínea: ' + (persona.aerolinea || '') + '\n'
+    + 'Vuelo N°: ' + (persona.vuelo_nro || '') + '\n'
+    + 'Fecha: ' + (fmtFecha(persona.fecha_vuelo) || '') + '\n'
+    + 'Ruta (origen–destino): ' + ruta;
 }
 
 /* Bloque de clientes (patrocinio conjunto): un párrafo numerado por cliente. */
@@ -211,11 +281,11 @@ function throwFaltantes(faltantes) {
 }
 
 /**
- * Genera el PDF legal (poder o patrocinio) para uno o varios pasajeros.
+ * Genera el PDF legal (poder, patrocinio o T&C) para uno o varios pasajeros.
  *
  * @param {Object}   opts
- * @param {string}   opts.tipo      'poder' | 'patrocinio'
- * @param {string}   opts.idioma    'es' | 'en' (solo aplica al poder)
+ * @param {string}   opts.tipo      'poder' | 'patrocinio' | 'tyc'
+ * @param {string}   opts.idioma    'es' | 'en' (no aplica al patrocinio)
  * @param {Object[]} opts.personas  1..N pasajeros, cada uno con sus datos personales
  *                                   ya combinados con los datos compartidos del vuelo/caso.
  * @param {Object}   [opts.abogado] abogado asignado (requerido para patrocinio)
@@ -230,6 +300,9 @@ export async function generarDocumentoLegal({ tipo, idioma, personas, abogado, r
   var refCode = (reclamo && reclamo.ref_code) || lista[0].ref_code || '';
 
   var templateName, data, titulo;
+  /* Los T&C no salen de una plantilla interpolada: el cuerpo se arma en código a
+     partir del texto publicado (o de su traducción). */
+  var textoDirecto = null;
 
   if (tipo === 'poder') {
     if (multi) {
@@ -287,21 +360,39 @@ export async function generarDocumentoLegal({ tipo, idioma, personas, abogado, r
     }
     titulo = 'Designación de Patrocinio Letrado';
 
+  } else if (tipo === 'tyc') {
+    /* Mismos datos requeridos que el poder: quién firma, cómo se lo identifica y a
+       qué caso corresponde. */
+    var faltTyc = [];
+    lista.forEach(function (p) {
+      var bt = buildPoderData(p, idioma);
+      if (bt.faltantes.length) faltTyc = faltTyc.concat(multi ? etiquetarFaltantes(p.nombre, bt.faltantes) : bt.faltantes);
+    });
+    if (faltTyc.length) throwFaltantes(faltTyc);
+
+    var legal = loadTycText();
+    var cuerpo = idioma === 'en' ? loadTycEn(legal.version) : (legal.tyc + '\n\n' + legal.privacidad);
+    textoDirecto = buildTycEncabezado(lista, idioma, legal.version) + '\n\n'
+      + cuerpo + '\n\n'
+      + buildTycCaso(lista[0], idioma) + '\n\n'
+      + buildFirmasBloque(lista, idioma, idioma === 'en' ? 'Applicant' : 'Solicitante');
+    titulo = idioma === 'en' ? 'Terms and Conditions of Service' : 'Términos y Condiciones del Servicio';
+
   } else {
     throw new Error('Tipo de documento inválido: ' + tipo);
   }
 
-  var template = loadTemplate(templateName);
-  var text = interpolate(template, data);
+  var text = textoDirecto != null ? textoDirecto : interpolate(loadTemplate(templateName), data);
 
   var apellido = sanitizeFilenamePart(apellidoDe(lista[0].nombre)) || (refCode || 'Caso');
   if (multi) apellido = apellido + ' y otros';
   var tituloCompleto = apellido + ' - ' + titulo;
 
-  /* Membrete sólo en el poder: el convenio de patrocinio se celebra entre el
-     cliente y el/la profesional, y SolucionAir no es parte de ese contrato. */
+  /* Membrete en el poder y en los T&C: los dos son instrumentos en los que SolucionAir
+     es parte. El convenio de patrocinio se celebra entre el cliente y el/la
+     profesional, y SolucionAir no es parte de ese contrato. */
   var buffer = await renderLegalPdf(text, {
-    refCode: refCode, title: tituloCompleto, logo: tipo === 'poder',
+    refCode: refCode, title: tituloCompleto, logo: tipo === 'poder' || tipo === 'tyc',
   });
   var filename = tituloCompleto + '.pdf';
   return { buffer: buffer, filename: filename };

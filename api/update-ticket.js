@@ -13,7 +13,7 @@
  *   set-documentos     Reordena/actualiza los documentos (el primero pasa a ser el principal)
  *   set-acompanantes   Agrega/edita/elimina los pasajeros adicionales del caso
  *
- * Otras acciones (sin cambios): add-novedad, update-firma, set-fecha-mediacion,
+ * Otras acciones (sin cambios): add-novedad, update-firma, update-tyc, set-fecha-mediacion,
  * update-abogado, confirm-update-cliente, set-campo, dismiss-alerta.
  *
  * @param {string} req.body.id - Claim UUID (required)
@@ -595,18 +595,26 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, action: 'set-acompanantes', acompanantes: acompArr });
     }
 
-    /* ---- UPDATE FIRMA ESTADO ---- */
-    if (body.action === 'update-firma') {
-      var newFirma = (body.firma_estado || '').trim();
+    /* ---- UPDATE ESTADO DE FIRMA (autorización/poder y T&C) ----
+       Los dos documentos comparten circuito y vocabulario de estados, así que
+       comparten branch: sólo cambia la columna que se toca. */
+    if (body.action === 'update-firma' || body.action === 'update-tyc') {
+      var firmaCampo = body.action === 'update-tyc' ? 'tyc_estado' : 'firma_estado';
+      var firmaLabel = body.action === 'update-tyc' ? 'los T&C' : 'la autorización';
+      var newFirma = (body[firmaCampo] || '').trim();
       var validFirmas = ['no_aplica', 'pendiente_envio', 'enviada', 'firmada', 'rechazada'];
       if (validFirmas.indexOf(newFirma) === -1) return res.status(400).json({ error: 'Estado de firma inválido' });
+      var firmaPatch = {};
+      firmaPatch[firmaCampo] = newFirma;
       var firmaRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ firma_estado: newFirma }),
+        body: JSON.stringify(firmaPatch),
       });
-      if (!firmaRes.ok) return res.status(500).json({ error: 'Error al actualizar autorización' });
-      return res.status(200).json({ success: true, action: 'update-firma', firma_estado: newFirma });
+      if (!firmaRes.ok) return res.status(500).json({ error: 'Error al actualizar ' + firmaLabel });
+      var firmaOut = { success: true, action: body.action };
+      firmaOut[firmaCampo] = newFirma;
+      return res.status(200).json(firmaOut);
     }
 
     /* ---- SET FECHA MEDIACION ---- */

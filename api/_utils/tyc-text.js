@@ -23,7 +23,7 @@ const CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ'
   + '‘’“”•–—˜™š›œžŸ';
 const FALLBACK = { '→': '>', '←': '<', ' ': ' ', '‑': '-', '−': '-' };
 
-function toWinAnsi(s) {
+export function toWinAnsi(s) {
   var out = '';
   for (var i = 0; i < s.length; i++) {
     var ch = s[i];

@@ -141,6 +141,11 @@ export default async function handler(req, res) {
         consent_version:       body.consent_version || null,
         consent_tyc:           body.consent_tyc === true || body.consent_tyc === 'true' || false,
         consent_autorizacion:  body.consent_autorizacion === true || body.consent_autorizacion === 'true' || false,
+        /* Este es el único camino de alta donde el pasajero firma los T&C en el acto
+           (tilda la aceptación y abajo se genera el PDF de constancia). El poder, en
+           cambio, siempre queda pendiente: el consentimiento del form no lo reemplaza. */
+        tyc_estado:            (body.consent_tyc === true || body.consent_tyc === 'true') ? 'firmada' : 'pendiente_envio',
+        firma_estado:          'pendiente_envio',
         firma_fecha:           body.firma_fecha || null,
         firma_ts:              body.firma_ts || null,
         user_agent:            body.user_agent || null,

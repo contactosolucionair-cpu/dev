@@ -483,7 +483,7 @@
       </div>
     </div>
 
-    <!-- Documentos legales — generador por pasos (poder / patrocinio, multi-pasajero) -->
+    <!-- Documentos legales — generador por pasos (poder / patrocinio / T&C, multi-pasajero) -->
     <div class="cm-ov" id="doclegal-ov">
       <div class="cm" style="max-width:460px;text-align:left">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -498,6 +498,7 @@
           <select id="wz-tipo" class="firma-select" style="width:100%;margin-top:6px">
             <option value="poder">Poder</option>
             <option value="patrocinio">Patrocinio</option>
+            <option value="tyc">Términos y Condiciones</option>
           </select>
           <div id="wz-pat-hint" style="font-size:.68rem;color:var(--warn);margin-top:6px"></div>
         </div>
@@ -509,9 +510,9 @@
           <div id="wz-pasajeros"></div>
         </div>
 
-        <!-- Paso 3: idioma (solo poder) -->
+        <!-- Paso 3: idioma (poder y T&C; el patrocinio es sólo en español) -->
         <div class="wz-step" data-step="idioma" style="display:none">
-          <div class="detail__label">Idioma del poder</div>
+          <div class="detail__label" id="wz-idioma-label">Idioma del documento</div>
           <select id="wz-idioma" class="firma-select" style="width:100%;margin-top:6px">
             <option value="es">Español</option>
             <option value="en">Inglés</option>
@@ -749,6 +750,11 @@
        'requerimiento_aerolinea', que es lo que la aerolínea nos exige a nosotros. */
     var TIPO_ESPERA_LABELS={info_pasajero:'Información del pasajero',firma_documento:'Firma de documento',requerimiento_aerolinea:'Requerimiento de la aerolínea',compromiso_tercero:'Compromiso asumido',audiencia:'Audiencia',accion_interna:'Acción interna'};
     var RESPONSABLE_ESPERA_LABELS={solucionair:'SolucionAir',pasajero:'Pasajero',aerolinea:'Aerolínea',abogado:'Abogado',mediador:'Mediador'};
+    /* Circuito de firma, compartido por la autorización (firma_estado) y los T&C
+       (tyc_estado): mismos estados, mismas etiquetas, mismo select. */
+    var FIRMA_ESTADOS=['no_aplica','pendiente_envio','enviada','firmada','rechazada'];
+    var FIRMA_ESTADO_LABELS={no_aplica:'No aplica',pendiente_envio:'Pendiente de envío',enviada:'Enviado a firmar',firmada:'Firmado',rechazada:'Rechazado'};
+    function firmaOptsHtml(val){return FIRMA_ESTADOS.map(function(k){return '<option value="'+k+'"'+(val===k?' selected':'')+'>'+FIRMA_ESTADO_LABELS[k]+'</option>'}).join('')}
     /* Valores canónicos nuevos + fallback a valores viejos del form (no migrados) */
     var ANTICIPACION_LABELS={mas_14_dias:'Más de 14 días','7_a_14_dias':'Entre 7 y 14 días',menos_7_dias:'Menos de 7 días',menos_24h:'Menos de 24 horas',en_aeropuerto:'En el aeropuerto, sin aviso previo',sin_aviso:'Sin aviso previo (valor anterior)',menos_14:'Menos de 14 días (valor anterior)','14_a_21':'14 a 21 días (valor anterior)',mas_21:'Más de 21 días (valor anterior)'};
     var OFRECIMIENTO_LABELS={reubicacion:'Reubicación en otro vuelo',reembolso:'Reembolso',reubicacion_y_reembolso:'Reubicación y reembolso',voucher:'Voucher / compensación en el momento',nada:'Nada',si:'Sí (valor anterior)',no:'No (valor anterior)',ninguno:'Ninguno (valor anterior)',reembolso_total:'Reembolso total (valor anterior)'};
@@ -1048,6 +1054,7 @@
         var alertReasons=[];
         vencidas.forEach(function(e){alertReasons.push((TIPO_ESPERA_LABELS[e.tipo]||e.tipo)+' vencida')});
         if((c.firma_estado||'no_aplica')==='pendiente_envio')alertReasons.push('Autorización pendiente de envío');
+        if((c.tyc_estado||'no_aplica')==='pendiente_envio')alertReasons.push('T&C pendientes de envío');
         if(pos.instancia==='evaluacion'&&!abiertas.length)alertReasons.push('Caso en evaluación');
         var alertCell=alertReasons.length?'<span title="'+esc(alertReasons.join(' · '))+'" style="color:var(--warn);display:inline-flex">'+ALERT_ICON+'</span>':'';
         var pel=pelotaInfo(c,pos);
@@ -1186,10 +1193,16 @@
       var abiertas=esperasAbiertas(c);
       var resueltas=(Array.isArray(c.esperas)?c.esperas:[]).filter(function(e){return e.resuelta});
       var firmaVal=c.firma_estado||'no_aplica';
+      var tycVal=c.tyc_estado||'no_aplica';
       var h='<div class="action-field" style="margin-top:8px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0"><div class="detail__label" style="margin-bottom:0">Esperas</div><button class="btn btn--ghost" id="btn-open-espera" type="button" style="font-size:.68rem;padding:3px 9px">+ Agregar espera</button></div>';
-      if(firmaVal==='pendiente_envio')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Autorización pendiente de envío</span><span class="badge badge--en_gestion">'+esc(RESPONSABLE_ESPERA_LABELS.solucionair)+'</span></div>';
-      if(firmaVal==='enviada')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>Esperando firma del pasajero</span><span class="badge badge--en_gestion">Pasajero</span></div>';
-      if(!abiertas.length&&firmaVal!=='pendiente_envio'&&firmaVal!=='enviada')h+='<p style="font-size:.72rem;color:var(--t4);margin:6px 0">Sin esperas abiertas.</p>';
+      /* Pseudo-esperas: los dos documentos a firmar no son filas de `esperas`, pero
+         bloquean igual, así que se listan acá para no tener que ir a buscarlos. */
+      [{val:firmaVal,label:'Autorización'},{val:tycVal,label:'T&C'}].forEach(function(f){
+        if(f.val==='pendiente_envio')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>'+esc(f.label)+' pendiente de envío</span><span class="badge badge--en_gestion">'+esc(RESPONSABLE_ESPERA_LABELS.solucionair)+'</span></div>';
+        if(f.val==='enviada')h+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bdl);font-size:.78rem"><span>'+esc(f.label)+': esperando firma del pasajero</span><span class="badge badge--en_gestion">Pasajero</span></div>';
+      });
+      var pendFirma=(firmaVal==='pendiente_envio'||firmaVal==='enviada'||tycVal==='pendiente_envio'||tycVal==='enviada');
+      if(!abiertas.length&&!pendFirma)h+='<p style="font-size:.72rem;color:var(--t4);margin:6px 0">Sin esperas abiertas.</p>';
       abiertas.forEach(function(e){
         var vencida=esperaCuentaComoVencida(e);
         var dias=Math.floor((Date.now()-new Date(e.creada).getTime())/86400000);
@@ -1240,6 +1253,7 @@
       var canalVal=c.canal||'B2C';
       var tipoVal=c.tipo_reclamo||'vuelo';
       var firmaVal=c.firma_estado||'no_aplica';
+      var tycVal=c.tyc_estado||'no_aplica';
 
       var h='';
       /* Copiar info del caso (para pegar en un chat, ej. análisis con Claude) */
@@ -1341,7 +1355,7 @@
       /* Gestión del caso */
       h+='<div class="detail__divider"></div>';
       h+='<div class="detail__section"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div class="detail__label" style="margin-bottom:0;font-size:.7rem">Gestión del caso</div><div style="display:flex;gap:5px">';
-      h+='<button class="icon-btn" id="btn-open-doclegal" type="button" title="Documentos legales (poder / patrocinio)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>';
+      h+='<button class="icon-btn" id="btn-open-doclegal" type="button" title="Documentos legales (poder / patrocinio / T&amp;C)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></button>';
       h+='<button class="icon-btn" id="btn-open-editcampo" type="button" title="Editar un campo del caso"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
       h+='</div></div>';
       h+=renderStepperHtml(c,pos);
@@ -1351,16 +1365,17 @@
       h+=renderAccionesHtml(c,pos);
       h+='<div style="text-align:right;margin:2px 0 8px"><a href="#" id="link-correccion" style="font-size:.64rem;color:var(--t4);text-decoration:underline">Corrección manual</a></div>';
       h+='<div class="action-row">';
-      /* Autorización */
+      /* Autorización (poder) */
       h+='<div class="action-field"><div class="detail__label">Autorización cliente</div>';
-      h+='<div style="display:flex;gap:5px"><select id="sel-firma" class="firma-select" style="flex:1">';
-      h+='<option value="no_aplica"'+(firmaVal==='no_aplica'?' selected':'')+'>No aplica</option>';
-      h+='<option value="pendiente_envio"'+(firmaVal==='pendiente_envio'?' selected':'')+'>Pendiente envío</option>';
-      h+='<option value="enviada"'+(firmaVal==='enviada'?' selected':'')+'>Enviado a firmar</option>';
-      h+='<option value="firmada"'+(firmaVal==='firmada'?' selected':'')+'>Firmada</option>';
-      h+='<option value="rechazada"'+(firmaVal==='rechazada'?' selected':'')+'>Rechazada</option>';
-      h+='</select><button class="btn btn--ghost" id="btn-save-firma" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
+      h+='<div style="display:flex;gap:5px"><select id="sel-firma" class="firma-select" style="flex:1">'+firmaOptsHtml(firmaVal)+'</select>';
+      h+='<button class="btn btn--ghost" id="btn-save-firma" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
       h+='<div id="msg-firma" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
+      /* T&C: sólo quedan firmados solos cuando el caso entra por el form público. */
+      h+='<div class="action-field"><div class="detail__label">T&amp;C del servicio</div>';
+      h+='<div style="display:flex;gap:5px"><select id="sel-tyc" class="firma-select" style="flex:1">'+firmaOptsHtml(tycVal)+'</select>';
+      h+='<button class="btn btn--ghost" id="btn-save-tyc" type="button" style="font-size:.7rem;white-space:nowrap">Guardar</button></div>';
+      if(c.consent_tyc)h+='<div style="font-size:.62rem;color:var(--t4);margin-top:2px">Aceptados online'+(c.consent_version?' · '+esc(c.consent_version):'')+'</div>';
+      h+='<div id="msg-tyc" style="font-family:var(--fm);font-size:.62rem;min-height:12px;margin-top:2px"></div></div>';
       h+='</div>'; /* action-row */
       /* Esperas (reemplaza el requerimiento de la aerolínea) */
       h+=renderEsperasHtml(c);
@@ -1532,7 +1547,7 @@
         });
       });
 
-      /* Abre el popup de documentos legales (poder / patrocinio) */
+      /* Abre el popup de documentos legales (poder / patrocinio / T&C) */
       var btnOpenDoclegal=document.getElementById('btn-open-doclegal');
       if(btnOpenDoclegal)btnOpenDoclegal.addEventListener('click',function(){openDoclegalModal(c)});
 
@@ -1915,23 +1930,28 @@
       var btnOpenDocvis=document.getElementById('btn-open-docvis');
       if(btnOpenDocvis)btnOpenDocvis.addEventListener('click',function(){openDocVisModal(c)});
 
-      /* --- Guardar autorización --- */
-      var btnSaveFirma=document.getElementById('btn-save-firma');
-      var msgFirma=document.getElementById('msg-firma');
-      if(btnSaveFirma)btnSaveFirma.addEventListener('click',function(){
-        var newFirma=document.getElementById('sel-firma').value;
-        if(newFirma===(c.firma_estado||'no_aplica')){msgFirma.style.color='var(--t4)';msgFirma.textContent='Sin cambios.';return}
-        btnSaveFirma.disabled=true;btnSaveFirma.textContent='...';msgFirma.textContent='';
-        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:c.id,action:'update-firma',firma_estado:newFirma})})
-        .then(function(r){return r.json()}).then(function(d){
-          btnSaveFirma.disabled=false;btnSaveFirma.textContent='Guardar';
-          if(d.success){
-            c.firma_estado=newFirma;
-            claims.forEach(function(cl){if(cl.id===c.id)cl.firma_estado=newFirma});
-            msgFirma.style.color='#1B9B5A';msgFirma.textContent='Autorización actualizada.';
-            toast('Autorización → '+newFirma);
-          }else{msgFirma.style.color='var(--err)';msgFirma.textContent=d.error||'Error.'}
-        }).catch(function(){btnSaveFirma.disabled=false;btnSaveFirma.textContent='Guardar';msgFirma.style.color='var(--err)';msgFirma.textContent='Error de conexión.'});
+      /* --- Guardar estado de firma (autorización y T&C: mismo circuito) --- */
+      [{btn:'btn-save-firma',sel:'sel-firma',msg:'msg-firma',campo:'firma_estado',action:'update-firma',label:'Autorización'},
+       {btn:'btn-save-tyc',sel:'sel-tyc',msg:'msg-tyc',campo:'tyc_estado',action:'update-tyc',label:'T&C'}].forEach(function(cfg){
+        var btn=document.getElementById(cfg.btn),msgEl=document.getElementById(cfg.msg);
+        if(!btn||!msgEl)return;
+        btn.addEventListener('click',function(){
+          var nuevo=document.getElementById(cfg.sel).value;
+          if(nuevo===(c[cfg.campo]||'no_aplica')){msgEl.style.color='var(--t4)';msgEl.textContent='Sin cambios.';return}
+          btn.disabled=true;btn.textContent='...';msgEl.textContent='';
+          var payload={id:c.id,action:cfg.action};payload[cfg.campo]=nuevo;
+          fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(payload)})
+          .then(function(r){return r.json()}).then(function(d){
+            btn.disabled=false;btn.textContent='Guardar';
+            if(d.success){
+              c[cfg.campo]=nuevo;
+              claims.forEach(function(cl){if(cl.id===c.id)cl[cfg.campo]=nuevo});
+              msgEl.style.color='#1B9B5A';msgEl.textContent=cfg.label+' actualizado.';
+              toast(cfg.label+' → '+(FIRMA_ESTADO_LABELS[nuevo]||nuevo));
+              applyFilters();
+            }else{msgEl.style.color='var(--err)';msgEl.textContent=d.error||'Error.'}
+          }).catch(function(){btn.disabled=false;btn.textContent='Guardar';msgEl.style.color='var(--err)';msgEl.textContent='Error de conexión.'});
+        });
       });
 
       overlay.classList.add('open');panel.classList.add('open');
@@ -2036,6 +2056,7 @@
       }
       p('## Gestión del caso');
       p('- Autorización cliente: '+(c.firma_estado||'no_aplica'));
+      p('- T&C del servicio: '+(c.tyc_estado||'no_aplica')+(c.consent_tyc?' (aceptados online'+(c.consent_version?', '+c.consent_version:'')+')':''));
       if(c.abogado_id)p('- Abogado asignado (ID): '+c.abogado_id);
       if(c.fecha_mediacion)p('- Fecha de mediación: '+fmtDateEsAR(c.fecha_mediacion));
       var espAb=esperasAbiertas(c);
@@ -2593,6 +2614,9 @@
       {id:'cobro_dias',label:'En cobro',tipo:'instancia_dias',instancia:'cobro',momento:null,dias:15,enabled:true,builtin:true},
       {id:'sin_update',label:'Sin update al cliente',tipo:'sin_update',dias:7,enabled:true,builtin:true},
       {id:'firma_pendiente',label:'Autorización pendiente de envío',tipo:'firma_dias',dias:1,enabled:true,builtin:true},
+      /* Los casos que entran por el form público ya vienen con los T&C firmados; esta
+         regla es para los que cargamos nosotros o una agencia, que no pasan por ahí. */
+      {id:'tyc_pendiente',label:'T&C pendientes de envío',tipo:'tyc_dias',dias:1,enabled:true,builtin:true},
       {id:'recordatorio',label:'Recordatorio',tipo:'recordatorio',dias:0,enabled:true,builtin:true}
     ];
     var alertRules=DEFAULT_REGLAS.map(function(r){return Object.assign({},r)});
@@ -2663,11 +2687,14 @@
         var masViejo=vencidos.reduce(function(a,r){return (!a||String(r.vence)<String(a.vence))?r:a},null);
         return {ref:new Date(masViejo.vence),texto:masViejo.texto+(vencidos.length>1?' (+'+(vencidos.length-1)+' más)':'')};
       }
-      if(regla.tipo==='firma_dias'){
-        if((c.firma_estado||'no_aplica')!=='pendiente_envio'||pos.instancia==='cerrado')return null;
+      /* Autorización y T&C: misma condición sobre columnas distintas. */
+      if(regla.tipo==='firma_dias'||regla.tipo==='tyc_dias'){
+        var esTyc=regla.tipo==='tyc_dias';
+        var estadoDoc=(esTyc?c.tyc_estado:c.firma_estado)||'no_aplica';
+        if(estadoDoc!=='pendiente_envio'||pos.instancia==='cerrado')return null;
         var refF=c.creado_en?new Date(c.creado_en):null;
         var ddF=_diasDesde(refF);if(ddF==null||ddF<(regla.dias||0))return null;
-        return {ref:refF,texto:'Autorización sin enviar hace '+ddF+' días'};
+        return {ref:refF,texto:(esTyc?'T&C':'Autorización')+' sin enviar hace '+ddF+' días'};
       }
       return null;
     }
@@ -2751,6 +2778,7 @@
           :regla.tipo==='espera_responsable_dias'?('Espera de '+(RESPONSABLE_ESPERA_LABELS[regla.responsable]||regla.responsable)+' abierta por más de N días')
           :regla.tipo==='espera_tipo_dias'?((TIPO_ESPERA_LABELS[regla.espera_tipo]||regla.espera_tipo)+' abierta por más de N días')
           :regla.tipo==='firma_dias'?('Autorización sin enviar por más de N días')
+          :regla.tipo==='tyc_dias'?('T&C sin enviar a firmar por más de N días')
           :regla.tipo==='recordatorio'?('Recordatorios ad-hoc del caso, el día que vencen')
           :('Sin update al cliente por más de N días');
         h+='<div class="upload-item" style="justify-content:space-between;gap:10px">';
@@ -2975,7 +3003,7 @@
       });
     });
 
-    /* ---- DOCUMENTOS LEGALES — generador por pasos (poder/patrocinio, multi-pasajero) ---- */
+    /* ---- DOCUMENTOS LEGALES — generador por pasos (poder/patrocinio/T&C, multi-pasajero) ---- */
     var doclegalOv=document.getElementById('doclegal-ov');
     var docLegalCase=null;
     var wz={seq:[],pos:0};
@@ -3000,7 +3028,7 @@
       var out=[];document.querySelectorAll('.wz-pax:checked').forEach(function(cb){out.push(parseInt(cb.value,10))});
       return out;
     }
-    function wzBuildSeq(){ wz.seq=wzTipo()==='poder'?['tipo','pasajeros','idioma']:['tipo','pasajeros']; }
+    function wzBuildSeq(){ wz.seq=(wzTipo()==='patrocinio')?['tipo','pasajeros']:['tipo','pasajeros','idioma']; }
     function wzShow(){
       wzBuildSeq();
       if(wz.pos>=wz.seq.length)wz.pos=wz.seq.length-1;
@@ -3014,6 +3042,8 @@
       if(next)next.style.display=last?'none':'';
       if(gen)gen.style.display=last?'':'none';
       if(cur==='pasajeros')wzRenderPasajeros();
+      var idLbl=document.getElementById('wz-idioma-label');
+      if(idLbl)idLbl.textContent=wzTipo()==='tyc'?'Idioma de los Términos y Condiciones':'Idioma del poder';
       var patHint=document.getElementById('wz-pat-hint');
       if(patHint)patHint.textContent=(wzTipo()==='patrocinio'&&!(docLegalCase&&docLegalCase.abogado_id))?'⚠ Este caso no tiene abogado asignado; el patrocinio va a fallar hasta que asignes uno.':'';
     }
@@ -3046,7 +3076,7 @@
       var msg=document.getElementById('wz-msg');
       if(!idx.length){if(msg){msg.style.color='var(--err)';msg.textContent='Elegí al menos un pasajero.'}return}
       var tipo=wzTipo();
-      var idioma=tipo==='poder'?((document.getElementById('wz-idioma')||{}).value||'es'):'es';
+      var idioma=tipo==='patrocinio'?'es':((document.getElementById('wz-idioma')||{}).value||'es');
       var lbl=wzGen.textContent;wzGen.disabled=true;wzGen.textContent='Generando...';
       if(msg){msg.style.color='';msg.textContent=''}
       fetch('/api/admin?action=generar-documento&tipo='+encodeURIComponent(tipo)+'&idioma='+encodeURIComponent(idioma)+'&caso_id='+encodeURIComponent(docLegalCase.id),{

@@ -25,7 +25,7 @@
  *                           muestra (ver panel-abogado.html).
  *   download-zip      POST  ?id → ZIP con todos los adjuntos del caso
  *   create-case       POST  {datos del caso} → alta manual desde backoffice + mail al cliente
- *   generar-documento POST  ?tipo=poder|patrocinio&idioma=es|en&caso_id= (+ body {overrides})
+ *   generar-documento POST  ?tipo=poder|patrocinio|tyc&idioma=es|en&caso_id= (+ body {overrides})
  *                           → genera el PDF (poder o convenio de patrocinio) y lo devuelve
  *                           como descarga directa. No se sube a Storage ni se toca `adjuntos`:
  *                           es solo un generador de documentos, la carga del PDF ya firmado
@@ -585,6 +585,9 @@ async function createCase(req, res, SB_URL, SB_KEY) {
     documentos:       Array.isArray(body.documentos) ? body.documentos : [],
     acompanantes:     Array.isArray(body.acompanantes) ? body.acompanantes : [],
     ref_code: refCode, estado: 'pendiente', fecha_carga: nowIso,
+    /* Un caso cargado a mano no pasó por la aceptación online: los dos documentos
+       arrancan pendientes y se marcan 'no_aplica' desde el detalle si no hacen falta. */
+    tyc_estado: 'pendiente_envio', firma_estado: 'pendiente_envio',
     instancia: 'evaluacion', momento: null,
     estado_historial: [{ estado: 'pendiente', fecha: nowIso, por: 'admin' }],
     instancia_historial: [{ instancia: 'evaluacion', momento: null, fecha: nowIso, por: 'sistema' }],
@@ -642,8 +645,8 @@ async function createCase(req, res, SB_URL, SB_KEY) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Generar documento legal (poder / patrocinio) — descarga directa,    */
-/* no se sube a Storage ni se toca `adjuntos`.                         */
+/* Generar documento legal (poder / patrocinio / T&C) — descarga       */
+/* directa, no se sube a Storage ni se toca `adjuntos`.                */
 /* ------------------------------------------------------------------ */
 var OVERRIDE_CAMPOS = ['domicilio_real', 'fecha_nacimiento', 'cuil', 'documento_tipo',
   'documento_numero', 'pais_emisor', 'id_fiscal_extranjero'];
@@ -653,7 +656,7 @@ async function generarDocumento(req, res, SB_URL, SB_KEY) {
   var tipo    = (req.query.tipo    || '').trim();
   var idioma  = (req.query.idioma  || 'es').trim();
   var casoId  = (req.query.caso_id || '').trim();
-  if (['poder', 'patrocinio'].indexOf(tipo) === -1) return res.status(400).json({ error: 'tipo debe ser poder o patrocinio.' });
+  if (['poder', 'patrocinio', 'tyc'].indexOf(tipo) === -1) return res.status(400).json({ error: 'tipo debe ser poder, patrocinio o tyc.' });
   if (!casoId) return res.status(400).json({ error: 'caso_id es requerido.' });
 
   var body = {};

@@ -235,7 +235,9 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
   var row = {
     canal: 'B2B', fuente: 'Agencia',
     agencia_id: agencia.id, agente_nombre: agencia.nombre || null, agente_email: agencia.email || null,
-    cliente_autorizacion_declarada: true, firma_estado: 'pendiente_envio',
+    /* La agencia declara tener la autorización del pasajero (cláusula 18 de los T&C),
+       pero el pasajero no firmó nada: los dos documentos quedan pendientes de firma. */
+    cliente_autorizacion_declarada: true, firma_estado: 'pendiente_envio', tyc_estado: 'pendiente_envio',
     nombre: nombre, email: email,
     telefono:        body.telefono        || null,
     documento_tipo:  body.documento_tipo  || null,

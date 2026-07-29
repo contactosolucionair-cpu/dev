@@ -199,7 +199,7 @@ reescribe `/api/agency/:action → /api/agency?action=:action` (ídem `abogados`
 | **Admin** (`?action=`) | | | |
 | GET/POST | `/api/admin?action=agencias\|agencia-accion\|agencia-config` | `X-Admin-Password` | Listar agencias, aprobar/suspender, editar comisión |
 | GET/POST | `/api/admin?action=abogados\|abogado-accion\|abogados-activos` | `X-Admin-Password` | Gestión de abogados |
-| POST | `/api/admin?action=create-case\|generar-documento` | `X-Admin-Password` | Alta manual de caso, generar poder/patrocinio |
+| POST | `/api/admin?action=create-case\|generar-documento` | `X-Admin-Password` | Alta manual de caso, generar poder/patrocinio/T&C |
 | POST | `/api/admin?action=sign\|upload\|remove\|retag\|download-zip` | `X-Admin-Password` | Gestión de adjuntos en Storage |
 
 ## Flujo del Sistema
@@ -225,14 +225,21 @@ Firma electrónica y envío (Paso 3)
 Tarjeta de éxito con código CSA correlativo
 ```
 
-## Firma de autorización
+## Firma de autorización y de los T&C
 
-El flujo de firma de la autorización es **manual**: el admin genera la
-autorización (poder / convenio de patrocinio) desde el backoffice, la envía al
-pasajero por WhatsApp o email, y una vez firmada actualiza `firma_estado` desde
-el backoffice (`no_aplica` → `pendiente_envio` → `enviada` → `firmada` /
-`rechazada`). Los portales de agencia y cliente muestran ese estado con un texto
-explicativo.
+El flujo de firma es **manual**: el admin genera el documento (poder / convenio
+de patrocinio / T&C) desde el backoffice, lo envía al pasajero por WhatsApp o
+email, y una vez firmado actualiza el estado desde el backoffice (`no_aplica` →
+`pendiente_envio` → `enviada` → `firmada` / `rechazada`). Los portales de agencia
+y cliente muestran ese estado con un texto explicativo.
+
+Son **dos columnas con el mismo circuito**: `firma_estado` (autorización/poder) y
+`tyc_estado` (Términos y Condiciones). Los dos arrancan en `pendiente_envio` para
+todo caso nuevo; sólo los casos que entran por el formulario público nacen con
+`tyc_estado='firmada'`, porque ahí el pasajero acepta los T&C en el acto y se
+genera el PDF de constancia. Si un caso no necesita alguno de los dos documentos,
+se marca `no_aplica` a mano. Mientras estén en `pendiente_envio` saltan las
+alertas «Autorización pendiente de envío» y «T&C pendientes de envío».
 
 La **integración con un proveedor de firma electrónica está pendiente de
 contratación**. Las columnas `firma_proveedor`, `firma_zoho_request_id` y
