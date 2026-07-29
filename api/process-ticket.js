@@ -193,8 +193,8 @@ export default async function handler(req, res) {
       var pdfBuffer = null;
       var pdfUrl    = null;
       try {
-        var { generateAuthorizationPdf } = await import('./_utils/pdf-receipt.js');
-        pdfBuffer = await generateAuthorizationPdf({
+        var { generateAcceptancePdf } = await import('./_utils/pdf-receipt.js');
+        pdfBuffer = await generateAcceptancePdf({
           refCode,
           nombre,
           docTipo:       body.documento_tipo  || '',
@@ -222,7 +222,7 @@ export default async function handler(req, res) {
 
       if (pdfBuffer) {
         try {
-          var pdfPath = refCode + '/Autorizacion_' + refCode + '.pdf';
+          var pdfPath = refCode + '/Aceptacion_TyC_' + refCode + '.pdf';
           var storageRes = await fetch(SB_URL + '/storage/v1/object/reclamos/' + pdfPath, {
             method: 'POST',
             headers: {
@@ -280,7 +280,10 @@ export default async function handler(req, res) {
 
       /* Persist final adjuntos list and hash in one PATCH */
       var allAdjuntos = [];
-      if (pdfUrl) allAdjuntos.push({ tipo: 'autorizacion', url: pdfUrl, nombre: 'Autorizacion_' + refCode + '.pdf' });
+      /* tipo 'aceptacion_tyc': los casos viejos quedan con 'autorizacion'. Ningún
+         panel discrimina por `tipo` (se listan por nombre y URL), así que la
+         convivencia no rompe nada. */
+      if (pdfUrl) allAdjuntos.push({ tipo: 'aceptacion_tyc', url: pdfUrl, nombre: 'Aceptacion_TyC_' + refCode + '.pdf' });
       allAdjuntos = allAdjuntos.concat(docUrls);
       if (allAdjuntos.length) {
         try {
@@ -330,9 +333,9 @@ export default async function handler(req, res) {
                 + '<p><strong>Vuelo:</strong> ' + vuelo + ' (' + aerolinea + ')</p>'
                 + '<p><strong>Fecha vuelo:</strong> ' + (body.fecha_vuelo || 'N/A') + '</p>'
                 + '<p><strong>Tipo:</strong> ' + (body.tipo_incidencia || 'vuelo') + '</p>'
-                + (pdfUrl ? '<p><strong>Autorizacion:</strong> <a href="' + pdfUrl + '">Ver PDF</a></p>' : '')
+                + (pdfUrl ? '<p><strong>Aceptacion T&C:</strong> <a href="' + pdfUrl + '">Ver PDF</a></p>' : '')
                 + '<hr/><p style="color:#888;font-size:12px">Enviado automaticamente por SolucionAir</p>',
-              attachments: pdfBuffer ? [{ filename: 'Autorizacion_' + refCode + '.pdf', content: pdfBuffer.toString('base64') }] : undefined,
+              attachments: pdfBuffer ? [{ filename: 'Aceptacion_TyC_' + refCode + '.pdf', content: pdfBuffer.toString('base64') }] : undefined,
             }),
           });
           var internalText = await internalRes.text();
@@ -346,7 +349,7 @@ export default async function handler(req, res) {
         try {
           var pdfNotice = pdfUrl
             ? '<div style="background:#E8F0EC;border-left:3px solid #2D4A3E;padding:12px 16px;margin:20px 0;border-radius:0 4px 4px 0">'
-              + '<p style="margin:0;font-size:13px;color:#2D4A3E"><strong>Comprobante adjunto.</strong> El documento de autorizacion y firma electronica se adjunta a este correo. Guardalo para tus registros.</p>'
+              + '<p style="margin:0;font-size:13px;color:#2D4A3E"><strong>Constancia adjunta.</strong> Se adjunta a este correo la constancia de aceptacion de los Terminos y Condiciones, firmada electronicamente. Guardala para tus registros.</p>'
               + '</div>'
             : '';
           var clientPayload = {
@@ -360,7 +363,7 @@ export default async function handler(req, res) {
               + '</div>'
               + '<div style="padding:28px;border:1px solid #E0DCD4;border-top:none;border-radius:0 0 8px 8px">'
               + '<h2 style="color:#2D4A3E;font-size:18px;margin:0 0 12px">Hola ' + nombre + ',</h2>'
-              + '<p style="color:#3A3A3A;font-size:14px;line-height:1.6;margin:0 0 16px">Recibimos tu reclamo y ya esta siendo revisado por nuestro equipo. A continuacion encontras el detalle y el comprobante de autorizacion firmado digitalmente.</p>'
+              + '<p style="color:#3A3A3A;font-size:14px;line-height:1.6;margin:0 0 16px">Recibimos tu reclamo y ya esta siendo revisado por nuestro equipo. A continuacion encontras el detalle y la constancia de aceptacion de los Terminos y Condiciones que firmaste electronicamente.</p>'
               + pdfNotice
               + '<div style="background:#F7F5F0;border-radius:6px;padding:16px;margin:16px 0">'
               + '<p style="font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;margin:0 0 10px">Detalle del reclamo</p>'
@@ -384,7 +387,7 @@ export default async function handler(req, res) {
           };
           if (pdfBuffer) {
             clientPayload.attachments = [{
-              filename: 'Autorizacion_SolucionAir_' + refCode + '.pdf',
+              filename: 'Aceptacion_TyC_SolucionAir_' + refCode + '.pdf',
               content:  pdfBuffer.toString('base64'),
             }];
           }

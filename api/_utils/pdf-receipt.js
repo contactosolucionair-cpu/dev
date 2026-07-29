@@ -1,4 +1,8 @@
+import fs from 'fs';
+import path from 'path';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { appendLegalText } from './legal-pdf.js';
+import { loadTycText } from './tyc-text.js';
 
 const C_GREEN  = rgb(0.176, 0.290, 0.243);
 const C_GOLD   = rgb(0.773, 0.604, 0.239);
@@ -10,23 +14,26 @@ const C_DARK   = rgb(0.102, 0.102, 0.102);
 const C_MUTED  = rgb(0.780, 0.860, 0.820);
 const C_LGRAY  = rgb(0.920, 0.920, 0.920);
 
-const MANDATE_LINES = [
-  'Mediante la presente, el/la reclamante declara bajo juramento que toda la informacion',
-  'proporcionada en este formulario es veridica, completa y exacta. Autoriza expresamente a',
-  'SolucionAir, representada por Juan Pablo Mario Adaniya (DNI 37.806.475) y Tomas Gregorio',
-  'Dicranian (DNI 37.606.877), a: (1) Gestionar y presentar reclamos formales ante la aerolinea',
-  'y/o autoridades competentes en su nombre. (2) Acceder, utilizar y compartir la documentacion',
-  'provista exclusivamente con fines de gestion del presente reclamo. (3) Representarlo/a en',
-  'instancias de mediacion privada online, si correspondiera.',
-  '',
-  'SolucionAir opera bajo honorarios por exito: no se cobran costos iniciales; los honorarios',
-  'equivalen al 20% de la compensacion obtenida, unicamente si el reclamo prospera.',
-  '',
-  'La presente declaracion constituye firma electronica valida conforme Ley 25.506 y arts.',
-  '286 y 288 del Codigo Civil y Comercial de la Nacion (Ley 26.994).',
-];
+/* Membrete. logo-doc-white.png es el mismo recorte que usa el poder
+   (src/img/logo-doc.png) pero pintado de blanco, porque acá va sobre la banda
+   verde. Logo y bajada forman un bloque: comparten eje vertical y el conjunto
+   se ancla al margen izquierdo, así la bajada queda centrada respecto del logo
+   sin que ninguno de los dos se salga de la caja. */
+const LOGO_PATH = path.join(process.cwd(), 'src', 'img', 'logo-doc-white.png');
+const HEAD_H = 112, HEAD_TOP = 22, LOGO_H = 60;
+const LEMA = 'Compensaciones por vuelos y equipaje', LEMA_SIZE = 7.5;
 
-export async function generateAuthorizationPdf(d) {
+/* Las hojas del anexo llevan el membrete del poder —logo verde chico sobre
+   blanco— y no la banda de la carátula: son páginas de texto corrido y la banda
+   les comía el aire. Mismos valores que legal-pdf.js para que los dos
+   documentos que firma el pasajero se vean de la misma familia. */
+const LOGO_DOC_PATH = path.join(process.cwd(), 'src', 'img', 'logo-doc.png');
+const ANEXO_LOGO_H = 30, ANEXO_LOGO_TOP = 32, ANEXO_LOGO_GAP = 30;
+
+const TEXTO_NO_DISPONIBLE = 'No fue posible reproducir el texto en este documento. '
+  + 'La version aceptada se encuentra publicada en solucionair.com.';
+
+export async function generateAcceptancePdf(d) {
   const doc  = await PDFDocument.create();
   const page = doc.addPage([595, 842]);
   const W    = page.getWidth();
@@ -42,6 +49,11 @@ export async function generateAuthorizationPdf(d) {
     page.drawText(String(s ?? '-'), opts);
   }
 
+  function txtC(s, cx, y, { sz = 8, b = false, col = C_DARK } = {}) {
+    const font = b ? bold : reg;
+    txt(s, cx - font.widthOfTextAtSize(String(s), sz) / 2, y, { sz, b, col });
+  }
+
   function rect(x, y, w, h, fill, stroke) {
     const opts = { x, y, width: w, height: h, color: fill };
     if (stroke) { opts.borderColor = stroke; opts.borderWidth = 0.5; }
@@ -53,14 +65,35 @@ export async function generateAuthorizationPdf(d) {
   }
 
   // ---- HEADER ----
-  rect(0, H - 64, W, 64, C_GREEN);
-  txt('SolucionAir', M, H - 30, { sz: 18, b: true, col: C_GOLD });
-  txt('Compensaciones por vuelos y equipaje', M, H - 48, { sz: 7.5, col: C_MUTED });
-  txt('AUTORIZACION  .  FIRMA ELECTRONICA', W - M - 170, H - 25, { sz: 7, b: true, col: C_WHITE });
-  txt('Documento generado automaticamente', W - M - 170, H - 37, { sz: 6, col: C_MUTED });
-  txt('Caso ' + d.refCode, W - M - 170, H - 49, { sz: 6, col: C_MUTED });
+  /* Si el PNG no está, cae al wordmark de texto: un comprobante sin logo sirve
+     igual, uno que no se genera no. */
+  let logoImg = null;
+  try {
+    logoImg = await doc.embedPng(fs.readFileSync(LOGO_PATH));
+  } catch (e) {
+    console.error('[pdf-receipt] no pude embeber el logo:', e.message);
+  }
 
-  let y = H - 76;
+  /* Eje del bloque: lo fija el elemento más ancho, apoyado en el margen; el otro
+     se centra sobre él. Con el logo actual manda la bajada, pero no se asume. */
+  const logoW = logoImg ? LOGO_H * (logoImg.width / logoImg.height) : 0;
+  const lemaW = reg.widthOfTextAtSize(LEMA, LEMA_SIZE);
+  const axis  = M + Math.max(logoW, lemaW) / 2;
+
+  rect(0, H - HEAD_H, W, HEAD_H, C_GREEN);
+  if (logoImg) {
+    page.drawImage(logoImg, {
+      x: axis - logoW / 2, y: H - HEAD_TOP - LOGO_H, width: logoW, height: LOGO_H,
+    });
+  } else {
+    txtC('SolucionAir', axis, H - HEAD_TOP - 22, { sz: 18, b: true, col: C_GOLD });
+  }
+  txtC(LEMA, axis, H - HEAD_TOP - LOGO_H - 16, { sz: LEMA_SIZE, col: C_MUTED });
+  txt('ACEPTACION DE T&C  .  FIRMA ELECTRONICA', W - M - 170, H - 32, { sz: 7, b: true, col: C_WHITE });
+  txt('Documento generado automaticamente', W - M - 170, H - 44, { sz: 6, col: C_MUTED });
+  txt('Caso ' + d.refCode, W - M - 170, H - 56, { sz: 6, col: C_MUTED });
+
+  let y = H - HEAD_H - 16;
 
   function section(title) {
     y -= 8;
@@ -78,13 +111,13 @@ export async function generateAuthorizationPdf(d) {
 
   // ---- TITLE ----
   y -= 3;
-  txt('Autorizacion y mandato para gestion de reclamo', M, y, { sz: 10, b: true, col: C_GREEN });
+  txt('Constancia de aceptacion de Terminos y Condiciones', M, y, { sz: 10, b: true, col: C_GREEN });
   y -= 16;
 
   // ---- SOLICITANTE BOX ----
   const boxH = 50;
   rect(M, y - boxH + 6, W - M * 2, boxH, C_LIGHT, C_GREEN);
-  txt('SOLICITANTE (PODERDANTE)', M + 7, y - 3, { sz: 6, b: true, col: C_GREEN });
+  txt('SOLICITANTE', M + 7, y - 3, { sz: 6, b: true, col: C_GREEN });
   txt(d.nombre || '-', M + 7, y - 15, { sz: 9, b: true });
   txt((d.docTipo || 'Documento') + ': ' + (d.docNumero || '-'), M + 7, y - 27, { sz: 7.5, col: C_GRAY });
   txt(d.email || '-', M + 7, y - 39, { sz: 7.5, col: C_GRAY });
@@ -101,27 +134,16 @@ export async function generateAuthorizationPdf(d) {
   kv('Fecha del vuelo:', d.fechaVuelo || '-');
   if (d.pnr) kv('Codigo de reserva (PNR):', d.pnr);
 
-  // ---- DOCUMENTOS ACEPTADOS ----
-  section('Documentos aceptados electronicamente');
-
   const DW = W - M * 2;
 
-  // Doc 1: TyC reference
+  // ---- DOCUMENTO ACEPTADO ----
+  section('Documento aceptado electronicamente');
   rect(M, y - 24, DW, 28, C_LIGHT, C_GREEN);
-  txt('1.  Terminos y Condiciones del Servicio y Politica de Privacidad', M + 7, y - 3, { sz: 7, b: true, col: C_GREEN });
-  txt('Version ' + (d.consentVersion || '-') + '  -  Aceptados electronicamente al momento de la presentacion del caso.', M + 7, y - 14, { sz: 6.5, col: C_GRAY, mw: DW - 14 });
-  y -= 32;
-
-  // Doc 2: Authorization mandate
-  const mandateH = 14 + MANDATE_LINES.length * 8.5 + 8;
-  rect(M, y - mandateH + 4, DW, mandateH, C_CREAM, C_GOLD);
-  txt('2.  Autorizacion y mandato para la gestion del reclamo  -  Version ' + (d.consentVersion || '-'), M + 7, y - 3, { sz: 7, b: true, col: C_GREEN });
-  y -= 14;
-  for (const line of MANDATE_LINES) {
-    if (line) txt(line, M + 7, y, { sz: 6.8, col: C_DARK, mw: DW - 14 });
-    y -= 8.5;
-  }
-  y -= 6;
+  txt('Terminos y Condiciones del Servicio y Politica de Privacidad  -  Version ' + (d.consentVersion || '-'),
+    M + 7, y - 3, { sz: 7, b: true, col: C_GREEN });
+  txt('Aceptados al cargar el caso. El texto integro se reproduce a partir de la pagina 2 de este documento.',
+    M + 7, y - 14, { sz: 6.5, col: C_GRAY, mw: DW - 14 });
+  y -= 36;
 
   // ---- CONSTANCIA DE FIRMA ----
   section('Constancia de firma electronica - Ley 25.506');
@@ -182,19 +204,66 @@ export async function generateAuthorizationPdf(d) {
   y -= 10;
   txt('Esta huella vincula este documento con los registros de SolucionAir. Cualquier alteracion lo invalida.', M, y, { sz: 6, col: C_GRAY, mw: hashW });
   y -= 10;
-  txt('Conserve este comprobante para sus archivos.', M, y, { sz: 6, col: C_GRAY });
+  txt('Conserve esta constancia para sus archivos.', M, y, { sz: 6, col: C_GRAY });
   y -= 14;
 
   // ---- NOTA LEGAL ----
   const nota = 'La aceptacion electronica prestada constituye firma electronica (arts. 286 y 288 CCyCN, Ley 26.994 y Ley 25.506). '
     + 'La validez del instrumento esta sujeta a la identidad declarada al momento de la presentacion. '
+    + 'Esta constancia acredita la aceptacion de los Terminos y Condiciones y la Politica de Privacidad; no confiere por si sola '
+    + 'representacion para gestionar el reclamo, que se otorga por poder especial separado. '
     + 'SolucionAir - Juan Pablo Mario Adaniya (DNI 37.806.475) y Tomas Gregorio Dicranian (DNI 37.606.877). '
     + 'Caso: ' + d.refCode + '.';
   txt(nota, M, y, { sz: 6, col: C_GRAY, mw: DW });
 
+  // ---- TEXTO ACEPTADO ----
+  /* El documento va entero atrás de la carátula. Si la extracción falla, la
+     constancia se emite igual con una nota: sirve como prueba de la firma
+     aunque le falte el anexo. */
+  let legal = null;
+  try {
+    legal = loadTycText();
+  } catch (e) {
+    console.error('[pdf-receipt] no pude leer los T&C:', e.message);
+  }
+
+  const anexo = legal
+    ? legal.tyc + '\n\n' + legal.privacidad
+    : '# Texto aceptado\n\n' + TEXTO_NO_DISPONIBLE;
+
+  let logoDark = null;
+  try {
+    logoDark = await doc.embedPng(fs.readFileSync(LOGO_DOC_PATH));
+  } catch (e) {
+    console.error('[pdf-receipt] no pude embeber el logo del anexo:', e.message);
+  }
+
+  const anexoPages = appendLegalText(doc, anexo, {
+    topY:    H - ANEXO_LOGO_TOP - ANEXO_LOGO_H - ANEXO_LOGO_GAP,
+    margin:  M,
+    bottomY: 44,
+    fonts:   { bold, reg },
+  });
+
+  if (logoDark) {
+    const dw = ANEXO_LOGO_H * (logoDark.width / logoDark.height);
+    for (const p of anexoPages) {
+      p.drawImage(logoDark, {
+        x: M, y: H - ANEXO_LOGO_TOP - ANEXO_LOGO_H, width: dw, height: ANEXO_LOGO_H,
+      });
+    }
+  }
+
   // ---- FOOTER ----
-  rect(0, 0, W, 20, C_GREEN);
-  txt('SolucionAir  .  contacto@solucionair.com  .  Documento generado automaticamente  .  ' + d.refCode, M, 6, { sz: 6, col: C_MUTED });
+  /* Lleva caso, versión y página: es lo que identifica una hoja suelta del
+     anexo, ahora que arriba sólo va el logo. */
+  const pages = doc.getPages();
+  pages.forEach((p, i) => {
+    p.drawRectangle({ x: 0, y: 0, width: W, height: 20, color: C_GREEN });
+    p.drawText('SolucionAir  .  contacto@solucionair.com  .  Caso ' + d.refCode
+      + '  .  Version ' + (d.consentVersion || '-')
+      + '  .  Pagina ' + (i + 1) + '/' + pages.length, { x: M, y: 6, size: 6, font: reg, color: C_MUTED });
+  });
 
   const bytes = await doc.save();
   return Buffer.from(bytes);
