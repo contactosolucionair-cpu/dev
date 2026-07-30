@@ -950,7 +950,11 @@ document.addEventListener('DOMContentLoaded', function () {
     rotularCampo(document.getElementById('f-destination'), 'lbl_dest' + suf);
     if (elHintDireccion) elHintDireccion.style.display = dir ? '' : 'none';
 
-    applyTexts(S.lang);
+    /* En el arranque esto corre ANTES de que el diccionario esté asignado (`var DICT`
+       vive más abajo en el archivo), y `applyTexts` lo desreferencia sin red: llamarlo
+       acá tiraba un TypeError que cortaba el resto de la inicialización. El repintado
+       inicial no hace falta igual, lo hace `setLang('es')` al final del archivo. */
+    if (DICT) applyTexts(S.lang);
     tick();
   }
 
