@@ -12,6 +12,10 @@
  *   set-instancia      Corrección manual de instancia/momento/resultado
  *   set-documentos     Reordena/actualiza los documentos (el primero pasa a ser el principal)
  *   set-acompanantes   Agrega/edita/elimina los pasajeros adicionales del caso
+ *   set-datos-legales  Campos del contrato de entrada del motor legal (Capa 1). Escribe
+ *                      SOLO esos campos; los que no vengan en el body no se tocan.
+ *                      `gastos_items` arrastra el espejo monto_gastos/moneda_gastos en el
+ *                      mismo PATCH (ver ESPEJO DE GASTOS más abajo)
  *
  * Otras acciones (sin cambios): add-novedad, update-firma, update-tyc, set-fecha-mediacion,
  * update-abogado, confirm-update-cliente, set-campo, dismiss-alerta.
@@ -707,6 +711,187 @@ export default async function handler(req, res) {
       });
       if (!scfRes.ok) return res.status(500).json({ error: 'Error al guardar el campo.' });
       return res.status(200).json({ success: true, action: 'set-campo', campo: campo, valor: scfPatch[campo] });
+    }
+
+    /* ---- DATOS LEGALES DEL CASO (contrato de entrada del motor, Capa 1) ---- */
+    /* Escribe únicamente los campos del contrato §1. Un campo que no venga en el body no
+       se toca, así el editor del drawer puede guardar de a partes sin pisar el resto.
+       No toca ninguna columna legacy salvo el espejo de gastos, que es obligatorio. */
+    if (body.action === 'set-datos-legales') {
+      var sdl = {};
+
+      /* --- helpers de saneo. Valor inválido → null, nunca error: el motor lee null
+             como FALTA_DATO, que es exactamente lo que corresponde. --- */
+      var aEntero = function (v) {
+        if (v === '' || v === null || v === undefined) return null;
+        var n = parseInt(v, 10);
+        return isFinite(n) && n >= 0 ? n : null;
+      };
+      var aNumero = function (v) {
+        if (v === '' || v === null || v === undefined) return null;
+        var n = parseFloat(v);
+        return isFinite(n) && n >= 0 ? n : null;
+      };
+      var aTexto = function (v) {
+        var s = (v === null || v === undefined) ? '' : String(v).trim();
+        return s === '' ? null : s;
+      };
+      var aIata = function (v) {
+        var s = (v === null || v === undefined) ? '' : String(v).trim().toUpperCase();
+        return /^[A-Z]{3}$/.test(s) ? s : null;
+      };
+      /* La moneda se normaliza a mayúsculas SIEMPRE: el espejo de gastos agrupa por este
+         string, y sin normalizar 'EUR' y 'eur' contarían como dos monedas distintas y la
+         suma dominante saldría mal. */
+      var aMoneda = function (v) {
+        var s = aTexto(v);
+        return s ? s.toUpperCase() : null;
+      };
+      var aBooleanNulo = function (v) {
+        if (v === true || v === 'true' || v === 'si') return true;
+        if (v === false || v === 'false' || v === 'no') return false;
+        return null;   // 'desconocido' / vacío
+      };
+      var aFecha = function (v) {
+        var s = aTexto(v);
+        return s && /^\d{4}-\d{2}-\d{2}$/.test(s.slice(0, 10)) ? s.slice(0, 10) : null;
+      };
+
+      var INCIDENTES_OK = ['demora', 'cancelacion', 'denegacion_embarque', 'downgrade',
+        'conexion_perdida', 'equipaje_demora', 'equipaje_dano', 'equipaje_perdida', 'muerte_lesion'];
+      var CHECKIN_OK = ['en_hora', 'tarde', 'no_presentado', 'no_aplica', 'desconocido'];
+      var ATENCION_OK = ['refrigerio', 'comida', 'alojamiento', 'transporte', 'comunicaciones'];
+      var PROTESTA_OK = ['si', 'no', 'desconocido'];
+      var MEDIO_OK = ['pir', 'escrita'];
+
+      if (body.incidentes !== undefined) {
+        sdl.incidentes = (Array.isArray(body.incidentes) ? body.incidentes : [])
+          .filter(function (i) { return INCIDENTES_OK.indexOf(i) !== -1; })
+          .filter(function (i, n, arr) { return arr.indexOf(i) === n; });
+      }
+      if (body.fecha_incidente !== undefined) sdl.fecha_incidente = aFecha(body.fecha_incidente);
+      if (body.demora_salida_min !== undefined) sdl.demora_salida_min = aEntero(body.demora_salida_min);
+      if (body.demora_llegada_min !== undefined) sdl.demora_llegada_min = aEntero(body.demora_llegada_min);
+      if (body.antelacion_aviso_dias !== undefined) sdl.antelacion_aviso_dias = aNumero(body.antelacion_aviso_dias);
+      if (body.billete_unico !== undefined) sdl.billete_unico = aBooleanNulo(body.billete_unico);
+      if (body.causa_alegada !== undefined) sdl.causa_alegada = aTexto(body.causa_alegada);
+      if (body.origen_iata !== undefined) sdl.origen_iata = aIata(body.origen_iata);
+      if (body.destino_iata !== undefined) sdl.destino_iata = aIata(body.destino_iata);
+
+      if (body.checkin_presentacion !== undefined) {
+        var chk = aTexto(body.checkin_presentacion);
+        sdl.checkin_presentacion = CHECKIN_OK.indexOf(chk) !== -1 ? chk : null;
+      }
+
+      if (body.protesta !== undefined) {
+        var pr = body.protesta;
+        if (!pr || typeof pr !== 'object' || PROTESTA_OK.indexOf(pr.realizada) === -1) {
+          sdl.protesta = null;
+        } else {
+          var prOut = { realizada: pr.realizada };
+          var prFecha = aFecha(pr.fecha);
+          if (prFecha) prOut.fecha = prFecha;
+          if (MEDIO_OK.indexOf(pr.medio) !== -1) prOut.medio = pr.medio;
+          var prNum = aTexto(pr.numero);
+          if (prNum) prOut.numero = prNum;
+          sdl.protesta = prOut;
+        }
+      }
+
+      if (body.reencaminamiento !== undefined) {
+        var re = body.reencaminamiento;
+        if (!re || typeof re !== 'object' || aBooleanNulo(re.ofrecido) === null) {
+          sdl.reencaminamiento = null;
+        } else {
+          /* Los deltas van contra el horario programado; negativos = antes. Pueden ser
+             negativos, así que no se usa aEntero (que exige >= 0). */
+          var delta = function (v) {
+            if (v === '' || v === null || v === undefined) return null;
+            var n = parseInt(v, 10);
+            return isFinite(n) ? n : null;
+          };
+          sdl.reencaminamiento = {
+            ofrecido: aBooleanNulo(re.ofrecido),
+            delta_salida_min: delta(re.delta_salida_min),
+            delta_llegada_min: delta(re.delta_llegada_min),
+            aceptado: aBooleanNulo(re.aceptado),
+          };
+        }
+      }
+
+      if (body.atencion_ofrecida !== undefined) {
+        var at = body.atencion_ofrecida;
+        if (!at || typeof at !== 'object' || aBooleanNulo(at.ofrecida) === null) {
+          sdl.atencion_ofrecida = null;
+        } else {
+          sdl.atencion_ofrecida = {
+            ofrecida: aBooleanNulo(at.ofrecida),
+            items: (Array.isArray(at.items) ? at.items : []).filter(function (i) { return ATENCION_OK.indexOf(i) !== -1; }),
+          };
+        }
+      }
+
+      if (body.segmentos !== undefined) {
+        sdl.segmentos = (Array.isArray(body.segmentos) ? body.segmentos : [])
+          .map(function (s, i) {
+            return {
+              orden: aEntero(s && s.orden) != null ? aEntero(s.orden) : i + 1,
+              origen_iata: aIata(s && s.origen_iata),
+              destino_iata: aIata(s && s.destino_iata),
+              carrier_operante: aTexto(s && s.carrier_operante),
+              fecha: aFecha(s && s.fecha),
+            };
+          })
+          /* Un segmento sin ninguno de los dos extremos no aporta nada al ruteo. */
+          .filter(function (s) { return s.origen_iata || s.destino_iata; })
+          .sort(function (a, b) { return a.orden - b.orden; });
+      }
+
+      /* ---- ESPEJO DE GASTOS ----
+         `gastos_items` es el canónico itemizado. `monto_gastos`/`moneda_gastos` son un
+         ESPEJO DERIVADO: no se editan directo, se reescriben acá con la suma de la moneda
+         dominante, en el MISMO PATCH (mismo patrón que `estado` ← instanciaAEstadoLegacy).
+         La UI actual (backoffice, panel de agencias, perfil del cliente) los sigue
+         leyendo sin cambios.
+         Con varias monedas el espejo solo puede reflejar una: se elige la de mayor suma.
+         Eso NO pierde información, porque el detalle completo vive en `gastos_items`. */
+      if (body.gastos_items !== undefined) {
+        var items = (Array.isArray(body.gastos_items) ? body.gastos_items : [])
+          .map(function (g) {
+            return {
+              concepto: aTexto(g && g.concepto),
+              monto: aNumero(g && g.monto),
+              moneda: aMoneda(g && g.moneda),
+              fecha: aFecha(g && g.fecha),
+              archivo: aTexto(g && g.archivo),
+              fuente: aTexto(g && g.fuente) || 'admin',
+            };
+          })
+          .filter(function (g) { return g.monto != null; });
+        sdl.gastos_items = items;
+
+        var porMoneda = {};
+        items.forEach(function (g) {
+          var m = g.moneda || 'ARS';
+          porMoneda[m] = (porMoneda[m] || 0) + g.monto;
+        });
+        var dominante = null;
+        Object.keys(porMoneda).forEach(function (m) {
+          if (dominante === null || porMoneda[m] > porMoneda[dominante]) dominante = m;
+        });
+        sdl.monto_gastos = dominante ? Math.round(porMoneda[dominante] * 100) / 100 : null;
+        sdl.moneda_gastos = dominante;
+      }
+
+      if (!Object.keys(sdl).length) return res.status(400).json({ error: 'No se recibió ningún campo para guardar.' });
+
+      var sdlRes = await patchRow(sdl);
+      if (!sdlRes.ok) {
+        var sdlErr = await sdlRes.text();
+        console.error('[update-ticket/set-datos-legales] PATCH error:', sdlErr.substring(0, 300));
+        return res.status(500).json({ error: 'Error al guardar los datos legales.' });
+      }
+      return res.status(200).json({ success: true, action: 'set-datos-legales', campos: sdl });
     }
 
     /* ---- DESCARTAR ALERTA (manual) ---- */

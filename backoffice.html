@@ -119,6 +119,11 @@
     .badge--no_apto{background:#F5F5F5;color:#757575}
     .badge--mediacion{background:#EDE7F6;color:#5E35B1}
     .badge--cobro{background:#FFF8E1;color:#B8860B}
+    /* Estados del motor legal (Capa 1). Misma familia .badge--*, aditivas. */
+    .badge--rec{background:var(--okbg);color:var(--ok)}
+    .badge--na{background:var(--bgd);color:var(--t3)}
+    .badge--fd{background:var(--warnbg);color:var(--warn)}
+    .badge--eval{background:#EDE7F6;color:#5E35B1}
     .badge--combo{background:#E0F2F1;color:#00796B}
     .action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .action-field{display:flex;flex-direction:column;gap:3px}
@@ -1245,6 +1250,472 @@
       }).catch(function(){if(onErr)onErr('Error de conexión.');else toast('Error de conexión.',true)});
     }
 
+    /* ============ MOTOR LEGAL CAPA 1 — secciones nuevas del drawer ============
+       Dos bloques ADITIVOS: el editor de los campos del contrato de entrada (§1) y el
+       render de la salida del motor (§2). No tocan ninguna sección existente del drawer
+       ni agregan columnas a la tabla principal.
+
+       El editor guarda con la acción `set-datos-legales` de update-ticket, que escribe
+       SOLO estos campos. `gastos_items` arrastra el espejo monto_gastos/moneda_gastos en
+       el mismo PATCH: esos dos NO se editan directo (ver el comentario del endpoint). */
+
+    var INCIDENTE_LABELS={demora:'Demora',cancelacion:'Cancelación',denegacion_embarque:'Denegación de embarque',downgrade:'Downgrade',conexion_perdida:'Conexión perdida',equipaje_demora:'Equipaje · demora',equipaje_dano:'Equipaje · daño',equipaje_perdida:'Equipaje · pérdida',muerte_lesion:'Muerte o lesión'};
+    var CHECKIN_LABELS_DL={desconocido:'Desconocido',en_hora:'En hora',tarde:'Tarde',no_presentado:'No se presentó',no_aplica:'No aplica (cancelación)'};
+    var ATENCION_ITEM_LABELS={refrigerio:'Refrigerio',comida:'Comida',alojamiento:'Alojamiento',transporte:'Transporte',comunicaciones:'Comunicaciones'};
+    var MEDIO_PROTESTA_LABELS={pir:'PIR de aeropuerto',escrita:'Protesta escrita'};
+    var MARCO_LABELS={EU261:'EU261/2004',RES1532:'Argentina · Res. ANAC 1532/98',MONTREAL:'Montreal 1999 (overlay)',DOT:'EE.UU. · DOT',ANAC400:'Brasil · ANAC 400/2016'};
+    var ESTADO_CAT={RECLAMABLE:{cls:'badge--rec',txt:'Reclamable'},NO_APLICA:{cls:'badge--na',txt:'No aplica'},FALTA_DATO:{cls:'badge--fd',txt:'Falta dato'},REQUIERE_EVALUACION:{cls:'badge--eval',txt:'Requiere evaluación'}};
+    var APLICA_MARCO={si:{cls:'badge--rec',txt:'Aplica'},no:{cls:'badge--na',txt:'No aplica'},pendiente_analisis_profundo:{cls:'badge--eval',txt:'Análisis profundo'},falta_dato:{cls:'badge--fd',txt:'Falta dato'}};
+    var GATE_ESTADO={pasa:{cls:'badge--rec',txt:'Pasa'},pasa_provisional:{cls:'badge--fd',txt:'Pasa provisional'},inadmisible:{cls:'badge--na',txt:'Inadmisible'},falta_dato:{cls:'badge--fd',txt:'Falta dato'}};
+    var CATEGORIA_LABELS={compensacion_tarifada:'Compensación tarifada',reembolso:'Reembolso',reencaminamiento:'Reencaminamiento',atencion:'Atención / asistencia',downgrade:'Downgrade',equipaje:'Equipaje',dano_moral:'Daño moral',compensacion_suplementaria:'Compensación suplementaria',punitivo:'Daño punitivo',reintegro:'Reintegro',reencaminamiento_endoso:'Reencaminamiento / endoso',servicios_incidentales:'Servicios incidentales',dano_por_demora:'Daño por demora',dano_por_demora_pasajeros:'Daño por demora (pasajeros)',muerte_lesion:'Muerte o lesión',dano_emergente:'Daño emergente',dano_punitivo:'Daño punitivo'};
+    var GATE_LABELS_DL={checkin:'Presentación al check-in',protesta:'Protesta (equipaje)'};
+
+    function minAHm(min){if(min==null)return{h:'',m:''};return{h:Math.floor(min/60),m:min%60}}
+    function hmAMin(hEl,mEl){
+      var h=parseInt((hEl||{}).value,10),m=parseInt((mEl||{}).value,10);
+      if(!isFinite(h))h=0;if(!isFinite(m))m=0;
+      if(h===0&&m===0)return '';   /* vacío = sin dato, no "cero minutos" */
+      return h*60+m;
+    }
+    function dlVal(id){var e=document.getElementById(id);return e?e.value:''}
+    function dlChecked(id){var e=document.getElementById(id);return !!(e&&e.checked)}
+    function optsDe(labels,val){return Object.keys(labels).map(function(k){return '<option value="'+k+'"'+(val===k?' selected':'')+'>'+esc(labels[k])+'</option>'}).join('')}
+    function siNoDesc(val){
+      var v=val===true?'si':val===false?'no':'';
+      return '<option value=""'+(v===''?' selected':'')+'>Desconocido</option><option value="si"'+(v==='si'?' selected':'')+'>Sí</option><option value="no"'+(v==='no'?' selected':'')+'>No</option>';
+    }
+    var IN_ESTILO='font-family:var(--f);font-size:.76rem;padding:5px 8px;border:1px solid var(--bd);border-radius:5px;background:var(--w);color:var(--t1);width:100%';
+
+    function dlSegRowHtml(s){
+      s=s||{};
+      return '<div class="dl-seg" style="display:grid;grid-template-columns:62px 62px 1fr 130px 24px;gap:4px;margin-bottom:4px;align-items:center">'
+        +'<input class="dl-seg-o" maxlength="3" placeholder="ORI" value="'+esc(s.origen_iata||'')+'" style="'+IN_ESTILO+';text-transform:uppercase;font-family:var(--fm)">'
+        +'<input class="dl-seg-d" maxlength="3" placeholder="DES" value="'+esc(s.destino_iata||'')+'" style="'+IN_ESTILO+';text-transform:uppercase;font-family:var(--fm)">'
+        +'<input class="dl-seg-c" placeholder="Carrier operante" value="'+esc(s.carrier_operante||'')+'" style="'+IN_ESTILO+'">'
+        +'<input class="dl-seg-f" type="date" value="'+esc(s.fecha||'')+'" style="'+IN_ESTILO+'">'
+        +'<button type="button" class="dl-quitar" title="Quitar tramo" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:0;line-height:1">✕</button></div>';
+    }
+    function dlGastoRowHtml(g){
+      g=g||{};
+      return '<div class="dl-gasto" style="display:grid;grid-template-columns:1fr 90px 70px 130px 24px;gap:4px;margin-bottom:4px;align-items:center">'
+        +'<input class="dl-g-concepto" placeholder="Concepto" value="'+esc(g.concepto||'')+'" style="'+IN_ESTILO+'">'
+        +'<input class="dl-g-monto" type="number" step="0.01" min="0" placeholder="0.00" value="'+esc(g.monto!=null?String(g.monto):'')+'" style="'+IN_ESTILO+'">'
+        +'<input class="dl-g-moneda" maxlength="3" placeholder="EUR" value="'+esc(g.moneda||'')+'" style="'+IN_ESTILO+';text-transform:uppercase;font-family:var(--fm)">'
+        +'<input class="dl-g-fecha" type="date" value="'+esc(g.fecha||'')+'" style="'+IN_ESTILO+'">'
+        +'<button type="button" class="dl-quitar" title="Quitar ítem" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:0;line-height:1">✕</button></div>';
+    }
+
+    /* ---- Sección 1: editor de los campos del contrato ---- */
+    function renderDatosLegalesHtml(c){
+      var inc=Array.isArray(c.incidentes)?c.incidentes:[];
+      var pr=c.protesta&&typeof c.protesta==='object'?c.protesta:{};
+      var re=c.reencaminamiento&&typeof c.reencaminamiento==='object'?c.reencaminamiento:{};
+      var at=c.atencion_ofrecida&&typeof c.atencion_ofrecida==='object'?c.atencion_ofrecida:{};
+      var atItems=Array.isArray(at.items)?at.items:[];
+      var segs=Array.isArray(c.segmentos)?c.segmentos:[];
+      var gastos=Array.isArray(c.gastos_items)?c.gastos_items:[];
+      var ds=minAHm(c.demora_salida_min),dl=minAHm(c.demora_llegada_min);
+      var lbl=function(t){return '<div class="detail__label">'+t+'</div>'};
+
+      var h='<div class="detail__section" id="datos-legales-box">';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+      h+='<div class="detail__label" style="margin-bottom:0;font-size:.7rem">Datos legales del caso</div>';
+      h+='<button class="btn btn--ghost" id="dl-toggle" type="button" style="font-size:.68rem;padding:3px 9px">Mostrar</button></div>';
+      h+='<div id="dl-cuerpo" style="display:none">';
+      h+='<p style="font-size:.68rem;color:var(--t4);margin:0 0 10px">Entrada del motor legal (Capa 1). Lo que quede vacío el motor lo lee como falta de dato: nunca lo presume.</p>';
+
+      /* Incidentes */
+      h+='<div class="action-field" style="margin-bottom:10px">'+lbl('Incidentes (conjunto)');
+      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 10px">';
+      Object.keys(INCIDENTE_LABELS).forEach(function(k){
+        h+='<label style="display:flex;align-items:center;gap:5px;font-size:.75rem;cursor:pointer"><input type="checkbox" id="dl-inc-'+k+'"'+(inc.indexOf(k)!==-1?' checked':'')+'> '+esc(INCIDENTE_LABELS[k])+'</label>';
+      });
+      h+='</div></div>';
+
+      /* Fecha del incidente + billete único + check-in */
+      h+='<div class="action-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+      h+='<div class="action-field">'+lbl('Fecha del incidente')+'<input type="date" id="dl-fecha-incidente" value="'+esc(c.fecha_incidente?String(c.fecha_incidente).slice(0,10):'')+'" style="'+IN_ESTILO+'">'
+        +'<div style="font-size:.62rem;color:var(--t4);margin-top:2px">En equipaje: la entrega (daño) o cuándo debió entregarse (pérdida/demora)</div></div>';
+      h+='<div class="action-field">'+lbl('¿Billete único?')+'<select id="dl-billete-unico" class="firma-select">'+siNoDesc(c.billete_unico)+'</select></div>';
+      h+='</div>';
+
+      /* Demoras en h:min */
+      h+='<div class="action-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+      h+='<div class="action-field">'+lbl('Demora de salida')
+        +'<div style="display:flex;gap:4px;align-items:center"><input type="number" min="0" id="dl-ds-h" placeholder="h" value="'+ds.h+'" style="'+IN_ESTILO+'"><span style="font-size:.7rem;color:var(--t4)">h</span>'
+        +'<input type="number" min="0" max="59" id="dl-ds-m" placeholder="min" value="'+ds.m+'" style="'+IN_ESTILO+'"><span style="font-size:.7rem;color:var(--t4)">min</span></div>'
+        +'<div style="font-size:.62rem;color:var(--t4);margin-top:2px">Gatilla atención EU261 e incidentales AR (&gt;4 h)</div></div>';
+      h+='<div class="action-field">'+lbl('Demora de llegada')
+        +'<div style="display:flex;gap:4px;align-items:center"><input type="number" min="0" id="dl-dl-h" placeholder="h" value="'+dl.h+'" style="'+IN_ESTILO+'"><span style="font-size:.7rem;color:var(--t4)">h</span>'
+        +'<input type="number" min="0" max="59" id="dl-dl-m" placeholder="min" value="'+dl.m+'" style="'+IN_ESTILO+'"><span style="font-size:.7rem;color:var(--t4)">min</span></div>'
+        +'<div style="font-size:.62rem;color:var(--t4);margin-top:2px">Apertura de puertas. Gatilla la compensación desde 3 h</div></div>';
+      h+='</div>';
+
+      /* Antelación + check-in */
+      h+='<div class="action-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+      h+='<div class="action-field">'+lbl('Antelación del aviso (días)')+'<input type="number" step="0.5" min="0" id="dl-antelacion" value="'+esc(c.antelacion_aviso_dias!=null?String(c.antelacion_aviso_dias):'')+'" style="'+IN_ESTILO+'"></div>';
+      h+='<div class="action-field">'+lbl('Presentación al check-in')+'<select id="dl-checkin" class="firma-select">'+optsDe(CHECKIN_LABELS_DL,c.checkin_presentacion||'desconocido')+'</select></div>';
+      h+='</div>';
+
+      /* Ruta canónica (IATA) */
+      h+='<div class="action-row" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+      h+='<div class="action-field">'+lbl('Origen (IATA)')+'<input id="dl-origen-iata" maxlength="3" placeholder="EZE" value="'+esc(c.origen_iata||'')+'" style="'+IN_ESTILO+';text-transform:uppercase;font-family:var(--fm)"><div class="dl-iata-hint" data-para="dl-origen-iata" style="font-size:.62rem;color:var(--t4);margin-top:2px"></div></div>';
+      h+='<div class="action-field">'+lbl('Destino final (IATA)')+'<input id="dl-destino-iata" maxlength="3" placeholder="MAD" value="'+esc(c.destino_iata||'')+'" style="'+IN_ESTILO+';text-transform:uppercase;font-family:var(--fm)"><div class="dl-iata-hint" data-para="dl-destino-iata" style="font-size:.62rem;color:var(--t4);margin-top:2px"></div></div>';
+      h+='</div>';
+
+      /* Causa alegada */
+      h+='<div class="action-field" style="margin-bottom:10px">'+lbl('Causa alegada por la aerolínea')
+        +'<textarea id="dl-causa" rows="2" style="'+IN_ESTILO+';resize:vertical">'+esc(c.causa_alegada||'')+'</textarea></div>';
+
+      /* Protesta */
+      h+='<div style="border:1px solid var(--bdl);border-radius:6px;padding:8px;margin-bottom:10px">'+lbl('Protesta (gate de admisibilidad en equipaje)');
+      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+      h+='<div class="action-field"><select id="dl-pr-realizada" class="firma-select"><option value="desconocido"'+(!pr.realizada||pr.realizada==='desconocido'?' selected':'')+'>Desconocido</option><option value="si"'+(pr.realizada==='si'?' selected':'')+'>Sí, se protestó</option><option value="no"'+(pr.realizada==='no'?' selected':'')+'>No se protestó</option></select></div>';
+      h+='<div class="action-field"><select id="dl-pr-medio" class="firma-select"><option value="">Medio…</option>'+optsDe(MEDIO_PROTESTA_LABELS,pr.medio||'')+'</select></div>';
+      h+='<div class="action-field"><input type="date" id="dl-pr-fecha" value="'+esc(pr.fecha?String(pr.fecha).slice(0,10):'')+'" style="'+IN_ESTILO+'"></div>';
+      h+='<div class="action-field"><input id="dl-pr-numero" placeholder="Nº de PIR" value="'+esc(pr.numero||'')+'" style="'+IN_ESTILO+'"></div>';
+      h+='</div><div style="font-size:.62rem;color:var(--t4);margin-top:4px">Sin fecha el plazo no se puede computar. Solo PIR: el gate pasa provisionalmente.</div></div>';
+
+      /* Reencaminamiento */
+      h+='<div style="border:1px solid var(--bdl);border-radius:6px;padding:8px;margin-bottom:10px">'+lbl('Reencaminamiento ofrecido');
+      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+      h+='<div class="action-field"><select id="dl-re-ofrecido" class="firma-select">'+siNoDesc(re.ofrecido)+'</select></div>';
+      h+='<div class="action-field"><select id="dl-re-aceptado" class="firma-select"><option value="">¿Aceptado? Desconocido</option><option value="si"'+(re.aceptado===true?' selected':'')+'>Aceptado</option><option value="no"'+(re.aceptado===false?' selected':'')+'>Rechazado</option></select></div>';
+      h+='<div class="action-field"><input type="number" id="dl-re-dsal" placeholder="Δ salida (min)" value="'+esc(re.delta_salida_min!=null?String(re.delta_salida_min):'')+'" style="'+IN_ESTILO+'"></div>';
+      h+='<div class="action-field"><input type="number" id="dl-re-dlle" placeholder="Δ llegada (min)" value="'+esc(re.delta_llegada_min!=null?String(re.delta_llegada_min):'')+'" style="'+IN_ESTILO+'"></div>';
+      h+='</div><div style="font-size:.62rem;color:var(--t4);margin-top:4px">Deltas contra el horario programado; negativos = antes. Definen las exoneraciones y la reducción del 50 %.</div></div>';
+
+      /* Atención */
+      h+='<div style="border:1px solid var(--bdl);border-radius:6px;padding:8px;margin-bottom:10px">'+lbl('Atención ofrecida');
+      h+='<select id="dl-at-ofrecida" class="firma-select" style="margin-bottom:6px">'+siNoDesc(at.ofrecida)+'</select>';
+      h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 10px">';
+      Object.keys(ATENCION_ITEM_LABELS).forEach(function(k){
+        h+='<label style="display:flex;align-items:center;gap:5px;font-size:.75rem;cursor:pointer"><input type="checkbox" id="dl-at-'+k+'"'+(atItems.indexOf(k)!==-1?' checked':'')+'> '+esc(ATENCION_ITEM_LABELS[k])+'</label>';
+      });
+      h+='</div></div>';
+
+      /* Segmentos */
+      h+='<div style="border:1px solid var(--bdl);border-radius:6px;padding:8px;margin-bottom:10px">';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+lbl('Segmentos (en orden)')+'<button class="btn btn--ghost" id="dl-add-seg" type="button" style="font-size:.66rem;padding:2px 8px">+ Tramo</button></div>';
+      h+='<div id="dl-segs">'+(segs.length?segs.map(dlSegRowHtml).join(''):'')+'</div>';
+      h+='<div style="font-size:.62rem;color:var(--t4);margin-top:4px">Si hay tramos cargados, definen el itinerario y ganan sobre el origen/destino de arriba.</div></div>';
+
+      /* Gastos itemizados */
+      h+='<div style="border:1px solid var(--bdl);border-radius:6px;padding:8px;margin-bottom:12px">';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+lbl('Gastos itemizados')+'<button class="btn btn--ghost" id="dl-add-gasto" type="button" style="font-size:.66rem;padding:2px 8px">+ Ítem</button></div>';
+      h+='<div id="dl-gastos">'+(gastos.length?gastos.map(dlGastoRowHtml).join(''):'')+'</div>';
+      h+='<div style="font-size:.62rem;color:var(--t4);margin-top:4px">Al guardar se reescriben <em>monto gastos</em> y <em>moneda</em> con la suma de la moneda dominante: son un espejo derivado, no se editan directo.</div></div>';
+
+      h+='<div style="display:flex;gap:8px;align-items:center"><button class="btn btn--primary" id="dl-guardar" type="button">Guardar datos legales</button>';
+      h+='<span id="dl-msg" style="font-family:var(--fm);font-size:.66rem"></span></div>';
+      h+='</div></div>';
+      return h;
+    }
+
+    /* Junta el estado del editor en el body de set-datos-legales. */
+    function dlRecolectar(){
+      var incidentes=[];
+      Object.keys(INCIDENTE_LABELS).forEach(function(k){if(dlChecked('dl-inc-'+k))incidentes.push(k)});
+      var atItems=[];
+      Object.keys(ATENCION_ITEM_LABELS).forEach(function(k){if(dlChecked('dl-at-'+k))atItems.push(k)});
+
+      var segs=[];
+      Array.prototype.forEach.call(document.querySelectorAll('#dl-segs .dl-seg'),function(row,i){
+        var g=function(cls){var e=row.querySelector('.'+cls);return e?e.value.trim():''};
+        segs.push({orden:i+1,origen_iata:g('dl-seg-o'),destino_iata:g('dl-seg-d'),carrier_operante:g('dl-seg-c'),fecha:g('dl-seg-f')});
+      });
+
+      var gastos=[];
+      Array.prototype.forEach.call(document.querySelectorAll('#dl-gastos .dl-gasto'),function(row){
+        var g=function(cls){var e=row.querySelector('.'+cls);return e?e.value.trim():''};
+        gastos.push({concepto:g('dl-g-concepto'),monto:g('dl-g-monto'),moneda:g('dl-g-moneda'),fecha:g('dl-g-fecha'),fuente:'admin'});
+      });
+
+      var prRealizada=dlVal('dl-pr-realizada');
+      var reOfrecido=dlVal('dl-re-ofrecido');
+      var atOfrecida=dlVal('dl-at-ofrecida');
+
+      return {
+        incidentes:incidentes,
+        fecha_incidente:dlVal('dl-fecha-incidente'),
+        demora_salida_min:hmAMin(document.getElementById('dl-ds-h'),document.getElementById('dl-ds-m')),
+        demora_llegada_min:hmAMin(document.getElementById('dl-dl-h'),document.getElementById('dl-dl-m')),
+        antelacion_aviso_dias:dlVal('dl-antelacion'),
+        billete_unico:dlVal('dl-billete-unico'),
+        checkin_presentacion:dlVal('dl-checkin'),
+        causa_alegada:dlVal('dl-causa'),
+        origen_iata:dlVal('dl-origen-iata'),
+        destino_iata:dlVal('dl-destino-iata'),
+        protesta:prRealizada==='desconocido'?null:{realizada:prRealizada,fecha:dlVal('dl-pr-fecha'),medio:dlVal('dl-pr-medio'),numero:dlVal('dl-pr-numero')},
+        reencaminamiento:reOfrecido===''?null:{ofrecido:reOfrecido,delta_salida_min:dlVal('dl-re-dsal'),delta_llegada_min:dlVal('dl-re-dlle'),aceptado:dlVal('dl-re-aceptado')},
+        atencion_ofrecida:atOfrecida===''?null:{ofrecida:atOfrecida,items:atItems},
+        segmentos:segs,
+        gastos_items:gastos,
+      };
+    }
+
+    /* ---- Sección 2: render de la salida del motor ---- */
+    function renderAnalisisLegalHtml(c){
+      var env=c.analisis_legal&&typeof c.analisis_legal==='object'?c.analisis_legal:null;
+      var a=env&&env.actual?env.actual:null;
+      var historial=env&&Array.isArray(env.historial)?env.historial:[];
+
+      var h='<div class="detail__section" id="analisis-legal-box">';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+      h+='<div class="detail__label" style="margin-bottom:0;font-size:.7rem">Análisis legal</div>';
+      h+='<button class="btn btn--primary" id="btn-analizar-caso" type="button" style="font-size:.7rem;padding:4px 12px">'+(a?'Re-analizar':'Analizar caso')+'</button></div>';
+      h+='<div id="analisis-msg" style="font-family:var(--fm);font-size:.66rem;min-height:14px;margin-bottom:6px"></div>';
+
+      if(!a){
+        h+='<p style="font-size:.72rem;color:var(--t4);margin:0">Sin análisis todavía. El motor no modifica el caso: solo lo lee.</p>';
+        return h+'</div>';
+      }
+
+      /* Cabecera del análisis */
+      h+='<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px">';
+      h+='<span style="font-family:var(--fm);font-size:.64rem;color:var(--t4)">'+fmtFechaHora(a.fecha_analisis)+' · ruleset '+esc(a.version_ruleset||'—')+' · motor '+esc(a.version_motor||'—')+'</span>';
+      if(a.provisional)h+='<span class="badge badge--fd" title="Se usó algún campo crítico sin verificar o en conflicto">Provisional</span>';
+      if(historial.length)h+='<span style="font-size:.62rem;color:var(--t4)">· '+historial.length+' análisis anterior'+(historial.length>1?'es':'')+'</span>';
+      h+='</div>';
+
+      /* Normalización */
+      var n=a.normalizacion||{};
+      h+='<div style="background:var(--g05);border-radius:6px;padding:8px;margin-bottom:10px;font-size:.72rem">';
+      h+='<span style="font-family:var(--fm)">'+esc(n.origen||'?')+' → '+esc(n.destino_final||'?')+'</span>';
+      h+=' · '+(n.internacional===true?'Internacional':n.internacional===false?'Doméstico':'<span style="color:var(--warn)">intl/doméstico sin determinar</span>');
+      if(n.distancia_km!=null)h+=' · '+n.distancia_km.toLocaleString('es-AR')+' km';
+      if(n.banda_eu261)h+=' · banda '+esc(n.banda_eu261);
+      var totales=(a.resumen&&a.resumen.monto_tarifado_total)||[];
+      if(totales.length)h+='<div style="margin-top:4px;font-weight:600;color:var(--ok)">Tarifado total: '+totales.map(function(t){return esc(t.moneda)+' '+t.valor}).join(' + ')+'</div>';
+      h+='</div>';
+
+      /* Marcos */
+      (a.marcos||[]).forEach(function(m){
+        var ap=APLICA_MARCO[m.aplica]||APLICA_MARCO.falta_dato;
+        var abierto=m.aplica==='si';
+        h+='<div style="border:1px solid var(--bdl);border-radius:6px;padding:9px;margin-bottom:8px'+(abierto?'':';opacity:.72')+'">';
+        h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">';
+        h+='<strong style="font-size:.78rem">'+esc(MARCO_LABELS[m.marco]||m.marco)+'</strong>';
+        h+='<span class="badge '+ap.cls+'">'+ap.txt+'</span></div>';
+        if(m.activado_por)h+='<div style="font-size:.7rem;color:var(--t3)">'+esc(m.activado_por)+'</div>';
+        if(m.base_legal)h+='<div style="font-family:var(--fm);font-size:.62rem;color:var(--t4);margin-top:2px">'+esc(m.base_legal)+'</div>';
+        if(m.nota)h+='<div style="font-size:.68rem;color:var(--t3);margin-top:4px;font-style:italic">'+esc(m.nota)+'</div>';
+        if(m.punteros&&(m.punteros.neb||m.punteros.ley_nacional)){
+          h+='<div style="font-size:.68rem;color:var(--t3);margin-top:4px">Organismo: <strong>'+esc(m.punteros.neb||'sin mapear')+'</strong>'
+            +(m.punteros.ley_nacional?' · ley nacional de relleno: '+esc(m.punteros.ley_nacional):'')+'</div>';
+          if(m.punteros.nota)h+='<div style="font-size:.62rem;color:var(--t4)">'+esc(m.punteros.nota)+'</div>';
+        }
+
+        /* Gates */
+        (m.gates||[]).forEach(function(g){
+          var ge=GATE_ESTADO[g.resultado]||GATE_ESTADO.falta_dato;
+          h+='<div style="margin-top:6px;padding:6px 8px;background:var(--bgd);border-radius:5px">';
+          h+='<div style="display:flex;align-items:center;gap:6px"><span style="font-size:.72rem;font-weight:600">Gate: '+esc(GATE_LABELS_DL[g.gate]||g.gate)+'</span><span class="badge '+ge.cls+'">'+ge.txt+'</span></div>';
+          if(g.detalle)h+='<div style="font-size:.68rem;color:var(--t3);margin-top:2px">'+esc(g.detalle)+'</div>';
+          if(g.base_legal)h+='<div style="font-family:var(--fm);font-size:.6rem;color:var(--t4)">'+esc(g.base_legal)+'</div>';
+          h+='</div>';
+        });
+
+        /* Categorías: primero las que dicen algo */
+        var cats=(m.categorias||[]).slice().sort(function(x,y){
+          var peso={RECLAMABLE:0,FALTA_DATO:1,REQUIERE_EVALUACION:2,NO_APLICA:3};
+          return (peso[x.estado]==null?9:peso[x.estado])-(peso[y.estado]==null?9:peso[y.estado]);
+        });
+        if(cats.length){
+          h+='<div style="margin-top:8px">';
+          cats.forEach(function(cat){
+            var ec=ESTADO_CAT[cat.estado]||ESTADO_CAT.FALTA_DATO;
+            h+='<div style="padding:6px 0;border-top:1px solid var(--bdl)">';
+            h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
+            h+='<span style="font-size:.74rem;font-weight:600">'+esc(CATEGORIA_LABELS[cat.categoria]||cat.categoria)+'</span>';
+            h+='<span class="badge '+ec.cls+'">'+ec.txt+'</span>';
+            if(cat.monto&&cat.monto.valor!=null)h+='<span style="font-family:var(--fm);font-size:.76rem;font-weight:700;color:var(--ok)">'+esc(cat.monto.moneda||'')+' '+cat.monto.valor+'</span>';
+            else if(cat.monto&&cat.monto.unidad)h+='<span style="font-family:var(--fm);font-size:.68rem;color:var(--t3)" title="Cuantificación diferida">'+esc(cat.monto.unidad)+': '+esc(cat.monto.formula||'')+'</span>';
+            h+='</div>';
+            if(cat.motivo)h+='<div style="font-size:.68rem;color:var(--t3);margin-top:2px">'+esc(cat.motivo)+'</div>';
+            if(cat.dato_faltante)h+='<div style="font-size:.68rem;color:var(--warn);margin-top:2px">Falta: '+esc(cat.dato_faltante)+'</div>';
+            if(cat.eval_nodo)h+='<div style="font-size:.68rem;color:#5E35B1;margin-top:2px">Nodo de evaluación: '+esc(cat.eval_nodo)+'</div>';
+            if(cat.deducible_de&&cat.deducible_de.length)h+='<div style="font-size:.66rem;color:var(--t4);margin-top:2px">Se deduce de: '+esc(cat.deducible_de.join(', '))+'</div>';
+            if(cat.nota)h+='<div style="font-size:.66rem;color:var(--t3);margin-top:2px;font-style:italic">'+esc(cat.nota)+'</div>';
+            if(cat.base_legal)h+='<div style="font-family:var(--fm);font-size:.6rem;color:var(--t4);margin-top:2px">'+esc(cat.base_legal)+'</div>';
+            h+='</div>';
+          });
+          h+='</div>';
+        }
+
+        /* Prescripción */
+        if(m.prescripcion){
+          var p=m.prescripcion;
+          var destacar=p.tipo==='segun_foro'||p.tipo==='piso_conservador';
+          h+='<div style="margin-top:8px;padding:6px 8px;border-radius:5px;background:'+(destacar?'var(--warnbg)':'var(--bgd)')+'">';
+          h+='<div style="font-size:.72rem;font-weight:600">Prescripción: '+esc(p.plazo||'—')
+            +(p.fecha_limite?' · vence '+fmtFecha(p.fecha_limite):'')
+            +' <span class="badge '+(p.tipo==='firme'?'badge--rec':'badge--fd')+'">'+esc(p.tipo||'—')+'</span></div>';
+          if(p.vencida===true)h+='<div style="font-size:.7rem;color:var(--err);font-weight:600;margin-top:2px">Plazo vencido</div>';
+          else if(p.dias_restantes!=null)h+='<div style="font-size:.68rem;color:var(--t3);margin-top:2px">Quedan '+p.dias_restantes+' días corridos</div>';
+          if(p.piso_conservador){
+            h+='<div style="margin-top:4px;padding-top:4px;border-top:1px dashed var(--bd);font-size:.7rem">Piso conservador: '+esc(p.piso_conservador.plazo||'')
+              +(p.piso_conservador.fecha_limite?' · '+fmtFecha(p.piso_conservador.fecha_limite):'')+'</div>';
+            if(p.piso_conservador.nota)h+='<div style="font-size:.62rem;color:var(--t4)">'+esc(p.piso_conservador.nota)+'</div>';
+          }
+          if(p.base_legal)h+='<div style="font-family:var(--fm);font-size:.6rem;color:var(--t4);margin-top:2px">'+esc(p.base_legal)+'</div>';
+          if(p.nota)h+='<div style="font-size:.64rem;color:var(--t3);margin-top:2px;font-style:italic">'+esc(p.nota)+'</div>';
+          h+='</div>';
+        }
+        h+='</div>';
+      });
+
+      /* Nodos EVAL */
+      if((a.nodos_eval||[]).length){
+        h+='<div style="margin-top:10px">'+'<div class="detail__label">Nodos que requieren evaluación (Capa 2/3)</div>';
+        a.nodos_eval.forEach(function(nd){
+          h+='<div style="padding:6px 8px;background:#EDE7F6;border-radius:5px;margin-bottom:4px">';
+          h+='<div style="font-size:.72rem;font-weight:600;color:#5E35B1">'+esc(nd.nodo)+(nd.marco?' <span style="font-weight:400;color:var(--t3)">· '+esc(nd.marco)+'</span>':'')+'</div>';
+          if(nd.dato_concreto)h+='<div style="font-size:.68rem;color:var(--t2);margin-top:2px">'+esc(nd.dato_concreto)+'</div>';
+          if(nd.insumo)h+='<div style="font-size:.64rem;color:var(--t3);margin-top:2px">'+esc(nd.insumo)+'</div>';
+          h+='</div>';
+        });
+        h+='</div>';
+      }
+
+      /* Faltan datos, con acción directa */
+      if((a.faltan_datos||[]).length){
+        h+='<div style="margin-top:10px"><div class="detail__label">Datos que faltan</div>';
+        a.faltan_datos.forEach(function(f){
+          h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 8px;background:var(--warnbg);border-radius:5px;margin-bottom:4px">';
+          h+='<div style="min-width:0"><div style="font-family:var(--fm);font-size:.72rem;font-weight:600;color:var(--warn)">'+esc(f.campo)
+            +(f.en_conflicto?' <span class="badge badge--na" title="Fuentes en conflicto: lo resuelve una decisión humana">en conflicto</span>':'')+'</div>';
+          if((f.para||[]).length)h+='<div style="font-size:.64rem;color:var(--t3)">Lo necesitan: '+esc(f.para.join(', '))+'</div>';
+          h+='</div>';
+          h+='<button class="btn btn--ghost dl-crear-espera" type="button" data-campo="'+esc(f.campo)+'" style="font-size:.64rem;padding:3px 8px;white-space:nowrap">+ Espera al pasajero</button>';
+          h+='</div>';
+        });
+        h+='</div>';
+      }
+
+      /* Avisos del motor: inconsistencias no legales que conviene ver. */
+      if((a.avisos||[]).length){
+        h+='<div style="margin-top:10px"><div class="detail__label">Avisos del motor</div>';
+        a.avisos.forEach(function(av){h+='<div style="font-size:.66rem;color:var(--t3);padding:2px 0">· '+esc(av)+'</div>'});
+        h+='</div>';
+      }
+
+      return h+'</div>';
+    }
+
+    /* Abre el modal de esperas ya existente, prellenado para pedirle el dato al pasajero.
+       No se modifica openEsperaModal: se setean los campos después de abrirlo. */
+    function abrirEsperaPorFaltante(caseObj,campo){
+      openEsperaModal(caseObj,null);
+      var selT=document.getElementById('esp-tipo'),selR=document.getElementById('esp-responsable'),det=document.getElementById('esp-detalle');
+      if(selT){selT.value='info_pasajero';selT.dispatchEvent(new Event('change',{bubbles:true}))}
+      if(selR){selR.value='pasajero';selR.dispatchEvent(new Event('change',{bubbles:true}))}
+      if(det)det.value='Falta el dato para el análisis legal: '+campo;
+    }
+
+    /* Engancha las dos secciones nuevas. Se llama después de pintar el drawer. */
+    function wireMotorLegal(c){
+      /* --- editor --- */
+      var toggle=document.getElementById('dl-toggle'),cuerpo=document.getElementById('dl-cuerpo');
+      if(toggle&&cuerpo)toggle.addEventListener('click',function(){
+        var abierto=cuerpo.style.display!=='none';
+        cuerpo.style.display=abierto?'none':'block';
+        toggle.textContent=abierto?'Mostrar':'Ocultar';
+      });
+
+      /* Pista con el nombre del aeropuerto, para no cargar un IATA equivocado a ciegas. */
+      Array.prototype.forEach.call(document.querySelectorAll('.dl-iata-hint'),function(hint){
+        var inp=document.getElementById(hint.getAttribute('data-para'));
+        if(!inp||!window.AirportSelect)return;
+        var refrescar=function(){
+          var v=(inp.value||'').trim().toUpperCase();
+          if(v.length!==3){hint.textContent='';return}
+          window.AirportSelect.load().then(function(){
+            var a=window.AirportSelect.resolve(v);
+            hint.textContent=a?(a.city+' · '+a.country):'código no reconocido';
+            hint.style.color=a?'var(--t3)':'var(--err)';
+          });
+        };
+        inp.addEventListener('blur',refrescar);
+        refrescar();
+      });
+
+      var addSeg=document.getElementById('dl-add-seg'),segs=document.getElementById('dl-segs');
+      if(addSeg&&segs)addSeg.addEventListener('click',function(){segs.insertAdjacentHTML('beforeend',dlSegRowHtml())});
+      var addGasto=document.getElementById('dl-add-gasto'),gastos=document.getElementById('dl-gastos');
+      if(addGasto&&gastos)addGasto.addEventListener('click',function(){gastos.insertAdjacentHTML('beforeend',dlGastoRowHtml())});
+      /* Delegación: las filas se agregan y quitan en caliente. */
+      var box=document.getElementById('datos-legales-box');
+      if(box)box.addEventListener('click',function(e){
+        var b=e.target.closest?e.target.closest('.dl-quitar'):null;
+        if(!b)return;
+        var fila=b.closest('.dl-seg')||b.closest('.dl-gasto');
+        if(fila)fila.remove();
+      });
+
+      var guardar=document.getElementById('dl-guardar');
+      if(guardar)guardar.addEventListener('click',function(){
+        var msg=document.getElementById('dl-msg');
+        guardar.disabled=true;if(msg){msg.style.color='';msg.textContent='Guardando...'}
+        var cuerpoReq=dlRecolectar();
+        cuerpoReq.id=c.id;cuerpoReq.action='set-datos-legales';
+        fetch('/api/update-ticket',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(cuerpoReq)})
+        .then(function(r){return r.json()}).then(function(d){
+          guardar.disabled=false;
+          if(!d.success){if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'Error al guardar.'}return}
+          /* Se refleja en memoria lo que el backend efectivamente guardó (ya saneado). */
+          Object.keys(d.campos).forEach(function(k){c[k]=d.campos[k]});
+          claims.forEach(function(cl){if(cl.id===c.id)Object.keys(d.campos).forEach(function(k){cl[k]=d.campos[k]})});
+          if(msg){msg.style.color='var(--ok)';msg.textContent='Guardado.'}
+          toast('Datos legales guardados.');
+        }).catch(function(){guardar.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
+      });
+
+      wireAnalisisLegal(c);
+    }
+
+    /* Handlers de la sección de análisis. Se llama en el primer pintado y de nuevo cada
+       vez que la sección se repinta a sí misma: los nodos son nuevos y necesitan sus
+       listeners otra vez. Como los viejos se van con el outerHTML, no se duplican. */
+    function wireAnalisisLegal(c){
+      var caja=document.getElementById('analisis-legal-box');
+      if(!caja)return;
+
+      var btn=document.getElementById('btn-analizar-caso');
+      if(btn)btn.addEventListener('click',function(){
+        var msg=document.getElementById('analisis-msg');
+        var txt=btn.textContent;
+        btn.disabled=true;btn.textContent='Analizando...';
+        if(msg){msg.style.color='var(--t3)';msg.textContent='Corriendo el motor...'}
+        fetch('/api/admin?action=analizar-caso',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify({id:c.id})})
+        .then(function(r){return r.json()}).then(function(d){
+          btn.disabled=false;btn.textContent=txt;
+          if(!d.success||!d.analisis){if(msg){msg.style.color='var(--err)';msg.textContent=d.error||'No se pudo analizar el caso.'}return}
+          /* Espejo local de lo que hizo el backend con el historial, para no recargar. */
+          var histPrev=(c.analisis_legal&&Array.isArray(c.analisis_legal.historial))?c.analisis_legal.historial:[];
+          var actualPrev=(c.analisis_legal&&c.analisis_legal.actual)?[c.analisis_legal.actual]:[];
+          c.analisis_legal={actual:d.analisis,historial:actualPrev.concat(histPrev).slice(0,10)};
+          claims.forEach(function(cl){if(cl.id===c.id)cl.analisis_legal=c.analisis_legal});
+          /* Se repinta SOLO esta sección: si se repintara el drawer entero se perdería
+             lo que el usuario tenga tipeado en el editor de datos legales. */
+          var cajaAct=document.getElementById('analisis-legal-box');
+          if(cajaAct){
+            cajaAct.outerHTML=renderAnalisisLegalHtml(c);
+            wireAnalisisLegal(c);
+          }
+          if(d.guardado===false)toast('Análisis hecho, pero no se pudo guardar: '+(d.error_guardado||''),true);
+          else toast('Análisis actualizado.');
+        }).catch(function(){
+          btn.disabled=false;btn.textContent=txt;
+          if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}
+        });
+      });
+
+      Array.prototype.forEach.call(caja.querySelectorAll('.dl-crear-espera'),function(b){
+        b.addEventListener('click',function(){abrirEsperaPorFaltante(c,b.getAttribute('data-campo'))});
+      });
+    }
+
     function openDetail(c){
       detailTitle.textContent='Reclamo '+(c.ref_code||'');
       var pos=getInstancia(c);
@@ -1428,6 +1899,14 @@
       }
       h+='</div>'; /* section gestión */
 
+      /* Motor legal Capa 1: dos secciones NUEVAS, aditivas. En un caso viejo sin datos
+         nuevos el resto del drawer se ve igual que siempre; acá aparece el editor
+         colapsado y un análisis lleno de FALTA_DATO. */
+      h+='<div class="detail__divider"></div>';
+      h+=renderDatosLegalesHtml(c);
+      h+='<div class="detail__divider"></div>';
+      h+=renderAnalisisLegalHtml(c);
+
       /* Historial de instancias (timestamps) */
       var hist=Array.isArray(c.instancia_historial)?c.instancia_historial:[];
       if(hist.length){
@@ -1503,6 +1982,9 @@
       h+='<div class="detail__divider"></div>';
 
       detailBody.innerHTML=h;
+
+      /* Secciones nuevas del motor legal (editor + análisis) */
+      wireMotorLegal(c);
 
       /* Signed URL buttons (Supabase Storage) */
       detailBody.querySelectorAll('[data-path]').forEach(function(btn){

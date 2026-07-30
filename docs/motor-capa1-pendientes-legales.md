@@ -219,6 +219,11 @@ El resolvedor solo escribe cuando el match es inequívoco. Textos ambiguos ("Có
 COR/Argentina vs. ODB/España; "Sao Paulo" → CGH vs. GRU) quedan en `null`. El script los
 lista al final de cada corrida con ref, id y texto original.
 
+**Dónde se cargan a mano:** sección "Datos legales del caso" del drawer del backoffice,
+campos *Origen (IATA)* y *Destino final (IATA)*. Muestran la ciudad resuelta debajo del
+input, para no cargar un código equivocado a ciegas. Alternativa: cargar los segmentos,
+que ganan sobre esos dos campos.
+
 ### 6.3 Mapeo de `pir_presentado` a candidato de `protesta` — **RESUELTO** (ratificar)
 *Origen: Fase 1 · `scripts/backfill-candidatos.mjs`*
 
