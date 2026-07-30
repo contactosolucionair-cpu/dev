@@ -1,6 +1,6 @@
 # Motor Capa 1 — Pendientes legales y de verificación
 
-**Estado:** vivo · **Última actualización:** 29-jul-2026 (cierre de Fase 3) · **Decide:** JPA
+**Estado:** vivo · **Última actualización:** 29-jul-2026 (cierre de Fase 4) · **Decide:** JPA
 
 Registro de lo que el ciclo del motor determinista NO resolvió porque exige decisión
 legal o verificación de fuente. Se actualiza al cerrar cada fase.
@@ -112,6 +112,45 @@ mixtos, `banda_eu261` queda `null` → FALTA_DATO en vez de elegir un monto.
 
 ---
 
+## 2ter. Alcance de los gates cuando el caso tiene varios incidentes
+
+`incidentes` es un **conjunto** (Tabla A fila 6), así que un caso puede traer una
+cancelación y una denegación de embarque a la vez, o una demora de vuelo y un daño de
+equipaje. Los dos gates se escribieron pensando en un incidente por vez y el borde no
+está resuelto en el v2.1.
+
+### 2ter.1 Check-in: la excepción de la cancelación en un conjunto mixto — **ABIERTO**
+*Origen: Fase 4 · `api/_utils/rulesets/2026-06-19.js` → gate `checkin`*
+
+El Art. 3(2) exime de acreditar la presentación al check-in **en cancelación**. Si el
+conjunto de incidentes trae cancelación **y además** denegación de embarque, hoy el gate
+pasa para todas las categorías del régimen de disrupción, incluida la de la denegación
+—donde la presentación sí importa.
+
+**Qué hace el motor mientras tanto:** aplica la regla del documento tal como está escrita
+(si hay cancelación en el conjunto, el gate no es exigible). Es la lectura literal, y es
+la más favorable al pasajero.
+
+**Qué hay que decidir:** si la exención debe evaluarse **por incidente** en vez de por
+caso. Si se decide que sí, el gate pasa a declarar alcance por incidente y no por
+categoría; el evaluador ya soporta gates con alcance, no habría que tocarlo.
+
+### 2ter.2 "Torna inadmisible toda acción" (Art. 20 b Res 1532) — **ABIERTO**
+*Origen: Fase 4 · `api/_utils/rulesets/2026-06-19.js` → gate `protesta`*
+
+El Art. 20 b dice que la falta de protesta en plazo "torna inadmisible **toda acción**".
+Leído literalmente, un pasajero que no protestó el daño de su valija a tiempo perdería
+también el reclamo por la demora del vuelo, que no tiene nada que ver.
+
+**Qué hace el motor mientras tanto:** el gate de protesta declara `alcance: ['equipaje']`
+— solo bloquea las categorías de equipaje. El v2.1 ubica el requisito en AR-B6 (equipaje)
+y extenderlo al régimen de disrupción mataría reclamos ajenos a la protesta.
+
+**Qué hay que decidir:** ratificar ese alcance, o confirmar que "toda acción" es realmente
+todo el reclamo.
+
+---
+
 ## 3. Prescripción
 
 ### 3.1 Foro España, 5 años — **ABIERTO** · verificación de fuente
@@ -215,6 +254,20 @@ explícito** en `caso.avisos` pidiendo cargar `segmentos` para precisarlo. No lo
 como dato verificado. En cuanto hay segmentos cargados, manda el `carrier_operante` de
 cada uno.
 
+### 6.6 Falta un campo de intake: "¿la nueva salida es al día siguiente?" — **ABIERTO** · campo faltante
+*Origen: Fase 4 · categoría `EU261.atencion`*
+
+El Art. 9(1)(b)(c) concede **alojamiento** cuando la nueva salida es al día siguiente. Ese
+dato no existe en la Tabla A ni en ninguna columna: el intake no lo captura.
+
+**Qué hace el motor mientras tanto:** emite la categoría `atencion` como RECLAMABLE con los
+umbrales del Art. 6 (que sí puede computar) y deja dicho en la `nota` que el alojamiento
+exige además ese dato. No lo presume ni en un sentido ni en el otro.
+
+**Qué hay que decidir:** si se agrega el campo al contrato de entrada (sería una columna
+nueva, p. ej. `nueva_salida_dia_siguiente`) o si el alojamiento se resuelve siempre por
+suficiencia probatoria de los gastos itemizados.
+
 ---
 
 ## 7. Decisiones ya tomadas en este ciclo (rastro)
@@ -227,3 +280,8 @@ cada uno.
 | Idioma de países del motor | ISO-3166-1 alfa-2, único, en todo el motor | `api/_data/paises-ue.js` + `pais_iso` en `airports.json` |
 | `desconocido` en campos de dominio cerrado | Es **ausencia de dato**, no un valor: `checkin_presentacion: 'desconocido'` y `protesta.realizada: 'desconocido'` cuentan como FALTA_DATO. v2.1 fila 18 lo dice del check-in y fila 17 usa el mismo vocabulario | `api/_utils/motor-normalizar.js` |
 | Alta manual del backoffice también persiste IATA | Se sumó al alcance de Fase 3 (no estaba en la lista): es el tercer camino de alta con captura `data-iata` y dejarlo afuera tiraba el dato | `backoffice.html` + `api/admin.js` (`create-case`) |
+| Cancelación con aviso < 14 días y `reencaminamiento` desconocido | **FALTA_DATO**, no RECLAMABLE ni NO_APLICA. Las exoneraciones (ii) y (iii) del Art. 5(1)(c) exigen un reencaminamiento dentro de margen: sin ese dato no se puede confirmar ni descartar la exoneración, y el motor no elige. **Ratificar** — la alternativa (conceder la compensación porque la carga de la prueba es del transportista, Art. 5(4)) es defendible pero no está escrita en el v2.1 | `rulesets/2026-06-19.js` → `EU261.compensacion_tarifada` |
+| Denegación de embarque con `reencaminamiento` desconocido | **RECLAMABLE por el monto pleno**, con nota. A diferencia de la cancelación, acá la compensación corresponde sin umbral (Art. 4(3)) y lo único dudoso es si se reduce 50 %: la reducción del Art. 7(2) es defensa del transportista, igual que las circunstancias extraordinarias. **Ratificar** | `rulesets/2026-06-19.js` → `EU261.compensacion_tarifada` |
+| Voluntariedad de la denegación de embarque | No es campo de intake. La compensación sale RECLAMABLE (el caso se presenta como involuntario) y la voluntariedad se emite como nodo EVAL, mismo patrón que las circunstancias extraordinarias | `rulesets/2026-06-19.js` |
+| Piso conservador de Montreal sobre un caso EU261 | Va como sub-objeto `piso_conservador` dentro de la prescripción de EU261, que sigue siendo `tipo: 'segun_foro'` con `fecha_limite: null`. Así se cumple el Pin 7 (fecha concreta, marcada como piso) sin mal etiquetar el plazo propio de Montreal, que es firme | `rulesets/2026-06-19.js` → `EU261.prescripcion` |
+| Cómputo de años en prescripción | 29-feb + 1 año cae el 1-mar (normalización de `Date`). Días corridos, en UTC, para que el huso del servidor no mueva un plazo legal | `motor-legal.js` → `sumarAnios()` |
