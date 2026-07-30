@@ -39,6 +39,14 @@ import { borrarUsuarioAuth, resetPasswordAuth } from './_utils/cuentas.js';
 
 export const config = { api: { bodyParser: false } };
 
+/* Código IATA del combobox del alta manual. Sanea sin bloquear: si no es un código de
+   3 letras devuelve null y el alta sigue igual. La columna en null es exactamente lo
+   que el motor legal lee como FALTA_DATO. */
+function iata3(v) {
+  var s = (v == null ? '' : String(v)).trim().toUpperCase();
+  return /^[A-Z]{3}$/.test(s) ? s : null;
+}
+
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -561,6 +569,10 @@ async function createCase(req, res, SB_URL, SB_KEY) {
     fecha_vuelo:      body.fecha_vuelo       || null,
     origen:           body.origen            || null,
     destino:          body.destino           || null,
+    /* `origen`/`destino` siguen siendo el label de display, sin cambios. Estos dos son
+       el dato canónico que consume el motor legal (Tabla A filas 1 y 2). */
+    origen_iata:      iata3(body.origen_iata),
+    destino_iata:     iata3(body.destino_iata),
     pnr:              body.pnr               || null,
     tipo_reclamo:     body.tipo_reclamo      || 'vuelo',
     tipo_incidencia:  body.tipo_incidencia   || null,

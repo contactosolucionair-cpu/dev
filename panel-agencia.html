@@ -1097,6 +1097,14 @@
         monto_gastos:        document.getElementById('f-monto-gastos').value || null,
         gastos_detalle:      document.getElementById('f-gastos-detalle').value.trim() || null,
       });
+      /* IATA resuelto por el combobox (airport-select.js lo deja en data-iata).
+         Aditivo: origen/destino siguen viajando con el label de siempre; el código
+         solo se agrega si hay un aeropuerto real elegido. Sin data-iata la clave no
+         viaja — nunca bloquea una carga que hoy funciona. */
+      var oIata = document.getElementById('f-origen').getAttribute('data-iata');
+      var dIata = document.getElementById('f-destino').getAttribute('data-iata');
+      if (oIata) payload.origen_iata = oIata;
+      if (dIata) payload.destino_iata = dIata;
     }
 
     if (esEquipaje) {

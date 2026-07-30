@@ -700,6 +700,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!validate()) { var e = $('.field-error,.consent.field-error'); if (e) e.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
 
     function gv(id) { return (document.getElementById(id) || {}).value || ''; }
+    /* Agrega el código IATA al payload SOLO si el combobox resolvió un aeropuerto
+       real. Si no hay data-iata la clave no viaja (no se manda null): el backend la
+       ignora y el caso queda sin IATA, que es lo que el motor lee como FALTA_DATO. */
+    function addIata(obj, id, campo) {
+      var el = document.getElementById(id);
+      var iata = el && el.getAttribute('data-iata');
+      if (iata) obj[campo] = iata;
+    }
     var userEmail = gv('f-email');
     if (!userEmail) { alert('Completá tu mail en el Paso 1.'); return; }
 
@@ -779,10 +787,7 @@ document.addEventListener('DOMContentLoaded', function () {
       pasajeAltFiles.forEach(function (f) { pasajeAltNames[f.name] = true; });
       convertedDrop.forEach(function (cf) { if (pasajeAltNames[cf.name]) cf.categoria = 'pasaje_alternativo'; });
       var allFiles = (S.scannedFiles || []).concat(convertedDrop);
-      return fetch('/api/process-ticket', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      var payload = {
         manualSubmit:           true,
         /* Claim type */
         tipo_reclamo:           tipoReclamo,
@@ -837,7 +842,19 @@ document.addEventListener('DOMContentLoaded', function () {
         user_agent:             cd.user_agent        || navigator.userAgent,
         /* All uploaded files: AI scan + drop zone */
         scanned_files:          allFiles
-      })
+      };
+
+      /* IATA resuelto por el combobox (airport-select.js lo deja en data-iata).
+         Aditivo: `origen`/`destino` siguen viajando con el label de siempre, y el
+         código solo se agrega si el input tiene un aeropuerto real elegido. Sin
+         data-iata el submit sale igual, sin el campo: nunca bloquea el envío. */
+      addIata(payload, 'f-origin', 'origen_iata');
+      addIata(payload, 'f-destination', 'destino_iata');
+
+      return fetch('/api/process-ticket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
     }).then(function (r) { return r.json(); }).then(function (json) {
       /* Submit response received */

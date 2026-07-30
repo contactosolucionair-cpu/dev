@@ -3982,6 +3982,13 @@
         moneda_gastos:ncGastosEquipaje?ncVal('nc-eq-moneda'):ncVal('nc-moneda'),monto_gastos:ncGastosEquipaje?ncVal('nc-eq-monto'):ncVal('nc-monto'),gastos_detalle:ncGastosEquipaje?ncVal('nc-eq-gastos-detalle'):ncVal('nc-gastos-detalle'),
         tipo_caso_equipaje:ncEsEquipaje?ncVal('nc-bag-type'):'',descripcion_equipaje:ncEsEquipaje?ncVal('nc-bag-desc'):'',valor_equipaje:ncEsEquipaje?ncVal('nc-bag-value'):'',fecha_entrega_equipaje:ncEsEquipaje?ncVal('nc-bag-delivery'):'',
         equipaje_no_entregado:ncEsEquipaje&&ncBagNoEntregadoChecked,pir_presentado:ncEsEquipaje?ncVal('nc-bag-pir'):'',pir_numero:(ncEsEquipaje&&ncVal('nc-bag-pir')==='si')?ncVal('nc-bag-pir-numero'):''};
+      /* IATA resuelto por el combobox (airport-select.js lo deja en data-iata). Aditivo:
+         origen/destino siguen viajando con el label; el código solo se agrega si hay un
+         aeropuerto real elegido. Mismo criterio que el form público y el de agencias. */
+      var ncOEl=document.getElementById('nc-origen'),ncDEl=document.getElementById('nc-destino');
+      var ncOIata=ncOEl&&ncOEl.getAttribute('data-iata'),ncDIata=ncDEl&&ncDEl.getAttribute('data-iata');
+      if(ncOIata)payload.origen_iata=ncOIata;
+      if(ncDIata)payload.destino_iata=ncDIata;
       fetch('/api/admin?action=create-case',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(payload)})
       .then(function(r){return r.json()}).then(function(d){
         if(!d.success){ncSave.disabled=false;ncSave.textContent='Crear caso';msg.style.color='var(--err)';msg.textContent=d.error||'Error al crear el caso.';return}

@@ -15,6 +15,14 @@ import { verifyAgency } from './_utils/agency-auth.js';
 import { etapaExterna } from './_utils/instancias.js';
 import { emailEnUso, mensajeEmailEnUso, crearUsuarioAuth, borrarUsuarioAuth } from './_utils/cuentas.js';
 
+/* Código IATA del combobox del panel. Sanea sin bloquear: si no es un código de 3
+   letras devuelve null y la carga sigue igual. La columna en null es exactamente lo
+   que el motor legal lee como FALTA_DATO. */
+function iata3(v) {
+  var s = (v == null ? '' : String(v)).trim().toUpperCase();
+  return /^[A-Z]{3}$/.test(s) ? s : null;
+}
+
 export const config = {
   api: {
     bodyParser: { sizeLimit: '10mb' },
@@ -247,6 +255,10 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
     fecha_vuelo:     body.fecha_vuelo     || null,
     origen:          body.origen          || null,
     destino:         body.destino         || null,
+    /* `origen`/`destino` siguen siendo el label de display, sin cambios. Estos dos son
+       el dato canónico que consume el motor legal (Tabla A filas 1 y 2). */
+    origen_iata:     iata3(body.origen_iata),
+    destino_iata:    iata3(body.destino_iata),
     pnr:             body.pnr             || null,
     tipo_reclamo:    body.tipo_reclamo    || 'vuelo',
     tipo_incidencia: body.tipo_incidencia || null,

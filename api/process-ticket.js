@@ -24,6 +24,14 @@
 
 import { computeClaimHash } from './_utils/signing.js';
 
+/* Código IATA del combobox del formulario. Sanea sin bloquear: si no es un código de
+   3 letras devuelve null y el alta sigue igual. La columna en null es exactamente lo
+   que el motor legal lee como FALTA_DATO. */
+function iata3(v) {
+  var s = (v == null ? '' : String(v)).trim().toUpperCase();
+  return /^[A-Z]{3}$/.test(s) ? s : null;
+}
+
 export const config = {
   api: {
     bodyParser: {
@@ -95,6 +103,10 @@ export default async function handler(req, res) {
         fecha_vuelo:           body.fecha_vuelo || null,
         origen:                body.origen || null,
         destino:               body.destino || null,
+        /* `origen`/`destino` siguen siendo el label de display, sin cambios. Estos dos
+           son el dato canónico que consume el motor legal (Tabla A filas 1 y 2). */
+        origen_iata:           iata3(body.origen_iata),
+        destino_iata:          iata3(body.destino_iata),
         pnr:                   body.pnr || null,
         /* Incident */
         tipo_reclamo:          body.tipo_reclamo || 'vuelo',
