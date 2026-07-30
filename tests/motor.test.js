@@ -1,0 +1,506 @@
+/**
+ * tests/motor.test.js
+ *
+ * Runner del motor legal. Sin framework ni dependencias.
+ *
+ *   node tests/motor.test.js              corre todo
+ *   node tests/motor.test.js CD-05        corre solo los casos dorados que matcheen
+ *   node tests/motor.test.js --verbose    imprime el análisis completo de cada caso
+ *
+ * Qué corre, y por qué está separado:
+ *
+ *   1. CASOS DORADOS (tests/casos-dorados.js). La salida esperada es criterio legal y la
+ *      escribe JPA. Comparación por DEEP PARTIAL MATCH: solo se chequean las claves
+ *      declaradas en `esperado`; todo lo demás se ignora. Un caso con `esperado: {}` se
+ *      SALTEA con aviso y no falla — es un esqueleto TODO-JPA reservando cobertura.
+ *
+ *   2. UNITARIOS. Hechos mecánicos y verificables sin criterio legal: haversine, bandas,
+ *      internacional/doméstico, propagación del conflicto, determinismo, que no lance
+ *      nunca, que toda categoría lleve base_legal, y que el evaluador no tenga ningún
+ *      umbral legal hardcodeado. Estos SÍ los puede asertar el desarrollador.
+ *
+ * Exit code distinto de 0 si algo falla. Los salteados no afectan el exit code.
+ */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+import { normalizarCaso, construirIndiceAeropuertos, construirIndiceAerolineas, haversineKm, bandaEu261 } from '../api/_utils/motor-normalizar.js';
+import { analizar, seleccionarRuleset, diasCorridos, sumarAnios } from '../api/_utils/motor-legal.js';
+import * as paises from '../api/_data/paises-ue.js';
+import { CASOS } from './casos-dorados.js';
+
+var __dirname = dirname(fileURLToPath(import.meta.url));
+var RAIZ = join(__dirname, '..');
+
+/* Fecha fija: el motor recibe `hoy` por parámetro justamente para que los tests no
+   dependan del día en que se corren. */
+var HOY = '2026-07-29';
+
+var idxAeropuertos = construirIndiceAeropuertos(JSON.parse(readFileSync(join(RAIZ, 'src', 'data', 'airports.json'), 'utf8')));
+var idxAerolineas = construirIndiceAerolineas(JSON.parse(readFileSync(join(RAIZ, 'api', '_data', 'aerolineas.json'), 'utf8')));
+
+var args = process.argv.slice(2);
+var VERBOSE = args.indexOf('--verbose') !== -1;
+var FILTRO = args.filter(function (a) { return a.indexOf('--') !== 0; })[0] || null;
+
+/* ------------------------------------------------------------------ */
+/* Colores (se apagan solos si la salida no es una terminal)           */
+/* ------------------------------------------------------------------ */
+var TTY = process.stdout.isTTY;
+function c(codigo, s) { return TTY ? '[' + codigo + 'm' + s + '[0m' : s; }
+var verde = function (s) { return c('32', s); };
+var rojo = function (s) { return c('31', s); };
+var amarillo = function (s) { return c('33', s); };
+var gris = function (s) { return c('90', s); };
+var negrita = function (s) { return c('1', s); };
+
+/* ------------------------------------------------------------------ */
+/* Helpers de análisis                                                 */
+/* ------------------------------------------------------------------ */
+
+function correrCaso(cd) {
+  var caso = cd.caso_normalizado || normalizarCaso(cd.caso, idxAeropuertos, idxAerolineas, paises);
+  var ruleset = seleccionarRuleset(caso.fecha_incidente);
+  return { caso: caso, analisis: analizar(caso, ruleset, HOY) };
+}
+
+function buscarMarco(a, nombre) {
+  return (a.marcos || []).filter(function (m) { return m.marco === nombre; })[0] || null;
+}
+
+function buscarCategoria(a, ref) {
+  var partes = String(ref).split('.');
+  var m = buscarMarco(a, partes[0]);
+  if (!m) return null;
+  return (m.categorias || []).filter(function (x) { return x.categoria === partes[1]; })[0] || null;
+}
+
+function buscarGate(a, ref) {
+  var partes = String(ref).split('.');
+  var m = buscarMarco(a, partes[0]);
+  if (!m) return null;
+  return (m.gates || []).filter(function (x) { return x.gate === partes[1]; })[0] || null;
+}
+
+/* ------------------------------------------------------------------ */
+/* Deep partial match                                                  */
+/* ------------------------------------------------------------------ */
+
+function esObjetoSimple(v) {
+  return v && typeof v === 'object' && !Array.isArray(v);
+}
+
+/**
+ * Compara `esperado` contra `real` mirando SOLO las claves presentes en `esperado`.
+ * Los arrays se comparan por igualdad exacta (si se quiere "contiene", hay claves
+ * dedicadas como nodos_eval_incluye). Devuelve un array de diferencias legibles.
+ */
+function parcial(real, esperado, ruta, difs) {
+  difs = difs || [];
+  ruta = ruta || '';
+  if (esObjetoSimple(esperado)) {
+    if (!esObjetoSimple(real)) {
+      difs.push(ruta + ': se esperaba un objeto y llegó ' + JSON.stringify(real));
+      return difs;
+    }
+    Object.keys(esperado).forEach(function (k) {
+      parcial(real[k], esperado[k], ruta ? ruta + '.' + k : k, difs);
+    });
+    return difs;
+  }
+  if (JSON.stringify(real) !== JSON.stringify(esperado)) {
+    difs.push(ruta + ': esperado ' + JSON.stringify(esperado) + ', real ' + JSON.stringify(real));
+  }
+  return difs;
+}
+
+/** Traduce las claves-atajo de `esperado` a comparaciones concretas. */
+function verificarEsperado(a, esp) {
+  var difs = [];
+
+  if (esp.marcos) {
+    Object.keys(esp.marcos).forEach(function (nombre) {
+      var m = buscarMarco(a, nombre);
+      var real = m ? m.aplica : '(marco ausente)';
+      if (real !== esp.marcos[nombre]) {
+        difs.push('marcos.' + nombre + ': esperado ' + JSON.stringify(esp.marcos[nombre]) + ', real ' + JSON.stringify(real));
+      }
+    });
+  }
+
+  if (esp.categorias_clave) {
+    Object.keys(esp.categorias_clave).forEach(function (ref) {
+      var cat = buscarCategoria(a, ref);
+      var quiere = esp.categorias_clave[ref];
+      if (!cat) { difs.push('categorias_clave.' + ref + ': la categoría no está en la salida'); return; }
+      if (typeof quiere === 'string') {
+        if (cat.estado !== quiere) difs.push('categorias_clave.' + ref + ': esperado ' + quiere + ', real ' + cat.estado);
+      } else {
+        parcial(cat, quiere, 'categorias_clave.' + ref, difs);
+      }
+    });
+  }
+
+  if (esp.gates) {
+    Object.keys(esp.gates).forEach(function (ref) {
+      var g = buscarGate(a, ref);
+      var quiere = esp.gates[ref];
+      if (!g) { difs.push('gates.' + ref + ': el gate no está en la salida'); return; }
+      if (typeof quiere === 'string') {
+        if (g.resultado !== quiere) difs.push('gates.' + ref + ': esperado ' + quiere + ', real ' + g.resultado);
+      } else {
+        parcial(g, quiere, 'gates.' + ref, difs);
+      }
+    });
+  }
+
+  if (esp.prescripcion) {
+    Object.keys(esp.prescripcion).forEach(function (nombre) {
+      var m = buscarMarco(a, nombre);
+      if (!m || !m.prescripcion) { difs.push('prescripcion.' + nombre + ': el marco no emitió prescripción'); return; }
+      parcial(m.prescripcion, esp.prescripcion[nombre], 'prescripcion.' + nombre, difs);
+    });
+  }
+
+  if (esp.nodos_eval_incluye) {
+    esp.nodos_eval_incluye.forEach(function (n) {
+      if (!(a.nodos_eval || []).some(function (x) { return x.nodo === n; })) {
+        difs.push('nodos_eval_incluye: falta el nodo "' + n + '"');
+      }
+    });
+  }
+
+  if (esp.nodos_eval_excluye) {
+    esp.nodos_eval_excluye.forEach(function (n) {
+      if ((a.nodos_eval || []).some(function (x) { return x.nodo === n; })) {
+        difs.push('nodos_eval_excluye: el nodo "' + n + '" no debería estar');
+      }
+    });
+  }
+
+  if (esp.faltan_datos_incluye) {
+    esp.faltan_datos_incluye.forEach(function (campo) {
+      if (!(a.faltan_datos || []).some(function (f) { return f.campo === campo; })) {
+        difs.push('faltan_datos_incluye: falta el campo "' + campo + '"');
+      }
+    });
+  }
+
+  if (esp.provisional !== undefined && a.provisional !== esp.provisional) {
+    difs.push('provisional: esperado ' + esp.provisional + ', real ' + a.provisional);
+  }
+
+  if (esp.normalizacion) parcial(a.normalizacion, esp.normalizacion, 'normalizacion', difs);
+  if (esp.resumen) parcial(a.resumen, esp.resumen, 'resumen', difs);
+  if (esp.parcial) parcial(a, esp.parcial, '', difs);
+
+  return difs;
+}
+
+/* ------------------------------------------------------------------ */
+/* UNITARIOS — hechos mecánicos, sin criterio legal                    */
+/* ------------------------------------------------------------------ */
+
+function norm(row) { return normalizarCaso(row, idxAeropuertos, idxAerolineas, paises); }
+function analizarRow(row) { var ca = norm(row); return analizar(ca, seleccionarRuleset(ca.fecha_incidente), HOY); }
+
+/* Cada unitario devuelve null si pasa, o un string con el motivo si falla. */
+function igual(nombre, real, esperado) {
+  return JSON.stringify(real) === JSON.stringify(esperado)
+    ? null
+    : nombre + ': esperado ' + JSON.stringify(esperado) + ', real ' + JSON.stringify(real);
+}
+
+var UNITARIOS = [
+  {
+    nombre: 'haversine EZE→MAD ≈ 10.000 km (±2 %)',
+    correr: function () {
+      var a = idxAeropuertos.EZE, b = idxAeropuertos.MAD;
+      var km = haversineKm(a, b);
+      if (km == null) return 'devolvió null: faltan lat/lon en EZE o MAD';
+      var desvio = Math.abs(km - 10000) / 10000;
+      return desvio <= 0.02 ? null : 'km = ' + Math.round(km) + ', desvío del ' + (desvio * 100).toFixed(1) + '% respecto de 10.000 (tolerancia 2 %)';
+    },
+  },
+  {
+    nombre: 'haversine devuelve null si falta una coordenada',
+    correr: function () {
+      return igual('sin lat', haversineKm({ lat: null, lon: 1 }, { lat: 2, lon: 3 }), null)
+        || igual('sin punto', haversineKm(null, { lat: 2, lon: 3 }), null);
+    },
+  },
+  {
+    nombre: 'bandas del Art. 7(1) por distancia',
+    correr: function () {
+      return igual('1500 km exactos', bandaEu261(1500, false), '<=1500')
+        || igual('1501 km', bandaEu261(1501, false), '1500-3500')
+        || igual('3500 km exactos', bandaEu261(3500, false), '1500-3500')
+        || igual('3501 km no intra', bandaEu261(3501, false), '>3500')
+        /* La fila de €400 no tiene techo para vuelos intracomunitarios. */
+        || igual('4000 km intracomunitario', bandaEu261(4000, true), '1500-3500')
+        /* Por debajo de 3500 las dos filas coinciden, así que la duda no importa. */
+        || igual('2000 km con intra desconocido', bandaEu261(2000, null), '1500-3500')
+        /* Arriba de 3500 sí importa: no se elige monto. */
+        || igual('4000 km con intra desconocido', bandaEu261(4000, null), null)
+        || igual('distancia desconocida', bandaEu261(null, false), null);
+    },
+  },
+  {
+    nombre: 'internacional vs. doméstico',
+    correr: function () {
+      return igual('AEP→COR', norm({ origen_iata: 'AEP', destino_iata: 'COR' }).internacional, false)
+        || igual('EZE→MAD', norm({ origen_iata: 'EZE', destino_iata: 'MAD' }).internacional, true)
+        || igual('sin ruta', norm({}).internacional, null);
+    },
+  },
+  {
+    nombre: 'ámbito EU261 tri-estado (firme, firme, desconocido)',
+    correr: function () {
+      return igual('MAD dentro', norm({ origen_iata: 'MAD' }).origen.ambito_eu261, true)
+        || igual('EZE fuera', norm({ origen_iata: 'EZE' }).origen.ambito_eu261, false)
+        /* FDF tiene pais_iso 'MQ': territorio sin clasificar → null, no "no aplica". */
+        || igual('FDF sin clasificar', norm({ origen_iata: 'FDF' }).origen.ambito_eu261, null);
+    },
+  },
+  {
+    nombre: 'campo crítico en conflicto → FALTA_DATO en la categoría que lo consume (§1.1)',
+    correr: function () {
+      var a = analizarRow({
+        origen_iata: 'MAD', destino_iata: 'BCN', aerolinea: 'Iberia', incidentes: ['demora'],
+        demora_llegada_min: 200, fecha_incidente: '2026-05-10', billete_unico: true, checkin_presentacion: 'en_hora',
+        campos_meta: { demora_llegada_min: { verificado: false, conflicto: true } },
+      });
+      var cat = buscarCategoria(a, 'EU261.compensacion_tarifada');
+      var f = (a.faltan_datos || []).filter(function (x) { return x.campo === 'demora_llegada_min'; })[0];
+      return igual('estado', cat && cat.estado, 'FALTA_DATO')
+        || igual('marcado en_conflicto en faltan_datos', f && f.en_conflicto, true);
+    },
+  },
+  {
+    nombre: 'campo crítico ausente → FALTA_DATO (no NO_APLICA)',
+    correr: function () {
+      var a = analizarRow({
+        origen_iata: 'MAD', destino_iata: 'BCN', aerolinea: 'Iberia', incidentes: ['demora'],
+        fecha_incidente: '2026-05-10', billete_unico: true, checkin_presentacion: 'en_hora',
+      });
+      var cat = buscarCategoria(a, 'EU261.compensacion_tarifada');
+      return igual('estado', cat && cat.estado, 'FALTA_DATO')
+        || igual('dato_faltante', cat && cat.dato_faltante, 'demora_llegada_min');
+    },
+  },
+  {
+    nombre: 'campo crítico sin verificar → análisis provisional',
+    correr: function () {
+      var base = {
+        origen_iata: 'MAD', destino_iata: 'BCN', aerolinea: 'Iberia', incidentes: ['demora'],
+        demora_llegada_min: 200, demora_salida_min: 200, fecha_incidente: '2026-05-10',
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      };
+      var sinVerificar = analizarRow(base);
+      var verificado = analizarRow(Object.assign({}, base, {
+        campos_meta: {
+          incidentes: { verificado: true }, demora_llegada_min: { verificado: true },
+          demora_salida_min: { verificado: true }, fecha_incidente: { verificado: true },
+          checkin_presentacion: { verificado: true }, billete_unico: { verificado: true },
+        },
+      }));
+      return igual('sin verificar', sinVerificar.provisional, true)
+        || igual('todo verificado', verificado.provisional, false);
+    },
+  },
+  {
+    nombre: 'determinismo: misma entrada → misma salida',
+    correr: function () {
+      var row = { origen_iata: 'EZE', destino_iata: 'MAD', aerolinea: 'Iberia', incidentes: ['demora'], demora_llegada_min: 200, fecha_incidente: '2026-05-10', billete_unico: true, checkin_presentacion: 'en_hora' };
+      return JSON.stringify(analizarRow(row)) === JSON.stringify(analizarRow(row))
+        ? null : 'dos corridas con la misma entrada dieron salidas distintas';
+    },
+  },
+  {
+    nombre: 'nunca lanza: caso vacío, nulos y datos basura',
+    correr: function () {
+      var entradas = [{}, null, undefined, { incidentes: 'no-es-array' }, { origen_iata: 123, incidentes: ['inventado'] }, { protesta: 'texto' }, { segmentos: [null, {}] }, { campos_meta: 'texto' }];
+      for (var i = 0; i < entradas.length; i++) {
+        try { analizarRow(entradas[i]); } catch (e) { return 'lanzó con la entrada ' + i + ': ' + e.message; }
+      }
+      try { analizar(null, null, null); } catch (e) { return 'analizar(null, null, null) lanzó: ' + e.message; }
+      return null;
+    },
+  },
+  {
+    nombre: 'caso vacío: todo FALTA_DATO, ningún marco activo, cero reclamables',
+    correr: function () {
+      var a = analizarRow({});
+      return igual('marcos_activos', a.resumen.marcos_activos, [])
+        || igual('categorias_reclamables', a.resumen.categorias_reclamables, 0)
+        || igual('monto_tarifado_total', a.resumen.monto_tarifado_total, [])
+        || (a.faltan_datos.length > 0 ? null : 'faltan_datos quedó vacío');
+    },
+  },
+  {
+    nombre: 'toda categoría y todo gate llevan base_legal no vacía (§2 regla 7)',
+    correr: function () {
+      var filas = [
+        {},
+        { origen_iata: 'EZE', destino_iata: 'MAD', aerolinea: 'Iberia', incidentes: ['demora', 'equipaje_dano'], demora_llegada_min: 400, demora_salida_min: 400, fecha_incidente: '2026-05-10', billete_unico: true, checkin_presentacion: 'en_hora', protesta: { realizada: 'si', medio: 'pir', fecha: '2026-05-03' } },
+        { origen_iata: 'AEP', destino_iata: 'COR', incidentes: ['cancelacion', 'downgrade', 'muerte_lesion', 'conexion_perdida', 'denegacion_embarque'], antelacion_aviso_dias: 2, fecha_incidente: '2026-01-01', billete_unico: false, demora_llegada_min: 500, demora_salida_min: 500, checkin_presentacion: 'en_hora' },
+        { origen_iata: 'JFK', destino_iata: 'GRU', aerolinea: 'American Airlines', incidentes: ['equipaje_perdida'], fecha_incidente: '2026-02-02', protesta: { realizada: 'no' } },
+        { origen_iata: 'MAD', destino_iata: 'JFK', aerolinea: 'British Airways', incidentes: ['demora'], demora_llegada_min: 400, demora_salida_min: 400, fecha_incidente: '2026-03-03', billete_unico: true, checkin_presentacion: 'en_hora' },
+      ];
+      var vacias = [], errores = [], nCat = 0, nGate = 0;
+      filas.forEach(function (row, i) {
+        var a = analizarRow(row);
+        (a.avisos || []).forEach(function (x) { if (x.indexOf('error en la regla') === 0) errores.push('fila ' + i + ': ' + x); });
+        (a.marcos || []).forEach(function (m) {
+          (m.gates || []).forEach(function (g) { nGate++; if (!g.base_legal) vacias.push('fila ' + i + ' gate ' + m.marco + '.' + g.gate); });
+          (m.categorias || []).forEach(function (cc) { nCat++; if (!cc.base_legal) vacias.push('fila ' + i + ' cat ' + m.marco + '.' + cc.categoria); });
+        });
+      });
+      if (errores.length) return 'una regla del ruleset lanzó: ' + errores.join(' | ');
+      if (vacias.length) return 'base_legal vacía en: ' + vacias.join(', ');
+      if (nCat < 20) return 'solo se revisaron ' + nCat + ' categorías, el barrido no cubrió lo esperado';
+      return null;
+    },
+  },
+  {
+    nombre: 'el evaluador no tiene ningún umbral legal hardcodeado',
+    correr: function () {
+      /* Todo número con consecuencia legal tiene que vivir en el ruleset. Si alguno se
+         filtra al evaluador, se rompe la premisa de "un archivo por vigencia". */
+      var src = readFileSync(join(RAIZ, 'api', '_utils', 'motor-legal.js'), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, ' ')
+        .replace(/\/\/[^\n]*/g, ' ')
+        .replace(/'[^']*'/g, "''");
+      var UMBRALES_LEGALES = [120, 125, 180, 200, 240, 250, 300, 400, 600, 1500, 3500, 14, 21, 30, 40, 50, 60, 75, 1000];
+      var hallados = UMBRALES_LEGALES.filter(function (n) {
+        return new RegExp('(?<![\\w.])' + n + '(?![\\w.])').test(src);
+      });
+      return hallados.length ? 'aparecen umbrales legales en motor-legal.js: ' + hallados.join(', ') : null;
+    },
+  },
+  {
+    nombre: 'prescripción: días corridos y suma de años en UTC',
+    correr: function () {
+      return igual('días corridos', diasCorridos('2026-05-01', '2026-05-20'), 19)
+        || igual('cruce de mes', diasCorridos('2026-01-30', '2026-02-02'), 3)
+        || igual('fecha inválida', diasCorridos('no-fecha', '2026-05-20'), null)
+        || igual('+1 año', sumarAnios('2026-05-10', 1), '2027-05-10')
+        || igual('+2 años', sumarAnios('2026-05-10', 2), '2028-05-10')
+        /* 29-feb + 1 año cae el 1-mar por normalización de Date. Documentado. */
+        || igual('29-feb +1 año', sumarAnios('2024-02-29', 1), '2025-03-01');
+    },
+  },
+  {
+    nombre: 'EU261 nunca emite fecha de prescripción (Pin 7)',
+    correr: function () {
+      var a = analizarRow({ origen_iata: 'EZE', destino_iata: 'MAD', aerolinea: 'Iberia', incidentes: ['demora'], demora_llegada_min: 400, fecha_incidente: '2026-05-10', billete_unico: true, checkin_presentacion: 'en_hora' });
+      var p = buscarMarco(a, 'EU261').prescripcion;
+      return igual('tipo', p.tipo, 'segun_foro')
+        || igual('computable', p.computable, false)
+        || igual('fecha_limite', p.fecha_limite, null)
+        /* Con overlay Montreal sí se emite el piso concreto, marcado como piso. */
+        || igual('piso conservador', p.piso_conservador && p.piso_conservador.fecha_limite, '2028-05-10');
+    },
+  },
+  {
+    nombre: 'los montos simbólicos (AO/SDR) no entran al total tarifado (§2 regla 6)',
+    correr: function () {
+      var a = analizarRow({
+        origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+        incidentes: ['equipaje_perdida'], fecha_incidente: '2026-05-01',
+        protesta: { realizada: 'si', medio: 'pir', fecha: '2026-05-02' },
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      });
+      var cat = buscarCategoria(a, 'RES1532.equipaje');
+      return igual('estado', cat && cat.estado, 'RECLAMABLE')
+        || igual('cantidad pendiente', cat && cat.monto && cat.monto.cantidad_pendiente, true)
+        || igual('sin valor numérico', cat && cat.monto && cat.monto.valor, undefined)
+        || igual('total tarifado vacío', a.resumen.monto_tarifado_total, []);
+    },
+  },
+  {
+    nombre: 'seleccionarRuleset elige por fecha del incidente',
+    correr: function () {
+      return igual('dentro de vigencia', seleccionarRuleset('2026-05-10').version, '2026-06-19')
+        || igual('sin fecha', seleccionarRuleset(null).version, '2026-06-19');
+    },
+  },
+];
+
+/* ------------------------------------------------------------------ */
+/* Ejecución                                                           */
+/* ------------------------------------------------------------------ */
+
+var okCount = 0, failCount = 0, skipCount = 0;
+var fallas = [];
+
+console.log('\n' + negrita('Motor legal Capa 1') + gris('  ·  hoy = ' + HOY) + (FILTRO ? gris('  ·  filtro: ' + FILTRO) : ''));
+
+console.log('\n' + negrita('Unitarios'));
+UNITARIOS.forEach(function (u) {
+  var motivo;
+  try { motivo = u.correr(); } catch (e) { motivo = 'lanzó: ' + e.message; }
+  if (motivo) {
+    failCount++; fallas.push({ id: u.nombre, difs: [motivo] });
+    console.log('  ' + rojo('✗') + ' ' + u.nombre);
+    console.log('      ' + rojo(motivo));
+  } else {
+    okCount++;
+    console.log('  ' + verde('✓') + ' ' + u.nombre);
+  }
+});
+
+console.log('\n' + negrita('Casos dorados'));
+CASOS.forEach(function (cd) {
+  if (FILTRO && cd.id.indexOf(FILTRO) === -1 && (cd.descripcion || '').indexOf(FILTRO) === -1) return;
+
+  var esp = cd.esperado || {};
+  if (!Object.keys(esp).length) {
+    skipCount++;
+    console.log('  ' + amarillo('○ TODO-JPA') + ' ' + cd.id + gris(' — ' + cd.descripcion));
+    console.log('      ' + amarillo('sin `esperado`: completar JPA — criterio legal'));
+    return;
+  }
+
+  var r;
+  try {
+    r = correrCaso(cd);
+  } catch (e) {
+    failCount++; fallas.push({ id: cd.id, difs: ['el motor lanzó: ' + e.message] });
+    console.log('  ' + rojo('✗') + ' ' + cd.id + gris(' — ' + cd.descripcion));
+    console.log('      ' + rojo('el motor lanzó: ' + e.message));
+    return;
+  }
+
+  var difs = verificarEsperado(r.analisis, esp);
+  if (difs.length) {
+    failCount++; fallas.push({ id: cd.id, difs: difs });
+    console.log('  ' + rojo('✗') + ' ' + cd.id + gris(' — ' + cd.descripcion));
+    difs.forEach(function (d) { console.log('      ' + rojo(d)); });
+  } else {
+    okCount++;
+    console.log('  ' + verde('✓') + ' ' + cd.id + gris(' — ' + cd.descripcion));
+  }
+  if (VERBOSE) console.log(gris(JSON.stringify(r.analisis, null, 2).replace(/^/gm, '      ')));
+});
+
+console.log('\n' + negrita('Resumen'));
+console.log('  ' + verde(okCount + ' ok') + '   ' + (failCount ? rojo(failCount + ' fallan') : gris('0 fallan')) + '   ' + (skipCount ? amarillo(skipCount + ' TODO-JPA') : gris('0 TODO-JPA')));
+
+if (skipCount) {
+  console.log(gris('  Los TODO-JPA no cuentan como falla: son cobertura reservada del §5 esperando criterio legal.'));
+}
+
+if (failCount) {
+  console.log('\n' + rojo(negrita('Fallan:')));
+  fallas.forEach(function (f) {
+    console.log('  ' + rojo(f.id));
+    f.difs.forEach(function (d) { console.log('    · ' + d); });
+  });
+  console.log('');
+  process.exit(1);
+}
+
+console.log('');
+process.exit(0);

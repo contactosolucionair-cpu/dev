@@ -1,6 +1,6 @@
 # Motor Capa 1 — Pendientes legales y de verificación
 
-**Estado:** vivo · **Última actualización:** 29-jul-2026 (cierre de Fase 4) · **Decide:** JPA
+**Estado:** vivo · **Última actualización:** 29-jul-2026 (cierre de Fase 5) · **Decide:** JPA
 
 Registro de lo que el ciclo del motor determinista NO resolvió porque exige decisión
 legal o verificación de fuente. Se actualiza al cerrar cada fase.
@@ -267,6 +267,23 @@ exige además ese dato. No lo presume ni en un sentido ni en el otro.
 **Qué hay que decidir:** si se agrega el campo al contrato de entrada (sería una columna
 nueva, p. ej. `nueva_salida_dia_siguiente`) o si el alojamiento se resuelve siempre por
 suficiencia probatoria de los gastos itemizados.
+
+### 6.7 ¿Un crítico en conflicto que no se usó hace provisional el análisis? — **ABIERTO** · criterio del motor
+*Origen: Fase 5 · caso dorado CD-12 en `tests/casos-dorados.js`*
+
+El §2 regla 3 condiciona el flag `provisional` a que el campo dudoso **se haya usado**. Hay
+un caso donde eso da un resultado discutible: un crítico está en conflicto entre fuentes, la
+categoría que lo consumía queda bloqueada en FALTA_DATO **antes** de evaluarse, y todo el
+resto del caso está verificado. Formalmente, nada de lo que el motor emitió se apoya en un
+dato dudoso → `provisional: false`.
+
+**Qué hace el motor mientras tanto:** devuelve `false`, aplicando la regla 3 literal. El
+conflicto igual queda visible en `faltan_datos` con `en_conflicto: true`, así que no se
+pierde: la categoría afectada sale en FALTA_DATO y el backoffice lo va a mostrar.
+
+**Qué hay que decidir:** si un crítico en conflicto debe marcar provisional el caso entero
+aunque su categoría haya quedado bloqueada. CD-12 está construido justo para aislar esta
+pregunta (todo lo demás verificado a propósito).
 
 ---
 
