@@ -42,15 +42,16 @@ import JSZip from 'jszip';
 import { generarDocumentoLegal } from './_utils/legal-docs.js';
 import { borrarUsuarioAuth, resetPasswordAuth } from './_utils/cuentas.js';
 
-export const config = { api: { bodyParser: false } };
+/* Helpers puros del intake, los mismos que usan el alta pública y la de agencias: el
+   alta de backoffice tiene que escribir las columnas del motor legal igual que ellas.
+   `iata3` sanea sin bloquear — si no es un código de 3 letras devuelve null, y la
+   columna en null es exactamente lo que el motor lee como FALTA_DATO. */
+import {
+  iata3, sanearSegmentosCanonicos, extremosDireccionAfectada,
+  derivarIncidentes, candidatosItinerario,
+} from './_utils/intake.js';
 
-/* Código IATA del combobox del alta manual. Sanea sin bloquear: si no es un código de
-   3 letras devuelve null y el alta sigue igual. La columna en null es exactamente lo
-   que el motor legal lee como FALTA_DATO. */
-function iata3(v) {
-  var s = (v == null ? '' : String(v)).trim().toUpperCase();
-  return /^[A-Z]{3}$/.test(s) ? s : null;
-}
+export const config = { api: { bodyParser: false } };
 
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -564,6 +565,21 @@ async function createCase(req, res, SB_URL, SB_KEY) {
   var refCode = 'CSA' + String(caseNum).padStart(5, '0');
   var nowIso  = new Date().toISOString();
 
+  /* Intake v2: las mismas columnas del motor legal que escriben el alta pública y la de
+     agencias. Hasta este ciclo el alta de backoffice no las tocaba, así que todo caso
+     cargado a mano nacía con `segmentos` e `incidentes` vacíos y el motor los leía como
+     FALTA_DATO por más completo que estuviera el formulario. */
+  var segmentosBO = sanearSegmentosCanonicos(body.segmentos);
+  var extremosBO  = extremosDireccionAfectada(segmentosBO);
+  var incidentesBO = derivarIncidentes(body.tipo_reclamo, body.tipo_incidencia, body.tipo_caso_equipaje);
+  var candidatosBO = candidatosItinerario(segmentosBO, body.itinerario_fuente, nowIso);
+  if (body.tipo_viaje === 'solo_ida' || body.tipo_viaje === 'ida_vuelta') {
+    candidatosBO.push({ campo: 'tipo_viaje', valor: body.tipo_viaje, fuente: 'declaracion_pasajero', extraido_en: nowIso });
+  }
+  if (body.direccion_afectada === 'ida' || body.direccion_afectada === 'vuelta') {
+    candidatosBO.push({ campo: 'direccion_afectada', valor: body.direccion_afectada, fuente: 'declaracion_pasajero', extraido_en: nowIso });
+  }
+
   var row = {
     canal: 'B2C', fuente: 'Backoffice',
     nombre: nombre, email: email,
@@ -576,9 +592,23 @@ async function createCase(req, res, SB_URL, SB_KEY) {
     origen:           body.origen            || null,
     destino:          body.destino           || null,
     /* `origen`/`destino` siguen siendo el label de display, sin cambios. Estos dos son
-       el dato canónico que consume el motor legal (Tabla A filas 1 y 2). */
-    origen_iata:      iata3(body.origen_iata),
-    destino_iata:     iata3(body.destino_iata),
+       el dato canónico que consume el motor legal (Tabla A filas 1 y 2), y desde este
+       ciclo con semántica de DIRECCIÓN AFECTADA: los extremos del viaje donde ocurrió el
+       incidente, no los del billete entero (enmienda legal v2.1.2). */
+    origen_iata:      extremosBO.origen_iata  || iata3(body.origen_iata),
+    destino_iata:     extremosBO.destino_iata || iata3(body.destino_iata),
+    /* Contrato §1.3: tramos de la dirección afectada, con `afectado` en el del
+       incidente. Sin ruta completa queda `[]`, igual que hasta ahora. */
+    segmentos:        segmentosBO,
+    /* Campo CRÍTICO (Tabla A fila 6): sin esto el caso nace con `[]` y el motor lo lee
+       como FALTA_DATO. */
+    incidentes:       incidentesBO,
+    /* Candidatos con procedencia (§1.1), siempre `verificado: false`: lo que carga un
+       operador a mano no se autoverifica. El motor analiza, pero marca provisional. */
+    datos_extraidos:  candidatosBO,
+    campos_meta:      incidentesBO.length
+                        ? { incidentes: { verificado: false, fuente: 'formulario', conflicto: false } }
+                        : {},
     pnr:              body.pnr               || null,
     tipo_reclamo:     body.tipo_reclamo      || 'vuelo',
     tipo_incidencia:  body.tipo_incidencia   || null,

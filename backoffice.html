@@ -208,6 +208,33 @@
     .upload-item__status{font-size:.68rem;color:var(--t4);white-space:nowrap}
     .upload-item__status.ok{color:#1B9B5A}.upload-item__status.err{color:var(--err)}
 
+    /* ---- Intake v2: confirmación de ruta y armador de escalas ----
+       Copiado de panel-agencia.html: backoffice tiene su propio <style> inline y no
+       incluye src/css/styles.css, así que estas clases no llegan solas. */
+    .ruta-box{border:1px solid var(--bd);border-left:3px solid var(--g);border-radius:8px;padding:14px 16px;margin-top:12px;background:var(--bg)}
+    .ruta-box__t{font-family:var(--fh);font-size:.86rem;font-weight:700;color:var(--t1);margin-bottom:2px}
+    .ruta-box__d{font-size:.72rem;color:var(--t3);margin:0 0 10px;line-height:1.5}
+    .ruta-dir{font-size:.64rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin:9px 0 4px}
+    .ruta-dir:first-child{margin-top:0}
+    .tramo{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--w);border:1.5px solid var(--bd);border-radius:8px;padding:9px 11px;margin-bottom:5px;cursor:pointer;font-family:var(--f);transition:all .15s}
+    .tramo:hover{border-color:var(--g)}
+    .tramo.sel{border-color:var(--g);background:var(--g05)}
+    .tramo__mk{flex:0 0 15px;height:15px;border:1.5px solid var(--bd);border-radius:50%;position:relative}
+    .tramo.sel .tramo__mk{border-color:var(--g);background:var(--g)}
+    .tramo.sel .tramo__mk::after{content:"";position:absolute;inset:4px;background:var(--w);border-radius:50%}
+    .tramo__ruta{font-family:var(--fm);font-size:.78rem;font-weight:700;color:var(--t1)}
+    .tramo__meta{font-size:.66rem;color:var(--t4);margin-top:1px}
+    .tramo__nota{font-size:.64rem;color:var(--warn);margin-top:1px}
+    .armador{border:1px dashed var(--bd);border-radius:8px;padding:12px;background:var(--bg);margin-bottom:14px}
+    .armador__head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+    .armador__t{font-family:var(--fh);font-size:.78rem;font-weight:700;color:var(--t1)}
+    .armador__hint{font-size:.66rem;color:var(--t4);margin:6px 0 0}
+    .arm-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+    .arm-row__n{flex:0 0 auto;font-family:var(--fm);font-size:.68rem;color:var(--t4);min-width:58px}
+    .arm-row input{flex:1}
+    .arm-row__rm{background:none;border:none;cursor:pointer;color:var(--t4);font-size:.95rem;line-height:1;padding:0 4px}
+    .arm-row__rm:hover{color:var(--err)}
+
     @media(max-width:1024px){#actividad-grid{grid-template-columns:1fr !important}}
     @media(max-width:768px){.sidenav{display:none}.stats{grid-template-columns:1fr}.main{padding:14px}.detail{width:100vw;height:100vh;border-radius:0}.filters{flex-direction:column}}
   </style>
@@ -323,6 +350,30 @@
           <button class="detail__close" id="nc-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
 
+        <!-- Intake v2 · scan-first. Los archivos que se cargan acá son los mismos que se
+             adjuntan al caso (`ncFiles`): el pasaje que se escanea es el que hay que
+             guardar, así que no se piden dos veces. -->
+        <div class="detail__label" style="margin-bottom:6px">Cargar la reserva o el pasaje</div>
+        <p style="font-size:.7rem;color:var(--t3);margin:0 0 8px;line-height:1.5">La IA arma el itinerario completo y completa los campos de abajo. Después confirmás en qué tramo estuvo el problema. Los archivos quedan adjuntos al caso.</p>
+        <div class="upload-zone" id="nc-scan-zone" style="margin-top:0">Arrastrar el pasaje o hacer click para cargarlo</div>
+        <input type="file" id="nc-scan-input" accept="image/*,application/pdf" multiple style="display:none">
+        <div id="nc-scan-list" style="margin-top:6px"></div>
+        <div style="margin:8px 0 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button type="button" class="btn btn--ghost" id="nc-scan-btn" style="font-size:.72rem">Completar con IA</button>
+          <span id="nc-scan-msg" style="font-family:var(--fm);font-size:.68rem;color:var(--t3)"></span>
+        </div>
+
+        <!-- Confirmación de la ruta extraída: aparece solo si hay más de un tramo -->
+        <div class="ruta-box" id="nc-ruta-box" style="display:none;margin-bottom:14px">
+          <div class="ruta-box__t">¿En qué tramo estuvo el problema?</div>
+          <p class="ruta-box__d">Esto es lo que leímos de los documentos. Elegí el tramo del incidente: de esa dirección salen el origen, el destino y la distancia del análisis legal.</p>
+          <div id="nc-ruta-tramos"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button type="button" class="btn btn--primary" id="nc-ruta-ok" style="font-size:.74rem">Confirmar tramo</button>
+            <button type="button" class="btn btn--ghost" id="nc-ruta-descartar" style="font-size:.74rem">La ruta no es correcta, la cargo a mano</button>
+          </div>
+        </div>
+
         <div class="detail__label" style="margin-bottom:6px">Pasajero</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
           <input id="nc-nombre" class="firma-select" placeholder="Nombre y apellido *">
@@ -342,6 +393,16 @@
         <select id="nc-tipo" class="firma-select" style="width:100%;margin-bottom:14px"><option value="vuelo">Reclamo por vuelo</option><option value="equipaje">Reclamo por equipaje</option><option value="vuelo_equipaje">Vuelo + Equipaje</option></select>
 
         <div class="detail__label" style="margin-bottom:6px">Vuelo</div>
+        <!-- Intake v2 · las preguntas de ruta van antes de origen/destino porque acotan
+             qué va ahí: UNA dirección, la del viaje donde ocurrió el problema, que es la
+             unidad de análisis del motor legal (enmienda v2.1.2). La de dirección solo
+             aparece en ida y vuelta, y de ella salen los placeholders de abajo. -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <select id="nc-tipo-viaje" class="firma-select"><option value="">¿Solo ida o ida y vuelta?</option><option value="solo_ida">Solo ida</option><option value="ida_vuelta">Ida y vuelta</option></select>
+          <select id="nc-direccion" class="firma-select" style="display:none"><option value="">¿En qué parte estuvo el problema?</option><option value="ida">La ida</option><option value="vuelta">La vuelta</option></select>
+          <select id="nc-escalas" class="firma-select"><option value="">¿Hubo escalas en el viaje del problema?</option><option value="no">No, fue directo</option><option value="si">Sí, hubo escalas</option></select>
+        </div>
+        <p class="armador__hint" id="nc-hint-direccion" style="display:none;margin:0 0 8px">Cargá solo la dirección donde estuvo el problema. Si fue al volver, el origen es el destino de ida.</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
           <input id="nc-aerolinea" class="firma-select" placeholder="Aerolínea">
           <input id="nc-vuelo" class="firma-select" placeholder="Número de vuelo">
@@ -349,6 +410,15 @@
           <input id="nc-destino" class="firma-select" placeholder="Destino" data-airport="true" autocomplete="off">
           <input id="nc-fecha" type="date" class="firma-select">
           <input id="nc-pnr" class="firma-select" placeholder="PNR (Código de Reserva)">
+        </div>
+
+        <!-- Armador de escalas: solo las intermedias. Origen y destino son los de arriba,
+             así el itinerario no se carga dos veces. -->
+        <div class="armador" id="nc-armador" style="display:none">
+          <div class="armador__head"><span class="armador__t">Escalas del viaje, en orden</span><button type="button" class="btn btn--ghost" id="nc-arm-add" style="font-size:.7rem">+ Agregar escala</button></div>
+          <div id="nc-arm-lista"></div>
+          <p class="armador__hint">Solo las escalas intermedias: origen y destino son los de arriba.</p>
+          <div id="nc-arm-tramos"></div>
         </div>
 
         <div id="nc-sec-vuelo">
@@ -4449,10 +4519,15 @@
       return out;
     }
 
+    /* Una sola lista de archivos (`ncFiles`) pintada en dos lugares: el bloque de escaneo
+       de arriba y el de adjuntos de abajo. El pasaje que se escanea es el que hay que
+       guardar, así que pedirlo dos veces sería pedirle al operador que cargue lo mismo. */
     function ncRenderFiles(){
-      var el=document.getElementById('nc-files-list');if(!el)return;
-      el.innerHTML=ncFiles.map(function(f,i){return '<div class="upload-item"><span class="upload-item__name">'+esc(f.name)+'</span><button data-ncf="'+i+'" type="button" class="btn-del" title="Quitar">✕</button></div>'}).join('');
-      el.querySelectorAll('[data-ncf]').forEach(function(b){b.addEventListener('click',function(){ncFiles.splice(parseInt(b.getAttribute('data-ncf')),1);ncRenderFiles()})});
+      ['nc-files-list','nc-scan-list'].forEach(function(contId){
+        var el=document.getElementById(contId);if(!el)return;
+        el.innerHTML=ncFiles.map(function(f,i){return '<div class="upload-item"><span class="upload-item__name">'+esc(f.name)+'</span><button data-ncf="'+i+'" type="button" class="btn-del" title="Quitar">✕</button></div>'}).join('');
+        el.querySelectorAll('[data-ncf]').forEach(function(b){b.addEventListener('click',function(){ncFiles.splice(parseInt(b.getAttribute('data-ncf')),1);ncRenderFiles()})});
+      });
     }
     function ncReset(){
       ['nc-nombre','nc-email','nc-telefono','nc-docnum','nc-aerolinea','nc-vuelo','nc-origen','nc-destino','nc-fecha','nc-pnr','nc-delay','nc-notice','nc-monto','nc-gastos-detalle','nc-bag-value','nc-bag-desc','nc-bag-delivery','nc-embarque','nc-viajo','nc-pasaje-monto','nc-bag-pir-numero','nc-eq-monto','nc-eq-gastos-detalle'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
@@ -4468,6 +4543,9 @@
       if(ncAcompList)ncAcompList.innerHTML='';
       ncSetDisp('nc-bag-delivery-wrap',false);ncSetDisp('nc-bag-pir-numero-wrap',false);
       ncUpdateIncidentBlocks();
+      /* Intake v2: el itinerario también se limpia, o el caso siguiente hereda los
+         tramos del anterior sin que se vea en pantalla. */
+      ncResetItinerario();
     }
     if(btnNuevoCaso)btnNuevoCaso.addEventListener('click',function(){if(ncOv){ncReset();ncOv.classList.add('open')}});
     var ncTipo=document.getElementById('nc-tipo');if(ncTipo)ncTipo.addEventListener('change',ncToggleSecciones);
@@ -4493,6 +4571,366 @@
         .then(function(){done++;if(done===n)cb()}).catch(function(){done++;if(done===n)cb()});
       });
     }
+    /* ============ INTAKE v2 · ITINERARIO Y DIRECCIÓN AFECTADA ============
+       Port de panel-agencia.html. La unidad de análisis del motor legal es la DIRECCIÓN
+       del viaje donde ocurrió el incidente (enmienda v2.1.2), no el billete entero: en
+       un ida y vuelta son dos itinerarios independientes y acá se carga UNO. Hasta este
+       ciclo el alta de backoffice no mandaba `segmentos`, así que todo caso cargado a
+       mano nacía con la columna vacía y el motor lo leía como FALTA_DATO. */
+
+    var ncMetaTramos = {};   /* metadatos por par 'EZE-MAD' que salieron del escaneo */
+    var ncTramoSel = 0;      /* tramo afectado, índice dentro de la dirección */
+    var ncFuenteItinerario = 'declaracion_pasajero';
+
+    var ncElTipoViaje = document.getElementById('nc-tipo-viaje');
+    var ncElDireccion = document.getElementById('nc-direccion');
+    var ncElHintDir   = document.getElementById('nc-hint-direccion');
+    var ncElEscalas   = document.getElementById('nc-escalas');
+    var ncElArmador   = document.getElementById('nc-armador');
+    var ncElArmLista  = document.getElementById('nc-arm-lista');
+    var ncElArmTramos = document.getElementById('nc-arm-tramos');
+    var ncElRutaBox   = document.getElementById('nc-ruta-box');
+
+    function ncIataDeTexto(txt){
+      var m=String(txt||'').trim().toUpperCase().match(/^([A-Z]{3})\b/);
+      return m?m[1]:'';
+    }
+
+    /* ---- Fichas de tramo (compartidas por el escaneo y el armador manual) ---- */
+
+    function ncFichaTramoHtml(t,i,sel){
+      var meta=[];
+      if(t.vuelo)meta.push(t.vuelo);
+      if(t.fecha)meta.push(t.fecha);
+      return '<button type="button" class="tramo'+(i===sel?' sel':'')+'" data-i="'+i+'">'
+        +'<span class="tramo__mk"></span><span>'
+        +'<span class="tramo__ruta">'+esc(t.o)+' → '+esc(t.d)+'</span>'
+        +(meta.length?'<span class="tramo__meta">'+esc(meta.join(' · '))+'</span>':'')
+        +(t.nota?'<span class="tramo__nota">'+esc(t.nota)+'</span>':'')
+        +'</span></button>';
+    }
+
+    function ncPintarTramos(cont,tramos,agrupar){
+      if(!cont)return;
+      var h='',dirPrev=null;
+      tramos.forEach(function(t,i){
+        if(agrupar&&t.dir&&t.dir!==dirPrev){
+          h+='<div class="ruta-dir">'+(t.dir==='vuelta'?'Vuelta':'Ida')+'</div>';
+          dirPrev=t.dir;
+        }
+        h+=ncFichaTramoHtml(t,i,ncTramoSel);
+      });
+      cont.innerHTML=h;
+      Array.prototype.forEach.call(cont.querySelectorAll('.tramo'),function(b){
+        b.addEventListener('click',function(){
+          ncTramoSel=parseInt(b.getAttribute('data-i'),10)||0;
+          Array.prototype.forEach.call(cont.querySelectorAll('.tramo'),function(x){x.classList.toggle('sel',x===b)});
+        });
+      });
+    }
+
+    /* Los tramos que la IA no supo ubicar se cuelgan de la dirección anterior: es una
+       pista del modelo, no un dato que se pueda presumir. */
+    function ncDireccionDe(segs,i){
+      for(var k=i;k>=0;k--){if(segs[k].direccion)return segs[k].direccion}
+      return '';
+    }
+
+    /* ---- Dirección afectada: la pregunta y el renombrado de los campos ---- */
+
+    function ncAplicarDireccionAfectada(){
+      var idaVuelta=ncElTipoViaje&&ncElTipoViaje.value==='ida_vuelta';
+      if(ncElDireccion)ncElDireccion.style.display=idaVuelta?'':'none';
+      /* Oculto no puede quedar con valor: un 'vuelta' de un intento anterior seguiría
+         renombrando —y viajando en el payload— sobre un viaje que ahora es de solo ida. */
+      if(!idaVuelta&&ncElDireccion)ncElDireccion.value='';
+
+      var dir=(idaVuelta&&ncElDireccion&&ncElDireccion.value)||'';
+      var nombre=dir==='vuelta'?'la vuelta':(dir==='ida'?'la ida':'');
+      var oEl=document.getElementById('nc-origen'),dEl=document.getElementById('nc-destino');
+      if(oEl)oEl.placeholder=nombre?'Origen de '+nombre:'Origen';
+      if(dEl)dEl.placeholder=nombre?'Destino de '+nombre:'Destino';
+      /* En el backoffice la pregunta de escalas es la primera opción del select, no un
+         label aparte: se renombra ahí. */
+      if(ncElEscalas&&ncElEscalas.options.length)ncElEscalas.options[0].textContent=nombre?'¿Hubo escalas en '+nombre+'?':'¿Hubo escalas en el viaje del problema?';
+      if(ncElHintDir)ncElHintDir.style.display=dir?'':'none';
+    }
+
+    if(ncElTipoViaje)ncElTipoViaje.addEventListener('change',ncAplicarDireccionAfectada);
+    if(ncElDireccion)ncElDireccion.addEventListener('change',ncAplicarDireccionAfectada);
+
+    /* ---- Armador de escalas intermedias ---- */
+
+    function ncFilaEscalaHtml(valor,n){
+      return '<div class="arm-row"><span class="arm-row__n">Escala '+n+'</span>'
+        +'<input type="text" class="firma-select arm-ap" data-airport="true" autocomplete="off" placeholder="ATL - Atlanta" value="'+esc(valor||'')+'" />'
+        +'<button type="button" class="arm-row__rm" title="Quitar">✕</button></div>';
+    }
+
+    function ncRenumerarEscalas(){
+      Array.prototype.forEach.call(ncElArmLista.querySelectorAll('.arm-row__n'),function(el,i){el.textContent='Escala '+(i+1)});
+    }
+
+    function ncPintarArmador(valores){
+      if(!ncElArmLista)return;
+      ncElArmLista.innerHTML=(valores||[]).map(function(v,i){return ncFilaEscalaHtml(v,i+1)}).join('');
+      Array.prototype.forEach.call(ncElArmLista.querySelectorAll('.arm-ap'),function(inp){
+        if(window.AirportSelect){
+          window.AirportSelect.attach(inp);
+          if(inp.value)window.AirportSelect.setFromText(inp,inp.value).then(ncRefrescarTramosManual);
+        }
+      });
+    }
+
+    /** Los aeropuertos de la dirección, en orden: origen → escalas → destino. */
+    function ncPuntosRuta(){
+      var pts=[];
+      var nodo=function(el){return el?{label:el.value.trim(),iata:el.getAttribute('data-iata')||''}:null};
+      var o=nodo(document.getElementById('nc-origen'));
+      if(o)pts.push(o);
+      if(ncElEscalas&&ncElEscalas.value==='si'&&ncElArmLista){
+        Array.prototype.forEach.call(ncElArmLista.querySelectorAll('.arm-ap'),function(inp){
+          var n=nodo(inp);
+          if(n&&(n.label||n.iata))pts.push(n);
+        });
+      }
+      var d=nodo(document.getElementById('nc-destino'));
+      if(d)pts.push(d);
+      return pts;
+    }
+
+    function ncTramosDePuntos(pts){
+      var out=[];
+      for(var i=0;i<pts.length-1;i++){
+        var meta=ncMetaTramos[pts[i].iata+'-'+pts[i+1].iata]||{};
+        out.push({
+          o:pts[i].label||'?',d:pts[i+1].label||'?',
+          oIata:pts[i].iata,dIata:pts[i+1].iata,
+          vuelo:meta.vuelo||'',fecha:meta.fecha||'',carrier:meta.carrier||'',dir:'',
+        });
+      }
+      return out;
+    }
+
+    /* Con más de un tramo hay que saber en cuál pasó: misma pregunta que tras el escaneo. */
+    function ncRefrescarTramosManual(){
+      if(!ncElArmTramos)return;
+      var tramos=ncTramosDePuntos(ncPuntosRuta());
+      if(tramos.length<2){ncElArmTramos.innerHTML='';ncTramoSel=0;return}
+      if(ncTramoSel>=tramos.length)ncTramoSel=0;
+      ncElArmTramos.innerHTML='<div class="ruta-dir">¿En qué tramo estuvo el problema?</div><div id="nc-arm-tramos-lista"></div>';
+      ncPintarTramos(document.getElementById('nc-arm-tramos-lista'),tramos,false);
+    }
+
+    function ncSincronizarArmador(){
+      if(!ncElArmador||!ncElEscalas)return;
+      var con=ncElEscalas.value==='si';
+      ncElArmador.style.display=con?'block':'none';
+      if(con&&ncElArmLista&&!ncElArmLista.children.length)ncPintarArmador(['']);
+      ncRefrescarTramosManual();
+    }
+
+    if(ncElEscalas)ncElEscalas.addEventListener('change',ncSincronizarArmador);
+    var ncArmAdd=document.getElementById('nc-arm-add');
+    if(ncArmAdd)ncArmAdd.addEventListener('click',function(){
+      ncElArmLista.insertAdjacentHTML('beforeend',ncFilaEscalaHtml('',ncElArmLista.children.length+1));
+      var nuevo=ncElArmLista.lastElementChild.querySelector('.arm-ap');
+      if(window.AirportSelect)window.AirportSelect.attach(nuevo);
+      nuevo.focus();
+      ncRefrescarTramosManual();
+    });
+    if(ncElArmLista){
+      ncElArmLista.addEventListener('click',function(e){
+        var b=e.target.closest?e.target.closest('.arm-row__rm'):null;
+        if(!b)return;
+        var fila=b.closest('.arm-row');
+        if(fila)fila.remove();
+        ncRenumerarEscalas();
+        ncRefrescarTramosManual();
+      });
+      ncElArmLista.addEventListener('change',ncRefrescarTramosManual);
+      /* Tipear invalida la procedencia: el itinerario ya no es el del documento. */
+      ncElArmLista.addEventListener('input',function(){ncFuenteItinerario='declaracion_pasajero'});
+    }
+    ['nc-origen','nc-destino'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(!el)return;
+      el.addEventListener('change',ncRefrescarTramosManual);
+      el.addEventListener('input',function(){ncFuenteItinerario='declaracion_pasajero'});
+    });
+
+    /* ---- Volcado de una dirección al formulario ---- */
+
+    function ncAplicarDireccion(segsDir,idxAfectado,tipoViaje,dirAfectada){
+      if(!segsDir.length)return;
+      ncMetaTramos={};
+      segsDir.forEach(function(s){
+        ncMetaTramos[ncIataDeTexto(s.origen)+'-'+ncIataDeTexto(s.destino)]={fecha:s.fecha||'',vuelo:s.vuelo_nro||'',carrier:s.aerolinea_operadora||''};
+      });
+      ncFuenteItinerario='adjunto';
+      ncTramoSel=idxAfectado;
+
+      if(ncElTipoViaje&&tipoViaje)ncElTipoViaje.value=tipoViaje;
+      /* El tap sobre el tramo ya resolvió la dirección: se refleja en el select para que
+         quede visible y corregible sin volver al escaneo. */
+      if(ncElDireccion)ncElDireccion.value=(dirAfectada==='ida'||dirAfectada==='vuelta')?dirAfectada:'';
+      ncAplicarDireccionAfectada();
+      if(ncElEscalas)ncElEscalas.value=segsDir.length>1?'si':'no';
+      ncPintarArmador(segsDir.slice(0,-1).map(function(s){return s.destino}));
+      ncSincronizarArmador();
+
+      var fechaTramo=segsDir[idxAfectado]&&segsDir[idxAfectado].fecha;
+      if(fechaTramo&&/^\d{4}-\d{2}-\d{2}$/.test(fechaTramo)){
+        var fEl=document.getElementById('nc-fecha');
+        if(fEl)fEl.value=fechaTramo;
+      }
+
+      var oEl=document.getElementById('nc-origen'),dEl=document.getElementById('nc-destino');
+      if(oEl&&window.AirportSelect){oEl.value='';oEl.removeAttribute('data-iata');window.AirportSelect.setFromText(oEl,segsDir[0].origen).then(ncRefrescarTramosManual)}
+      if(dEl&&window.AirportSelect){dEl.value='';dEl.removeAttribute('data-iata');window.AirportSelect.setFromText(dEl,segsDir[segsDir.length-1].destino).then(ncRefrescarTramosManual)}
+    }
+
+    function ncProcesarItinerarioIa(segs,sugerida){
+      if(!segs||!segs.length)return;
+      var tramos=segs.map(function(s,i){
+        return {
+          o:s.origen,d:s.destino,vuelo:s.vuelo_nro,fecha:s.fecha,dir:ncDireccionDe(segs,i),
+          nota:(ncIataDeTexto(s.origen)&&ncIataDeTexto(s.destino))?'':'Hay que confirmar este aeropuerto',
+        };
+      });
+      var dirs={};
+      tramos.forEach(function(t){if(t.dir)dirs[t.dir]=true});
+      var tipoViaje=Object.keys(dirs).length>1?'ida_vuelta':'solo_ida';
+
+      /* Un solo tramo: no hay nada que elegir, ese es el afectado. */
+      if(segs.length===1){ncAplicarDireccion(segs,0,tipoViaje,tramos[0].dir);return}
+
+      ncTramoSel=0;
+      if(sugerida){
+        for(var i=0;i<tramos.length;i++){if(tramos[i].dir===sugerida){ncTramoSel=i;break}}
+      }
+      ncPintarTramos(document.getElementById('nc-ruta-tramos'),tramos,true);
+      if(ncElRutaBox)ncElRutaBox.style.display='block';
+
+      document.getElementById('nc-ruta-ok').onclick=function(){
+        var dirElegida=tramos[ncTramoSel].dir;
+        var segsDir=[],idxEnDir=0;
+        segs.forEach(function(s,i){
+          if(dirElegida&&tramos[i].dir!==dirElegida)return;
+          if(i===ncTramoSel)idxEnDir=segsDir.length;
+          segsDir.push(s);
+        });
+        ncAplicarDireccion(segsDir,idxEnDir,tipoViaje,dirElegida);
+        if(ncElRutaBox)ncElRutaBox.style.display='none';
+      };
+      document.getElementById('nc-ruta-descartar').onclick=function(){
+        /* Descartar la ruta no descarta el resto del escaneo (nombre, PNR, gastos): solo
+           deja el itinerario en blanco para cargarlo a mano. */
+        ncMetaTramos={};ncFuenteItinerario='declaracion_pasajero';ncTramoSel=0;
+        if(ncElRutaBox)ncElRutaBox.style.display='none';
+      };
+    }
+
+    /**
+     * Estado del formulario → `segmentos` del contrato §1.3, con la semántica de
+     * dirección afectada. Sin los IATA resueltos devuelve []: una columna en null es
+     * FALTA_DATO, que es honesto; media ruta inventada, no.
+     */
+    function ncSegmentosDelFormulario(){
+      var tramos=ncTramosDePuntos(ncPuntosRuta());
+      if(!tramos.length)return [];
+      if(!tramos.every(function(t){return t.oIata&&t.dIata}))return [];
+      var sel=ncTramoSel<tramos.length?ncTramoSel:0;
+      var fechaVuelo=ncVal('nc-fecha');
+      return tramos.map(function(t,i){
+        return {
+          orden:i+1,
+          origen_iata:t.oIata,
+          destino_iata:t.dIata,
+          /* El carrier operante nunca se tipea a mano: solo viaja si salió de un
+             documento escaneado (Tabla A fila 5). */
+          carrier_operante:t.carrier||'',
+          fecha:t.fecha||(i===sel?fechaVuelo:''),
+          afectado:i===sel,
+        };
+      });
+    }
+
+    function ncResetItinerario(){
+      ncMetaTramos={};ncTramoSel=0;ncFuenteItinerario='declaracion_pasajero';
+      if(ncElTipoViaje)ncElTipoViaje.value='';
+      if(ncElDireccion)ncElDireccion.value='';
+      if(ncElEscalas)ncElEscalas.value='';
+      if(ncElArmLista)ncElArmLista.innerHTML='';
+      if(ncElArmTramos)ncElArmTramos.innerHTML='';
+      if(ncElArmador)ncElArmador.style.display='none';
+      if(ncElRutaBox)ncElRutaBox.style.display='none';
+      var sm=document.getElementById('nc-scan-msg');if(sm)sm.textContent='';
+      ncAplicarDireccionAfectada();
+    }
+
+    /* ---- Escaneo con IA ---- */
+
+    var ncScanZone=document.getElementById('nc-scan-zone');
+    var ncScanInp=document.getElementById('nc-scan-input');
+    if(ncScanZone&&ncScanInp){
+      ncScanZone.addEventListener('click',function(){ncScanInp.click()});
+      ncScanInp.addEventListener('change',function(){Array.from(ncScanInp.files).forEach(function(f){ncFiles.push(f)});ncScanInp.value='';ncRenderFiles()});
+      ncScanZone.addEventListener('dragover',function(e){e.preventDefault();ncScanZone.classList.add('drag')});
+      ncScanZone.addEventListener('dragleave',function(){ncScanZone.classList.remove('drag')});
+      ncScanZone.addEventListener('drop',function(e){e.preventDefault();ncScanZone.classList.remove('drag');Array.from(e.dataTransfer.files).forEach(function(f){ncFiles.push(f)});ncRenderFiles()});
+    }
+
+    var ncScanBtn=document.getElementById('nc-scan-btn');
+    if(ncScanBtn)ncScanBtn.addEventListener('click',function(){
+      var msg=document.getElementById('nc-scan-msg');
+      /* Solo lo que el modelo puede mirar: los adjuntos pueden incluir un .docx o un
+         .eml que no son imagen ni PDF. */
+      var escaneables=ncFiles.filter(function(f){return /^image\//.test(f.type||'')||f.type==='application/pdf'});
+      if(!escaneables.length){msg.style.color='var(--err)';msg.textContent='Cargá primero una imagen o un PDF del pasaje.';return}
+      ncScanBtn.disabled=true;ncScanBtn.textContent='Analizando...';msg.style.color='var(--t3)';msg.textContent='';
+
+      Promise.all(escaneables.map(function(f){
+        return new Promise(function(resolve,reject){
+          var r=new FileReader();
+          r.onload=function(ev){resolve({base64:ev.target.result.split(',')[1],mimeType:f.type||'image/jpeg'})};
+          r.onerror=function(){reject(new Error('No se pudo leer '+f.name))};
+          r.readAsDataURL(f);
+        });
+      }))
+      .then(function(images){
+        return fetch('/api/process-ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:images})}).then(function(r){return r.json()});
+      })
+      .then(function(d){
+        ncScanBtn.disabled=false;ncScanBtn.textContent='Completar con IA';
+        if(!d.success||!d.data){msg.style.color='var(--err)';msg.textContent=d.error||'Error al analizar.';return}
+        var data=d.data;
+        function fill(id,val){var el=document.getElementById(id);if(el&&val)el.value=val}
+        fill('nc-nombre',data.nombre);
+        fill('nc-email',data.email);
+        fill('nc-telefono',data.telefono);
+        fill('nc-docnum',data.doc_numero);
+        fill('nc-aerolinea',data.aerolinea);
+        fill('nc-vuelo',data.vuelo_nro);
+        fill('nc-fecha',data.fecha_vuelo);
+        fill('nc-pnr',data.pnr);
+        fill('nc-origen',data.origen);
+        fill('nc-destino',data.destino);
+        if(data.incidencia_detectada)fill('nc-incidencia',data.incidencia_detectada);
+        if(data.gastos_monto)fill('nc-monto',data.gastos_monto);
+        if(data.gastos_moneda)fill('nc-moneda',data.gastos_moneda);
+        ncUpdateIncidentBlocks();
+        msg.style.color='var(--t3)';msg.textContent='Datos completados. Revisalos antes de crear el caso.';
+        /* El itinerario tramo por tramo. Si hay más de uno, hay que decir en cuál estuvo
+           el problema antes de que el par origen/destino signifique algo. */
+        ncProcesarItinerarioIa(data.segmentos,data.direccion_afectada_sugerida);
+      })
+      .catch(function(){
+        ncScanBtn.disabled=false;ncScanBtn.textContent='Completar con IA';
+        msg.style.color='var(--err)';msg.textContent='Error de conexión.';
+      });
+    });
+
     var ncSave=document.getElementById('nc-save');
     if(ncSave)ncSave.addEventListener('click',function(){
       var msg=document.getElementById('nc-msg');
@@ -4532,6 +4970,21 @@
       var ncOIata=ncOEl&&ncOEl.getAttribute('data-iata'),ncDIata=ncDEl&&ncDEl.getAttribute('data-iata');
       if(ncOIata)payload.origen_iata=ncOIata;
       if(ncDIata)payload.destino_iata=ncDIata;
+      /* ---- Intake v2: el itinerario de la DIRECCIÓN AFECTADA ----
+         Con escalas, los tramos completos van en `segmentos` con el del incidente
+         marcado, y los IATA pasan a ser los extremos de esa dirección. Aditivo: si la
+         ruta no está completa no viaja nada y el alta sale igual que siempre. */
+      var ncSegs=ncSegmentosDelFormulario();
+      if(ncSegs.length){
+        payload.segmentos=ncSegs;
+        payload.origen_iata=ncSegs[0].origen_iata;
+        payload.destino_iata=ncSegs[ncSegs.length-1].destino_iata;
+        payload.itinerario_fuente=ncFuenteItinerario;
+      }
+      var ncTipoViajeVal=ncVal('nc-tipo-viaje');
+      if(ncTipoViajeVal)payload.tipo_viaje=ncTipoViajeVal;
+      var ncDireccionVal=ncVal('nc-direccion');
+      if(ncDireccionVal)payload.direccion_afectada=ncDireccionVal;
       fetch('/api/admin?action=create-case',{method:'POST',headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},body:JSON.stringify(payload)})
       .then(function(r){return r.json()}).then(function(d){
         if(!d.success){ncSave.disabled=false;ncSave.textContent='Crear caso';msg.style.color='var(--err)';msg.textContent=d.error||'Error al crear el caso.';return}
