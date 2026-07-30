@@ -68,6 +68,7 @@
  *   ruta: [{...}],                       // endpoints de la dirección afectada, en orden
  *   direccion_afectada: {desde, hasta, ordenes: [1,2], marcada: bool}|null,
  *   direcciones_total: number,           // cuántas direcciones describen los segmentos
+ *   billete: {primer_origen, ultimo_destino, redondo, direcciones}|null,  // billete ENTERO
  *   carrier_operante: {nombre, iata, pais_licencia, comunitario}|null,
  *   carriers_por_segmento: [{orden, carrier}],
  *   internacional: true|false|null,
@@ -505,6 +506,23 @@ export function normalizarCaso(row, idxAeropuertos, idxAerolineas, paises) {
     if (m.verificado !== true) sinVerificar.push(campo);
   });
 
+  /* ---- Billete completo: insumo del bloque de jurisdicción (v2.2) ----
+     La admisibilidad sustantiva se mide sobre la DIRECCIÓN AFECTADA, pero la jurisdicción
+     y la prescripción de Montreal se miden sobre el BILLETE ENTERO. Son dos conceptos
+     distintos y fusionarlos es justamente el error que la v2.2 vino a marcar, así que acá
+     se exponen los hechos —primer origen, último destino, cuántas direcciones— y qué es el
+     "destino contractual" lo decide el ruleset, que es donde vive la doctrina. */
+  var billete = null;
+  if (segmentos.length) {
+    billete = {
+      primer_origen: puntoRuta(segmentos[0].origen_iata, idxAeropuertos, paises),
+      ultimo_destino: puntoRuta(segmentos[segmentos.length - 1].destino_iata, idxAeropuertos, paises),
+      /* Más de una dirección = ida y vuelta o multi-destino. */
+      redondo: direcciones.length > 1,
+      direcciones: direcciones.length,
+    };
+  }
+
   return {
     id: row.id || null,
     ref_code: row.ref_code || null,
@@ -539,6 +557,7 @@ export function normalizarCaso(row, idxAeropuertos, idxAerolineas, paises) {
       marcada: idxAfectado != null,
     } : null,
     direcciones_total: direcciones.length,
+    billete: billete,
     carrier_operante: carrierCaso,
     carriers_por_segmento: carriersPorSegmento,
     internacional: internacional,

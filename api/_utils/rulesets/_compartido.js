@@ -813,6 +813,103 @@ var MARCO_ANAC400 = {
 };
 
 /* ================================================================== */
+/* Jurisdicción y foro — bloque INFORMATIVO (v2.2)                     */
+/* ================================================================== */
+
+/**
+ * Foro argentino disponible para el caso. NUNCA es un gate: ley aplicable y jurisdicción
+ * son planos distintos —el régimen AR puede regir un caso no litigable en Argentina y a la
+ * inversa—, así que esto no bloquea ni habilita ninguna categoría. Se emite para que quien
+ * lee el caso sepa dónde se puede reclamar.
+ *
+ * Dos conceptos de destino que NO se fusionan:
+ *   - Dirección afectada (v2.1.2): unidad de la admisibilidad sustantiva.
+ *   - Destino contractual: destino del BILLETE completo, que es lo que gobierna la
+ *     jurisdicción y la prescripción de Montreal. En ida y vuelta bajo billete único el
+ *     destino contractual es el PUNTO DE PARTIDA (D3, línea Grein v. Imperial Airways,
+ *     anclada en el propio Art. 1(2) del Convenio: el redondo con escala extranjera es
+ *     "internacional" porque partida y destino están en un solo Estado).
+ *
+ * La cita del foro doméstico la aporta cada ruleset en `U.jurisdiccion_base_domestica`:
+ * es materia federal en las dos vigencias, pero el artículo que lo dice cambió.
+ *
+ * @returns {{foro_argentino: 'garantizado'|'posible'|'no'|'no_computable', base_legal: string, destino_contractual: Object|null, nota: string}}
+ */
+export function jurisdiccion(caso, U) {
+  var MONTREAL_33 = 'Convenio de Montreal Art. 33 (foros a elección del actor: domicilio del transportista, su sede principal, el establecimiento por cuyo conducto se celebró el contrato, o el tribunal del destino contractual)';
+
+  var b = caso.billete;
+  if (!b || !b.primer_origen || !b.ultimo_destino) {
+    return {
+      foro_argentino: 'no_computable',
+      base_legal: MONTREAL_33,
+      destino_contractual: null,
+      nota: 'Sin segmentos cargados no hay billete que mirar: el destino contractual no se puede determinar. Cargá el itinerario para que el motor lo compute.',
+    };
+  }
+
+  var dc = b.redondo ? b.primer_origen : b.ultimo_destino;
+  var destinoContractual = {
+    iata: dc.iata || null,
+    pais_iso: dc.pais_iso || null,
+    /* Que el redondo vuelva al punto de partida es doctrina, no una lectura del itinerario:
+       conviene que quede dicho en la salida. */
+    regla: b.redondo ? 'ida y vuelta bajo billete único: el destino contractual es el punto de partida (D3)' : 'último aeropuerto del billete',
+  };
+
+  /* Doméstico argentino: materia federal, foro argentino siempre. */
+  if (caso.internacional === false && parteDe(caso, 'AR')) {
+    return {
+      foro_argentino: 'garantizado',
+      base_legal: U.jurisdiccion_base_domestica || 'Código Aeronáutico Art. 198 (materia federal)',
+      destino_contractual: destinoContractual,
+      nota: 'Transporte interno: competencia federal (CSJN y tribunales federales civiles y comerciales).',
+    };
+  }
+
+  if (caso.internacional === true) {
+    if (destinoContractual.pais_iso === 'AR') {
+      return {
+        foro_argentino: 'garantizado',
+        base_legal: MONTREAL_33,
+        destino_contractual: destinoContractual,
+        nota: 'Destino contractual en Argentina: el tribunal del destino es uno de los cuatro foros del Art. 33, así que el foro argentino está disponible con seguridad.',
+      };
+    }
+    var carrier = caso.carrier_operante;
+    if (carrier && carrier.pais_licencia === 'AR') {
+      return {
+        foro_argentino: 'garantizado',
+        base_legal: MONTREAL_33,
+        destino_contractual: destinoContractual,
+        nota: 'Destino contractual fuera de Argentina, pero el transportista es de licencia argentina: su domicilio es uno de los cuatro foros del Art. 33.',
+      };
+    }
+    if (parteDe(caso, 'AR')) {
+      return {
+        foro_argentino: 'posible',
+        base_legal: MONTREAL_33,
+        destino_contractual: destinoContractual,
+        nota: 'Solo ida saliendo de Argentina con transportista extranjero y destino contractual en el exterior: el foro argentino depende del establecimiento por cuyo conducto se celebró el contrato (canal de emisión), con jurisprudencia dividida en la venta online. No está garantizado.',
+      };
+    }
+    return {
+      foro_argentino: 'no',
+      base_legal: MONTREAL_33,
+      destino_contractual: destinoContractual,
+      nota: 'La dirección analizada no toca Argentina y el destino contractual está en el exterior: el circuito es el del marco que sí aplique (p. ej. EU261 ante el NEB del Estado correspondiente).',
+    };
+  }
+
+  return {
+    foro_argentino: 'no_computable',
+    base_legal: MONTREAL_33,
+    destino_contractual: destinoContractual,
+    nota: 'No se sabe si el transporte es internacional: sin eso no se puede decir qué foro corresponde.',
+  };
+}
+
+/* ================================================================== */
 /* Export                                                              */
 /* ================================================================== */
 

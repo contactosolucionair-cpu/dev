@@ -28,7 +28,7 @@
  */
 import {
   UMBRALES_COMPARTIDOS, MARCOS_COMPARTIDOS,
-  NODO, nodoCon, tiene, algunEquipaje, parteDe, tocaPais,
+  NODO, nodoCon, tiene, algunEquipaje, parteDe, tocaPais, jurisdiccion,
 } from './_compartido.js';
 
 /* ================================================================== */
@@ -86,6 +86,9 @@ export var UMBRALES_AR = {
 
   /* Art. 71: prescripción, con exclusión del dies a quo (Art. 1, def. DÍAS). */
   prescripcion_ar_interno_anios: 1,
+
+  /* Cita del foro en transporte interno para el bloque de jurisdicción. */
+  jurisdiccion_base_domestica: 'Reglamento Dec. 809/2024 Anexo I Art. 13 + Código Aeronáutico Art. 198 — materia federal',
 };
 
 /* Umbrales que ve el evaluador: los compartidos más el bloque argentino de ESTA vigencia. */
@@ -656,6 +659,8 @@ export var RULESET = {
   vigencia: { desde: '2024-10-10', hasta: null },
   umbrales: UMBRALES,
   marcos: MARCOS_COMPARTIDOS.concat([MARCO_REGL809]),
+  /* Bloque informativo, no gate: ley aplicable y foro son planos distintos. */
+  jurisdiccion: jurisdiccion,
 };
 
 export default RULESET;

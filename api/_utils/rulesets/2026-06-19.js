@@ -21,7 +21,7 @@
  */
 import {
   UMBRALES_COMPARTIDOS, MARCOS_COMPARTIDOS,
-  NODO, nodoCon, tiene, algunEquipaje, parteDe, tocaPais,
+  NODO, nodoCon, tiene, algunEquipaje, parteDe, tocaPais, jurisdiccion,
 } from './_compartido.js';
 
 /* ================================================================== */
@@ -56,6 +56,10 @@ export var UMBRALES_AR = {
 
   /* --- Prescripción del régimen interno (días corridos, Pin 5) --- */
   prescripcion_ar_interno_anios: 1,          // Cód. Aeronáutico Art. 228 inc. 1 y 4
+
+  /* Cita del foro en transporte interno para el bloque de jurisdicción. Es materia federal
+     en las dos vigencias; lo que cambia es el artículo que lo dice. */
+  jurisdiccion_base_domestica: 'Código Aeronáutico (Ley 17.285) Art. 198 — materia federal (CSJN, Civelli y Trombino)',
 };
 
 /* Umbrales que ve el evaluador: los compartidos más el bloque argentino de ESTA
@@ -466,6 +470,8 @@ export var RULESET = {
   vigencia: { desde: '2004-02-17', hasta: '2024-10-09' },
   umbrales: UMBRALES,
   marcos: MARCOS_COMPARTIDOS.concat([MARCO_RES1532]),
+  /* Bloque informativo, no gate: ley aplicable y foro son planos distintos. */
+  jurisdiccion: jurisdiccion,
 };
 
 export default RULESET;

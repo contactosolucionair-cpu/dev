@@ -103,9 +103,13 @@ correr('la sugerencia de dirección es sugerencia, y coherente con los tramos', 
     || igual('ausente → vacía', normalizarDireccionSugerida(undefined, segs), '');
 });
 
-correr('derivarIncidentes: mismo mapeo que la migración 015', function () {
+correr('derivarIncidentes: tipos reales, la vigencia la elige el motor', function () {
   return igual('demora', derivarIncidentes('vuelo', 'demora', null), ['demora'])
-    || igual('reprogramación → cancelación (v2.1.1, transitorio)', derivarIncidentes('vuelo', 'reprogramacion', null), ['cancelacion'])
+    /* D1 (v2.2): la reprogramación pasó a ser tipo propio. Mapearla a cancelación
+       concedía los derechos del Art. 41 —alternativas y reintegro— que el Art. 42 no da.
+       El intake escribe el tipo real y el ruleset de cada vigencia decide qué significa:
+       bajo la 1532 sale NO_APLICA con el motivo, bajo el 809/2024 tiene régimen propio. */
+    || igual('reprogramación → tipo propio (D1)', derivarIncidentes('vuelo', 'reprogramacion', null), ['reprogramacion'])
     || igual('overbooking', derivarIncidentes('vuelo', 'overbooking', null), ['denegacion_embarque'])
     || igual('denegación', derivarIncidentes('vuelo', 'denegacion', null), ['denegacion_embarque'])
     || igual('equipaje dañado', derivarIncidentes('equipaje', null, 'danio'), ['equipaje_dano'])

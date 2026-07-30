@@ -1340,6 +1340,9 @@
     var MARCO_LABELS={EU261:'EU261/2004',REGL809:'Argentina · Reglamento Dec. 809/2024',RES1532:'Argentina · Res. ANAC 1532/98 (hasta 9-oct-2024)',MONTREAL:'Montreal 1999 (overlay)',DOT:'EE.UU. · DOT',ANAC400:'Brasil · ANAC 400/2016'};
     var ESTADO_CAT={RECLAMABLE:{cls:'badge--rec',txt:'Reclamable'},NO_APLICA:{cls:'badge--na',txt:'No aplica'},FALTA_DATO:{cls:'badge--fd',txt:'Falta dato'},REQUIERE_EVALUACION:{cls:'badge--eval',txt:'Requiere evaluación'}};
     var APLICA_MARCO={si:{cls:'badge--rec',txt:'Aplica'},no:{cls:'badge--na',txt:'No aplica'},pendiente_analisis_profundo:{cls:'badge--eval',txt:'Análisis profundo'},falta_dato:{cls:'badge--fd',txt:'Falta dato'}};
+    /* Foro argentino: informativo. "Posible" no es una falla del análisis, es el estado
+       real del derecho cuando depende del canal de emisión del billete. */
+    var FORO_LABELS={garantizado:{cls:'badge--rec',txt:'Garantizado'},posible:{cls:'badge--eval',txt:'Posible'},no:{cls:'badge--na',txt:'No disponible'},no_computable:{cls:'badge--fd',txt:'No computable'}};
     var GATE_ESTADO={pasa:{cls:'badge--rec',txt:'Pasa'},pasa_provisional:{cls:'badge--fd',txt:'Pasa provisional'},inadmisible:{cls:'badge--na',txt:'Inadmisible'},falta_dato:{cls:'badge--fd',txt:'Falta dato'}};
     var CATEGORIA_LABELS={compensacion_tarifada:'Compensación tarifada',reembolso:'Reembolso',reencaminamiento:'Reencaminamiento',atencion:'Atención / asistencia',downgrade:'Downgrade',equipaje:'Equipaje',dano_moral:'Daño moral',compensacion_suplementaria:'Compensación suplementaria',punitivo:'Daño punitivo',reintegro:'Reintegro',reencaminamiento_endoso:'Reencaminamiento / endoso',servicios_incidentales:'Servicios incidentales',gastos_primera_necesidad:'Gastos de primera necesidad',dano_por_demora:'Daño por demora',dano_por_demora_pasajeros:'Daño por demora (pasajeros)',muerte_lesion:'Muerte o lesión',dano_emergente:'Daño emergente',dano_punitivo:'Daño punitivo'};
     var GATE_LABELS_DL={checkin:'Presentación al check-in',protesta:'Protesta (equipaje)'};
@@ -1610,6 +1613,22 @@
       if(n.banda_eu261)h+=' · banda '+esc(n.banda_eu261);
       var totales=(a.resumen&&a.resumen.monto_tarifado_total)||[];
       if(totales.length)h+='<div style="margin-top:4px;font-weight:600;color:var(--ok)">Tarifado total: '+totales.map(function(t){return esc(t.moneda)+' '+t.valor}).join(' + ')+'</div>';
+      /* Jurisdicción: informativo, nunca gate. Va acá arriba porque es lo primero que se
+         pregunta quien va a litigar, y separado de los marcos porque es otro plano: dónde
+         se reclama, no si corresponde reclamo. El destino contractual es el del BILLETE
+         entero, que en un redondo es el punto de partida — por eso puede no coincidir con
+         el destino de la línea de arriba, que es el de la dirección afectada. */
+      var j=a.jurisdiccion;
+      if(j){
+        var jd=FORO_LABELS[j.foro_argentino]||FORO_LABELS.no_computable;
+        h+='<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--bdl)">';
+        h+='<span style="font-size:.7rem;color:var(--t3)">Foro argentino: </span><span class="badge '+jd.cls+'">'+jd.txt+'</span>';
+        if(j.destino_contractual&&j.destino_contractual.iata)h+='<span style="font-size:.7rem;color:var(--t3)"> · destino contractual <span style="font-family:var(--fm)">'+esc(j.destino_contractual.iata)+'</span></span>';
+        if(j.base_legal)h+='<div style="font-family:var(--fm);font-size:.62rem;color:var(--t4);margin-top:2px">'+esc(j.base_legal)+'</div>';
+        if(j.destino_contractual&&j.destino_contractual.regla)h+='<div style="font-size:.62rem;color:var(--t4)">'+esc(j.destino_contractual.regla)+'</div>';
+        if(j.nota)h+='<div style="font-size:.68rem;color:var(--t3);margin-top:3px;font-style:italic">'+esc(j.nota)+'</div>';
+        h+='</div>';
+      }
       h+='</div>';
 
       /* Marcos */

@@ -339,6 +339,15 @@ export function analizar(caso, ruleset, hoy, opciones) {
     marcos.push(out);
   });
 
+  /* --- Jurisdicción: bloque INFORMATIVO, nunca gate (v2.2) --- */
+  /* Va después de los marcos y fuera de ellos a propósito: describe dónde se puede
+     reclamar, no si corresponde reclamo. Lo produce el ruleset —es doctrina, no mecánica—
+     y el evaluador solo lo copia. Un ruleset sin la función simplemente no lo emite. */
+  var bloqueJurisdiccion = null;
+  if (ruleset && typeof ruleset.jurisdiccion === 'function') {
+    bloqueJurisdiccion = correr(ruleset.jurisdiccion, [caso, U, ctx], null, avisos, 'jurisdiccion');
+  }
+
   /* --- provisional (§2 regla 3) --- */
   var criticosUsadosDudosos = Object.keys(consumidos).filter(function (f) {
     return sinVerificar.indexOf(f) !== -1 || enConflicto.indexOf(f) !== -1;
@@ -375,6 +384,7 @@ export function analizar(caso, ruleset, hoy, opciones) {
       banda_eu261: caso.banda_eu261 || null,
     },
     marcos: marcos,
+    jurisdiccion: bloqueJurisdiccion,
     nodos_eval: nodosEval,
     faltan_datos: Object.keys(faltan).map(function (k) { return faltan[k]; }),
     resumen: {

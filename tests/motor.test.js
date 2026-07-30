@@ -567,6 +567,41 @@ var UNITARIOS = [
     },
   },
   {
+    /* D3: en un billete redondo el destino contractual es el PUNTO DE PARTIDA, no el
+       último aeropuerto. Es lo que decide el foro, y es un plano distinto del de la
+       dirección afectada, que sigue siendo la unidad de la admisibilidad. */
+    nombre: 'destino contractual: en ida y vuelta es el punto de partida (D3)',
+    correr: function () {
+      var redondo = analizarRow({
+        billete_unico: true, incidentes: ['cancelacion'], antelacion_aviso_dias: 2,
+        fecha_incidente: '2026-05-24', checkin_presentacion: 'no_aplica',
+        segmentos: [
+          { orden: 1, origen_iata: 'EZE', destino_iata: 'MAD', carrier_operante: 'Iberia', fecha: '2026-05-10' },
+          { orden: 2, origen_iata: 'MAD', destino_iata: 'EZE', carrier_operante: 'Iberia', fecha: '2026-05-24', afectado: true },
+        ],
+      });
+      var soloIda = analizarRow({
+        billete_unico: true, incidentes: ['cancelacion'], antelacion_aviso_dias: 2,
+        fecha_incidente: '2026-05-10', checkin_presentacion: 'no_aplica',
+        segmentos: [{ orden: 1, origen_iata: 'EZE', destino_iata: 'MAD', carrier_operante: 'Iberia', fecha: '2026-05-10', afectado: true }],
+      });
+      var sinSegmentos = analizarRow({
+        origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+        incidentes: ['demora'], demora_salida_min: 300, fecha_incidente: '2026-05-10',
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      });
+      return igual('redondo → destino contractual EZE', redondo.jurisdiccion.destino_contractual.iata, 'EZE')
+        || igual('redondo → foro garantizado', redondo.jurisdiccion.foro_argentino, 'garantizado')
+        /* Solo ida saliendo de AR con carrier extranjero: el foro depende del canal de
+           emisión, así que no se afirma más de lo que se sabe. */
+        || igual('solo ida → destino contractual MAD', soloIda.jurisdiccion.destino_contractual.iata, 'MAD')
+        || igual('solo ida → foro posible', soloIda.jurisdiccion.foro_argentino, 'posible')
+        || igual('sin segmentos → no computable', sinSegmentos.jurisdiccion.foro_argentino, 'no_computable')
+        /* Y nunca es gate: el bloque informa, no bloquea ninguna categoría. */
+        || igual('no bloquea categorías', buscarCategoria(soloIda, 'EU261.reembolso').estado, 'RECLAMABLE');
+    },
+  },
+  {
     /* D2: la sanción de caducidad doméstica no sobrevivió textualmente a la derogación del
        Art. 20 b. En internacional la aporta Montreal Art. 31(4), que es expresa. */
     nombre: 'gate D2: protesto fuera de plazo es inadmisible en internacional y provisional en doméstico',
