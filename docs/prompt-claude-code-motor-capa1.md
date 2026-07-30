@@ -19,7 +19,7 @@
 
 ## Reglas de NO RUPTURA de la UI actual (aplican a TODAS las fases)
 
-1. **Ningún campo existente se renombra, elimina ni cambia de semántica.** `origen`, `destino`, `tipo_reclamo`, `incidencia_detectada`, `gastos_monto`, `gastos_moneda`, `estado` siguen escribiéndose y leyéndose exactamente como hoy.
+1. **Ningún campo existente se renombra, elimina ni cambia de semántica.** `origen`, `destino`, `tipo_reclamo`, `tipo_incidencia`, `tipo_caso_equipaje`, `monto_gastos`, `moneda_gastos`, `estado` siguen escribiéndose y leyéndose exactamente como hoy.
 2. **Todo lo nuevo es aditivo:** columnas nuevas, secciones nuevas en el drawer del backoffice, endpoints nuevos. Nada nuevo se lee desde el flujo público (`index.html` wizard), `panel-agencia.html` (salvo el submit de IATA, aditivo), ni portales existentes.
 3. **Espejos derivados en el mismo PATCH:** quien escribe `gastos_items` reescribe `monto_gastos`/`moneda_gastos` (suma, moneda dominante, normalizada a mayúsculas) en el mismo PATCH. Documentar en el código como "espejo derivado — no editar directo" (mismo patrón que `estado` ← `instanciaAEstadoLegacy()`).
 4. **El submit de IATA es aditivo:** el label sigue viajando y guardándose en `origen`/`destino` igual que hoy; solo se AGREGA `origen_iata`/`destino_iata` al payload cuando el input tiene `data-iata`. Si no lo tiene, se envía sin esos campos (nunca bloquear un submit que hoy funciona).
@@ -98,5 +98,5 @@ Entregable: lista de archivos que leen/escriben cada campo legacy afectado, conf
 
 ## Cierre del ciclo
 
-- Actualizar `README.md`: columnas nuevas (marcando espejos derivados: `gastos_monto`/`gastos_moneda` "no editar directo"), endpoint nuevo, piezas del motor, cómo correr tests y scripts.
+- Actualizar `README.md`: columnas nuevas (marcando espejos derivados: `monto_gastos`/`moneda_gastos` "no editar directo"), endpoint nuevo, piezas del motor, cómo correr tests y scripts.
 - Reporte final: qué se hizo por fase, discrepancias halladas, aeropuertos sin coordenadas, casos del backfill sin resolver, y lista de TODO-JPA pendientes.
