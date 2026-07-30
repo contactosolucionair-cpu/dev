@@ -29,6 +29,8 @@
  *
  * Env vars: SB_URL | SUPABASE_URL · SB_KEY | SUPABASE_SERVICE_ROLE_KEY
  */
+import { validarSbUrl } from './_env.mjs';
+
 var SB_URL = process.env.SB_URL || process.env.SUPABASE_URL;
 var SB_KEY = process.env.SB_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 var DRY_RUN = process.argv.includes('--dry-run');
@@ -100,10 +102,7 @@ function candidatosDe(f, ahora) {
 }
 
 async function main() {
-  if (!SB_URL || !SB_KEY) {
-    console.error('Faltan SB_URL / SB_KEY (o SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).');
-    process.exit(1);
-  }
+  SB_URL = validarSbUrl(SB_URL, SB_KEY);
 
   var ahora = new Date().toISOString();
   console.log('[backfill-candidatos]' + (DRY_RUN ? ' DRY RUN (no escribe)' : ''));

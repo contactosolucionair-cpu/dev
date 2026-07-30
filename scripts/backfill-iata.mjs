@@ -25,6 +25,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+import { validarSbUrl } from './_env.mjs';
 
 var __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -134,6 +135,7 @@ function sbHeaders(extra) {
   return Object.assign({ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }, extra || {});
 }
 
+
 async function traerPendientes() {
   /* El prompt pide `origen_iata IS NULL`; se usa OR para agarrar también las filas
      donde solo falta el destino (p. ej. una corrida previa resolvió el origen). */
@@ -162,10 +164,7 @@ async function patchFila(id, patch) {
 /* ------------------------------------------------------------------ */
 
 async function main() {
-  if (!SB_URL || !SB_KEY) {
-    console.error('Faltan SB_URL / SB_KEY (o SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).');
-    process.exit(1);
-  }
+  SB_URL = validarSbUrl(SB_URL, SB_KEY);
 
   console.log('[backfill-iata] ' + airports.length + ' aeropuertos indexados' + (DRY_RUN ? ' · DRY RUN (no escribe)' : ''));
 
