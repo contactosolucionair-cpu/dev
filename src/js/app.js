@@ -836,6 +836,9 @@ document.addEventListener('DOMContentLoaded', function () {
       S.metaTramos = {};
       S.fuenteItinerario = 'declaracion_pasajero';
       S.tramoSel = 0;
+      /* Y el itinerario escaneado deja de existir para el selector de dirección: si el
+         pasajero lo descartó explícitamente, cambiar de dirección no puede resucitarlo. */
+      S.aiData = null;
       if (elRutaBox) elRutaBox.style.display = 'none';
       mostrarPaso1Datos();
     };
@@ -958,8 +961,49 @@ document.addEventListener('DOMContentLoaded', function () {
     tick();
   }
 
+  /**
+   * Re-aplica al formulario la dirección que el pasajero acaba de elegir, tomando los
+   * tramos de `S.aiData.segmentos`.
+   *
+   * Sin esto el select era cosmético: renombraba "Origen" a "Origen de la vuelta" y
+   * dejaba abajo los aeropuertos de la ida. En un ida y vuelta simétrico casi no se
+   * nota; en uno que vuelve por otro aeropuerto de la misma ciudad (EZE ida, AEP
+   * vuelta) el formulario queda mostrando el par equivocado con la etiqueta correcta,
+   * que es la peor combinación posible.
+   *
+   * Solo actúa si hay un itinerario escaneado que contenga ESA dirección. Si no lo hay
+   * —carga manual, ruta descartada, o un solo-ida donde se elige "vuelta"— no toca
+   * nada: el renombrado ya corrió y los campos quedan como estaban. Vaciarlos sería
+   * destruir en silencio lo que el pasajero cargó.
+   */
+  function reaplicarDireccionDesdeScan() {
+    var dir = elDireccion && elDireccion.value;
+    if (dir !== 'ida' && dir !== 'vuelta') return;
+
+    var segs = (S.aiData && S.aiData.segmentos) || null;
+    if (!segs || !segs.length) return;
+
+    var tramos = tramosDeSegmentosIa(segs);
+    var segsDir = [];
+    segs.forEach(function (s, i) { if (tramos[i].dir === dir) segsDir.push(s); });
+    if (!segsDir.length) return;
+
+    /* Índice 0: al cambiar de dirección el tramo afectado anterior ya no existe, así
+       que se arranca por el primero de la nueva. `aplicarDireccion` se encarga del
+       resto del pipeline (metadatos, escalas, armador, fecha y el flash visual). */
+    aplicarDireccion(segsDir, 0, elTipoViaje ? elTipoViaje.value : '', dir);
+  }
+
+  /* Elegir dirección es una acción explícita: pisa lo que haya en origen/destino,
+     incluso una edición manual. El flash visual del combobox es la señal de que
+     cambiaron. */
+  function alCambiarDireccion() {
+    aplicarDireccionAfectada();
+    reaplicarDireccionDesdeScan();
+  }
+
   if (elTipoViaje) elTipoViaje.addEventListener('change', aplicarDireccionAfectada);
-  if (elDireccion) elDireccion.addEventListener('change', aplicarDireccionAfectada);
+  if (elDireccion) elDireccion.addEventListener('change', alCambiarDireccion);
 
   /** Las preguntas de ruta son del reclamo de vuelo; el de equipaje no las muestra. */
   function rutaActiva() { return S.claimType !== 'equipaje'; }
