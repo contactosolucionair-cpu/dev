@@ -2,7 +2,7 @@
 
 ## **Ruteo de jurisdicción \+ Admisibilidad EU261 (piloto)**
 
-**Versión:** v2.1.2 · **Fecha:** 30-jul-2026 · **Estado:** validado JPA (decisiones 1–4 y pins 1–7 confirmados)
+**Versión:** v2.2 · **Fecha:** 30-jul-2026 · **Estado:** validado JPA (decisiones 1–4, pins 1–7, enmiendas v2.1.1/v2.1.2, Parte IV-B y dudas D1–D4 resueltas en sesión 30-jul-2026)
 
 ---
 
@@ -15,9 +15,17 @@ Documento de lógica legal en papel. No contiene código, esquemas de datos, ni 
 1. **Jurisdicciones no excluyentes.** Un caso puede activar varios marcos a la vez (p. ej. EU261 \+ Montreal sobre el mismo vuelo). El árbol devuelve **todos** los marcos aplicables y **todas** las categorías reclamables por marco. Nunca elige un "ganador". Es la regla de cuantificación exhaustiva: liquidar todos los derechos, no ganar el punto principal.  
 2. **Frontera dura.** La Capa 1 resuelve lo determinable por regla y marca **explícitamente** como \[REQUIERE EVALUACIÓN\] los nodos difusos (circunstancias extraordinarias, suficiencia probatoria, daños no tarifados). No se resuelve lo difuso acá.  
 3. **Montreal como overlay.** Capa superpuesta en transporte internacional. El ruteo solo marca que Montreal aplica \+ qué categorías; los topes en SDR se fijan en el detalle de Montreal (diferido), no en este documento.  
-4. **Equipaje, tratamiento transversal.** El equipaje (daño/demora/pérdida) **nunca** es categoría del régimen de disrupción de pasajeros. EU261 lo excluye expresamente; cada régimen declara su propio tratamiento en su árbol profundo: en transporte **internacional** rige el overlay Montreal (topes SDR); en **doméstico/intra-UE**, la legislación nacional aplicable del Estado (en AR, Código Aeronáutico \+ Res 1532 en Argentinos Oro; en UE, la ley nacional del Estado correspondiente — ver Componente 2). La admisibilidad puede estar sujeta a plazos de protesta propios de cada régimen.
+4. **Equipaje, tratamiento transversal.** El equipaje (daño/demora/pérdida) **nunca** es categoría del régimen de disrupción de pasajeros. EU261 lo excluye expresamente; cada régimen declara su propio tratamiento en su árbol profundo: en transporte **internacional** rige el overlay Montreal (topes SDR); en **doméstico/intra-UE**, la legislación nacional aplicable del Estado (en AR, Código Aeronáutico \+ régimen AR por vigencia — Res 1532 hasta 9-oct-2024 / Reglamento Dec. 809/2024 desde 10-oct-2024 — en Argentinos Oro; en UE, la ley nacional del Estado correspondiente — ver Componente 2). La admisibilidad puede estar sujeta a plazos de protesta propios de cada régimen.
 
 ### **Changelog**
+
+* **v2.2 (30-jul-2026) — ENMIENDA MAYOR:** hallazgo de vigencia: la **Res 1532/98 fue derogada por el Decreto 809/2024** (B.O. 10-sep-2024; vigencia 10-oct-2024, Arts. 7 y 8), que aprueba el **Reglamento del Contrato Aéreo de Pasajeros y Equipaje** (Anexo I). Cambios:
+  * **Parte IV partida por vigencia:** IV-A (Res 1532, incidentes hasta el 9-oct-2024) e IV-B (Reglamento Dec. 809/2024, incidentes desde el 10-oct-2024). El motor selecciona por `fecha_incidente`.
+  * **Test D corregido (ámbito amplio):** el régimen AR aplica cuando la dirección afectada es doméstica **o internacional con origen o destino en Argentina** (Art. 1 Res 1532 / Art. 2 Anexo I: servicios "que exploten en el país", cualquiera sea el lugar de celebración del contrato). Resuelve CD-13.
+  * **Revisión de la v2.1.1:** el mapeo reprogramación→cancelación queda acotado al ruleset 1532; en el Reglamento nuevo la reprogramación tiene **régimen propio** (Art. 42) → ver D1 en IV-B.
+  * **Nueva subsección "Jurisdicción y foro":** destino contractual vs. dirección afectada; foros Montreal Art. 33; materia federal en doméstico (Art. 13 Anexo I). Bloque informativo del motor.
+  * **Nueva tabla transversal de eximentes por categoría** (la fuerza mayor no exime en bloque: apaga celdas específicas por marco).
+  * Sello Parte V ampliado (fuentes Dec. 809/2024) \+ regla de protocolo: la verificación VA debe cubrir **texto y vigencia** (la 1532 seguía sirviéndose como "texto consolidado" en InfoLEG pese a su derogación).
 
 * **v2.1.2 (30-jul-2026):** precisión al Pin 4 — en billetes de ida y vuelta (o multi-destino), cada **dirección** es un itinerario independiente; la unidad de análisis del motor es la **dirección afectada** por el incidente (nota en Test A). Motiva: la regla literal del Pin 4 daba origen \= destino en billetes redondos.
 * **v2.1.1 (29-jul-2026):** reprogramación → se caracteriza como cancelación (nota en Tabla A fila 6). Motiva: dominio real del intake (`tipo_incidencia='reprogramacion'`) sin destino en la fila 6.
@@ -53,7 +61,7 @@ Capa 1 \= alimenta la regla determinista. captura→eval \= se captura pero alim
 | 3 | Conexiones/segmentos | lista (aeropuerto, país, carrier operante) | itinerario; hub UE intermedio (nodo borde); conexión perdida | 1 |
 | 4 | ¿Billete único? | sí/no | evaluar como un todo (destino final) vs por tramos | 1 |
 | 5 | Carrier operante/segmento | nombre; país licencia; ¿comunitario? | EU261 hacia UE; legitimado pasivo. **Operante, no comercializador** | 1 |
-| 6 | Tipo(s) de incidente | **conjunto**: demora / cancelación / denegación embarque / downgrade / conexión perdida / equipaje {demora,daño,pérdida} / muerte-lesión. Nota (v2.1.1): la reprogramación impuesta por el transportador (cambio de fecha/horario del vuelo contratado) no es un tipo propio: se trata como cancelación del vuelo original. Las sub-reglas de antelación y reencaminamiento (EU261 Art. 5(1)(c); AR-B2) absorben los casos de cambio menor con aviso suficiente. [decisión JPA; por-verificar al activar detalle: línea TJUE sobre cambios menores de horario] | activa ramas de categoría | 1 |
+| 6 | Tipo(s) de incidente | **conjunto**: demora / cancelación / denegación embarque / downgrade / conexión perdida / equipaje {demora,daño,pérdida} / muerte-lesión. Nota (v2.1.1): la reprogramación impuesta por el transportador (cambio de fecha/horario del vuelo contratado) no es un tipo propio: se trata como cancelación del vuelo original. Las sub-reglas de antelación y reencaminamiento (EU261 Art. 5(1)(c); AR-B2) absorben los casos de cambio menor con aviso suficiente. [decisión JPA; por-verificar al activar detalle: línea TJUE sobre cambios menores de horario] Acotación (v2.2): este mapeo rige solo para incidentes anteriores al 10-oct-2024 (ruleset 1532); desde esa fecha la reprogramación tiene régimen propio (Art. 42 Reglamento Dec. 809/2024) y es tipo propio del dominio → ver Parte IV-B, duda D1. | activa ramas de categoría | 1 |
 | 7a | Demora de salida | horas:minutos vs. hora programada de salida | gatillo atención EU261 (Art. 6: 2/3/4 h por banda) y **servicios incidentales AR** (\> 4 h, Pin 2\) | 1 |
 | 7b | Demora de llegada al destino final | horas:minutos; **llegada \= apertura de al menos una puerta** (TJUE *Germanwings* C-452/13, Pin 1). Fuente preferida: registros operativos del vuelo | gatillo compensación EU261 ≥3 h (Sturgeon); reducción 50 %; **daño por demora acreditado AR/Montreal** (Pin 2\) | 1 |
 | 8 | Antelación aviso cancelación | días/horas pre-salida programada | régimen cancelación (14/7 días \+ sub-reglas Art. 5(1)(c)) | 1 |
@@ -131,9 +139,13 @@ Algún segmento **sale de, llega a, o es dentro de** EE.UU. → régimen DOT apl
 
 Algún segmento **sale de, llega a, o es dentro de** Brasil → Resolução ANAC 400/2016 aplica. *\[conocimiento-previo; fase profunda BR\]*
 
-### **Test D — Argentina / Res. ANAC 1532/98**
+### **Test D — Argentina (régimen por vigencia)**
 
-Vuelo **doméstico argentino**, o **internacional que parte de** Argentina → Res. ANAC 1532/98 aplica (+ Montreal si internacional). *\[verificado-ahora → ver Componente 3 Argentina (Parte IV)\]*.
+La dirección afectada es **doméstica argentina**, o **internacional con origen O destino en Argentina** → aplica el régimen AR (+ Montreal si internacional). *\[verificado-ahora, v2.2 → ver Componente 3 Argentina (Parte IV)\]*
+
+* **Base del ámbito amplio:** Res 1532 Art. 1 ("servicios… que exploten en el país las empresas de bandera nacional y extranjera") y Reglamento Dec. 809/2024 Anexo I Art. 2 ("…que exploten en la REPÚBLICA ARGENTINA, tanto empresas nacionales como extranjeras, **cualquiera sea el lugar de celebración del contrato**"). El criterio es el **servicio explotado en el país**, no la dirección del vuelo: el regreso MAD→EZE está cubierto.
+* **Contra-regla:** una dirección que **no toca** territorio argentino (p. ej. MAD→BCN suelto) NO activa el régimen AR aunque el billete se haya comprado en Argentina — el lugar de celebración del contrato es expresamente irrelevante en ambos sentidos.
+* **Selección de régimen por `fecha_incidente`:** anterior al 10-oct-2024 → **Parte IV-A (Res 1532/98)**; desde el 10-oct-2024 → **Parte IV-B (Reglamento Dec. 809/2024)**. Ley al momento del hecho, implementada como lookup de ruleset.
 
 ### **Test E — Convención de Montreal (overlay)**
 
@@ -150,7 +162,7 @@ Transporte **internacional** entre dos Estados parte de Montreal (o un Estado pa
 | Llega a aeropuerto UE/EEE/CH desde 3er país, carrier comunitario, no compensado allí | EU261 |
 | Toca EE.UU. (sale / llega / dentro) | DOT |
 | Toca Brasil (sale / llega / dentro) | ANAC 400/2016 |
-| Doméstico AR, o internacional saliendo de AR | Res. ANAC 1532/98 |
+| Dirección afectada doméstica AR, o internacional con origen o destino en AR | Régimen AR por vigencia: Res 1532/98 (hasta 9-oct-2024) / Reglamento Dec. 809/2024 (desde 10-oct-2024) |
 | Internacional entre 2 Estados parte de Montreal | Montreal (overlay) |
 
 ## **Coexistencia y articulación**
@@ -159,12 +171,36 @@ Transporte **internacional** entre dos Estados parte de Montreal (o un Estado pa
 * **EU261 \+ Montreal** pueden coexistir sobre el mismo vuelo: EU261 da la compensación **tarifada** (a tanto alzado por molestia/pérdida de tiempo); Montreal cubre el **daño acreditado** (gastos, equipaje, lesión). La compensación EU261 **puede deducirse** de la indemnización suplementaria (Art. 12 EU261). **No hay doble recuperación por el mismo daño.**  
 * En itinerarios multi-jurisdicción, cada marco se evalúa sobre el/los segmento(s) que le corresponde(n).
 
+## **Jurisdicción y foro (bloque informativo, v2.2)**
+
+**Ley aplicable y jurisdicción son planos distintos**: el régimen AR puede regir un caso no litigable en Argentina, y a la inversa. El motor emite este bloque como **informativo** (nunca gate de admisibilidad):
+
+* **Dos conceptos de destino, no fusionar:**
+  * **Dirección afectada** (v2.1.2) → unidad de la admisibilidad sustantiva (tests, distancia, bandas).
+  * **Destino contractual** \= destino del **billete completo** → gobierna jurisdicción y prescripción Montreal. En ida y vuelta bajo billete único, el destino contractual es el **punto de partida** (línea *Grein v. Imperial Airways*, doctrina uniforme sobre Warsaw/Montreal; coherente con el propio Art. 1(2): el redondo con escala extranjera es "internacional" porque partida y destino están en un solo Estado). *\[verificado-ahora, 30-jul-2026 — D3 resuelta\]*
+* **Doméstico AR:** materia federal — CSJN y tribunales federales (Anexo I Art. 13; CA Art. 198). Foro argentino siempre.
+* **Internacional (Montreal Art. 33):** cuatro foros a elección del actor — domicilio del transportista / sede principal de su negocio / establecimiento por cuyo conducto se celebró el contrato / **tribunal del destino contractual**. Consecuencias: destino contractual AR (regresos; redondos con incidente en la ida) → **foro argentino garantizado**; solo-ida saliendo de AR con carrier extranjero → foro argentino **posible, no garantizado** (depende del canal de emisión; jurisprudencia dividida en venta online); dirección que no toca AR → foro AR no disponible (circuito EU261/NEB).
+* **Mediación/conciliación:** disponible en casi todos los casos (portal contractual de SolucionAir; Servicio de Conciliación Dec. 809/2024 Arts. 4–6, electrónico y voluntario, reglamentado por Res. 188/2026). No exige jurisdicción en sentido técnico.
+* **Salida del motor:** `jurisdiccion: { foro_argentino: 'garantizado' | 'posible' | 'no', base_legal }` por marco aplicable.
+
+## **Eximentes por categoría (tabla transversal, v2.2)**
+
+La fuerza mayor / causa meteorológica / circunstancia extraordinaria **no exime en bloque**: apaga celdas específicas de la matriz y deja otras encendidas. El nodo \[EVAL: causa\] se evalúa **una sola vez** (Capa 2/3) y el motor propaga el resultado según esta tabla:
+
+| Marco | Eximente (fuente) | Apaga | NO apaga |
+| ----- | ----- | ----- | ----- |
+| Reglamento 809/2024 | Meteo / caso fortuito / fuerza mayor; o aviso ≥15 días (Art. 44) | Servicios incidentales | Reintegro (Arts. 47/48), deber de información (Art. 44 i), responsabilidad Montreal/CA |
+| Res 1532 (IV-A) | Causa meteorológica (Res 203/2013) | Servicios incidentales | Reintegro, deber de información |
+| Montreal Art. 19 | Prueba de "todas las medidas razonablemente exigibles" — **carga del transportista** | Daño por demora | Equipaje daño/pérdida (Art. 17(2): responsabilidad objetiva con topes), reintegros contractuales |
+| CA Art. 141 / regl. | Causa técnica/meteo **salvo negligencia probada** | Daño por demora | — |
+| EU261 | Circunstancias extraordinarias \+ medidas razonables (Art. 5(3)) | Compensación Art. 7 | Asistencia Art. 9, reembolso/reencaminamiento Art. 8 |
+
 ## **Ruteo de equipaje (regla transversal)**
 
 Cuando el incidente incluya equipaje (daño/demora/pérdida), enrutar a:
 
 * **Montreal** si el transporte es internacional (topes SDR, diferidos); o  
-* el **puntero de legislación nacional aplicable** si es doméstico/intra-UE (en AR, Código Aeronáutico \+ Res 1532; en UE, ver la subsección de punteros locales).
+* el **puntero de legislación nacional aplicable** si es doméstico/intra-UE (en AR, Código Aeronáutico \+ régimen AR por vigencia — IV-A/IV-B; en UE, ver la subsección de punteros locales).
 
 El equipaje **nunca** activa el régimen de disrupción de pasajeros (EU261 lo excluye; cada régimen lo trata en su propio árbol profundo, con sus propios plazos de protesta). Ver Principio 4\.
 
@@ -276,9 +312,20 @@ Distancia: ortodrómica origen→**destino final** (Art. 7(4)). En **retraso**, 
 
 # **Parte IV — Componente 3:**
 
-# **Admisibilidad Argentina (régimen profundo)**
+# **Admisibilidad Argentina (régimen profundo, por vigencia)**
 
-Todos los umbrales y montos de esta parte están **verificados contra el texto oficial vigente** (InfoLEG, texto consolidado de la Res 1532/98; argentina.gob.ar, Código Aeronáutico; jurisprudencia 2024-25; ver Parte V). Donde una regla deriva de jurisprudencia y no del texto, se indica.
+**Hallazgo de vigencia (v2.2):** la Res 1532/98 fue **derogada por el Decreto 809/2024** (Art. 8; B.O. 10-sep-2024; vigencia desde el **10-oct-2024**, Art. 7), que aprueba el **Reglamento del Contrato Aéreo de Pasajeros y Equipaje** (Anexo I). La Parte IV se parte en dos regímenes seleccionados por `fecha_incidente`:
+
+* **IV-A — Res 1532/98:** incidentes **hasta el 9-oct-2024**. Vive como *ley al momento del hecho*; en la práctica, cola menguante (internacionales con prescripción bienal hasta ~oct-2026 \+ expedientes en curso). Los domésticos pre-809 ya prescribieron.
+* **IV-B — Reglamento Dec. 809/2024:** incidentes **desde el 10-oct-2024**. Régimen de casi toda la cartera actual.
+
+Lo que **no** cambia entre regímenes: Código Aeronáutico (topes AO, prescripción Art. 228), Montreal como overlay internacional, Art. 63 LDC (supletoriedad), foro federal, y la decisión de negocio de litigar solo contra aerolíneas.
+
+---
+
+## **PARTE IV-A — Res 1532/98 (incidentes hasta el 9-oct-2024)**
+
+Umbrales y montos verificados contra el texto oficial (InfoLEG, texto consolidado de la Res 1532/98 — **norma derogada**, válida como ley al momento del hecho; argentina.gob.ar, Código Aeronáutico; jurisprudencia 2024-25; ver Parte V). Donde una regla deriva de jurisprudencia y no del texto, se indica.
 
 ## **Marco normativo y principio de articulación**
 
@@ -298,7 +345,7 @@ El régimen argentino se integra por cuatro cuerpos, **no excluyentes** entre s�
 
 ## **Gate de entrada (ámbito)**
 
-Confirmar que el caso pasó el **Test D** del ruteo (doméstico AR, o internacional saliendo de AR). Si es internacional → activar **además** el overlay Montreal (Test E).
+Confirmar que el caso pasó el **Test D** del ruteo (dirección afectada doméstica AR, o internacional con **origen o destino** en AR — ámbito amplio v2.2) y que `fecha_incidente` es **anterior al 10-oct-2024**. Si es internacional → activar **además** el overlay Montreal (Test E).
 
 ## **Ramas por tipo de incidente**
 
@@ -406,6 +453,108 @@ Sistema de conciliación voluntaria previa (vigencia \~agosto 2026). Es una **v�
 
 ---
 
+## **PARTE IV-B — Reglamento del Contrato Aéreo de Pasajeros y Equipaje (Decreto 809/2024, Anexo I) — incidentes desde el 10-oct-2024**
+
+Verificado contra el texto oficial del Decreto 809/2024 y su Anexo I (InfoLEG norma 403874; B.O. 10-sep-2024) en sesión del 30-jul-2026. *\[verificado-ahora\]* Estructura espejo de IV-A. **Validado JPA (30-jul-2026); dudas D1–D4 resueltas al final.**
+
+### **Marco normativo y prelación (Anexo I Arts. 2–3)**
+
+* **Ámbito (Art. 2):** transporte aéreo regular y no regular, interno e internacional, de pasajeros y equipajes que exploten en la República Argentina empresas nacionales y extranjeras, **cualquiera sea el lugar de celebración del contrato**. Transporte gratuito / tarifa reducida → Regulaciones del Transportador (sin contrariar el Reglamento ni los tratados).
+* **Prelación (Art. 3):** internacional → tratados (Montreal) \> Código Aeronáutico \> Reglamento \> Regulaciones del Transportador; interno → Código Aeronáutico \> Reglamento \> Regulaciones. Consecuencia operativa: en internacional **Montreal manda en responsabilidad y topes**; el Reglamento opera como capa complementaria (incidentales, reintegros, información, protesta).
+* **Definiciones relevantes (Art. 1):** CANCELACIÓN \= no realización de un vuelo autorizado previamente. DESTINO FINAL \= último destino del billete. **DÍAS \= corridos, excluyendo el día de la notificación / emisión / inicio** (refina el Pin 5: se excluye el dies a quo — aplicable solo a IV-B). La ejecución del contrato comienza en zona de preembarque/estéril (Arts. 35/43/69).
+
+### **Ramas por tipo de incidente**
+
+#### **ARB-1 — Demora en la partida (Arts. 43, 44, 48)**
+
+Servicios incidentales **escalonados**, medidos sobre el **retraso del horario de partida** (valida textualmente el Pin 2):
+
+* **≤ 4 h** → sin obligación de asistencia, **salvo horario nocturno**: retraso cuya **espera transcurre** (total o parcialmente) entre las 00:00 y las 06:00 → se aplica el régimen del inciso b (comidas y refrescos). *\[interpretación fijada — D4 resuelta: criterio de espera transcurriendo en la franja, por finalidad asistencial\]*
+* **\> 4 h y hasta 8 h** → comidas y refrescos suficientes en función de la espera.
+* **\> 8 h** → lo anterior **\+ alojamiento \+ traslados hacia aquel**. **Cambio material vs. IV-A: el alojamiento subió de \>4 h a \>8 h.**
+* Conexión perdida por la demora → gestiones de reubicación a cargo del transportador (Art. 43).
+* **Reintegro por demora \> 4 h** respecto del horario publicado (Art. 48) → determinista.
+* Daño acreditado por demora: CA Art. 141 (doméstico, AO) / Montreal Art. 19 (internacional, SDR) — se mide contra la **llegada** (Pin 2). → \[REQUIERE EVALUACIÓN\]
+* Eximente de incidentales (Art. 44): meteo / caso fortuito / fuerza mayor (subsiste el deber de información), o aviso ≥ 15 días. → \[EVAL: causa\]
+
+#### **ARB-2 — Cancelación (Arts. 41, 43, 44, 47, 48)**
+
+* **Cancelación anticipada** (hasta 30 días antes, Art. 41): alternativas deterministas — a) inclusión en el vuelo inmediato posterior con disponibilidad, misma clase y transportador; b) endoso a transportador con convenio de contingencias; c) reencaminamiento por otra ruta u otro medio. Si ninguna resulta aceptable → **reintegro**.
+* **Cancelación** (Art. 43 in fine): reubicación de conexiones \+ inclusión en vuelo inmediato posterior / endoso / reencaminamiento. Quien acepta voluntaria y expresamente una alternativa → sin reclamo posterior (salvo incidentales).
+* **Reintegro (Arts. 47–48):** plazo de **30 días**, mismo medio y moneda. Cálculo determinista (Art. 48): ningún tramo realizado → tarifa completa; un tramo realizado → interno: tarifa desde el punto de cancelación al destino; internacional: la **mayor** entre (1) tarifa de ida desde la interrupción hasta el destino o primera parada-estancia y (2) diferencia entre tarifa pagada y transporte utilizado.
+* **Compensación tarifada: NO EXISTE** (continuidad con IV-A). Daño acreditado → Montreal/CA \+ \[EVAL\].
+* Eximentes del Art. 44 sobre incidentales. → \[EVAL: causa\]
+
+#### **ARB-3 — Reprogramación anticipada imputable (Art. 42) — régimen propio**
+
+Reprogramación de fecha y/u horario de partida **imputable al transportador** → servicios incidentales del Art. 43 según la extensión de la demora, **excepto**: i) aviso ≥ **2 semanas** respecto del día de salida; o ii) aviso entre 2 semanas y **7 días** \+ transporte alternativo que permita llegar al destino final. (Estructura espejo parcial de EU261 Art. 5(1)(c).)
+
+**Revisión de la v2.1.1:** en este régimen la reprogramación **no** se subsume en cancelación: es tipo propio con excepciones propias → **D1**.
+
+#### **ARB-4 — Overbooking / denegación de embarque (Arts. 38, 39, 45, 46)**
+
+* **Overbooking** (Art. 45): derecho al régimen compensatorio de los Arts. 41/42/43 (alternativas \+ incidentales).
+* **Voluntarios** (Art. 46): compensación **según las Regulaciones del Transportador** → **no tarifada por la norma** → no determinista (continuidad con IV-A); aceptación \+ transporte alternativo \= sin reclamo posterior.
+* **Denegación con causa** (Art. 38: seguridad, documentación, conducta, tarifa impaga) → excluida del régimen compensatorio.
+* **No show** (Art. 39) y presentación al embarque (Art. 34): pasajero no presentado en tiempo → no show. Conecta con el campo 18 de la Tabla A.
+
+#### **ARB-5 — Equipaje (Arts. 50–61, 70)**
+
+* **Pérdida o retraso** (Art. 61 a): **protesto dentro de 10 días (interno) / 21 días (internacional)** desde que el equipaje debió ponerse a disposición.
+  * **Retraso:** compensación, dentro de las **24 h desde el protesto**, de los **gastos de primera necesidad** al pasajero que no esté en su lugar de residencia y esté en el destino del viaje → derecho determinista; monto \= gastos de primera necesidad \[suficiencia \= EVAL\].
+  * **No localización:** indemnización según los límites legales del vuelo (CA en AO doméstico / Montreal en SDR internacional), **deduciendo** lo pagado por primera necesidad; \+ reembolso de los cargos abonados por el equipaje.
+  * Demora de entrega por razones técnicas o meteorológicas → sin responsabilidad **salvo negligencia probada** (Art. 70). → \[EVAL\]
+* **Daño** (Art. 61 b): **daños menores** (que no afectan la funcionalidad, o propios del manipuleo) → **no indemnizables** (novedad restrictiva vs. IV-A). Daño que afecta la funcionalidad → compensación de hasta **3 AO por bulto** contra protesto efectuado **antes de retirarse del aeródromo**; si el pasajero no la acepta → reclamo por las vías legales dentro de los límites aplicables. Restantes casos: reclamo antes de retirarse o máx. **3 días (interno) / 7 días (internacional)** desde la entrega; el transportador repara, sustituye o indemniza.
+* Retiro del equipaje sin reclamo \= presunción *prima facie* de entrega en buenas condiciones (Art. 58). Equipaje no registrado (de mano) → sin responsabilidad del transportador (Art. 61 in fine).
+* **Gate de caducidad:** plazos idénticos a IV-A (3/7 daño; 10/21 pérdida-retraso), pero el Anexo I formula el protesto como carga ("deberá presentar") **sin la sanción expresa de inadmisibilidad** del viejo Art. 20 b. En internacional la sanción la aporta **Montreal Art. 31(4)** (inadmisibilidad expresa). En doméstico, la fuente de la sanción → **D2**. Tratamiento PIR y cómputo: Pins 3 y 5 se mantienen.
+
+#### **ARB-6 — Muerte / lesión**
+
+CA Arts. 139/144 (doméstico) / Montreal Art. 17(1) (internacional) \+ **Reglamento de pagos indemnizatorios adelantados** (Anexo III del Dec. 809/2024: pagos a cuenta en accidentes, deducibles, sin reconocimiento de responsabilidad). Fuera del intake estándar → **excepción de análisis manual** (continuidad con IV-A).
+
+### **Matriz de categorías exhaustivas — Reglamento 809/2024**
+
+| Categoría | Base | Estado de determinismo |
+| ----- | ----- | ----- |
+| Compensación tarifada | — | **NO APLICA.** El Reglamento no tarifa compensación; overbooking voluntario remite a Regulaciones del Transportador → no determinista |
+| Reintegro / reembolso | Arts. 47–48 | **Determinista** (reglas de cálculo expresas \+ plazo 30 días \+ gatillo demora \>4 h) |
+| Reencaminamiento / endoso / inclusión | Arts. 41, 43, 45 | Derecho **determinista** |
+| Servicios incidentales | Arts. 42–44 | **Determinista escalonado**: nocturno (00–06) / \>4 h (comidas) / \>8 h (\+ alojamiento y traslados); exenciones Art. 44 → \[EVAL: causa\] |
+| Gastos de primera necesidad (equipaje retrasado) | Art. 61 a | **Determinista** (24 h post-protesto; pasajero fuera de su residencia); monto \[suficiencia \= EVAL\] |
+| Equipaje — daño funcional | Art. 61 b | Tope determinista **3 AO/bulto** vía protesto antes de retirarse; resto → límites CA/Montreal (valor AO/SDR diferido) |
+| Equipaje — demora/pérdida | Art. 61 a \+ CA/Montreal | Tope determinista (unidad AO/SDR); **admisibilidad sujeta a protesto** (10/21) → gate \+ D2 |
+| Daño emergente / consecuencial acreditado | Montreal 19 (intl) / CA 141 \+ CCyC-LDC supletoria (dom.) | Monto \= acreditado \[suficiencia \= EVAL\] |
+| Daño moral | CCyC 1741 / Montreal 19 / LDC supletoria | \[EVAL: quantum y prueba\] (continuidad IV-A) |
+| Muerte / lesión | CA / Montreal 17(1) \+ Anexo III | **Excepción de análisis manual** |
+| Información / trato digno | Arts. 4–11, 16 | Derechos instrumentales — no son rubros autónomos deterministas; insumo del daño moral \[EVAL\] |
+
+### **Nodos \[REQUIERE EVALUACIÓN\] — consolidado IV-B**
+
+| Nodo | Duda/dato concreto |
+| ----- | ----- |
+| Causa de la disrupción | Meteo / caso fortuito / fuerza mayor (Art. 44) → apaga solo los servicios incidentales (ver tabla transversal de eximentes) |
+| Compensación overbooking voluntario | Regulaciones del transportador (Art. 46) — no tarifada |
+| Daño moral | Quantum y prueba |
+| Suficiencia probatoria | Gastos, primera necesidad, incidentales |
+| Suficiencia de la protesta (PIR) | Pin 3 — se mantiene |
+| Negligencia probada (equipaje demorado por causa técnica/meteo) | Art. 70 — carga del pasajero |
+| Sanción de caducidad doméstica sin protesto | **D2** — fuente normativa post-derogación del Art. 20 b |
+| Cotización AO / tope SDR | Diferidos (cuantificación) |
+
+### **Prescripción — IV-B (Art. 71)**
+
+* **1 año interno / 2 años internacional** (continuidad), con puntos de arranque **expresos en el propio Art. 71**: la llegada (demoras y pérdidas); el día en que debió llegar la aeronave (cancelación); la detención del transporte (daños derivados de la cancelación); la declaración de ausencia, lesión o fallecimiento (daños personales); **documentos de transporte no utilizados → desde la emisión**.
+* Cómputo: días corridos con **exclusión del dies a quo** (def. DÍAS, Art. 1) — refinamiento del Pin 5 aplicable solo a IV-B.
+
+### **Dudas D1–D4 — RESUELTAS (JPA, 30-jul-2026)**
+
+* **D1 — Tipo `reprogramacion` en el motor: APROBADO.** Reintroducir `reprogramacion` al dominio de `incidentes` **para el ruleset IV-B**; errata de backfill: legacy `tipo_incidencia='reprogramacion'` con `fecha_incidente` ≥ 10-oct-2024 → `["reprogramacion"]`; con fecha anterior se mantiene el mapeo v2.1.1 (→ cancelación). Fundamento: mapear a cancelación post-809 concedería derechos del Art. 41 (alternativas \+ reintegro) que el Art. 42 no otorga a la mera reprogramación → riesgo de sobre-reclamo.
+* **D2 — Caducidad doméstica sin protesto (post-809): APROBADA la regla conservadora.** Doméstico IV-B: protesto fuera de plazo → gate `pasa_provisional` \+ \[EVAL: sanción de caducidad\]. Internacional: `inadmisible` (Montreal Art. 31(4), sanción expresa).
+* **D3 — Destino contractual en ida y vuelta: VERIFICADO (VA).** Doctrina uniforme round-trip: destino \= punto de partida (línea *Grein v. Imperial Airways*; anclada en el propio Art. 1(2) Montreal). Aplicada en la subsección de Jurisdicción.
+* **D4 — "Horario nocturno" (Art. 43 a): FIJADO.** Criterio: espera transcurriendo (total o parcialmente) en la franja 00:00–06:00, por finalidad asistencial. Incorporado a ARB-1 como regla del ruleset con nota.
+
+---
+
 # **Parte V — Sello de verificación de fuentes**
 
 Cada umbral/monto con consecuencia operativa, etiquetado. VA \= verificado-ahora (sesiones 18 y 19-jun-2026); CP \= conocimiento-previo; PV \= por-verificar.
@@ -444,7 +593,7 @@ Cada umbral/monto con consecuencia operativa, etiquetado. VA \= verificado-ahora
 | Nómina de NEB por Estado (LBA/DGAC/ENAC, etc.) | **CP** | lista oficial Comisión Europea (verificación caso a caso) |
 | Legislación nacional UE como derecho de relleno (equipaje doméstico, Art. 12, prescripción, consumo) | **CP** | estructura; contenido sustantivo diferido |
 | **— Tarea 3 · Argentina —** |  |  |
-| Res 1532/98 vigente, Anexo I (pasajeros/equipaje); estructura por artículos | **VA** | InfoLEG texact 54791 (texto consolidado) |
+| Res 1532/98, Anexo I (pasajeros/equipaje); estructura por artículos. **Corrección v2.2: DEROGADA por Dec. 809/2024 desde el 10-oct-2024**; texto válido solo como ley al momento del hecho (IV-A) | **VA** | InfoLEG texact 54791 \+ InfoLEG 403874 |
 | Res 1532 Art. 12 (sust. por Res ANAC 203/2013): régimen de disrupción; gatillo demora \>4 h; reencaminamiento/endoso/reintegro; incidentales; exención meteorológica | **VA** | InfoLEG texact 54791 Art. 12 (mod. B.O. 12/4/2013) |
 | Res 1532 NO tarifa compensación; "compensación por embarque denegado" \= regulaciones del transportador | **VA** | InfoLEG texact 54791 Art. 12 a |
 | Res ANAC 727/2019 sustituye definición de "regulaciones del transportador" | **VA** | InfoLEG texact 54791 (nota, B.O. 14/11/2019) |
@@ -462,4 +611,19 @@ Cada umbral/monto con consecuencia operativa, etiquetado. VA \= verificado-ahora
 | Montreal 1999 (Ley 26.451) overlay; Art. 29 (no punitivo) y Art. 35 (2 años) | **VA** | texto del Convenio \+ Ley 26.451 (citados en fallos) |
 | Art. 52 bis LDC: texto base sin cambios; tope remite al Art. 47 inc. b (montos act. por Ley 27.742); anteproyecto "grave menosprecio" NO vigente | **VA** | InfoLEG \+ doctrina |
 | Res ANAC 188/2026 (conciliación voluntaria, \~ago 2026): contexto, no altera admisibilidad | **CP** | a verificar vigencia/alcance al activarse |
-
+| **— v2.2 · Decreto 809/2024 (sesión 30-jul-2026) —** |  |  |
+| Dec. 809/2024: aprueba el Reglamento del Contrato Aéreo de Pasajeros y Equipaje (Anexo I); deroga la Res 1532/98 (Art. 8); vigencia 30 días corridos desde B.O. 10-sep-2024 → 10-oct-2024 (Art. 7) | **VA** | InfoLEG norma 403874; B.O. 10-sep-2024 |
+| Anexo I Art. 2: ámbito — servicios que exploten en la RA, empresas nacionales y extranjeras, cualquiera sea el lugar de celebración del contrato | **VA** | InfoLEG 403874, Anexo I |
+| Anexo I Art. 3: prelación — intl: tratados \> CA \> Reglamento \> Regulaciones; interno: CA \> Reglamento \> Regulaciones | **VA** | InfoLEG 403874, Anexo I |
+| Anexo I Art. 43: incidentales escalonados por retraso de partida — nocturno (00–06) / \>4 h comidas / \>8 h \+ alojamiento y traslados | **VA** | InfoLEG 403874, Anexo I |
+| Anexo I Arts. 41–42: cancelación anticipada (hasta 30 días, alternativas \+ reintegro) y reprogramación con régimen propio (excepciones 2 semanas / 7 días \+ alternativo) | **VA** | InfoLEG 403874, Anexo I |
+| Anexo I Art. 44: eximentes de incidentales (meteo / caso fortuito / fuerza mayor, con deber de información; aviso ≥15 días) | **VA** | InfoLEG 403874, Anexo I |
+| Anexo I Arts. 45–46: overbooking → régimen 41/42/43; voluntarios → compensación por Regulaciones del Transportador (no tarifada) | **VA** | InfoLEG 403874, Anexo I |
+| Anexo I Arts. 47–48: reintegro en 30 días, mismo medio/moneda; reglas de cálculo; gatillo demora \>4 h | **VA** | InfoLEG 403874, Anexo I |
+| Anexo I Art. 61: equipaje — protesto 10/21 (pérdida-retraso) y 3/7 o antes de retirarse (daño); primera necesidad en 24 h; daños menores no indemnizables; daño funcional 3 AO/bulto | **VA** | InfoLEG 403874, Anexo I |
+| Anexo I Art. 71: prescripción 1 año interno / 2 años intl con puntos de arranque expresos; documentos no utilizados desde la emisión | **VA** | InfoLEG 403874, Anexo I |
+| Anexo I Arts. 13, 69–70: materia federal; período de responsabilidad; negligencia en demora de entrega de equipaje | **VA** | InfoLEG 403874, Anexo I |
+| Dec. 809/2024 Arts. 4–6: Servicio de Conciliación (electrónico, voluntario) \+ Registro de Conciliadores → reglamentado por Res. 188/2026 | **VA** | InfoLEG 403874 |
+| Sanción de caducidad doméstica sin protesto post-809 (D2): regla conservadora del motor fijada por decisión JPA (`pasa_provisional` \+ EVAL); fuente normativa sustantiva sigue **PV** para eventual litigio | **PV/decidido** | Decisión JPA 30-jul-2026 |
+| Destino contractual en ida/vuelta \= punto de partida (Montreal Art. 33; línea *Grein v. Imperial Airways*; ancla textual Art. 1(2)) | **VA** | Texto Convenio (Art. 1(2)) \+ doctrina concordante (verificación 30-jul-2026) |
+| **Regla de protocolo (v2.2): toda verificación VA debe cubrir texto Y vigencia** (chequeo de derogación/sustitución), no solo el texto consolidado servido por la fuente | — | Lección del hallazgo 1532/809 |
