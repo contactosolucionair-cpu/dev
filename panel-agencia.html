@@ -138,6 +138,31 @@
     .upload-item__rm{background:none;border:none;cursor:pointer;color:var(--t4);padding:2px;border-radius:3px}
     .upload-item__rm:hover{color:var(--err)}
 
+    /* ---- Intake v2: confirmación de ruta y armador de escalas ---- */
+    .ruta-box{border:1px solid var(--bd);border-left:3px solid var(--g);border-radius:8px;padding:14px 16px;margin-top:12px;background:var(--bg)}
+    .ruta-box__t{font-family:var(--fh);font-size:.86rem;font-weight:700;color:var(--t1);margin-bottom:2px}
+    .ruta-box__d{font-size:.72rem;color:var(--t3);margin:0 0 10px;line-height:1.5}
+    .ruta-dir{font-size:.64rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin:9px 0 4px}
+    .ruta-dir:first-child{margin-top:0}
+    .tramo{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:var(--w);border:1.5px solid var(--bd);border-radius:8px;padding:9px 11px;margin-bottom:5px;cursor:pointer;font-family:var(--f);transition:all .15s}
+    .tramo:hover{border-color:var(--g)}
+    .tramo.sel{border-color:var(--g);background:var(--g05)}
+    .tramo__mk{flex:0 0 15px;height:15px;border:1.5px solid var(--bd);border-radius:50%;position:relative}
+    .tramo.sel .tramo__mk{border-color:var(--g);background:var(--g)}
+    .tramo.sel .tramo__mk::after{content:"";position:absolute;inset:4px;background:var(--w);border-radius:50%}
+    .tramo__ruta{font-family:var(--fm);font-size:.78rem;font-weight:700;color:var(--t1)}
+    .tramo__meta{font-size:.66rem;color:var(--t4);margin-top:1px}
+    .tramo__nota{font-size:.64rem;color:var(--warn);margin-top:1px}
+    .armador{border:1px dashed var(--bd);border-radius:8px;padding:12px;background:var(--bg)}
+    .armador__head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+    .armador__t{font-family:var(--fh);font-size:.78rem;font-weight:700;color:var(--t1)}
+    .armador__hint{font-size:.66rem;color:var(--t4);margin:6px 0 0}
+    .arm-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+    .arm-row__n{flex:0 0 auto;font-family:var(--fm);font-size:.68rem;color:var(--t4);min-width:58px}
+    .arm-row input{flex:1}
+    .arm-row__rm{background:none;border:none;cursor:pointer;color:var(--t4);font-size:.95rem;line-height:1;padding:0 4px}
+    .arm-row__rm:hover{color:var(--err)}
+
     /* ---- Checkbox agree ---- */
     .agree-box{background:var(--warnbg);border:1px solid rgba(212,168,83,.3);border-radius:7px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-top:4px}
     .agree-box input[type="checkbox"]{accent-color:var(--g);margin-top:2px;cursor:pointer;flex-shrink:0}
@@ -237,9 +262,11 @@
       </div>
 
       <div class="form-wrap">
-        <!-- Scan de documentos -->
-        <div class="form-section">
-          <div class="form-section__title">Documentos del pasaje (opcional)</div>
+        <!-- Scan de documentos. Intake v2: es el camino recomendado, porque de acá sale
+             el itinerario tramo por tramo. El manual queda igual de disponible. -->
+        <div class="form-section" id="sec-scan">
+          <div class="form-section__title">Cargá la reserva o el pasaje</div>
+          <div class="form-hint" style="font-size:.74rem;color:var(--t3);margin-bottom:10px">La IA arma el itinerario completo. Después confirmás en qué tramo estuvo el problema.</div>
           <div class="upload-area" id="upload-area">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--t4)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             <div class="upload-area__txt">Arrastrá o hacé clic para subir imagen/PDF del pasaje</div>
@@ -252,6 +279,17 @@
               Completar con IA
             </button>
             <span id="scan-msg" style="font-family:var(--fm);font-size:.68rem;color:var(--t3);align-self:center"></span>
+          </div>
+
+          <!-- Confirmación de la ruta extraída: aparece solo si hay más de un tramo -->
+          <div class="ruta-box" id="ruta-box" style="display:none">
+            <div class="ruta-box__t">¿En qué tramo estuvo el problema?</div>
+            <p class="ruta-box__d">Esto es lo que leímos de los documentos. Elegí el tramo del incidente: de esa dirección salen el origen, el destino y la distancia del análisis legal.</p>
+            <div id="ruta-tramos"></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+              <button type="button" class="btn btn--primary" id="ruta-ok" style="font-size:.74rem">Confirmar tramo</button>
+              <button type="button" class="btn btn--ghost" id="ruta-descartar" style="font-size:.74rem">La ruta no es correcta, la cargo a mano</button>
+            </div>
           </div>
         </div>
 
@@ -299,8 +337,22 @@
             <div class="form-group"><label>Nro. de vuelo</label><input type="text" id="f-vuelo-nro" placeholder="AR 1234" /></div>
             <div class="form-group"><label>Fecha del vuelo</label><input type="date" id="f-fecha-vuelo" /></div>
             <div class="form-group"><label>PNR (Código de Reserva)</label><input type="text" id="f-pnr" /></div>
+            <!-- Intake v2: orientan la carga a UNA dirección, la del viaje donde
+                 ocurrió el problema, que es la unidad de análisis del motor legal. -->
+            <div class="form-group"><label>¿El viaje era solo ida o ida y vuelta?</label>
+              <select id="f-tipo-viaje"><option value="">Seleccionar...</option><option value="solo_ida">Solo ida</option><option value="ida_vuelta">Ida y vuelta</option></select>
+            </div>
+            <div class="form-group"><label>¿Hubo escalas en el viaje del problema?</label>
+              <select id="f-escalas"><option value="">Seleccionar...</option><option value="no">No, fue directo</option><option value="si">Sí, hubo escalas</option></select>
+            </div>
             <div class="form-group"><label>Origen</label><input type="text" id="f-origen" placeholder="EZE - Buenos Aires" data-airport="true" autocomplete="off" /></div>
             <div class="form-group"><label>Destino</label><input type="text" id="f-destino" placeholder="MIA - Miami" data-airport="true" autocomplete="off" /></div>
+            <div class="form-group form-group--full armador" id="armador" style="display:none">
+              <div class="armador__head"><span class="armador__t">Escalas del viaje, en orden</span><button type="button" class="btn btn--ghost" id="arm-add" style="font-size:.7rem">+ Agregar escala</button></div>
+              <div id="arm-lista"></div>
+              <p class="armador__hint">Solo las escalas intermedias: origen y destino son los de arriba.</p>
+              <div id="arm-tramos"></div>
+            </div>
             <div class="form-group"><label>Tipo de incidencia *</label>
               <select id="f-incidencia">
                 <option value="">Seleccionar...</option>
@@ -1033,11 +1085,270 @@
       if (data.gastos_monto)  fill('f-monto-gastos', data.gastos_monto);
       if (data.gastos_moneda) fill('f-moneda', data.gastos_moneda);
       msg.textContent = 'Datos completados. Revisalos antes de enviar.';
+      /* Intake v2: el itinerario tramo por tramo. Si hay más de uno, hay que decir en
+         cuál estuvo el problema antes de que el par origen/destino signifique algo. */
+      procesarItinerarioIa(data.segmentos, data.direccion_afectada_sugerida);
     })
     .catch(function () {
       btn.disabled = false; msg.textContent = 'Error de conexión.';
     });
   });
+
+  /* ============ INTAKE v2 · DIRECCIÓN AFECTADA ============
+     Mismo criterio que el formulario público (src/js/app.js), sin las simplificaciones
+     pensadas para el pasajero: acá el operador es usuario experto. La unidad de
+     análisis del motor legal es la DIRECCIÓN del viaje donde ocurrió el incidente
+     (enmienda legal v2.1.2), no el billete entero: en un ida y vuelta, cada dirección
+     es un itinerario aparte. El formulario es la fuente de verdad; el scan lo rellena. */
+
+  var elRutaBox = document.getElementById('ruta-box');
+  var elRutaTramos = document.getElementById('ruta-tramos');
+  var elTipoViaje = document.getElementById('f-tipo-viaje');
+  var elEscalas = document.getElementById('f-escalas');
+  var elArmador = document.getElementById('armador');
+  var elArmLista = document.getElementById('arm-lista');
+  var elArmTramos = document.getElementById('arm-tramos');
+
+  /* Metadatos por par de aeropuertos que salieron de los documentos escaneados.
+     Indexados por 'EZE-MAD' para sobrevivir a que se agreguen o saquen escalas. */
+  var metaTramos = {};
+  var tramoSel = 0;
+  var fuenteItinerario = 'declaracion_pasajero';
+
+  function iataDeTexto(txt) {
+    var m = String(txt || '').trim().toUpperCase().match(/^([A-Z]{3})\b/);
+    return m ? m[1] : '';
+  }
+
+  function fichaTramoHtml(t, i, sel) {
+    var meta = [];
+    if (t.vuelo) meta.push(t.vuelo);
+    if (t.fecha) meta.push(t.fecha);
+    return '<button type="button" class="tramo' + (i === sel ? ' sel' : '') + '" data-i="' + i + '">'
+      + '<span class="tramo__mk"></span><span>'
+      + '<span class="tramo__ruta">' + esc(t.o) + ' → ' + esc(t.d) + '</span>'
+      + (meta.length ? '<span class="tramo__meta">' + esc(meta.join(' · ')) + '</span>' : '')
+      + (t.nota ? '<span class="tramo__nota">' + esc(t.nota) + '</span>' : '')
+      + '</span></button>';
+  }
+
+  function pintarTramos(cont, tramos, agrupar) {
+    if (!cont) return;
+    var h = '', dirPrev = null;
+    tramos.forEach(function (t, i) {
+      if (agrupar && t.dir && t.dir !== dirPrev) {
+        h += '<div class="ruta-dir">' + (t.dir === 'vuelta' ? 'Vuelta' : 'Ida') + '</div>';
+        dirPrev = t.dir;
+      }
+      h += fichaTramoHtml(t, i, tramoSel);
+    });
+    cont.innerHTML = h;
+    Array.prototype.forEach.call(cont.querySelectorAll('.tramo'), function (b) {
+      b.addEventListener('click', function () {
+        tramoSel = parseInt(b.getAttribute('data-i'), 10) || 0;
+        Array.prototype.forEach.call(cont.querySelectorAll('.tramo'), function (x) {
+          x.classList.toggle('sel', x === b);
+        });
+      });
+    });
+  }
+
+  /* Los tramos que la IA no supo ubicar se cuelgan de la dirección anterior: es una
+     pista del modelo, no un dato que se pueda presumir. */
+  function direccionDe(segs, i) {
+    for (var k = i; k >= 0; k--) { if (segs[k].direccion) return segs[k].direccion; }
+    return '';
+  }
+
+  function aplicarDireccion(segsDir, idxAfectado, tipoViaje) {
+    if (!segsDir.length) return;
+    metaTramos = {};
+    segsDir.forEach(function (s) {
+      metaTramos[iataDeTexto(s.origen) + '-' + iataDeTexto(s.destino)] =
+        { fecha: s.fecha || '', vuelo: s.vuelo_nro || '', carrier: s.aerolinea_operadora || '' };
+    });
+    fuenteItinerario = 'adjunto';
+    tramoSel = idxAfectado;
+
+    if (elTipoViaje && tipoViaje) elTipoViaje.value = tipoViaje;
+    if (elEscalas) elEscalas.value = segsDir.length > 1 ? 'si' : 'no';
+    pintarArmador(segsDir.slice(0, -1).map(function (s) { return s.destino; }));
+    sincronizarArmador();
+
+    var fechaTramo = segsDir[idxAfectado] && segsDir[idxAfectado].fecha;
+    if (fechaTramo && /^\d{4}-\d{2}-\d{2}$/.test(fechaTramo)) {
+      var fEl = document.getElementById('f-fecha-vuelo');
+      if (fEl) fEl.value = fechaTramo;
+    }
+
+    var oEl = document.getElementById('f-origen'), dEl = document.getElementById('f-destino');
+    if (oEl && window.AirportSelect) { oEl.value = ''; oEl.removeAttribute('data-iata'); window.AirportSelect.setFromText(oEl, segsDir[0].origen).then(refrescarTramosManual); }
+    if (dEl && window.AirportSelect) { dEl.value = ''; dEl.removeAttribute('data-iata'); window.AirportSelect.setFromText(dEl, segsDir[segsDir.length - 1].destino).then(refrescarTramosManual); }
+  }
+
+  function procesarItinerarioIa(segs, sugerida) {
+    if (!segs || !segs.length) return;
+
+    var tramos = segs.map(function (s, i) {
+      return {
+        o: s.origen, d: s.destino, vuelo: s.vuelo_nro, fecha: s.fecha, dir: direccionDe(segs, i),
+        nota: (iataDeTexto(s.origen) && iataDeTexto(s.destino)) ? '' : 'Hay que confirmar este aeropuerto',
+      };
+    });
+    var dirs = {};
+    tramos.forEach(function (t) { if (t.dir) dirs[t.dir] = true; });
+    var tipoViaje = Object.keys(dirs).length > 1 ? 'ida_vuelta' : 'solo_ida';
+
+    if (segs.length === 1) { aplicarDireccion(segs, 0, tipoViaje); return; }
+
+    tramoSel = 0;
+    if (sugerida) {
+      for (var i = 0; i < tramos.length; i++) { if (tramos[i].dir === sugerida) { tramoSel = i; break; } }
+    }
+    pintarTramos(elRutaTramos, tramos, true);
+    if (elRutaBox) elRutaBox.style.display = 'block';
+
+    document.getElementById('ruta-ok').onclick = function () {
+      var dirElegida = tramos[tramoSel].dir;
+      var segsDir = [], idxEnDir = 0;
+      segs.forEach(function (s, i) {
+        if (dirElegida && tramos[i].dir !== dirElegida) return;
+        if (i === tramoSel) idxEnDir = segsDir.length;
+        segsDir.push(s);
+      });
+      aplicarDireccion(segsDir, idxEnDir, tipoViaje);
+      if (elRutaBox) elRutaBox.style.display = 'none';
+    };
+    document.getElementById('ruta-descartar').onclick = function () {
+      /* Descartar la ruta no descarta el resto del scan: solo deja el itinerario en
+         blanco para cargarlo a mano. */
+      metaTramos = {}; fuenteItinerario = 'declaracion_pasajero'; tramoSel = 0;
+      if (elRutaBox) elRutaBox.style.display = 'none';
+    };
+  }
+
+  /* ---- Armador de escalas intermedias ---- */
+
+  function filaEscalaHtml(valor, n) {
+    return '<div class="arm-row"><span class="arm-row__n">Escala ' + n + '</span>'
+      + '<input type="text" class="arm-ap" data-airport="true" autocomplete="off" placeholder="ATL - Atlanta" value="' + esc(valor || '') + '" />'
+      + '<button type="button" class="arm-row__rm" title="Quitar">✕</button></div>';
+  }
+
+  function pintarArmador(valores) {
+    if (!elArmLista) return;
+    elArmLista.innerHTML = (valores || []).map(function (v, i) { return filaEscalaHtml(v, i + 1); }).join('');
+    Array.prototype.forEach.call(elArmLista.querySelectorAll('.arm-ap'), function (inp) {
+      if (!window.AirportSelect) return;
+      window.AirportSelect.attach(inp);
+      if (inp.value) window.AirportSelect.setFromText(inp, inp.value).then(refrescarTramosManual);
+    });
+  }
+
+  function renumerarEscalas() {
+    Array.prototype.forEach.call(elArmLista.querySelectorAll('.arm-row__n'), function (el, i) {
+      el.textContent = 'Escala ' + (i + 1);
+    });
+  }
+
+  function puntosRuta() {
+    var pts = [];
+    var nodo = function (el) { return el ? { label: el.value.trim(), iata: el.getAttribute('data-iata') || '' } : null; };
+    var o = nodo(document.getElementById('f-origen'));
+    if (o) pts.push(o);
+    if (elEscalas && elEscalas.value === 'si' && elArmLista) {
+      Array.prototype.forEach.call(elArmLista.querySelectorAll('.arm-ap'), function (inp) {
+        var n = nodo(inp);
+        if (n && (n.label || n.iata)) pts.push(n);
+      });
+    }
+    var d = nodo(document.getElementById('f-destino'));
+    if (d) pts.push(d);
+    return pts;
+  }
+
+  function tramosDePuntos(pts) {
+    var out = [];
+    for (var i = 0; i < pts.length - 1; i++) {
+      var meta = metaTramos[pts[i].iata + '-' + pts[i + 1].iata] || {};
+      out.push({
+        o: pts[i].label || '?', d: pts[i + 1].label || '?',
+        oIata: pts[i].iata, dIata: pts[i + 1].iata,
+        vuelo: meta.vuelo || '', fecha: meta.fecha || '', carrier: meta.carrier || '', dir: '',
+      });
+    }
+    return out;
+  }
+
+  function refrescarTramosManual() {
+    if (!elArmTramos) return;
+    var tramos = tramosDePuntos(puntosRuta());
+    if (tramos.length < 2) { elArmTramos.innerHTML = ''; tramoSel = 0; return; }
+    if (tramoSel >= tramos.length) tramoSel = 0;
+    elArmTramos.innerHTML = '<div class="ruta-dir">¿En qué tramo estuvo el problema?</div><div id="arm-tramos-lista"></div>';
+    pintarTramos(document.getElementById('arm-tramos-lista'), tramos, false);
+  }
+
+  function sincronizarArmador() {
+    if (!elArmador || !elEscalas) return;
+    var con = elEscalas.value === 'si';
+    elArmador.style.display = con ? 'block' : 'none';
+    if (con && elArmLista && !elArmLista.children.length) pintarArmador(['']);
+    refrescarTramosManual();
+  }
+
+  if (elEscalas) elEscalas.addEventListener('change', sincronizarArmador);
+  var btnArmAdd = document.getElementById('arm-add');
+  if (btnArmAdd) btnArmAdd.addEventListener('click', function () {
+    elArmLista.insertAdjacentHTML('beforeend', filaEscalaHtml('', elArmLista.children.length + 1));
+    var nuevo = elArmLista.lastElementChild.querySelector('.arm-ap');
+    if (window.AirportSelect) window.AirportSelect.attach(nuevo);
+    nuevo.focus();
+    refrescarTramosManual();
+  });
+  if (elArmLista) {
+    elArmLista.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('.arm-row__rm') : null;
+      if (!b) return;
+      var fila = b.closest('.arm-row');
+      if (fila) fila.remove();
+      renumerarEscalas();
+      refrescarTramosManual();
+    });
+    elArmLista.addEventListener('change', refrescarTramosManual);
+    /* Tipear invalida la procedencia: el itinerario ya no es el del documento. */
+    elArmLista.addEventListener('input', function () { fuenteItinerario = 'declaracion_pasajero'; });
+  }
+  ['f-origen', 'f-destino'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', refrescarTramosManual);
+    el.addEventListener('input', function () { fuenteItinerario = 'declaracion_pasajero'; });
+  });
+
+  /**
+   * Estado del formulario → `segmentos` del contrato §1.3, con la semántica de
+   * dirección afectada. Sin los IATA resueltos devuelve []: una columna en null es
+   * FALTA_DATO, que es honesto; media ruta inventada, no.
+   */
+  function segmentosDelFormulario() {
+    var tramos = tramosDePuntos(puntosRuta());
+    if (!tramos.length) return [];
+    if (!tramos.every(function (t) { return t.oIata && t.dIata; })) return [];
+    var sel = tramoSel < tramos.length ? tramoSel : 0;
+    var fechaVuelo = (document.getElementById('f-fecha-vuelo') || {}).value || '';
+    return tramos.map(function (t, i) {
+      return {
+        orden: i + 1,
+        origen_iata: t.oIata,
+        destino_iata: t.dIata,
+        /* El carrier operante solo viaja si salió de un documento (Tabla A fila 5). */
+        carrier_operante: t.carrier || '',
+        fecha: t.fecha || (i === sel ? fechaVuelo : ''),
+        afectado: i === sel,
+      };
+    });
+  }
 
   /* Submit caso */
   document.getElementById('btn-submit-caso').addEventListener('click', function () {
@@ -1105,6 +1416,19 @@
       var dIata = document.getElementById('f-destino').getAttribute('data-iata');
       if (oIata) payload.origen_iata = oIata;
       if (dIata) payload.destino_iata = dIata;
+
+      /* Intake v2: itinerario de la DIRECCIÓN AFECTADA. `origen`/`destino` y los IATA
+         son de esa dirección, no del billete entero (enmienda legal v2.1.2). Aditivo:
+         si la ruta no está completa no viaja nada y la carga sale igual que siempre. */
+      var segsForm = segmentosDelFormulario();
+      if (segsForm.length) {
+        payload.segmentos = segsForm;
+        payload.origen_iata = segsForm[0].origen_iata;
+        payload.destino_iata = segsForm[segsForm.length - 1].destino_iata;
+        payload.itinerario_fuente = fuenteItinerario;
+      }
+      var tipoViajeVal = (document.getElementById('f-tipo-viaje') || {}).value || '';
+      if (tipoViajeVal) payload.tipo_viaje = tipoViajeVal;
     }
 
     if (esEquipaje) {

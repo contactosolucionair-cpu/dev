@@ -35,6 +35,7 @@ import {
   sanearSegmentosCanonicos, extremosDireccionAfectada, derivarIncidentes,
   candidatosItinerario,
 } from './_utils/intake.js';
+import { leerFlagsPublicos } from './_utils/config-publica.js';
 
 export const config = {
   api: {
@@ -63,20 +64,9 @@ export default async function handler(req, res) {
     var body = req.body;
     if (!body) return res.status(400).json({ error: 'No body provided' });
 
-    /* Fetch feature flags from site_config table (with fallback to enabled) */
-    var flagAi = true;
-    try {
-      var cfgRes = await fetch(SB_URL + '/rest/v1/site_config?id=eq.global&select=feature_flags&limit=1', {
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
-      });
-      if (cfgRes.ok) {
-        var cfgRows = JSON.parse(await cfgRes.text());
-        if (cfgRows.length && cfgRows[0].feature_flags) {
-          var ff = cfgRows[0].feature_flags;
-          flagAi = ff.ai_extraction !== false;
-        }
-      }
-    } catch (e) { /* Flags default to true if config unavailable */ }
+    /* Feature flags desde site_config (default: prendido). Mismo lector que sirve
+       /api/public-config al navegador, así el front y este backstop nunca discrepan. */
+    var flagAi = (await leerFlagsPublicos(SB_URL, SB_KEY)).ai_extraction;
 
     var email = (body.email || '').trim();
 
@@ -94,6 +84,26 @@ export default async function handler(req, res) {
       /* ---- Step 1: Insert reclamo ---- */
       var ip = (req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim() || null;
 
+      /* ---- Intake v2: columnas del contrato del motor legal (Capa 1) ----
+         `segmentos` viene con la dirección afectada ya resuelta por el formulario y el
+         tramo del incidente marcado. De ahí salen `origen_iata`/`destino_iata`, que
+         son los extremos de ESA dirección (enmienda legal v2.1.2), no los del billete.
+         Si el formulario no pudo armar la ruta, la lista queda vacía y mandan los
+         campos sueltos de siempre: una columna en null es FALTA_DATO, que es honesto. */
+      var segmentosAlta = sanearSegmentosCanonicos(body.segmentos);
+      var extremos = extremosDireccionAfectada(segmentosAlta);
+      /* Campo CRÍTICO (Tabla A fila 6): sin esto todo caso nuevo nacía con `[]` y el
+         motor lo leía como FALTA_DATO. Se deriva de lo que eligió el pasajero. */
+      var incidentesAlta = derivarIncidentes(body.tipo_reclamo, body.tipo_incidencia, body.tipo_caso_equipaje);
+      var ahoraIso = new Date().toISOString();
+      var candidatosAlta = candidatosItinerario(segmentosAlta, body.itinerario_fuente, ahoraIso);
+      /* `tipo_viaje` no tiene columna y este ciclo no toca el schema, así que viaja como
+         evidencia declarativa: le dice al backoffice si el billete era redondo, que es
+         justo lo que hay que saber para dudar del par origen/destino. */
+      if (body.tipo_viaje === 'solo_ida' || body.tipo_viaje === 'ida_vuelta') {
+        candidatosAlta.push({ campo: 'tipo_viaje', valor: body.tipo_viaje, fuente: 'declaracion_pasajero', extraido_en: ahoraIso });
+      }
+
       var row = {
         /* Identity */
         nombre:                nombre,
@@ -107,10 +117,25 @@ export default async function handler(req, res) {
         fecha_vuelo:           body.fecha_vuelo || null,
         origen:                body.origen || null,
         destino:               body.destino || null,
-        /* `origen`/`destino` siguen siendo el label de display, sin cambios. Estos dos
-           son el dato canónico que consume el motor legal (Tabla A filas 1 y 2). */
-        origen_iata:           iata3(body.origen_iata),
-        destino_iata:          iata3(body.destino_iata),
+        /* `origen`/`destino` siguen siendo el label de display, sin cambios de escritura.
+           Su semántica, eso sí, pasa a ser la de los extremos de la DIRECCIÓN AFECTADA:
+           el formulario ahora pregunta por el viaje donde ocurrió el problema.
+           `origen_iata`/`destino_iata` son el dato canónico que consume el motor legal
+           (Tabla A filas 1 y 2), con esa misma semántica. */
+        origen_iata:           extremos.origen_iata || iata3(body.origen_iata),
+        destino_iata:          extremos.destino_iata || iata3(body.destino_iata),
+        /* Contrato §1.3: los tramos de la dirección afectada, con `afectado` en el del
+           incidente. Sin ruta completa queda `[]`, igual que hasta ahora. */
+        segmentos:             segmentosAlta,
+        incidentes:            incidentesAlta,
+        /* Candidatos con procedencia (§1.1). `verificado: false` siempre: la marca del
+           tramo afectado es declarativa y los campos críticos no se autoverifican desde
+           una sola fuente declarativa. El motor va a poder analizar el caso, pero lo
+           va a marcar provisional — que es exactamente lo que corresponde. */
+        datos_extraidos:       candidatosAlta,
+        campos_meta:           incidentesAlta.length
+                                 ? { incidentes: { verificado: false, fuente: 'formulario', conflicto: false } }
+                                 : {},
         pnr:                   body.pnr || null,
         /* Incident */
         tipo_reclamo:          body.tipo_reclamo || 'vuelo',

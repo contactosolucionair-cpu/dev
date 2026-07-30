@@ -279,6 +279,11 @@
     search: search,
     resolve: resolve,
     setFromText: setFromText,
+    /* init() solo engancha los inputs que existen al cargar la página. El armador de
+       tramos del intake crea inputs en caliente y necesita engancharlos él mismo.
+       attach() es idempotente (marca el input con __acReady), así que llamarlo de más
+       no duplica listeners. */
+    attach: attach,
     isReady: function () { return !!airports; }
   };
 })();

@@ -149,6 +149,31 @@ correr('candidatos con procedencia para datos_extraidos', function () {
     || igual('sin segmentos, sin candidatos', candidatosItinerario([], 'adjunto', null), []);
 });
 
+correr('payload real del formulario → columnas del motor (ida y vuelta, incidente en la vuelta)', function () {
+  /* Esto es exactamente lo que manda el front tras un scan EZE→ATL→TUL / TUL→ATL→EZE
+     con el problema en la vuelta: solo los tramos de esa dirección. */
+  var payload = {
+    tipo_reclamo: 'vuelo', tipo_incidencia: 'cancelacion', tipo_caso_equipaje: null,
+    tipo_viaje: 'ida_vuelta', itinerario_fuente: 'adjunto',
+    segmentos: [
+      { orden: 1, origen_iata: 'TUL', destino_iata: 'ATL', carrier_operante: 'Delta', fecha: '2026-05-24', afectado: true },
+      { orden: 2, origen_iata: 'ATL', destino_iata: 'EZE', carrier_operante: 'Delta', fecha: '2026-05-24', afectado: false },
+    ],
+  };
+  var segs = sanearSegmentosCanonicos(payload.segmentos);
+  var ext = extremosDireccionAfectada(segs);
+  var inc = derivarIncidentes(payload.tipo_reclamo, payload.tipo_incidencia, payload.tipo_caso_equipaje);
+  var cand = candidatosItinerario(segs, payload.itinerario_fuente, '2026-07-30T10:00:00Z');
+  return igual('dos tramos', segs.length, 2)
+    /* El par canónico es el de la dirección afectada: leído como billete entero daría
+       EZE→EZE, que es lo que la enmienda v2.1.2 vino a cerrar. */
+    || igual('origen/destino de la dirección afectada', [ext.origen_iata, ext.destino_iata], ['TUL', 'EZE'])
+    || igual('el afectado sigue siendo el primero', segs.map(function (s) { return s.afectado; }), [true, false])
+    || igual('incidentes derivado del formulario', inc, ['cancelacion'])
+    || igual('candidatos con fuente adjunto', cand.map(function (c) { return c.campo + ':' + c.fuente; }),
+        ['segmentos:adjunto', 'origen_iata:adjunto', 'destino_iata:adjunto']);
+});
+
 console.log('\nResumen');
 console.log('  ' + verde(ok + ' ok') + '   ' + (fail ? rojo(fail + ' fallan') : gris('0 fallan')) + '\n');
 process.exit(fail ? 1 : 0);

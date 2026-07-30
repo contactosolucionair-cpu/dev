@@ -14,14 +14,13 @@
 import { verifyAgency } from './_utils/agency-auth.js';
 import { etapaExterna } from './_utils/instancias.js';
 import { emailEnUso, mensajeEmailEnUso, crearUsuarioAuth, borrarUsuarioAuth } from './_utils/cuentas.js';
-
-/* Código IATA del combobox del panel. Sanea sin bloquear: si no es un código de 3
-   letras devuelve null y la carga sigue igual. La columna en null es exactamente lo
-   que el motor legal lee como FALTA_DATO. */
-function iata3(v) {
-  var s = (v == null ? '' : String(v)).trim().toUpperCase();
-  return /^[A-Z]{3}$/.test(s) ? s : null;
-}
+/* Helpers puros del intake, los mismos que usa el alta pública. `iata3` sanea sin
+   bloquear: si no es un código de 3 letras devuelve null y la carga sigue igual — la
+   columna en null es lo que el motor legal lee como FALTA_DATO. */
+import {
+  iata3, sanearSegmentosCanonicos, extremosDireccionAfectada,
+  derivarIncidentes, candidatosItinerario,
+} from './_utils/intake.js';
 
 export const config = {
   api: {
@@ -240,6 +239,16 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
   var refCode = 'CSA' + String(caseNum).padStart(5, '0');
   console.log('[agency/submit-claim] Agencia:', agencia.id, '| ref:', refCode, '| pasajero:', email);
 
+  /* Intake v2: mismas columnas del motor legal que escribe el alta pública. */
+  var segmentosB2B = sanearSegmentosCanonicos(body.segmentos);
+  var extremosB2B = extremosDireccionAfectada(segmentosB2B);
+  var incidentesB2B = derivarIncidentes(body.tipo_reclamo, body.tipo_incidencia, body.tipo_caso_equipaje);
+  var ahoraB2B = new Date().toISOString();
+  var candidatosB2B = candidatosItinerario(segmentosB2B, body.itinerario_fuente, ahoraB2B);
+  if (body.tipo_viaje === 'solo_ida' || body.tipo_viaje === 'ida_vuelta') {
+    candidatosB2B.push({ campo: 'tipo_viaje', valor: body.tipo_viaje, fuente: 'declaracion_pasajero', extraido_en: ahoraB2B });
+  }
+
   var row = {
     canal: 'B2B', fuente: 'Agencia',
     agencia_id: agencia.id, agente_nombre: agencia.nombre || null, agente_email: agencia.email || null,
@@ -255,10 +264,24 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
     fecha_vuelo:     body.fecha_vuelo     || null,
     origen:          body.origen          || null,
     destino:         body.destino         || null,
-    /* `origen`/`destino` siguen siendo el label de display, sin cambios. Estos dos son
-       el dato canónico que consume el motor legal (Tabla A filas 1 y 2). */
-    origen_iata:     iata3(body.origen_iata),
-    destino_iata:    iata3(body.destino_iata),
+    /* `origen`/`destino` siguen siendo el label de display, sin cambios de escritura.
+       Su semántica pasa a ser la de los extremos de la DIRECCIÓN AFECTADA (enmienda
+       legal v2.1.2): el panel ahora pregunta por el viaje donde ocurrió el problema.
+       `origen_iata`/`destino_iata` son el dato canónico del motor, con esa semántica. */
+    origen_iata:     extremosB2B.origen_iata || iata3(body.origen_iata),
+    destino_iata:    extremosB2B.destino_iata || iata3(body.destino_iata),
+    /* Contrato §1.3: tramos de la dirección afectada, con `afectado` en el del
+       incidente. Sin ruta completa queda `[]`, igual que hasta ahora. */
+    segmentos:       segmentosB2B,
+    /* Campo CRÍTICO (Tabla A fila 6): sin esto el caso nacía con `[]` y el motor lo
+       leía como FALTA_DATO. */
+    incidentes:      incidentesB2B,
+    /* Candidatos con procedencia (§1.1), siempre `verificado: false`: lo que declara
+       la agencia no se autoverifica. El motor analiza, pero marca provisional. */
+    datos_extraidos: candidatosB2B,
+    campos_meta:     incidentesB2B.length
+                       ? { incidentes: { verificado: false, fuente: 'formulario', conflicto: false } }
+                       : {},
     pnr:             body.pnr             || null,
     tipo_reclamo:    body.tipo_reclamo    || 'vuelo',
     tipo_incidencia: body.tipo_incidencia || null,
