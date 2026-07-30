@@ -90,12 +90,23 @@ function motivoSinIncidente(que, caso) {
 var MARCO_RES1532 = {
   marco: 'RES1532',
 
+  /* ÁMBITO AMPLIO (v2.2, subsección "Test D — Argentina"): el régimen argentino aplica
+     cuando la dirección afectada es doméstica argentina o internacional con origen O
+     DESTINO en Argentina. El criterio del Art. 1 es el servicio explotado en el país
+     —"servicios… que exploten en el país las empresas de bandera nacional y extranjera"—,
+     no la dirección del vuelo: el regreso MAD→EZE está cubierto igual que la ida. El lugar
+     de celebración del contrato es expresamente irrelevante, en ambos sentidos.
+
+     Hasta la v2.2 este test exigía que la dirección PARTIERA de Argentina, y por eso un
+     regreso a EZE devolvía 'no'. Es la ÚNICA corrección de resultado autorizada sobre el
+     ruleset IV-A en el mini-ciclo del Reglamento 809/2024: importa porque la cola pre-809
+     sigue viva (internacionales con prescripción bienal hasta ~oct-2026). */
   test: function (caso) {
-    var base = 'Res. ANAC 1532/98 Art. 1 (ámbito) — Test D del ruteo';
+    var base = 'Res. ANAC 1532/98 Art. 1 (ámbito: servicios que se exploten en el país) — Test D del ruteo, ámbito amplio v2.2';
     if (caso.internacional == null || !caso.origen) {
       return {
         aplica: 'falta_dato',
-        activado_por: 'No se pudo determinar el itinerario (doméstico AR o internacional que parte de AR)',
+        activado_por: 'No se pudo determinar el itinerario (doméstico AR o internacional con origen o destino en AR)',
         base_legal: base,
         dato_faltante: 'origen_iata / destino_iata',
       };
@@ -104,19 +115,21 @@ var MARCO_RES1532 = {
     if (domesticoAR) {
       return { aplica: 'si', via: 'D-domestico', activado_por: 'Test D: vuelo doméstico argentino', base_legal: base };
     }
-    if (caso.internacional === true && parteDe(caso, 'AR')) {
+    if (caso.internacional === true && tocaPais(caso, 'AR')) {
+      var desdeAR = parteDe(caso, 'AR');
       return {
         aplica: 'si',
-        via: 'D-internacional',
-        activado_por: 'Test D: vuelo internacional que parte de Argentina (' + caso.origen.iata + ')',
+        via: desdeAR ? 'D-internacional-origen' : 'D-internacional-destino',
+        activado_por: 'Test D: vuelo internacional con ' + (desdeAR ? 'origen' : 'destino') + ' en Argentina',
         base_legal: base,
         nota: 'Siendo internacional, se activa además el overlay Montreal (Test E).',
       };
     }
     return {
       aplica: 'no',
-      activado_por: 'Test D: el vuelo no es doméstico argentino ni internacional partiendo de Argentina',
+      activado_por: 'Test D: la dirección analizada no toca territorio argentino',
       base_legal: base,
+      nota: 'El lugar de celebración del contrato es irrelevante: una dirección que no toca Argentina no activa el régimen aunque el billete se haya comprado acá.',
     };
   },
 
