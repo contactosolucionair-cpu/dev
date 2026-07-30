@@ -1,8 +1,14 @@
 {
   "name": "solucionair-web",
   "version": "1.0.0",
+  "scripts": {
+    "test": "node tests/run.js"
+  },
   "dependencies": {
     "jszip": "^3.10.1",
     "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1"
   }
 }

@@ -347,13 +347,26 @@ caso** (editor de la entrada) y **Análisis legal** (botón Analizar + render de
 ### Tests
 
 ```bash
+npm install && npm test               # la suite entera (criterio de aceptación de todo ciclo)
+
 node tests/motor.test.js              # motor legal: todo
 node tests/motor.test.js CD-05        # filtra casos dorados por id o descripción
 node tests/motor.test.js --verbose    # imprime el análisis completo de cada caso
 node tests/intake.test.js             # helpers del intake (api/_utils/intake.js)
+node tests/itinerario.test.js         # sanitizeRuta: ciudades con varios aeropuertos
+node tests/formularios.test.js        # los 3 formularios de alta en un DOM real (jsdom)
+node tests/escaneo.test.js            # escaneo de IA punta a punta, con fetch mockeado
 ```
 
-Sin framework ni dependencias. Exit distinto de 0 si algo falla. Dos grupos:
+Sin framework. La única dependencia es `jsdom` (devDependency), y solo para las dos
+suites de front: las de backend siguen corriendo con `node` pelado. Exit distinto de 0 si
+algo falla. Cuatro grupos:
+
+- **Front en jsdom** (`formularios`, `escaneo`) — cargan el HTML real con su JS y lo
+  ejercitan. Existen porque el front no tiene build: los bugs de orden de ejecución no se
+  ven leyendo ni con `node --check`, solo ejecutando el archivo entero contra su markup.
+  `tests/lib/dom.js` tiene el harness y documenta sus dos trampas (sembrar `localStorage`
+  va en `beforeParse`; `fetch` hay que stubearlo siempre).
 
 - **Unitarios** — hechos mecánicos (haversine, bandas, propagación del conflicto,
   determinismo, que no lance nunca, `base_legal` en toda categoría).
@@ -366,9 +379,9 @@ Sin framework ni dependencias. Exit distinto de 0 si algo falla. Dos grupos:
   motor (`segmentos`, `incidentes`, extremos de la dirección afectada, candidatos de
   `datos_extraidos`).
 
-El wizard del formulario no tiene suite propia: se prueba en el navegador. Para
-ejercitarlo sin backend se puede levantar cualquier servidor estático sobre la raíz del
-repo y stubbear `/api/public-config` y `/api/process-ticket`.
+Lo que la suite **no** cubre y sigue siendo prueba manual en preview: la llamada real a
+Gemini (necesita credenciales y documentos de verdad) y todo lo visual —maquetado,
+responsive, el flash de los campos autocompletados—. jsdom no pinta nada.
 
 ### Scripts
 
