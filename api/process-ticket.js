@@ -519,7 +519,13 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        max_tokens: 1024,
+        /* Techo generoso a propósito. El array `segmentos` de Intake v2 es lo más
+           largo de la respuesta (un objeto de 7 campos por tramo, y un itinerario
+           con conexiones ida y vuelta son 4+), y gemini-2.5-flash razona por
+           defecto: en OpenRouter esos tokens de razonamiento salen de este mismo
+           presupuesto. Con el 1024 histórico el JSON llegaba cortado a la mitad y
+           el parse de abajo tiraba. Se paga por token usado, no por el techo. */
+        max_tokens: 8192,
         messages: [{ role: 'user', content: contentParts }],
       }),
     });
@@ -537,19 +543,26 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'AI non-JSON response' });
     }
 
-    var raw = '';
-    if (aiJson.choices && aiJson.choices[0] && aiJson.choices[0].message) {
-      raw = aiJson.choices[0].message.content || '';
-    }
-    if (!raw) return res.status(502).json({ error: 'Empty AI response' });
+    var choice = (aiJson.choices && aiJson.choices[0]) || null;
+    var raw = (choice && choice.message && choice.message.content) || '';
+    /* 'length' = el modelo se quedó sin presupuesto y cortó la respuesta al medio.
+       Se registra aparte porque desde el JSON truncado solo se ve "falta un }". */
+    var finishReason = (choice && choice.finish_reason) || '';
+    if (!raw) return res.status(502).json({ error: 'Empty AI response', finishReason: finishReason });
 
+    console.log('[process-ticket] AI finish_reason:', finishReason, '| usage:', JSON.stringify(aiJson.usage || {}));
     console.log('[process-ticket] AI raw:', raw.substring(0, 400));
 
     var parsed;
     try {
       parsed = JSON.parse(raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
     } catch (e) {
-      return res.status(502).json({ error: 'AI JSON parse failed', raw: raw.substring(0, 300) });
+      console.error('[process-ticket] AI JSON parse failed. finish_reason:', finishReason, '| chars:', raw.length);
+      return res.status(502).json({
+        error: finishReason === 'length' ? 'AI response truncated' : 'AI JSON parse failed',
+        finishReason: finishReason,
+        raw: raw.substring(0, 300),
+      });
     }
 
     /* Sanitize: strip "null"/"undefined" strings, trim whitespace. Una sola definición
