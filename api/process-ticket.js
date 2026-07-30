@@ -35,6 +35,7 @@ import {
   sanearSegmentosCanonicos, extremosDireccionAfectada, derivarIncidentes,
   candidatosItinerario,
 } from './_utils/intake.js';
+import { sanitizeRuta } from './_utils/itinerario.js';
 import { leerFlagsPublicos } from './_utils/config-publica.js';
 
 export const config = {
@@ -489,6 +490,8 @@ export default async function handler(req, res) {
         + '- Un tramo por cada vuelo individual. EZE→ATL→TUL son DOS tramos (EZE→ATL y ATL→TUL), no uno.\n'
         + '- orden: 1, 2, 3... cronologico sobre el itinerario entero (la vuelta sigue numerando desde donde termino la ida).\n'
         + '- direccion: "ida" para los tramos que alejan del punto de partida del viaje; "vuelta" para los del regreso. Si el viaje es solo de ida, TODOS son "ida".\n'
+        + '- CIUDADES CON VARIOS AEROPUERTOS: una misma ciudad puede tener varios aeropuertos (Buenos Aires = EZE y AEP; San Pablo = GRU y CGH; Rio de Janeiro = GIG y SDU; Nueva York = JFK, LGA y EWR; Londres = LHR, LGW, STN y LTN; Paris = CDG y ORY; Tokio = NRT y HND). Si un tramo llega a un aeropuerto y el siguiente sale de OTRO aeropuerto de la MISMA CIUDAD, el siguiente tramo inicia la direccion "vuelta", NUNCA es continuacion de la ida. Ejemplo: USH→EZE y despues AEP→USH son IDA (USH→EZE) y VUELTA (AEP→USH), no un viaje con escalas.\n'
+        + '- CORTE TEMPORAL: si entre la llegada de un tramo y la salida del siguiente pasan mas de 24 horas, ese punto marca el fin de la ida y el comienzo de la vuelta u otro viaje. NUNCA lo trates como escala.\n'
         + '- origen y destino: formato "EZE - Buenos Aires" (codigo IATA, guion, ciudad).\n'
         + '- vuelo_nro: UN SOLO numero por tramo, el de ese vuelo. Ej: "DL 110".\n'
         + '- aerolinea_operadora: la que OPERA ese tramo. Si el documento dice "operado por" otra aerolinea, poné esa, no la que vendio el billete.\n'
@@ -500,6 +503,9 @@ export default async function handler(req, res) {
         + '- origen: primer aeropuerto de esa direccion. Formato "EZE - Buenos Aires". Si el boleto dice "Buenos Aires" como ciudad de salida, el codigo IATA es EZE.\n'
         + '- destino: aeropuerto de LLEGADA FINAL de esa direccion. Si la direccion es EZE→ATL→TUL, el destino es "TUL - Tulsa". NUNCA devuelvas el mismo aeropuerto que el origen.\n'
         + '- escalas: aeropuertos intermedios de esa direccion. Ej: "ATL - Atlanta".\n'
+        + '- CIUDADES CON VARIOS AEROPUERTOS: una misma ciudad puede tener varios aeropuertos (Buenos Aires = EZE y AEP; San Pablo = GRU y CGH; Rio de Janeiro = GIG y SDU; Nueva York = JFK, LGA y EWR; Londres = LHR, LGW, STN y LTN; Paris = CDG y ORY; Tokio = NRT y HND). Si un tramo LLEGA a un aeropuerto y el tramo siguiente SALE de otro aeropuerto de la MISMA CIUDAD, eso NO es una escala: es el punto de retorno donde termina la ida y comienza la vuelta. Ejemplo: itinerario USH→EZE y luego AEP→USH es IDA (USH→EZE) y VUELTA (AEP→USH); origen = "USH - Ushuaia", destino = "EZE - Buenos Aires", escalas = "".\n'
+        + '- CORTE TEMPORAL: si entre la llegada de un tramo y la salida del siguiente pasan mas de 24 horas, ese punto marca el fin de la ida y el comienzo de la vuelta u otro viaje. NUNCA lo trates como escala.\n'
+        + '- escalas NUNCA puede incluir un aeropuerto de la misma ciudad que origen o que destino.\n'
         + '- vuelo_nro (suelto): UN SOLO numero de vuelo, el del tramo afectado o el primero de esa direccion. NUNCA concatenes numeros separados por comas. Ejemplo INCORRECTO: "110, 2754, 5164".\n\n'
         + 'NOMBRE: Nombre completo del pasajero con apellidos y sufijos (Sr, Jr).\n\n'
         + 'EMAIL: Busca en TODOS los documentos (confirmaciones, recibos, facturas, itinerarios, headers, datos de cuenta). Devolvelo en minusculas. Si no aparece en ninguna imagen, devuelve "".\n\n'
@@ -580,10 +586,11 @@ export default async function handler(req, res) {
     var rawFlight = clean(parsed.vuelo_nro);
     if (rawFlight.indexOf(',') > -1) rawFlight = rawFlight.split(',')[0].trim();
 
-    /* If origen and destino are the same, clear destino so user fills manually */
-    var rawOrigen = clean(parsed.origen);
-    var rawDestino = clean(parsed.destino);
-    if (rawOrigen && rawDestino && rawOrigen.substring(0, 3).toUpperCase() === rawDestino.substring(0, 3).toUpperCase()) rawDestino = '';
+    /* Ruta de los campos sueltos, saneada por ciudad y no por código: una ida y vuelta
+       cuyo regreso sale de otro aeropuerto de la misma ciudad (USH→EZE, AEP→USH) llegaba
+       colapsada en un solo viaje con escalas. La comparación legacy por los primeros 3
+       caracteres sigue viva como fallback dentro del helper, para cuando no hay IATA. */
+    var ruta = sanitizeRuta(clean(parsed.origen), clean(parsed.destino), clean(parsed.escalas));
 
     /* Itinerario tramo por tramo (Intake v2). El saneo vive en `_utils/intake.js`
        porque el alta de agencias hace exactamente lo mismo con el mismo JSON. */
@@ -601,9 +608,9 @@ export default async function handler(req, res) {
       vuelo_nro: rawFlight,
       numero_ticket: clean(parsed.numero_ticket),
       pnr: clean(parsed.pnr),
-      origen: rawOrigen,
-      destino: rawDestino,
-      escalas: clean(parsed.escalas),
+      origen: ruta.origen,
+      destino: ruta.destino,
+      escalas: ruta.escalas,
       fecha_vuelo: clean(parsed.fecha_vuelo),
       incidencia_detectada: clean(parsed.incidencia_detectada),
       gastos_monto: clean(parsed.gastos_monto),

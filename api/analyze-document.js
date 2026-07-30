@@ -10,6 +10,9 @@
  * @returns {Object} {success, data: {aerolinea, numero_vuelo, origen, destino, fecha_vuelo, pnr}}
  */
 
+import { sanitizeRuta } from './_utils/itinerario.js';
+/* TODO: unificar con process-ticket (ver docs/prompt-claude-code-ruta-metro.md) */
+
 export const config = {
   api: {
     bodyParser: {
@@ -55,7 +58,7 @@ export default async function handler(req, res) {
             content: [
               {
                 type: 'text',
-                text: 'Actua como un extractor de datos de pasajes y boarding pass de SolucionAir. Analiza el documento provisto y extrae exclusivamente los siguientes campos en un formato JSON limpio: { "aerolinea": "nombre de la aerolinea", "numero_vuelo": "codigo del vuelo ej AR1234", "origen": "ciudad o codigo de aeropuerto de origen", "destino": "ciudad o codigo de aeropuerto de destino", "fecha_vuelo": "fecha en formato YYYY-MM-DD", "pnr": "codigo de reserva PNR" }. Si no encuentras alguno, devolvelo como null. No agregues texto de relleno ni formato markdown. Responde SOLO el JSON.',
+                text: 'Actua como un extractor de datos de pasajes y boarding pass de SolucionAir. Analiza el documento provisto y extrae exclusivamente los siguientes campos en un formato JSON limpio: { "aerolinea": "nombre de la aerolinea", "numero_vuelo": "codigo del vuelo ej AR1234", "origen": "ciudad o codigo de aeropuerto de origen", "destino": "ciudad o codigo de aeropuerto de destino", "fecha_vuelo": "fecha en formato YYYY-MM-DD", "pnr": "codigo de reserva PNR" }. Si no encuentras alguno, devolvelo como null. No agregues texto de relleno ni formato markdown. Si el documento contiene una reserva ida y vuelta, origen y destino corresponden SOLO a la ida. Una ciudad puede tener varios aeropuertos (Buenos Aires = EZE y AEP): si la vuelta sale de otro aeropuerto de la misma ciudad de llegada, NO es una escala, es el retorno. origen y destino NUNCA pueden ser el mismo aeropuerto ni la misma ciudad. Responde SOLO el JSON.',
               },
               {
                 type: 'image_url',
@@ -97,13 +100,17 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'AI JSON parse failed', raw: raw.substring(0, 300) });
     }
 
+    /* Este endpoint no maneja escalas: se le pasa '' y solo se aprovecha la detección
+       de "origen y destino en la misma ciudad", que hasta ahora no tenía ninguna. */
+    var ruta = sanitizeRuta(parsed.origen, parsed.destino, '');
+
     return res.status(200).json({
       success: true,
       data: {
         aerolinea: parsed.aerolinea || null,
         numero_vuelo: parsed.numero_vuelo || null,
-        origen: parsed.origen || null,
-        destino: parsed.destino || null,
+        origen: ruta.origen || null,
+        destino: ruta.destino || null,
         fecha_vuelo: parsed.fecha_vuelo || null,
         pnr: parsed.pnr || null,
       },
