@@ -1,6 +1,6 @@
 # Motor Capa 1 — Pendientes legales y de verificación
 
-**Estado:** vivo · **Última actualización:** 29-jul-2026 (cierre de Fase 5) · **Decide:** JPA
+**Estado:** vivo · **Última actualización:** 29-jul-2026 (cierre de Fase 6) · **Decide:** JPA
 
 Registro de lo que el ciclo del motor determinista NO resolvió porque exige decisión
 legal o verificación de fuente. Se actualiza al cerrar cada fase.
@@ -295,6 +295,7 @@ pregunta (todo lo demás verificado a propósito).
 | Equipaje sin `tipo_caso_equipaje` | Queda `[]` → FALTA_DATO. **No** se presume `equipaje_demora`: un tipo presumido correría el gate de protesta con los plazos equivocados (3/7 daño vs. 10/21 pérdida) | `migration_015_motor_capa1.sql` |
 | Campos críticos declarativos del histórico | No se escriben como canónicos (§1.1); van como candidatos en `datos_extraidos` | `scripts/backfill-candidatos.mjs` |
 | Idioma de países del motor | ISO-3166-1 alfa-2, único, en todo el motor | `api/_data/paises-ue.js` + `pais_iso` en `airports.json` |
+| Sección 8 de este documento | Se agregó un apartado de pendientes **técnicos**, no legales. Va acá y no en un documento aparte para que haya un solo lugar que revisar | § 8 |
 | `desconocido` en campos de dominio cerrado | Es **ausencia de dato**, no un valor: `checkin_presentacion: 'desconocido'` y `protesta.realizada: 'desconocido'` cuentan como FALTA_DATO. v2.1 fila 18 lo dice del check-in y fila 17 usa el mismo vocabulario | `api/_utils/motor-normalizar.js` |
 | Alta manual del backoffice también persiste IATA | Se sumó al alcance de Fase 3 (no estaba en la lista): es el tercer camino de alta con captura `data-iata` y dejarlo afuera tiraba el dato | `backoffice.html` + `api/admin.js` (`create-case`) |
 | Cancelación con aviso < 14 días y `reencaminamiento` desconocido | **FALTA_DATO**, no RECLAMABLE ni NO_APLICA. Las exoneraciones (ii) y (iii) del Art. 5(1)(c) exigen un reencaminamiento dentro de margen: sin ese dato no se puede confirmar ni descartar la exoneración, y el motor no elige. **Ratificar** — la alternativa (conceder la compensación porque la carga de la prueba es del transportista, Art. 5(4)) es defendible pero no está escrita en el v2.1 | `rulesets/2026-06-19.js` → `EU261.compensacion_tarifada` |
@@ -302,3 +303,74 @@ pregunta (todo lo demás verificado a propósito).
 | Voluntariedad de la denegación de embarque | No es campo de intake. La compensación sale RECLAMABLE (el caso se presenta como involuntario) y la voluntariedad se emite como nodo EVAL, mismo patrón que las circunstancias extraordinarias | `rulesets/2026-06-19.js` |
 | Piso conservador de Montreal sobre un caso EU261 | Va como sub-objeto `piso_conservador` dentro de la prescripción de EU261, que sigue siendo `tipo: 'segun_foro'` con `fecha_limite: null`. Así se cumple el Pin 7 (fecha concreta, marcada como piso) sin mal etiquetar el plazo propio de Montreal, que es firme | `rulesets/2026-06-19.js` → `EU261.prescripcion` |
 | Cómputo de años en prescripción | 29-feb + 1 año cae el 1-mar (normalización de `Date`). Días corridos, en UTC, para que el huso del servidor no mueva un plazo legal | `motor-legal.js` → `sumarAnios()` |
+
+---
+
+## 8. Pendientes técnicos (no legales)
+
+Nada de esta sección necesita criterio legal: son verificaciones de deploy que solo se
+pueden hacer contra un entorno real. Van en este documento y no en otro aparte para que
+haya un solo lugar que revisar.
+
+### 8.1 El glob de `includeFiles` con llaves — **A VERIFICAR EN PREVIEW**
+*Origen: Fase 6 · `vercel.json`*
+
+El endpoint `analizar-caso` necesita leer en runtime `src/data/airports.json` (~800 KB) y
+`api/_data/aerolineas.json`. El proyecto ya resuelve esto con `includeFiles`, y en Fase 6
+el glob pasó de `templates/**` a `{templates,src/data,api/_data}/**`.
+
+Localmente funciona (el cargador encuentra los dos archivos), pero **la expansión de
+llaves en el bundler de Vercel no se puede probar sin deployar**.
+
+**Cómo se detecta:** el botón "Analizar caso" del backoffice devuelve
+`El motor legal no está disponible: No se encontró src/data/airports.json. Rutas
+probadas: … Si esto pasa en Vercel, falta el glob en functions.includeFiles de
+vercel.json.` El cargador falla con ese mensaje a propósito, en vez de un 500 opaco.
+
+**Arreglo si falla:** reemplazar el glob por entradas sin llaves o por `src/**`.
+
+### 8.2 `src/img/**` no está en `includeFiles` — **A VERIFICAR** · impacto cosmético
+*Origen: hallado en Fase 6, preexistente*
+
+`api/_utils/legal-pdf.js` y `api/_utils/pdf-receipt.js` leen los logos con
+`path.join(process.cwd(), 'src', 'img', …)`. `src/img` **no está** en el `includeFiles` de
+`api/admin.js` (ni antes ni después del cambio de 8.1), y `api/process-ticket.js` no tiene
+entrada en `functions` en absoluto.
+
+Las dos lecturas están envueltas en `try/catch`, así que si el archivo no está el PDF sale
+**sin logo, en silencio** (queda un `console.error`). Por eso puede llevar mucho tiempo sin
+que nadie lo note.
+
+**Cómo se verifica:** abrir un poder o un comprobante de aceptación generado en producción
+y mirar si tiene el membrete.
+
+**Arreglo si falla:** cambiar el glob de 8.1 por `{templates,src,api/_data}/**` (agrega
+`src/img`, `src/css` y `src/js`, todo chico) y agregar una entrada `functions` para
+`api/process-ticket.js`.
+
+### 8.3 `index.html` no está en `includeFiles` y `loadTycText()` no está guardado — **A VERIFICAR** · impacto potencialmente serio
+*Origen: hallado en Fase 6, preexistente*
+
+`api/_utils/tyc-text.js` lee **`index.html`** con `process.cwd()` para extraer el texto de
+los T&C y la versión del consentimiento. A diferencia de los logos, `loadTycText()` **no
+tiene try/catch propio**: si el archivo no está, `readFileSync` lanza.
+
+Quiénes dependen de eso:
+
+- `api/_utils/pdf-receipt.js` → el **PDF de aceptación de T&C** que se genera en el alta
+  pública. En `api/process-ticket.js` la generación está envuelta en try/catch, así que un
+  fallo acá significa que **el caso se crea sin su PDF de aceptación, en silencio**. Ese
+  PDF es la constancia de la firma electrónica, así que el impacto no es cosmético.
+- `api/_utils/legal-docs.js` → la generación del documento de T&C desde el backoffice.
+
+**Ojo:** esto puede estar funcionando perfectamente. Vercel podría estar incluyendo los
+archivos estáticos de la raíz en el bundle de la función; no se puede saber sin mirar un
+deploy real. **No asumir que está roto.**
+
+**Cómo se verifica (rápido):** abrir en el backoffice un caso creado recientemente por el
+formulario público y ver si tiene adjunto su `Aceptacion_TyC_CSAxxxxx.pdf`. Si está, 8.3 no
+existe. Si no está, revisar los logs de `process-ticket` buscando
+`[process-ticket] PDF generation error`.
+
+**Arreglo si falla:** agregar `index.html` al `includeFiles` de las funciones que lo
+necesitan (`api/admin.js` y `api/process-ticket.js`).
