@@ -1,6 +1,6 @@
 # Motor Capa 1 — Pendientes legales y de verificación
 
-**Estado:** vivo · **Última actualización:** 29-jul-2026 (cierre de Fase 6) · **Decide:** JPA
+**Estado:** vivo · **Última actualización:** 30-jul-2026 (mini-ciclo Ruleset IV-B) · **Decide:** JPA
 
 Registro de lo que el ciclo del motor determinista NO resolvió porque exige decisión
 legal o verificación de fuente. Se actualiza al cerrar cada fase.
@@ -63,28 +63,34 @@ verificación caso a caso (línea *Wegener* C-537/17). El motor emite el nodo EV
 
 ## 2. Legitimación pasiva y condición de transportista comunitario
 
-### 2.1 British Airways `comunitario: false` — **ABIERTO** · ratificación
-*Origen: Fase 2 · `api/_data/aerolineas.json`*
+### 2.1 British Airways `comunitario: false` — **RESUELTO** (30-jul-2026, JPA: ratificado)
+*Origen: Fase 2 · `api/_data/aerolineas.js`*
 
-No es regla nueva: es aplicación directa de la definición del v2.1 (licencia de
-explotación de un Estado miembro) sobre el hecho de que el Reino Unido dejó de serlo.
-Se marca porque **la consecuencia es fuerte**: apaga el Test A2 en todo vuelo *hacia* la
-UE operado por BA (llegada a UE desde tercer país solo aplica con carrier comunitario).
-El v2.1 no lo dice explícitamente. Pedido: ratificar.
+**Decisión:** ratificado. El Reino Unido perdió la condición de Estado miembro y con ella
+la licencia de explotación comunitaria: `comunitario: false` se mantiene, con la
+consecuencia asumida de que el Test A2 no se activa en vuelos *hacia* la UE operados por BA.
+
+No era regla nueva: es aplicación directa de la definición del documento legal (licencia
+de explotación de un Estado miembro) sobre el hecho de que el Reino Unido dejó de serlo.
+Se registró porque **la consecuencia es fuerte**: apaga el Test A2 en todo vuelo *hacia* la
+UE operado por BA (la llegada a la UE desde un tercer país solo aplica con carrier
+comunitario), y el documento no lo dice con esas palabras.
 
 ### 2.2 Level sin código IATA — **ABIERTO** · dato operativo, no legal
-*Origen: Fase 2 · `api/_data/aerolineas.json`*
+*Origen: Fase 2 · `api/_data/aerolineas.js`*
 
 Queda `iata: null` (`pais_licencia: 'ES'`, `comunitario: true`). El largo radio vuela bajo
 AOC de Iberia con numeración `IB` y el designador propio de LEVEL Europe está
 discontinuado. Se prefirió nulo antes que un código dudoso.
 
-### 2.3 JetSMART — una sola fila — **ABIERTO** · dato operativo
-*Origen: Fase 2*
+### 2.3 JetSMART — una sola fila — **RESUELTO** (30-jul-2026, mini-ciclo Ruleset IV-B)
+*Origen: Fase 2 · `api/_data/aerolineas.js`*
 
-Está la matriz chilena (`JA`/`CL`). La filial argentina opera como `WJ`/`AR`. A efectos de
-`comunitario` es indistinto (ninguna es comunitaria), pero **sí importa para el
-legitimado pasivo** y para el Test D (internacional que parte de Argentina).
+Estaba solo la matriz chilena (`JA`/`CL`). Se agregó la filial argentina como
+`WJ`/`AR`/`comunitario: false`. A efectos de `comunitario` es indistinto —ninguna de las
+dos es comunitaria—, pero importa para el **legitimado pasivo**, para el Test D y, desde
+la v2.2, para el bloque de jurisdicción: el domicilio de un transportista de licencia
+argentina es uno de los cuatro foros del Art. 33 de Montreal.
 
 ---
 
@@ -135,8 +141,18 @@ la más favorable al pasajero.
 caso. Si se decide que sí, el gate pasa a declarar alcance por incidente y no por
 categoría; el evaluador ya soporta gates con alcance, no habría que tocarlo.
 
-### 2ter.2 "Torna inadmisible toda acción" (Art. 20 b Res 1532) — **ABIERTO**
+### 2ter.2 "Torna inadmisible toda acción" (Art. 20 b Res 1532) — **RESUELTO** (30-jul-2026, JPA: ratificado)
 *Origen: Fase 4 · `api/_utils/rulesets/2026-06-19.js` → gate `protesta`*
+
+**Decisión:** ratificado `alcance: ['equipaje']`. El gate solo bloquea las categorías de
+equipaje; un daño de valija no protestado a tiempo no mata el reclamo por la demora del
+vuelo.
+
+**Alcance temporal de esta ratificación:** rige el ruleset **IV-A**. Para los incidentes
+desde el 10-oct-2024 el Art. 20 b ya no existe —el Anexo I del Dec. 809/2024 formula el
+protesto como carga, sin la sanción expresa de inadmisibilidad— y gobierna la regla **D2**
+de la v2.2: internacional fuera de plazo → `inadmisible` por Montreal Art. 31(4);
+doméstico fuera de plazo → `pasa_provisional` + nodo EVAL `sancion_caducidad_domestica`.
 
 El Art. 20 b dice que la falta de protesta en plazo "torna inadmisible **toda acción**".
 Leído literalmente, un pasajero que no protestó el daño de su valija a tiempo perdería
@@ -224,7 +240,7 @@ campos *Origen (IATA)* y *Destino final (IATA)*. Muestran la ciudad resuelta deb
 input, para no cargar un código equivocado a ciegas. Alternativa: cargar los segmentos,
 que ganan sobre esos dos campos.
 
-### 6.3 Mapeo de `pir_presentado` a candidato de `protesta` — **RESUELTO** (ratificar)
+### 6.3 Mapeo de `pir_presentado` a candidato de `protesta` — **RESUELTO** (30-jul-2026, JPA: ratificado)
 *Origen: Fase 1 · `scripts/backfill-candidatos.mjs`*
 
 Se mapean los tres valores del formulario al dominio del contrato §1.2 fila 17:
@@ -234,18 +250,19 @@ Se mapean los tres valores del formulario al dominio del contrato §1.2 fila 17:
 `NULL`. **Sin fecha a propósito**: el intake nunca la capturó, y el gate de caducidad se
 computa con la fecha de la protesta → sigue siendo FALTA_DATO, que es lo correcto.
 
+**Ratificado el 30-jul-2026, incluida la ausencia deliberada de fecha.**
+
 ---
 
-### 6.4 `billete_unico`: ¿es campo crítico? — **ABIERTO** · discrepancia interna del contrato
+### 6.4 `billete_unico`: ¿es campo crítico? — **RESUELTO** (30-jul-2026, JPA: ratificado el criterio conservador)
 *Origen: Fase 3 · `api/_utils/motor-normalizar.js` → `CAMPOS_CRITICOS`*
 
-El documento de contratos se contradice: la enumeración de campos críticos de **§1.1** no
-incluye `billete_unico`, pero **§1.2 fila 4** lo marca "Crítico: **sí** (afecta Test A)".
+El documento de contratos se contradecía: la enumeración de campos críticos de **§1.1** no
+incluía `billete_unico`, pero **§1.2 fila 4** lo marcaba "Crítico: **sí** (afecta Test A)".
 
-**Qué hace el motor mientras tanto:** lo trata **como crítico**, siguiendo §1.2 (que es la
-fila específica del campo). Consecuencia concreta: un caso sin `billete_unico` cargado
-suma un FALTA_DATO. Es el criterio conservador; si se decide lo contrario, se saca una
-línea de `CAMPOS_CRITICOS`.
+**Decisión:** es crítico, que es lo que el motor ya hacía siguiendo §1.2 (la fila
+específica del campo). Un caso sin `billete_unico` cargado suma un FALTA_DATO. La
+contradicción se cerró agregándolo a la enumeración de §1.1 del contrato (v1.4).
 
 ### 6.5 Carrier operante vs. comercializador — **ABIERTO** · calidad del dato, no decisión legal
 *Origen: Fase 3 · `api/_utils/motor-normalizar.js`*
@@ -292,19 +309,56 @@ pregunta (todo lo demás verificado a propósito).
 
 ---
 
+## 6bis. Resueltos por la v2.2 (Reglamento Dec. 809/2024)
+
+Referencia cruzada al documento legal. **No se reabren acá**: lo que sigue es dónde quedó
+cada uno en el código.
+
+| Ítem | Resolución de la v2.2 | Dónde quedó |
+|---|---|---|
+| Derogación de la Res. 1532/98 | El Dec. 809/2024 la derogó con vigencia 10-oct-2024. La Parte IV se parte en IV-A (hasta el 9-oct-2024, ley al momento del hecho) y IV-B (desde el 10) | `rulesets/2026-06-19.js` + `rulesets/2024-10-10.js`, seleccionados por `fecha_incidente` |
+| Ámbito amplio del Test D | El régimen AR aplica a la dirección doméstica argentina **o internacional con origen O destino en AR**: el criterio es el servicio explotado en el país, no la dirección del vuelo | Test D de los **dos** rulesets. Cambió el resultado de dos casos dorados (CD-11 y CD-13): antes daban `no` por no partir de Argentina |
+| Reprogramación como tipo propio (D1) | Régimen propio del Art. 42 desde el 10-oct-2024; el mapeo a cancelación de la v2.1.1 queda acotado a los incidentes anteriores | `rulesets/2024-10-10.js`, `_utils/intake.js`, dominio de `incidentes` en sus cuatro copias |
+| Caducidad doméstica post-809 (D2) | Regla conservadora: internacional fuera de plazo → `inadmisible` (Montreal Art. 31(4)); doméstico fuera de plazo → `pasa_provisional` + EVAL, porque el Anexo I no reprodujo la sanción expresa del Art. 20 b | Gate `protesto` de `rulesets/2024-10-10.js` |
+| Destino contractual en ida y vuelta (D3) | Es el **punto de partida** (línea *Grein v. Imperial Airways*, anclada en el Art. 1(2) de Montreal). Gobierna el foro, no la admisibilidad | `rulesets/_compartido.js` → `jurisdiccion()`; el normalizador expone los hechos del billete |
+| Horario nocturno (D4) | La espera que transcurre total o parcialmente entre las 00:00 y las 06:00 activa comidas y refrescos aunque el retraso no llegue a 4 h | `rulesets/2024-10-10.js` → `servicios_incidentales`. **Ver 6bis.1: falta el dato de entrada** |
+
+### 6bis.1 `hora_salida_programada` no existe en el sistema — **ABIERTO** · bloquea D4
+*Origen: mini-ciclo Ruleset IV-B · `rulesets/2024-10-10.js` → `servicios_incidentales`*
+
+La regla nocturna del Art. 43 a necesita la **hora programada de partida** para saber si la
+espera cayó en la franja 00:00–06:00. Ese dato no existe en ningún lado: `fecha_incidente`
+es `DATE`, `segmentos[].fecha` es `YYYY-MM-DD` y ninguno de los tres formularios captura
+hora.
+
+**Qué hace el motor mientras tanto** (decisión JPA del 30-jul-2026): en la banda ≤ 4 h de
+IV-B emite `FALTA_DATO` en `servicios_incidentales` con `dato_faltante:
+'hora_salida_programada'` y la nota que explica el criterio D4. **No** emite `NO_APLICA`:
+eso afirmaría una conclusión legal que los datos no sostienen y le negaría en silencio al
+pasajero un derecho que quizás tiene. El FALTA_DATO está acotado a esa categoría y a esa
+banda: las de > 4 h y > 8 h no dependen de la hora y siguen deterministas.
+
+**Por dónde entra el dato, cuando entre:** *no* por un campo nuevo en el formulario —la
+memoria del pasajero es fuente débil— sino por el **lookup de vuelo por número + fecha**
+(API tipo AeroDataBox) ya especificado en otro ciclo, que devuelve horarios programados y
+reales con procedencia `api_vuelo`, la de mayor jerarquía probatoria del contrato. Cuando
+ese ciclo exista, este FALTA_DATO se cierra solo, sin tocar formularios.
+
+---
+
 ## 7. Decisiones ya tomadas en este ciclo (rastro)
 
 | Ítem | Decisión | Dónde quedó |
 |---|---|---|
-| `reprogramacion` sin destino en Tabla A fila 6 | Se caracteriza como **cancelación** del vuelo original | Enmienda **v2.1.1** al documento legal (commit `919754e`) |
+| `reprogramacion` sin destino en Tabla A fila 6 | Se caracteriza como **cancelación** del vuelo original. **Acotado por la v2.2 (D1): ese mapeo rige SOLO para incidentes anteriores al 10-oct-2024.** Desde esa fecha la reprogramación es tipo propio (Art. 42 del Reglamento Dec. 809/2024), porque mapearla a cancelación concedía los derechos del Art. 41 —alternativas y reintegro— que el Art. 42 no otorga: riesgo de sobre-reclamo | Enmienda **v2.1.1** (commit `919754e`) + **v2.2 D1** · `rulesets/2024-10-10.js`, `_utils/intake.js` |
 | Equipaje sin `tipo_caso_equipaje` | Queda `[]` → FALTA_DATO. **No** se presume `equipaje_demora`: un tipo presumido correría el gate de protesta con los plazos equivocados (3/7 daño vs. 10/21 pérdida) | `migration_015_motor_capa1.sql` |
 | Campos críticos declarativos del histórico | No se escriben como canónicos (§1.1); van como candidatos en `datos_extraidos` | `scripts/backfill-candidatos.mjs` |
 | Idioma de países del motor | ISO-3166-1 alfa-2, único, en todo el motor | `api/_data/paises-ue.js` + `pais_iso` en `airports.json` |
 | Sección 8 de este documento | Se agregó un apartado de pendientes **técnicos**, no legales. Va acá y no en un documento aparte para que haya un solo lugar que revisar | § 8 |
 | `desconocido` en campos de dominio cerrado | Es **ausencia de dato**, no un valor: `checkin_presentacion: 'desconocido'` y `protesta.realizada: 'desconocido'` cuentan como FALTA_DATO. v2.1 fila 18 lo dice del check-in y fila 17 usa el mismo vocabulario | `api/_utils/motor-normalizar.js` |
 | Alta manual del backoffice también persiste IATA | Se sumó al alcance de Fase 3 (no estaba en la lista): es el tercer camino de alta con captura `data-iata` y dejarlo afuera tiraba el dato | `backoffice.html` + `api/admin.js` (`create-case`) |
-| Cancelación con aviso < 14 días y `reencaminamiento` desconocido | **FALTA_DATO**, no RECLAMABLE ni NO_APLICA. Las exoneraciones (ii) y (iii) del Art. 5(1)(c) exigen un reencaminamiento dentro de margen: sin ese dato no se puede confirmar ni descartar la exoneración, y el motor no elige. **Ratificar** — la alternativa (conceder la compensación porque la carga de la prueba es del transportista, Art. 5(4)) es defendible pero no está escrita en el v2.1 | `rulesets/2026-06-19.js` → `EU261.compensacion_tarifada` |
-| Denegación de embarque con `reencaminamiento` desconocido | **RECLAMABLE por el monto pleno**, con nota. A diferencia de la cancelación, acá la compensación corresponde sin umbral (Art. 4(3)) y lo único dudoso es si se reduce 50 %: la reducción del Art. 7(2) es defensa del transportista, igual que las circunstancias extraordinarias. **Ratificar** | `rulesets/2026-06-19.js` → `EU261.compensacion_tarifada` |
+| Cancelación con aviso < 14 días y `reencaminamiento` desconocido | **FALTA_DATO**, no RECLAMABLE ni NO_APLICA. Las exoneraciones (ii) y (iii) del Art. 5(1)(c) exigen un reencaminamiento dentro de margen: sin ese dato no se puede confirmar ni descartar la exoneración, y el motor no elige. **RATIFICADO (30-jul-2026)** — la alternativa (conceder la compensación porque la carga de la prueba es del transportista, Art. 5(4)) es defendible pero no está escrita en el documento legal | `rulesets/2026-06-19.js` → `EU261.compensacion_tarifada` |
+| Denegación de embarque con `reencaminamiento` desconocido | **RECLAMABLE por el monto pleno**, con nota. A diferencia de la cancelación, acá la compensación corresponde sin umbral (Art. 4(3)) y lo único dudoso es si se reduce 50 %: la reducción del Art. 7(2) es defensa del transportista, igual que las circunstancias extraordinarias. **RATIFICADO (30-jul-2026)** | `rulesets/2026-06-19.js` → `EU261.compensacion_tarifada` |
 | Voluntariedad de la denegación de embarque | No es campo de intake. La compensación sale RECLAMABLE (el caso se presenta como involuntario) y la voluntariedad se emite como nodo EVAL, mismo patrón que las circunstancias extraordinarias | `rulesets/2026-06-19.js` |
 | Piso conservador de Montreal sobre un caso EU261 | Va como sub-objeto `piso_conservador` dentro de la prescripción de EU261, que sigue siendo `tipo: 'segun_foro'` con `fecha_limite: null`. Así se cumple el Pin 7 (fecha concreta, marcada como piso) sin mal etiquetar el plazo propio de Montreal, que es firme | `rulesets/2026-06-19.js` → `EU261.prescripcion` |
 | Cómputo de años en prescripción | 29-feb + 1 año cae el 1-mar (normalización de `Date`). Días corridos, en UTC, para que el huso del servidor no mueva un plazo legal | `motor-legal.js` → `sumarAnios()` |

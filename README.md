@@ -27,13 +27,14 @@ Sistema de localización nativo con 135+ claves de traducción que conmuta de fo
 - **Formulario wizard**: Etiquetas de campos, placeholders, opciones de select (DNI/Pasaporte/ID), botones de navegación entre pasos, estados del scanner IA
 - **Modales y sistema**: Login, registro, confirmaciones, notificaciones
 
-El motor de traducción preserva elementos hijos del DOM (asteriscos de campos obligatorios, iconos SVG) durante el intercambio de idioma sin corromper la estructura HTML. Las traducciones pueden ser sobreescritas dinámicamente desde la tabla `site_config` de Supabase.
+El motor de traducción preserva elementos hijos del DOM (asteriscos de campos obligatorios, iconos SVG) durante el intercambio de idioma sin corromper la estructura HTML. *(Las traducciones viven en el diccionario del front; la sobreescritura desde `site_config` está **NO IMPLEMENTADA** — ver más abajo.)*
 
-### Core de Configuración Dinámica (CMS & Feature Flags)
-Panel administrativo en el Backoffice que permite controlar en tiempo real:
-- **Paleta de colores**: Modificación de colores primario, secundario, fondo y texto mediante variables CSS (`:root`) que se inyectan dinámicamente al cargar la página.
-- **Textos globales**: Edición de títulos, subtítulos y CTAs en ambos idiomas desde una interfaz visual.
-- **Feature Flags**: Interruptor para activar/desactivar el procesamiento de imágenes con IA, almacenado en estructura JSONB.
+### Core de Configuración Dinámica (Feature Flags)
+La tabla `site_config` (fila `global`) guarda configuración del sitio. **Lo que hay hoy en el repo:**
+- **Feature Flags**: interruptor para activar o desactivar el procesamiento de imágenes con IA (`feature_flags.ai_extraction`, JSONB). Lo lee `process-ticket` en runtime y el navegador solo a través de la whitelist de `GET /api/public-config`.
+- **Reglas de alerta del backoffice** (`alertas_reglas`), internas: nunca viajan al cliente.
+
+> **NO IMPLEMENTADO** (queda como intención, no como funcionalidad): la paleta de colores editable con inyección dinámica de variables CSS, la edición visual de textos globales en ambos idiomas y la sobreescritura de traducciones desde `site_config`. No existe código que lo haga —ni endpoints `get-config`/`save-config`, que tampoco existen— y documentarlo como si funcionara costó tiempo de más de un ciclo. El único canal de configuración hacia el navegador es `GET /api/public-config`.
 
 **Qué de esto puede ver el navegador.** `site_config` guarda también configuración interna (reglas de alerta del backoffice, y lo que se agregue), así que la fila **nunca** viaja entera al cliente. El único canal público es `GET /api/public-config`, que devuelve solo las claves de una **whitelist explícita** definida en `api/_utils/config-publica.js`. Hoy esa lista tiene una sola entrada:
 
@@ -77,7 +78,8 @@ solucionair-web/
 │   ├── admin.js            # Admin: agencias/abogados, comisiones, storage, docs legales, motor legal
 │   ├── _data/              # Datos auxiliares del motor legal
 │   │   ├── paises-ue.js        # Sets UE / EEE+CH / Montreal en ISO-2 + territorios sin clasificar
-│   │   └── aerolineas.json     # {nombre, iata, pais_licencia, comunitario}
+│   │   ├── aerolineas.js       # {nombre, iata, pais_licencia, comunitario}
+│   │   └── airports.js         # Espejo de src/data/airports.json como módulo (lo pide el bundler)
 │   └── _utils/
 │       ├── instancias.js       # Modelo instancia/momento/resultado + transiciones + etapaExterna
 │       ├── cliente-auth.js     # Valida el JWT del cliente (my-claims / my-actions)
@@ -88,9 +90,11 @@ solucionair-web/
 │       ├── config-publica.js   # Whitelist de flags que puede ver el navegador
 │       ├── motor-normalizar.js # Fila de reclamos → objeto `caso` (función pura)
 │       ├── motor-legal.js      # Evaluador determinista `analizar(caso, ruleset, hoy)`
-│       ├── motor-datos.js      # Carga con caché de airports.json + aerolineas.json
+│       ├── motor-datos.js      # Índices cacheados de los módulos de datos del motor
 │       └── rulesets/
-│           └── 2026-06-19.js   # Reglas legales como datos. Un archivo por vigencia
+│           ├── _compartido.js  # EU261, Montreal, DOT, ANAC400, nodos EVAL, jurisdicción
+│           ├── 2024-10-10.js   # AR IV-B · Reglamento Dec. 809/2024 (vigente)
+│           └── 2026-06-19.js   # AR IV-A · Res. 1532/98 (incidentes hasta 9-oct-2024)
 ├── scripts/                # One-off / mantenimiento (Node, sin dependencias)
 ├── tests/                  # Suite del motor legal (sin framework)
 └── supabase/               # Migraciones SQL (correr en el SQL Editor)
@@ -317,10 +321,21 @@ código las escribe**.
 ## Motor legal determinista (Capa 1)
 
 Resuelve **por regla** qué marcos aplican a un caso y qué categorías son reclamables en
-cada uno. Los marcos **no son excluyentes**: un vuelo puede activar EU261 + Montreal +
-Res. 1532 a la vez y el motor devuelve **todos**, sin elegir ganador.
+cada uno. Los marcos **no son excluyentes**: un vuelo puede activar EU261 + Montreal + el
+régimen argentino a la vez y el motor devuelve **todos**, sin elegir ganador.
 
-Fuente de verdad legal: `docs/Capa_1_-_Logica_legal_determinista_v2.1.md`.
+**El régimen argentino está partido por vigencia.** La Res. 1532/98 fue derogada por el
+Decreto 809/2024, en vigor desde el 10-oct-2024, que aprobó el Reglamento del Contrato
+Aéreo de Pasajeros y Equipaje. El motor elige el ruleset por `fecha_incidente` —ley al
+momento del hecho—, así que un caso de 2023 se sigue analizando con la 1532 y uno de hoy
+con el Reglamento. El cambio material más visible: el alojamiento por demora pasó de
+deberse a las 4 h a deberse a las 8 h.
+
+Además del análisis, el motor emite un bloque **`jurisdiccion`** informativo (nunca gate):
+dónde se puede reclamar, según el destino contractual del billete entero, que en un ida y
+vuelta es el punto de partida.
+
+Fuente de verdad legal: `docs/Capa_1_-_Logica_legal_determinista_v2.2.md`.
 Contratos de entrada/salida: `docs/motor-capa1-contratos.md`.
 **Lo que no está decidido: `docs/motor-capa1-pendientes-legales.md`.**
 
@@ -328,14 +343,17 @@ Contratos de entrada/salida: `docs/motor-capa1-contratos.md`.
 |---|---|---|
 | Normalizador | `api/_utils/motor-normalizar.js` | Fila → objeto `caso`. Deriva países, ámbito EU261, intl/doméstico, distancia ortodrómica, banda del Art. 7(1) y condición de comunitario. Clasifica los campos críticos en ausente / en conflicto / sin verificar |
 | Evaluador | `api/_utils/motor-legal.js` | `analizar(caso, ruleset, hoy)`. **Genérico y estable: no contiene ningún número legal.** Solo recorre la estructura del ruleset |
-| Ruleset | `api/_utils/rulesets/2026-06-19.js` | Reglas como datos: Tests A–E, árboles EU261 y AR, gates, prescripción. **Todos los umbrales viven acá**, con el `base_legal` literal del v2.1 |
+| Rulesets | `api/_utils/rulesets/2024-10-10.js` (AR IV-B) y `2026-06-19.js` (AR IV-A) | Reglas como datos: Tests A–E, árboles EU261 y AR, gates, prescripción. **Todos los umbrales viven acá**, con el `base_legal` literal del v2.2. Un archivo por vigencia del régimen AR |
+| Compartido entre vigencias | `api/_utils/rulesets/_compartido.js` | EU261, overlay Montreal, triggers DOT y ANAC 400, catálogo de nodos EVAL y el bloque de jurisdicción: no cambian con la vigencia argentina, así que se importan en vez de duplicarse |
 | Datos auxiliares | `api/_data/`, `src/data/airports.json` | Países en ISO-2, aerolíneas, y coordenadas + `pais_iso` por aeropuerto |
 
 **Dos principios que conviene no romper:**
 
 1. **Los umbrales legales viven solo en el ruleset.** Agregar la vigencia de la reforma
    EU261 (~2027) debería ser un archivo nuevo en `rulesets/`, sin tocar el evaluador. Hay un
-   test que falla si un número legal se filtra a `motor-legal.js`.
+   test que falla si un número legal se filtra a `motor-legal.js`, y otro que verifica que
+   los marcos compartidos sean el **mismo objeto** en las dos vigencias: si alguien los
+   duplica en vez de importarlos, se cae.
 2. **El motor nunca presume.** Un dato ausente, sin verificar o en conflicto entre fuentes
    sale como `FALTA_DATO`; lo difuso sale como `REQUIERE_EVALUACION` con su nodo. No
    resuelve nodos de evaluación, no elige marco ganador y no emite fecha de prescripción

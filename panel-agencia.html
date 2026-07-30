@@ -420,6 +420,12 @@
             <div class="form-group"><label>Nro. de vuelo</label><input type="text" id="fe-vuelo-nro" /></div>
             <div class="form-group"><label>Fecha del vuelo</label><input type="date" id="fe-fecha-vuelo" /></div>
             <div class="form-group"><label>PNR (Código de Reserva)</label><input type="text" id="fe-pnr" /></div>
+            <!-- Ruta del vuelo donde viajaba el equipaje. Sin esto el motor no puede saber
+                 si el transporte es interno o internacional, y de eso dependen el plazo de
+                 protesto (10/21 días), la unidad del tope (AO vs SDR) y el foro. No es
+                 obligatoria: sin ruta el caso nace con el FALTA_DATO de siempre. -->
+            <div class="form-group"><label id="lbl-fe-origen">Origen</label><input type="text" id="fe-origen" placeholder="EZE - Buenos Aires" data-airport="true" autocomplete="off" /></div>
+            <div class="form-group"><label id="lbl-fe-destino">Destino</label><input type="text" id="fe-destino" placeholder="MIA - Miami" data-airport="true" autocomplete="off" /></div>
             <div class="form-group"><label>Tipo de incidencia *</label>
               <select id="fe-tipo-caso">
                 <option value="">Seleccionar...</option>
@@ -1533,6 +1539,31 @@
           monto_gastos:        document.getElementById('fe-monto-gastos').value || null,
           gastos_detalle:      document.getElementById('fe-gastos-detalle').value.trim() || null,
         });
+
+        /* Ruta del tramo del equipaje. Un equipaje B2B sin origen/destino llegaba al motor
+           sin poder derivar interno vs. internacional, y de ahí cuelgan el plazo de
+           protesto, la unidad del tope y el bloque de jurisdicción. Aditivo y NO
+           obligatorio: si la agencia no la carga, el caso nace con el mismo FALTA_DATO de
+           siempre y el alta nunca se bloquea. */
+        var eqO = document.getElementById('fe-origen'), eqD = document.getElementById('fe-destino');
+        eqPayload.origen  = (eqO.value || '').trim() || null;
+        eqPayload.destino = (eqD.value || '').trim() || null;
+        var eqOIata = eqO.getAttribute('data-iata'), eqDIata = eqD.getAttribute('data-iata');
+        if (eqOIata) eqPayload.origen_iata = eqOIata;
+        if (eqDIata) eqPayload.destino_iata = eqDIata;
+        /* Tramo único en la forma canónica del contrato §1.3, igual que el flujo B2C de
+           equipaje: el motor lee `segmentos` como dato fino. Sin los dos IATA resueltos no
+           viaja nada — media ruta inventada es peor que una columna en null. */
+        if (eqOIata && eqDIata) {
+          eqPayload.segmentos = [{
+            orden: 1, origen_iata: eqOIata, destino_iata: eqDIata,
+            /* El carrier operante nunca se tipea a mano (Tabla A fila 5). */
+            carrier_operante: '',
+            fecha: document.getElementById('fe-fecha-vuelo').value || null,
+            afectado: true,
+          }];
+          eqPayload.itinerario_fuente = 'declaracion_pasajero';
+        }
       }
       Object.assign(payload, eqPayload);
     }

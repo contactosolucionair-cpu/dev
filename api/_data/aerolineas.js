@@ -13,6 +13,10 @@ export default [
   { "nombre": "Aerolíneas Argentinas", "iata": "AR", "pais_licencia": "AR", "comunitario": false },
   { "nombre": "Flybondi",              "iata": "FO", "pais_licencia": "AR", "comunitario": false },
   { "nombre": "JetSMART",              "iata": "JA", "pais_licencia": "CL", "comunitario": false },
+  /* JetSMART Argentina tiene licencia argentina propia y vuela con su propio código: no es
+     la matriz chilena operando acá. La distinción decide el legitimado pasivo y, en el
+     bloque de jurisdicción, si el domicilio del transportista es un foro argentino. */
+  { "nombre": "JetSMART Argentina",    "iata": "WJ", "pais_licencia": "AR", "comunitario": false },
   { "nombre": "LATAM",                 "iata": "LA", "pais_licencia": "CL", "comunitario": false },
   { "nombre": "Iberia",                "iata": "IB", "pais_licencia": "ES", "comunitario": true },
   { "nombre": "Air Europa",            "iata": "UX", "pais_licencia": "ES", "comunitario": true },

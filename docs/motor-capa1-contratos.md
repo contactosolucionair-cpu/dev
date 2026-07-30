@@ -1,6 +1,12 @@
 # Motor Capa 1 — Contratos de entrada/salida y migración
 
-**Versión:** 1.3 · **Fecha:** 30-jul-2026 · **Depende de:** `Capa_1_-_Logica_legal_determinista_v2.1.2.md` (v2.1.2, fuente de verdad legal)
+**Versión:** 1.4 · **Fecha:** 30-jul-2026 · **Depende de:** `Capa_1_-_Logica_legal_determinista_v2.2.md` (v2.2, fuente de verdad legal)
+
+> **v1.4 (mini-ciclo Ruleset IV-B).** La Res. 1532/98 fue derogada por el Dec. 809/2024:
+> el régimen argentino queda partido por vigencia y el motor elige ruleset por
+> `fecha_incidente` (§2, regla 2). Se agrega el bloque `jurisdiccion` a la salida, entra
+> `REGL809` al dominio de marcos y `reprogramacion` al de incidentes, y se corrige la
+> enumeración de campos críticos de §1.1 (`billete_unico`). Sin cambios de schema.
 
 > **v1.3 (cierre del ciclo Intake v2).** El formulario público y el panel de agencias
 > pasaron a llenar `origen_iata`/`destino_iata` y `segmentos` con la semántica de
@@ -37,7 +43,8 @@ Este documento define los dos contratos del motor determinista y la migración d
   - Coincidencia entre fuentes **independientes** (p. ej. formulario + adjunto) → `verificado: true` automático. Formulario y declaración del pasajero NO son independientes entre sí.
   - Discrepancia → `conflicto: true`; se resuelve solo por decisión humana en backoffice. Mientras tanto, campo crítico en conflicto = `FALTA_DATO` para el motor.
   - Campo hallado solo en adjunto: logísticos se autocompletan con `verificado: false`; **críticos** requieren confirmación humana.
-- **Campos críticos** (consecuencia legal directa; nunca se presumen ni se auto-verifican desde una sola fuente declarativa): `demora_salida_min`, `demora_llegada_min`, `antelacion_aviso_dias`, `fecha_incidente`, `protesta`, `checkin_presentacion`, `causa_alegada`, `incidentes`.
+- **Campos críticos** (consecuencia legal directa; nunca se presumen ni se auto-verifican desde una sola fuente declarativa): `demora_salida_min`, `demora_llegada_min`, `antelacion_aviso_dias`, `fecha_incidente`, `protesta`, `checkin_presentacion`, `causa_alegada`, `incidentes`, `billete_unico`.
+  *(v1.4: `billete_unico` estaba en la §1.2 fila 4 como crítico —afecta el Test A— pero faltaba en esta enumeración. La contradicción interna se resuelve a favor del criterio conservador, que es el que el motor ya aplicaba: ítem 6.4 del registro de pendientes, ratificado por JPA el 30-jul-2026.)*
 - **Jerarquía probatoria** (orden de sugerencia en el diff del backoffice, nunca override silencioso): `api_vuelo` > documento emitido por la aerolínea > pasaje/boarding pass > declaración del pasajero (formulario/comentarios).
 
 ### 1.2 Mapeo Tabla A (v2.1) → columnas
@@ -48,7 +55,7 @@ Este documento define los dos contratos del motor determinista y la migración d
 | 3 Segmentos | `segmentos` | JSONB | **nueva**. *(v1.3: el intake los escribe desde el ciclo Intake v2 — solo los tramos de la dirección afectada, con `afectado` en el del incidente)* | form + admin + extracción | no |
 | 4 Billete único | `billete_unico` | BOOLEAN | **nueva** | admin | sí (afecta Test A) |
 | 5 Carrier operante | `segmentos[].carrier_operante` + lookup en `api/_data/aerolineas.json` | — | **nueva** | admin + extracción | no |
-| 6 Incidentes (conjunto) | `incidentes` | JSONB array | **nueva**. Quedan legacy `tipo_reclamo`, **`tipo_incidencia`** (dominio real: `demora`, `cancelacion`, `reprogramacion`, `overbooking`, `denegacion`) y **`tipo_caso_equipaje`** (`perdida`, `danio`, `demora`), que es de donde se mapea el equipaje. *(v1.1: antes decía `incidencia_detectada`, que no es una columna)* *(v1.3: hasta el ciclo Intake v2 no lo escribía NADIE en el alta — todo caso nuevo nacía con `[]`, o sea FALTA_DATO en un campo crítico. Ahora se deriva de `tipo_incidencia` + `tipo_caso_equipaje` con el mismo mapeo de la migración 015, y `campos_meta.incidentes` queda `{verificado: false, fuente: 'formulario'}`: el análisis sale provisional, que es lo que corresponde a un dato declarado.)* | form + admin + extracción | sí |
+| 6 Incidentes (conjunto) | `incidentes` | JSONB array | **nueva**. Dominio: `demora`, `cancelacion`, **`reprogramacion`**, `denegacion_embarque`, `downgrade`, `conexion_perdida`, `equipaje_demora`, `equipaje_dano`, `equipaje_perdida`, `muerte_lesion`. *(v1.4: `reprogramacion` entra como tipo propio por decisión D1 de la v2.2 — el Art. 42 del Reglamento 809/2024 le da un régimen distinto al de la cancelación. El editor del drawer lo ofrece siempre y el motor lo devuelve NO_APLICA con motivo si el incidente es anterior al 10-oct-2024, que es cuando la reprogramación todavía se caracterizaba como cancelación.)* Quedan legacy `tipo_reclamo`, **`tipo_incidencia`** (dominio real: `demora`, `cancelacion`, `reprogramacion`, `overbooking`, `denegacion`) y **`tipo_caso_equipaje`** (`perdida`, `danio`, `demora`), que es de donde se mapea el equipaje. *(v1.1: antes decía `incidencia_detectada`, que no es una columna)* *(v1.3: hasta el ciclo Intake v2 no lo escribía NADIE en el alta — todo caso nuevo nacía con `[]`, o sea FALTA_DATO en un campo crítico. Ahora se deriva de `tipo_incidencia` + `tipo_caso_equipaje` con el mismo mapeo de la migración 015, y `campos_meta.incidentes` queda `{verificado: false, fuente: 'formulario'}`: el análisis sale provisional, que es lo que corresponde a un dato declarado.)* | form + admin + extracción | sí |
 | 7a Demora de salida | `demora_salida_min` | INTEGER (minutos) | **nueva** | admin + api_vuelo | sí |
 | 7b Demora de llegada | `demora_llegada_min` | INTEGER (minutos; llegada = apertura de puertas, Pin 1) | **nueva** | admin + api_vuelo | sí |
 | 8 Antelación aviso | `antelacion_aviso_dias` | NUMERIC (fraccionable) | **nueva** | admin + extracción (email aerolínea) | sí |
@@ -118,8 +125,12 @@ Se guarda en la columna JSONB `analisis_legal` (último análisis) y se apila en
 
 ```js
 {
-  version_motor: '1.0.0',
-  version_ruleset: '2026-06-19',        // seleccionado por fecha_incidente
+  version_motor: '1.1.0',
+  /* Seleccionado por fecha_incidente (ley al momento del hecho). El régimen AR está
+     partido por vigencia: '2026-06-19' = Res. 1532/98 (incidentes hasta el 9-oct-2024),
+     '2024-10-10' = Reglamento Dec. 809/2024 (desde el 10-oct-2024, casi toda la cartera).
+     EU261 y Montreal no cambian entre vigencias: viven en rulesets/_compartido.js. */
+  version_ruleset: '2024-10-10',
   fecha_analisis: 'ISO',
   disparado_por: 'manual' | 'auto',
   provisional: bool,                     // true si algún campo crítico usado
@@ -129,7 +140,9 @@ Se guarda en la columna JSONB `analisis_legal` (último análisis) y se apila en
     distancia_km: 10432, banda_eu261: '>3500' | '1500-3500' | '<=1500' | null
   },
   marcos: [{
-    marco: 'EU261' | 'RES1532' | 'MONTREAL' | 'DOT' | 'ANAC400',
+    /* El marco AR depende de la vigencia: 'RES1532' hasta el 9-oct-2024 y 'REGL809'
+       desde el 10-oct-2024. Nunca conviven en un mismo análisis. */
+    marco: 'EU261' | 'REGL809' | 'RES1532' | 'MONTREAL' | 'DOT' | 'ANAC400',
     aplica: 'si' | 'no' | 'pendiente_analisis_profundo',   // DOT/ANAC400: trigger sin árbol
     activado_por: 'Test A1: salida desde aeropuerto UE (MAD)',
     base_legal: 'EU261 Art. 3(1)(a)',
@@ -154,6 +167,17 @@ Se guarda en la columna JSONB `analisis_legal` (último análisis) y se apila en
       plazo: '1 año', fecha_limite: 'YYYY-MM-DD' | null, base_legal: ''
     }
   }],
+  /* Bloque INFORMATIVO (v2.2): dónde se puede reclamar. Nunca es gate — ley aplicable y
+     jurisdicción son planos distintos. El destino contractual es el del BILLETE entero, y
+     en un redondo bajo billete único es el punto de partida (D3), así que puede no
+     coincidir con el `destino_final` de la normalización, que es el de la dirección
+     afectada. `null` si el ruleset no emite el bloque. */
+  jurisdiccion: {
+    foro_argentino: 'garantizado' | 'posible' | 'no' | 'no_computable',
+    base_legal: 'Convenio de Montreal Art. 33 (…)',
+    destino_contractual: { iata: 'EZE', pais_iso: 'AR', regla: '' } | null,
+    nota: ''
+  },
   nodos_eval: [{ nodo: 'circunstancias_extraordinarias', marco: 'EU261',
                  dato_concreto: '', insumo: '' }],           // handoff a Capa 2/3
   faltan_datos: [{ campo: 'demora_llegada_min', para: ['EU261.compensacion_tarifada'],
@@ -165,7 +189,7 @@ Se guarda en la columna JSONB `analisis_legal` (último análisis) y se apila en
 **Reglas de comportamiento del motor** (espejo de los pins v2.1):
 
 1. Función pura: `analizar(caso, ruleset) → analisis_legal`. Sin fetch, sin fechas implícitas (recibe `hoy` como parámetro para prescripción → testeable).
-2. Ruleset elegido por `fecha_incidente` (ley al momento del hecho). Estructura preparada para agregar el ruleset de la reforma EU261 (~2027) sin tocar el evaluador.
+2. Ruleset elegido por `fecha_incidente` (ley al momento del hecho). **El régimen argentino está partido por vigencia** desde la derogación de la Res. 1532/98 por el Dec. 809/2024: `rulesets/2026-06-19.js` (IV-A, hasta el 9-oct-2024) y `rulesets/2024-10-10.js` (IV-B, desde el 10-oct-2024). Lo que no cambia entre vigencias —EU261, overlay Montreal, triggers DOT y ANAC 400, catálogo de nodos EVAL y el bloque de jurisdicción— vive en `rulesets/_compartido.js` y lo importan los dos: duplicarlo sería garantizar que se desincronicen. Agregar la vigencia de la reforma EU261 (~2027) sigue siendo un archivo nuevo, sin tocar el evaluador.
 3. Campo crítico `null`, sin verificar o en conflicto → `FALTA_DATO` en las categorías que lo consumen + flag global `provisional: true` si igual se pudo emitir algo.
 4. Gates antes que categorías: check-in (EU261, Pin 3) y protesta (equipaje, Pins 3/5). `pasa_provisional` (solo PIR) emite además el nodo EVAL "suficiencia de la protesta".
 5. Nunca resolver nodos EVAL. Nunca elegir marco ganador. Nunca emitir fecha de prescripción `segun_foro` (Pin 7).
@@ -242,7 +266,7 @@ Notas: sin índices nuevos por ahora (el motor lee por caso, no filtra por estos
 | Pieza | Ubicación | Descripción |
 |---|---|---|
 | Evaluador | `api/_utils/motor-legal.js` | Función pura `analizar(caso, ruleset, hoy)`. Genérico y estable |
-| Rulesets | `api/_utils/rulesets/2026-06-19.js` | Reglas-como-datos: Tests A–E, árboles EU261 y AR, gates, prescripción. Un archivo por vigencia |
+| Rulesets | `api/_utils/rulesets/_compartido.js` + `2026-06-19.js` (IV-A) + `2024-10-10.js` (IV-B) | Reglas-como-datos: Tests A–E, árboles EU261 y AR, gates, prescripción y jurisdicción. Un archivo por vigencia del régimen AR; lo que no cambia entre vigencias se importa del compartido |
 | Normalizador | `api/_utils/motor-normalizar.js` | `reclamos` row → objeto `caso` del contrato (deriva intl/doméstico, distancia, banda; aplica reglas de conflicto/verificado) |
 | Datos | `api/_data/aerolineas.json`, `api/_data/paises-ue.js`, `src/data/airports.json` (+lat/lon) | Auxiliares |
 | Endpoint | `POST /api/admin?action=analizar-caso` | `X-Admin-Password`; corre motor, guarda `analisis_legal`, devuelve el objeto |
