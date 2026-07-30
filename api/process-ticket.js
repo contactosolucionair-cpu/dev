@@ -8,6 +8,10 @@
  *   Google Gemini 2.5 Flash for unified data extraction with route-aware
  *   parsing (origin/destination/stopovers), PNR detection and expense
  *   consolidation. Returns structured JSON without database persistence.
+ *   Intake v2: devuelve además el itinerario tramo por tramo en `segmentos`
+ *   (con `direccion: ida|vuelta`) y `direccion_afectada_sugerida`. Las claves
+ *   viejas siguen todas, con el mismo nombre y formato; su semántica pasa a ser
+ *   "de la dirección afectada sugerida, o de la ida si no hay sugerencia".
  *
  * Mode 2 — Claim Submission:
  *   Receives validated form data, persists the claim in Supabase, generates
@@ -23,14 +27,14 @@
  */
 
 import { computeClaimHash } from './_utils/signing.js';
-
-/* Código IATA del combobox del formulario. Sanea sin bloquear: si no es un código de
-   3 letras devuelve null y el alta sigue igual. La columna en null es exactamente lo
-   que el motor legal lee como FALTA_DATO. */
-function iata3(v) {
-  var s = (v == null ? '' : String(v)).trim().toUpperCase();
-  return /^[A-Z]{3}$/.test(s) ? s : null;
-}
+/* Helpers puros del intake, compartidos con `api/agency.js`. `iata3` sanea sin
+   bloquear: si no es un código de 3 letras devuelve null y el alta sigue igual — la
+   columna en null es exactamente lo que el motor legal lee como FALTA_DATO. */
+import {
+  limpiarTexto, iata3, sanearSegmentosIa, normalizarDireccionSugerida,
+  sanearSegmentosCanonicos, extremosDireccionAfectada, derivarIncidentes,
+  candidatosItinerario,
+} from './_utils/intake.js';
 
 export const config = {
   api: {
@@ -448,13 +452,23 @@ export default async function handler(req, res) {
     contentParts.push({
       type: 'text',
       text: 'Actuas como un extractor de datos de viaje ultra preciso de SolucionAir. Analiza EXHAUSTIVAMENTE cada archivo provisto arriba.\n\n'
-        + 'CONTEXTO: Los documentos pueden contener un itinerario con MULTIPLES TRAMOS DE VUELO (ej: EZE→ATL→TUL ida, TUL→ATL→EZE vuelta). Tu trabajo es identificar el VUELO PRINCIPAL AFECTADO y extraer sus datos.\n\n'
-        + 'REGLAS DE ITINERARIO MULTI-TRAMO:\n'
-        + '- Si hay multiples vuelos, identifica cual tiene la incidencia (cancelacion, demora, etc).\n'
-        + '- vuelo_nro: Devuelve UN SOLO numero de vuelo, el del tramo afectado o el primer tramo de ida. NUNCA concatenes multiples numeros separados por comas. Ejemplo correcto: "DL 110". Ejemplo INCORRECTO: "110, 2754, 5164".\n'
-        + '- origen: El aeropuerto donde COMIENZA el viaje de ida. Formato: "EZE - Buenos Aires". Si el boleto dice "Buenos Aires" como ciudad de salida, el codigo IATA es EZE.\n'
-        + '- destino: El aeropuerto de LLEGADA FINAL del ultimo tramo de ida (NO el de vuelta). Si el viaje es EZE→ATL→TUL, el destino es "TUL - Tulsa". NUNCA devuelvas el mismo aeropuerto que el origen.\n'
-        + '- escalas: Aeropuertos intermedios. Ej: "ATL - Atlanta".\n\n'
+        + 'CONTEXTO: Los documentos pueden contener un itinerario con MULTIPLES TRAMOS DE VUELO (ej: EZE→ATL→TUL ida, TUL→ATL→EZE vuelta). Tu trabajo es reconstruir el ITINERARIO COMPLETO tramo por tramo.\n\n'
+        + 'SEGMENTOS (lo mas importante): devuelve el array "segmentos" con TODOS los tramos de TODOS los documentos, en orden cronologico, uno por vuelo.\n'
+        + '- Un tramo por cada vuelo individual. EZE→ATL→TUL son DOS tramos (EZE→ATL y ATL→TUL), no uno.\n'
+        + '- orden: 1, 2, 3... cronologico sobre el itinerario entero (la vuelta sigue numerando desde donde termino la ida).\n'
+        + '- direccion: "ida" para los tramos que alejan del punto de partida del viaje; "vuelta" para los del regreso. Si el viaje es solo de ida, TODOS son "ida".\n'
+        + '- origen y destino: formato "EZE - Buenos Aires" (codigo IATA, guion, ciudad).\n'
+        + '- vuelo_nro: UN SOLO numero por tramo, el de ese vuelo. Ej: "DL 110".\n'
+        + '- aerolinea_operadora: la que OPERA ese tramo. Si el documento dice "operado por" otra aerolinea, poné esa, no la que vendio el billete.\n'
+        + '- fecha: la de ese tramo, formato YYYY-MM-DD.\n'
+        + '- Si un dato de un tramo no esta visible, devuelve "" en ese dato (NO inventes). Si no se ve ningun itinerario, devuelve "segmentos": [].\n\n'
+        + 'DIRECCION AFECTADA: "direccion_afectada_sugerida" es "ida" o "vuelta" SOLO si algun documento muestra explicitamente la incidencia (cancelacion, demora, reprogramacion) en un tramo concreto y podes decir a que direccion pertenece. Si no lo muestra, devuelve "". Es una sugerencia que el pasajero va a confirmar: NUNCA la adivines por probabilidad.\n\n'
+        + 'REGLAS DE LOS CAMPOS SUELTOS origen/destino/escalas (compatibilidad):\n'
+        + '- Se refieren a UNA SOLA direccion del viaje: la de "direccion_afectada_sugerida" si la determinaste, y si no, la de IDA.\n'
+        + '- origen: primer aeropuerto de esa direccion. Formato "EZE - Buenos Aires". Si el boleto dice "Buenos Aires" como ciudad de salida, el codigo IATA es EZE.\n'
+        + '- destino: aeropuerto de LLEGADA FINAL de esa direccion. Si la direccion es EZE→ATL→TUL, el destino es "TUL - Tulsa". NUNCA devuelvas el mismo aeropuerto que el origen.\n'
+        + '- escalas: aeropuertos intermedios de esa direccion. Ej: "ATL - Atlanta".\n'
+        + '- vuelo_nro (suelto): UN SOLO numero de vuelo, el del tramo afectado o el primero de esa direccion. NUNCA concatenes numeros separados por comas. Ejemplo INCORRECTO: "110, 2754, 5164".\n\n'
         + 'NOMBRE: Nombre completo del pasajero con apellidos y sufijos (Sr, Jr).\n\n'
         + 'EMAIL: Busca en TODOS los documentos (confirmaciones, recibos, facturas, itinerarios, headers, datos de cuenta). Devolvelo en minusculas. Si no aparece en ninguna imagen, devuelve "".\n\n'
         + 'TELEFONO: Solo numeros de telefono reales del pasajero visibles en los documentos. Si no hay, devuelve "".\n\n'
@@ -465,7 +479,8 @@ export default async function handler(req, res) {
         + 'INCIDENCIA: Si algun documento muestra "Cancelled", "Delayed", "Overbooked", devuelve el tipo correspondiente: "cancelacion", "demora" o "overbooking".\n\n'
         + 'REGLA ANTI-FABRICACION: NUNCA inventes datos. Si un campo no aparece visiblemente, devuelve "". NUNCA devuelvas "null", "N/A" ni "unknown".\n\n'
         + 'JSON OBLIGATORIO (sin markdown, sin backticks):\n'
-        + '{ "nombre": "", "email": "", "telefono": "", "doc_numero": "", "aerolinea": "", "vuelo_nro": "", "numero_ticket": "", "pnr": "", "origen": "", "destino": "", "escalas": "", "fecha_vuelo": "", "incidencia_detectada": "", "gastos_monto": "", "gastos_moneda": "" }\n\n'
+        + '{ "nombre": "", "email": "", "telefono": "", "doc_numero": "", "aerolinea": "", "vuelo_nro": "", "numero_ticket": "", "pnr": "", "origen": "", "destino": "", "escalas": "", "fecha_vuelo": "", "incidencia_detectada": "", "gastos_monto": "", "gastos_moneda": "", '
+        + '"direccion_afectada_sugerida": "", "segmentos": [{ "orden": 1, "direccion": "ida", "origen": "", "destino": "", "vuelo_nro": "", "aerolinea_operadora": "", "fecha": "" }] }\n\n'
         + 'Rellena SOLO campos confirmados visualmente. Responde SOLO el JSON.',
     });
 
@@ -512,13 +527,9 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: 'AI JSON parse failed', raw: raw.substring(0, 300) });
     }
 
-    /* Sanitize: strip "null"/"undefined" strings, trim whitespace */
-    function clean(v) {
-      if (v === null || v === undefined) return '';
-      var s = String(v).trim();
-      if (s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined' || s === 'N/A' || s === 'n/a') return '';
-      return s;
-    }
+    /* Sanitize: strip "null"/"undefined" strings, trim whitespace. Una sola definición
+       en `_utils/intake.js`, compartida con el saneo de segmentos. */
+    var clean = limpiarTexto;
 
     /* If vuelo_nro has commas (AI concatenated multiple flights), take only the first */
     var rawFlight = clean(parsed.vuelo_nro);
@@ -528,6 +539,13 @@ export default async function handler(req, res) {
     var rawOrigen = clean(parsed.origen);
     var rawDestino = clean(parsed.destino);
     if (rawOrigen && rawDestino && rawOrigen.substring(0, 3).toUpperCase() === rawDestino.substring(0, 3).toUpperCase()) rawDestino = '';
+
+    /* Itinerario tramo por tramo (Intake v2). El saneo vive en `_utils/intake.js`
+       porque el alta de agencias hace exactamente lo mismo con el mismo JSON. */
+    var segmentosIa = sanearSegmentosIa(parsed.segmentos);
+    /* Sugerencia, nunca decisión: si el modelo no la vio explícita viaja vacía y la
+       resuelve el pasajero con un tap. */
+    var dirSugerida = normalizarDireccionSugerida(parsed.direccion_afectada_sugerida, segmentosIa);
 
     var data = {
       nombre: clean(parsed.nombre),
@@ -545,6 +563,10 @@ export default async function handler(req, res) {
       incidencia_detectada: clean(parsed.incidencia_detectada),
       gastos_monto: clean(parsed.gastos_monto),
       gastos_moneda: clean(parsed.gastos_moneda),
+      /* Claves nuevas (Intake v2), aditivas: las viejas siguen todas arriba con el
+         mismo nombre y el mismo formato, así que el autofill anterior no se entera. */
+      segmentos: segmentosIa,
+      direccion_afectada_sugerida: dirSugerida,
     };
 
     console.log('[process-ticket] AI scan done (' + images.length + ' files), returning data only');
