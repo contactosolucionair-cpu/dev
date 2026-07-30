@@ -1,4 +1,15 @@
-[
+/**
+ * api/_data/aerolineas.js
+ *
+ * Aerolíneas operadas en la práctica: {nombre, iata, pais_licencia, comunitario}.
+ * `comunitario` = licencia de explotación de un Estado miembro de la UE (Reg. 261/2004
+ * art. 3.1.b). Reemplaza al viejo `aerolineas.json`: es un módulo ESM para que el motor
+ * lo consuma con import estático y el bundler de Vercel lo empaquete con la función.
+ *
+ * Mismo criterio que `paises-ue.js`: los datos del motor viajan como módulos, no como
+ * archivos leídos en runtime.
+ */
+export default [
   { "nombre": "Aerolíneas Argentinas", "iata": "AR", "pais_licencia": "AR", "comunitario": false },
   { "nombre": "Flybondi",              "iata": "FO", "pais_licencia": "AR", "comunitario": false },
   { "nombre": "JetSMART",              "iata": "JA", "pais_licencia": "CL", "comunitario": false },
@@ -21,4 +32,4 @@
   { "nombre": "Turkish Airlines",      "iata": "TK", "pais_licencia": "TR", "comunitario": false },
   { "nombre": "Emirates",              "iata": "EK", "pais_licencia": "AE", "comunitario": false },
   { "nombre": "Qatar Airways",         "iata": "QR", "pais_licencia": "QA", "comunitario": false }
-]
+];

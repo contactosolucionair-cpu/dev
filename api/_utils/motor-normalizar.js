@@ -137,7 +137,7 @@ export function construirIndiceAeropuertos(lista) {
 }
 
 /**
- * Índice de aerolíneas por IATA y por nombre normalizado, desde api/_data/aerolineas.json.
+ * Índice de aerolíneas por IATA y por nombre normalizado, desde api/_data/aerolineas.js.
  * El nombre hace falta porque la columna legacy `aerolinea` es texto libre.
  */
 export function construirIndiceAerolineas(lista) {
@@ -286,7 +286,7 @@ function puntoRuta(iata, idxAeropuertos, paises) {
  *
  * @param {Object} row               Fila de reclamos (select=*)
  * @param {Object} idxAeropuertos    construirIndiceAeropuertos(airports.json)
- * @param {Object} idxAerolineas     construirIndiceAerolineas(aerolineas.json)
+ * @param {Object} idxAerolineas     construirIndiceAerolineas(aerolineas.js)
  * @param {Object} paises            módulo api/_data/paises-ue.js
  * @returns {Object} caso
  */
@@ -468,7 +468,7 @@ export function normalizarCaso(row, idxAeropuertos, idxAerolineas, paises) {
     avisos.push('carrier tomado de la columna `aerolinea` (declarada en el formulario); Tabla A fila 5 pide el transportista OPERANTE, cargar `segmentos` para precisarlo');
   }
   if (row.aerolinea && !carrierCaso) {
-    avisos.push('aerolínea "' + row.aerolinea + '" no está en api/_data/aerolineas.json → comunitario desconocido');
+    avisos.push('aerolínea "' + row.aerolinea + '" no está en api/_data/aerolineas.js → comunitario desconocido');
   }
 
   /* ---- Montreal: ambos Estados parte (Test E) ---- */

@@ -25,8 +25,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { normalizarCaso, construirIndiceAeropuertos, construirIndiceAerolineas, haversineKm, bandaEu261 } from '../api/_utils/motor-normalizar.js';
+import { normalizarCaso, haversineKm, bandaEu261 } from '../api/_utils/motor-normalizar.js';
 import { analizar, seleccionarRuleset, diasCorridos, sumarAnios } from '../api/_utils/motor-legal.js';
+import { cargarDatosMotor } from '../api/_utils/motor-datos.js';
 import * as paises from '../api/_data/paises-ue.js';
 import { CASOS } from './casos-dorados.js';
 
@@ -37,8 +38,12 @@ var RAIZ = join(__dirname, '..');
    dependan del día en que se corren. */
 var HOY = '2026-07-29';
 
-var idxAeropuertos = construirIndiceAeropuertos(JSON.parse(readFileSync(join(RAIZ, 'src', 'data', 'airports.json'), 'utf8')));
-var idxAerolineas = construirIndiceAerolineas(JSON.parse(readFileSync(join(RAIZ, 'api', '_data', 'aerolineas.json'), 'utf8')));
+/* Los índices salen del mismo cargador que usa el endpoint, con los mismos módulos de
+   datos: si el motor se prueba contra otra fuente que la de producción, los 21 en verde no
+   dicen nada sobre lo que corre en Vercel. */
+var datosMotor = cargarDatosMotor();
+var idxAeropuertos = datosMotor.idxAeropuertos;
+var idxAerolineas = datosMotor.idxAerolineas;
 
 var args = process.argv.slice(2);
 var VERBOSE = args.indexOf('--verbose') !== -1;
