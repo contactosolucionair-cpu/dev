@@ -100,3 +100,27 @@ Entregable: lista de archivos que leen/escriben cada campo legacy afectado, conf
 
 - Actualizar `README.md`: columnas nuevas (marcando espejos derivados: `monto_gastos`/`moneda_gastos` "no editar directo"), endpoint nuevo, piezas del motor, cómo correr tests y scripts.
 - Reporte final: qué se hizo por fase, discrepancias halladas, aeropuertos sin coordenadas, casos del backfill sin resolver, y lista de TODO-JPA pendientes.
+
+---
+
+## Nota posterior — alcance de la advertencia "origen/destino sin confirmar"
+
+*(agregada al cerrar el ciclo **Intake v2**, 30-jul-2026)*
+
+El mini-ciclo correctivo v2.1.2 agregó al render del análisis legal una advertencia —
+**"origen/destino sin confirmar — verificar dirección afectada antes de usar este
+análisis"**— que se dispara cuando el caso tiene indicios de conexión o ida y vuelta y
+la dirección afectada no está confirmada. Uno de esos indicios era que el caso *pudo*
+haberse creado con el scan de IA, porque el prompt de Gemini extraía sistemáticamente la
+dirección de **ida** y en un incidente de la vuelta el dato registrado quedaba sesgado.
+
+**Eso ya no aplica a los casos nuevos.** Desde el ciclo Intake v2, el formulario público
+y el panel de agencias preguntan explícitamente por el viaje donde ocurrió el problema y
+guardan `segmentos` con `afectado` marcado, así que la dirección viene confirmada de
+origen. La advertencia queda como lo que corresponde: **una alerta sobre los casos
+históricos**, cargados antes de este ciclo.
+
+No hizo falta tocar el código: la advertencia ya se calcula sobre la confirmación real
+(`segmentos` con un `afectado`), de modo que un caso del intake nuevo no la dispara y uno
+viejo sí. Si algún caso nuevo la muestra, es porque el formulario no pudo resolver los
+IATA de la ruta y `segmentos` quedó vacío — que es exactamente cuando corresponde dudar.

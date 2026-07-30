@@ -1,6 +1,11 @@
 # Motor Capa 1 — Contratos de entrada/salida y migración
 
-**Versión:** 1.2 · **Fecha:** 30-jul-2026 · **Depende de:** `Capa_1_-_Logica_legal_determinista_v2.1.md` (v2.1.2, fuente de verdad legal)
+**Versión:** 1.3 · **Fecha:** 30-jul-2026 · **Depende de:** `Capa_1_-_Logica_legal_determinista_v2.1.2.md` (v2.1.2, fuente de verdad legal)
+
+> **v1.3 (cierre del ciclo Intake v2).** El formulario público y el panel de agencias
+> pasaron a llenar `origen_iata`/`destino_iata` y `segmentos` con la semántica de
+> dirección afectada, y a derivar `incidentes` en el alta. Corregidas las filas 1-2 y 6
+> de §1.2 (columna "Lo llena") y §1.4. Sin cambios de schema.
 
 > **v1.2 (mini-ciclo correctivo "dirección afectada").** Recoge la enmienda legal v2.1.2:
 > la unidad de análisis del motor es la **dirección afectada** por el incidente, no el
@@ -39,11 +44,11 @@ Este documento define los dos contratos del motor determinista y la migración d
 
 | Tabla A | Columna | Tipo | Estado | Lo llena | Crítico |
 |---|---|---|---|---|---|
-| 1, 2 Origen/Destino | `origen_iata`, `destino_iata` | TEXT(3) | **Semántica canónica (v1.2, enmienda legal v2.1.2): primer origen y destino final DE LA DIRECCIÓN AFECTADA por el incidente** — nunca el tramo suelto donde ocurrió el hecho, y nunca el viaje redondo completo. En un EZE→MAD→EZE con la incidencia en la vuelta, el par canónico es `MAD`/`EZE`, no `EZE`/`EZE` ni el tramo aislado. Con `segmentos` cargados, la dirección afectada la marca `segmentos[].afectado` (§1.3) y el motor deriva el par de ahí. **nueva**. La captura YA valida IATA (`airport-select.js`, `data-iata`) pero hoy solo persiste el label; se persiste el `data-iata` en los submits y `origen`/`destino` quedan como display. Backfill histórico: portar `resolve()` de `airport-select.js` a un script | form (ya validado) + extracción | no |
-| 3 Segmentos | `segmentos` | JSONB | **nueva** | admin + extracción | no |
+| 1, 2 Origen/Destino | `origen_iata`, `destino_iata` | TEXT(3) | **Semántica canónica (v1.2, enmienda legal v2.1.2): primer origen y destino final DE LA DIRECCIÓN AFECTADA por el incidente** — nunca el tramo suelto donde ocurrió el hecho, y nunca el viaje redondo completo. En un EZE→MAD→EZE con la incidencia en la vuelta, el par canónico es `MAD`/`EZE`, no `EZE`/`EZE` ni el tramo aislado. Con `segmentos` cargados, la dirección afectada la marca `segmentos[].afectado` (§1.3) y el motor deriva el par de ahí. *(v1.3: desde el ciclo Intake v2 los llena también el formulario público y el panel de agencias, ya con esta semántica — el intake pregunta por el viaje donde ocurrió el problema. `origen`/`destino` legacy quedan como display de esa misma dirección.)* **nueva**. La captura YA valida IATA (`airport-select.js`, `data-iata`) pero hoy solo persiste el label; se persiste el `data-iata` en los submits y `origen`/`destino` quedan como display. Backfill histórico: portar `resolve()` de `airport-select.js` a un script | form (ya validado) + extracción | no |
+| 3 Segmentos | `segmentos` | JSONB | **nueva**. *(v1.3: el intake los escribe desde el ciclo Intake v2 — solo los tramos de la dirección afectada, con `afectado` en el del incidente)* | form + admin + extracción | no |
 | 4 Billete único | `billete_unico` | BOOLEAN | **nueva** | admin | sí (afecta Test A) |
 | 5 Carrier operante | `segmentos[].carrier_operante` + lookup en `api/_data/aerolineas.json` | — | **nueva** | admin + extracción | no |
-| 6 Incidentes (conjunto) | `incidentes` | JSONB array | **nueva**. Quedan legacy `tipo_reclamo`, **`tipo_incidencia`** (dominio real: `demora`, `cancelacion`, `reprogramacion`, `overbooking`, `denegacion`) y **`tipo_caso_equipaje`** (`perdida`, `danio`, `demora`), que es de donde se mapea el equipaje. *(v1.1: antes decía `incidencia_detectada`, que no es una columna)* | form + admin + extracción | sí |
+| 6 Incidentes (conjunto) | `incidentes` | JSONB array | **nueva**. Quedan legacy `tipo_reclamo`, **`tipo_incidencia`** (dominio real: `demora`, `cancelacion`, `reprogramacion`, `overbooking`, `denegacion`) y **`tipo_caso_equipaje`** (`perdida`, `danio`, `demora`), que es de donde se mapea el equipaje. *(v1.1: antes decía `incidencia_detectada`, que no es una columna)* *(v1.3: hasta el ciclo Intake v2 no lo escribía NADIE en el alta — todo caso nuevo nacía con `[]`, o sea FALTA_DATO en un campo crítico. Ahora se deriva de `tipo_incidencia` + `tipo_caso_equipaje` con el mismo mapeo de la migración 015, y `campos_meta.incidentes` queda `{verificado: false, fuente: 'formulario'}`: el análisis sale provisional, que es lo que corresponde a un dato declarado.)* | form + admin + extracción | sí |
 | 7a Demora de salida | `demora_salida_min` | INTEGER (minutos) | **nueva** | admin + api_vuelo | sí |
 | 7b Demora de llegada | `demora_llegada_min` | INTEGER (minutos; llegada = apertura de puertas, Pin 1) | **nueva** | admin + api_vuelo | sí |
 | 8 Antelación aviso | `antelacion_aviso_dias` | NUMERIC (fraccionable) | **nueva** | admin + extracción (email aerolínea) | sí |
@@ -103,6 +108,7 @@ Este documento define los dos contratos del motor determinista y la migración d
 - `src/data/airports.json`: **agregar `lat`, `lon`** por aeropuerto (dataset abierto; tarea Claude Code). El país ya existe.
 - `api/_data/paises-ue.js`: constante con Estados UE + EEE (IS/NO/LI) + CH, y Estados parte de Montreal (lista larga; puede arrancar con los mercados objetivo + flag `desconocido` → FALTA_DATO).
 - `api/_data/aerolineas.json`: `{ nombre, iata, pais_licencia, comunitario }` para las aerolíneas operadas en la práctica; ausente → `comunitario: null` → FALTA_DATO solo si el Test A2 lo necesita.
+- *(v1.3)* `api/_utils/intake.js`: helpers puros del alta, compartidos por `process-ticket.js` y `agency.js` — saneo de lo que devuelve la extracción con IA, `segmentos` canónicos, extremos de la dirección afectada, derivación de `incidentes` y armado de los candidatos de `datos_extraidos`. Se testean con `node tests/intake.test.js`.
 
 ---
 

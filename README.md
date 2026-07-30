@@ -7,6 +7,19 @@ Plataforma LegalTech de nivel enterprise que automatiza la gestión integral de 
 ### Procesamiento Inteligente Multi-Archivo
 Motor avanzado de visión artificial (Google Gemini 2.5 Flash via OpenRouter) que extrae, unifica y sanitiza datos de múltiples pasajes, fotos de boarding passes y PDFs en una única sesión consolidada. El sistema implementa sanitización en tres capas (prompt, backend, frontend) para garantizar la integridad de los datos extraídos, incluyendo detección automática de códigos PNR, rutas de vuelo con escalas, importes de gastos y tipo de incidencia.
 
+Desde el **ciclo Intake v2**, la extracción devuelve el itinerario **tramo por tramo** en la clave `segmentos` (`{orden, direccion: 'ida'|'vuelta', origen, destino, vuelo_nro, aerolinea_operadora, fecha}`) y una `direccion_afectada_sugerida` (`'ida'|'vuelta'|''`), que es sugerencia y nunca decisión. Las claves anteriores (`origen`, `destino`, `escalas`, `vuelo_nro`…) se siguen devolviendo con el mismo nombre y formato; lo que cambió es su semántica: se refieren a **una sola dirección** del viaje —la afectada si se pudo determinar, la de ida si no—. El saneo de todo esto vive en `api/_utils/intake.js`, es una función pura y lo comparten el alta B2C y la B2B.
+
+### Intake orientado a la dirección afectada
+La unidad de análisis del motor legal es la **dirección** del viaje donde ocurrió el incidente, no el billete entero: en un ida y vuelta, la ida y la vuelta son itinerarios independientes (enmienda legal v2.1.2 del documento rector). El formulario está construido alrededor de eso:
+
+- **Paso 1 scan-first.** Cargar la reserva es el paso protagonista; debajo hay un enlace "prefiero cargar los datos manualmente" que sigue sin escanear. El scan nunca es obligatorio ni bloquea el avance, y con el feature flag de IA apagado el paso 1 muestra el modo manual directo.
+- **Una sola pregunta después del scan.** Si el itinerario tiene más de un tramo, se muestran las fichas de la ruta agrupadas por dirección y se pregunta en cuál ocurrió el problema (selección por tap, preseleccionada con la sugerencia del modelo). Con un tramo único no se pregunta nada.
+- **El paso 2 es la fuente de verdad.** Confirmado el tramo, el front computa la dirección afectada y vuelca ahí origen, destino, escalas intermedias y el tramo marcado, todo editable. De ese estado —no del scan— sale el payload.
+- **Camino manual equivalente.** Dos preguntas de un tap (solo ida / ida y vuelta · hubo escalas) y, si hubo escalas, un armador de las intermedias con la misma pregunta de tramo afectado.
+- **Al pasajero nunca se le pregunta el transportista operante por tramo** (Tabla A fila 5): ese dato solo entra desde documentos, admin o API de vuelos.
+
+El panel de agencias (`panel-agencia.html`) replica el patrón sin simplificaciones, porque sus usuarios son operadores expertos, y manda el mismo payload.
+
 ### Módulo de Internacionalización Completa (i18n)
 Sistema de localización nativo con 135+ claves de traducción que conmuta de forma fluida el 100% de la interfaz entre Español e Inglés mediante atributos `data-t` declarativos. La cobertura abarca:
 - **Landing page**: Hero (título, subtítulo, CTA, enlace secundario, badges de confianza), trust bar (3 tarjetas), navegación principal y footer
@@ -21,6 +34,14 @@ Panel administrativo en el Backoffice que permite controlar en tiempo real:
 - **Paleta de colores**: Modificación de colores primario, secundario, fondo y texto mediante variables CSS (`:root`) que se inyectan dinámicamente al cargar la página.
 - **Textos globales**: Edición de títulos, subtítulos y CTAs en ambos idiomas desde una interfaz visual.
 - **Feature Flags**: Interruptor para activar/desactivar el procesamiento de imágenes con IA, almacenado en estructura JSONB.
+
+**Qué de esto puede ver el navegador.** `site_config` guarda también configuración interna (reglas de alerta del backoffice, y lo que se agregue), así que la fila **nunca** viaja entera al cliente. El único canal público es `GET /api/public-config`, que devuelve solo las claves de una **whitelist explícita** definida en `api/_utils/config-publica.js`. Hoy esa lista tiene una sola entrada:
+
+| Clave | Por defecto | Por qué es pública |
+|---|---|---|
+| `ai_extraction` | `true` | El formulario tiene que saber, **antes** de pintar el paso 1, si el scanner existe. Sin esto solo se entera después de escanear, y el paso 1 no puede decidir su propia forma. No expone nada sensible: es un interruptor de producto que el visitante puede inferir mirando la página. |
+
+Agregar un flag a la lista es una decisión deliberada: el filtro se hace en el servidor, y lo que no está enumerado sencillamente no existe para el navegador. El endpoint **falla abierto**: si Supabase no responde, sirve los valores por defecto con 200 —el comportamiento histórico del sitio— porque un endpoint de configuración caído nunca puede dejar al formulario sin su paso 1. El control real sigue estando del lado del servidor: `process-ticket.js` vuelve a leer el flag con el mismo lector antes de gastar un llamado al modelo.
 
 ### Módulo de Seguridad de Datos (Soft Delete)
 Sistema de papelera de reciclaje que implementa eliminación lógica (soft delete) mediante campo `deleted_at` en la tabla de reclamos. Los registros eliminados desaparecen de la vista principal con transición suave y se almacenan en una papelera accesible desde el Backoffice, desde donde pueden ser restaurados o eliminados permanentemente. La consulta principal filtra automáticamente los registros con `deleted_at` no nulo.
@@ -45,6 +66,7 @@ solucionair-web/
 │   └── js/app.js           # Formulario, AI scanner, wizard, i18n
 ├── api/
 │   ├── process-ticket.js   # Submit B2C + AI vision (crea caso en instancia 'evaluacion')
+│   ├── public-config.js    # Flags públicos del sitio (whitelist; único canal al navegador)
 │   ├── get-claims.js       # Lista de reclamos para el backoffice (X-Admin-Password)
 │   ├── my-claims.js        # Casos del cliente autenticado por su JWT (con etapa/etapa_label)
 │   ├── my-actions.js       # Acciones del cliente sobre su caso (cancel / novedad, JWT)
@@ -62,6 +84,8 @@ solucionair-web/
 │       ├── agency-auth.js      # Valida el JWT de la agencia
 │       ├── abogado-auth.js     # Valida el JWT del abogado
 │       ├── notify-agencia.js   # Mail a la agencia al cambiar la etapa de su caso
+│       ├── intake.js           # Saneo del intake: segmentos, incidentes, candidatos (puro)
+│       ├── config-publica.js   # Whitelist de flags que puede ver el navegador
 │       ├── motor-normalizar.js # Fila de reclamos → objeto `caso` (función pura)
 │       ├── motor-legal.js      # Evaluador determinista `analizar(caso, ruleset, hoy)`
 │       ├── motor-datos.js      # Carga con caché de airports.json + aerolineas.json
@@ -225,7 +249,7 @@ reescribe `/api/agency/:action → /api/agency?action=:action` (ídem `abogados`
 | POST | `/api/delete-ticket` | `X-Admin-Password` | Soft-delete / restore / permanent |
 | GET | `/api/my-claims` | `Bearer` (cliente) | Casos del cliente autenticado (con `etapa`/`etapa_label`) |
 | POST | `/api/my-actions` | `Bearer` (cliente) | `cancel` / `novedad` sobre el propio caso |
-| GET/POST | `/api/get-config` · `/api/save-config` | — / admin | Configuración dinámica del sitio |
+| GET | `/api/public-config` | — | Flags del sitio que puede ver el navegador. Whitelist server-side (`_utils/config-publica.js`), hoy solo `ai_extraction`. Nunca devuelve `site_config` entero y nunca falla: ante cualquier problema sirve los valores por defecto |
 | **B2B Agencias** | | | |
 | POST | `/api/agency/register` · `/api/agency/login` | — | Alta / login de agencia |
 | GET | `/api/agency/claims` | `Bearer` (agencia) | Casos de la agencia (con `etapa`/`etapa_label`) |
@@ -323,9 +347,10 @@ caso** (editor de la entrada) y **Análisis legal** (botón Analizar + render de
 ### Tests
 
 ```bash
-node tests/motor.test.js              # todo
+node tests/motor.test.js              # motor legal: todo
 node tests/motor.test.js CD-05        # filtra casos dorados por id o descripción
 node tests/motor.test.js --verbose    # imprime el análisis completo de cada caso
+node tests/intake.test.js             # helpers del intake (api/_utils/intake.js)
 ```
 
 Sin framework ni dependencias. Exit distinto de 0 si algo falla. Dos grupos:
@@ -336,6 +361,14 @@ Sin framework ni dependencias. Exit distinto de 0 si algo falla. Dos grupos:
   escribe JPA**. Se comparan solo las claves declaradas en `esperado`. Un caso con
   `esperado: {}` se **saltea con aviso** (`TODO-JPA`) y no rompe el suite: es cobertura
   reservada esperando criterio.
+- **Intake** (`tests/intake.test.js`) — saneo de la extracción con IA (itinerario por
+  segmentos, dirección sugerida, documento ilegible) y derivación de las columnas del
+  motor (`segmentos`, `incidentes`, extremos de la dirección afectada, candidatos de
+  `datos_extraidos`).
+
+El wizard del formulario no tiene suite propia: se prueba en el navegador. Para
+ejercitarlo sin backend se puede levantar cualquier servidor estático sobre la raíz del
+repo y stubbear `/api/public-config` y `/api/process-ticket`.
 
 ### Scripts
 
