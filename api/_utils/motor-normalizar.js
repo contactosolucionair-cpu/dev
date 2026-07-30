@@ -19,6 +19,28 @@
  *   - No presume nada: donde falta el dato deja `null` y lo registra.
  *
  * ------------------------------------------------------------------
+ * LA UNIDAD DE ANÁLISIS ES LA DIRECCIÓN AFECTADA (enmienda legal v2.1.2)
+ * ------------------------------------------------------------------
+ * El Pin 4 resolvía conexiones pero no direcciones: leído al pie de la letra ("origen =
+ * primer aeropuerto, destino final = último"), un billete de ida y vuelta EZE→MAD→EZE
+ * daba origen = destino, distancia 0 y los tests corridos sobre un par inexistente.
+ *
+ * La v2.1.2 lo precisa: en un billete redondo (o multi-destino) cada DIRECCIÓN es un
+ * itinerario independiente a efectos de los tests, la distancia y el destino final. La
+ * unidad de análisis es la dirección AFECTADA por el incidente.
+ *
+ * Cómo se traduce acá:
+ *   - `segmentos[].afectado: true` marca el tramo donde ocurrió el hecho (a lo sumo uno).
+ *   - De ahí sale la dirección afectada, y de ella `origen_iata`, `destino_iata`, `ruta`,
+ *     la distancia, el nodo borde hub-UE y el carrier operante del Test A2.
+ *   - Las direcciones se separan solas: el itinerario corta donde un tramo no engancha
+ *     con el anterior o donde vuelve a un aeropuerto ya visitado (el giro del redondo).
+ *   - Sin ningún tramo marcado y con más de una dirección, no se adivina cuál es: se
+ *     analiza la primera y se deja un aviso. El backoffice además advierte en pantalla.
+ *   - Sin `segmentos`, el comportamiento es el de siempre: mandan las columnas
+ *     `origen_iata`/`destino_iata` y el carrier sale de la columna legacy `aerolinea`.
+ *
+ * ------------------------------------------------------------------
  * FORMA DEL OBJETO `caso`
  * ------------------------------------------------------------------
  * {
@@ -26,8 +48,8 @@
  *
  *   // — Tabla A canónica (tal cual, sin derivar) —
  *   incidentes: ['demora'],
- *   origen_iata, destino_iata,           // los de la fila (display aparte, en origen/destino)
- *   segmentos: [{orden, origen_iata, destino_iata, carrier_operante, fecha}],
+ *   origen_iata, destino_iata,           // de la DIRECCIÓN AFECTADA (display aparte, en origen/destino)
+ *   segmentos: [{orden, origen_iata, destino_iata, carrier_operante, fecha, afectado}],
  *   billete_unico: true|false|null,
  *   demora_salida_min, demora_llegada_min: number|null,
  *   antelacion_aviso_dias: number|null,
@@ -43,7 +65,9 @@
  *   // — derivados (Paso 0 del Componente 2) —
  *   origen: {iata, pais_iso, ambito_eu261, montreal_parte, lat, lon}|null,
  *   destino_final: {...}|null,
- *   ruta: [{...}],                       // endpoints en orden, para los tests de ruteo
+ *   ruta: [{...}],                       // endpoints de la dirección afectada, en orden
+ *   direccion_afectada: {desde, hasta, ordenes: [1,2], marcada: bool}|null,
+ *   direcciones_total: number,           // cuántas direcciones describen los segmentos
  *   carrier_operante: {nombre, iata, pais_licencia, comunitario}|null,
  *   carriers_por_segmento: [{orden, carrier}],
  *   internacional: true|false|null,
@@ -201,6 +225,42 @@ function comoIata(v) {
   return /^[A-Z]{3}$/.test(s) ? s : null;
 }
 
+/**
+ * Parte los segmentos en DIRECCIONES (enmienda legal v2.1.2) y devuelve, por dirección,
+ * la lista de índices de `segmentos` que la componen.
+ *
+ * Corta en dos situaciones, las dos observables sin más dato que los IATA:
+ *   1. El tramo no engancha con el anterior (destino del previo ≠ origen del actual):
+ *      son itinerarios distintos, no una conexión.
+ *   2. El tramo aterriza en un aeropuerto YA visitado en la dirección en curso: eso es
+ *      el giro de un ida y vuelta (EZE→MAD, MAD→EZE parte en dos direcciones), no una
+ *      escala. JFK→MAD, MAD→EZE no vuelve sobre nada: es una sola dirección con hub.
+ *
+ * Un tramo sin alguno de sus dos extremos corta también: sin IATA no se puede afirmar
+ * que enganche, y encadenarlo a ciegas es exactamente la clase de presunción que el
+ * motor no hace.
+ */
+export function partirEnDirecciones(segmentos) {
+  var dirs = [], actual = null, visitados = [];
+  (segmentos || []).forEach(function (s, i) {
+    var cortar = !actual;
+    if (actual) {
+      var previo = segmentos[actual[actual.length - 1]];
+      if (!previo.destino_iata || !s.origen_iata) cortar = true;
+      else if (previo.destino_iata !== s.origen_iata) cortar = true;
+      else if (s.destino_iata && visitados.indexOf(s.destino_iata) !== -1) cortar = true;
+    }
+    if (cortar) {
+      actual = [];
+      dirs.push(actual);
+      visitados = s.origen_iata ? [s.origen_iata] : [];
+    }
+    actual.push(i);
+    if (s.destino_iata && visitados.indexOf(s.destino_iata) === -1) visitados.push(s.destino_iata);
+  });
+  return dirs;
+}
+
 /** Descripción de un aeropuerto para el ruteo. `null` si el IATA no se conoce. */
 function puntoRuta(iata, idxAeropuertos, paises) {
   var code = comoIata(iata);
@@ -251,6 +311,9 @@ export function normalizarCaso(row, idxAeropuertos, idxAerolineas, paises) {
         destino_iata: comoIata(s && s.destino_iata),
         carrier_operante: (s && s.carrier_operante) || null,
         fecha: (s && s.fecha) || null,
+        /* v2.1.2: el tramo donde ocurrió el incidente. Ausente = false, nunca null: es
+           una marca, no un dato del que se pueda dudar. */
+        afectado: !!(s && s.afectado === true),
       };
     })
     .sort(function (a, b) { return a.orden - b.orden; });
@@ -268,21 +331,42 @@ export function normalizarCaso(row, idxAeropuertos, idxAerolineas, paises) {
   var gastosTotalDeclarado = totalDeclarado == null ? null
     : { monto: totalDeclarado, moneda: row.moneda_gastos || null };
 
-  /* ---- Ruta: los segmentos manda si están cargados ---- */
+  /* ---- Dirección afectada: la unidad de análisis (enmienda legal v2.1.2) ---- */
+  var direcciones = partirEnDirecciones(segmentos);
+  var marcados = [];
+  segmentos.forEach(function (s, i) { if (s.afectado) marcados.push(i); });
+  if (marcados.length > 1) {
+    avisos.push('hay ' + marcados.length + ' tramos marcados como afectados y solo puede haber uno; se toma el primero (tramo ' + segmentos[marcados[0]].orden + ')');
+  }
+  var idxAfectado = marcados.length ? marcados[0] : null;
+
+  var idxDireccion = 0;
+  if (idxAfectado != null) {
+    direcciones.forEach(function (d, n) { if (d.indexOf(idxAfectado) !== -1) idxDireccion = n; });
+  } else if (direcciones.length > 1) {
+    /* Acá está el sesgo que la v2.1.2 vino a cerrar: sin tramo marcado se analiza la
+       primera dirección, que en un redondo es la IDA. Si el incidente fue en la vuelta,
+       el análisis es sobre el itinerario equivocado — por eso se avisa y el backoffice
+       lo advierte en pantalla. No se adivina. */
+    avisos.push('los segmentos describen ' + direcciones.length + ' direcciones y ninguna está marcada como afectada; se analiza la primera. Marcá el tramo del incidente para que el motor use la dirección correcta');
+  }
+  var segsDireccion = (direcciones[idxDireccion] || []).map(function (i) { return segmentos[i]; });
+
+  /* ---- Ruta: la dirección afectada manda si hay segmentos cargados ---- */
   var origenIata = comoIata(row.origen_iata);
   var destinoIata = comoIata(row.destino_iata);
 
-  if (segmentos.length) {
-    var segOrigen = segmentos[0].origen_iata;
-    var segDestino = segmentos[segmentos.length - 1].destino_iata;
+  if (segsDireccion.length) {
+    var segOrigen = segsDireccion[0].origen_iata;
+    var segDestino = segsDireccion[segsDireccion.length - 1].destino_iata;
     /* Los segmentos son el dato fino (los carga un humano en el backoffice) y definen
        el itinerario; las columnas quedan como respaldo. Si discrepan se avisa, no se
        elige en silencio. */
     if (segOrigen && origenIata && segOrigen !== origenIata) {
-      avisos.push('origen_iata (' + origenIata + ') no coincide con el primer segmento (' + segOrigen + '); manda el segmento');
+      avisos.push('origen_iata (' + origenIata + ') no coincide con el primer tramo de la dirección afectada (' + segOrigen + '); manda el segmento');
     }
     if (segDestino && destinoIata && segDestino !== destinoIata) {
-      avisos.push('destino_iata (' + destinoIata + ') no coincide con el último segmento (' + segDestino + '); manda el segmento');
+      avisos.push('destino_iata (' + destinoIata + ') no coincide con el último tramo de la dirección afectada (' + segDestino + '); manda el segmento');
     }
     origenIata = segOrigen || origenIata;
     destinoIata = segDestino || destinoIata;
@@ -294,10 +378,12 @@ export function normalizarCaso(row, idxAeropuertos, idxAerolineas, paises) {
   if (origenIata && origen && !origen.conocido) avisos.push('IATA de origen no está en airports.json: ' + origenIata);
   if (destinoIata && destinoFinal && !destinoFinal.conocido) avisos.push('IATA de destino no está en airports.json: ' + destinoIata);
 
-  /* Endpoints en orden, para que los tests de ruteo puedan recorrer el itinerario. */
+  /* Endpoints en orden, para que los tests de ruteo puedan recorrer el itinerario. Solo
+     los de la dirección afectada: la otra dirección es un itinerario distinto y no
+     activa marcos por su cuenta (v2.1.2). */
   var ruta = [];
-  if (segmentos.length) {
-    segmentos.forEach(function (s) {
+  if (segsDireccion.length) {
+    segsDireccion.forEach(function (s) {
       var o = puntoRuta(s.origen_iata, idxAeropuertos, paises);
       var d = puntoRuta(s.destino_iata, idxAeropuertos, paises);
       if (o) ruta.push(o);
@@ -337,16 +423,18 @@ export function normalizarCaso(row, idxAeropuertos, idxAerolineas, paises) {
   var extremosFueraUE = !!(origen && destinoFinal
     && origen.ambito_eu261 === false && destinoFinal.ambito_eu261 === false);
   var hubIntermedio = false;
-  if (segmentos.length > 1) {
-    /* Intermedios = todos los endpoints salvo el primer origen y el último destino. */
-    for (var i = 0; i < segmentos.length; i++) {
-      var esPrimero = i === 0, esUltimo = i === segmentos.length - 1;
+  if (segsDireccion.length > 1) {
+    /* Intermedios = todos los endpoints de la DIRECCIÓN AFECTADA salvo su primer origen
+       y su último destino. Mirar el billete entero metería como "hub intermedio" el
+       aeropuerto donde el itinerario da la vuelta, que no es una escala (v2.1.2). */
+    for (var i = 0; i < segsDireccion.length; i++) {
+      var esPrimero = i === 0, esUltimo = i === segsDireccion.length - 1;
       if (!esPrimero) {
-        var pi = puntoRuta(segmentos[i].origen_iata, idxAeropuertos, paises);
+        var pi = puntoRuta(segsDireccion[i].origen_iata, idxAeropuertos, paises);
         if (pi && pi.ambito_eu261 === true) hubIntermedio = true;
       }
       if (!esUltimo) {
-        var pd = puntoRuta(segmentos[i].destino_iata, idxAeropuertos, paises);
+        var pd = puntoRuta(segsDireccion[i].destino_iata, idxAeropuertos, paises);
         if (pd && pd.ambito_eu261 === true) hubIntermedio = true;
       }
     }
@@ -365,9 +453,16 @@ export function normalizarCaso(row, idxAeropuertos, idxAerolineas, paises) {
   /* Sin segmentos cargados, la columna legacy `aerolinea` es lo único que hay. Es el
      transportista COMERCIALIZADOR según el formulario, no necesariamente el operante
      (Tabla A fila 5 exige el operante) → se avisa. */
+  /* El Test A2 pregunta por el transportista OPERANTE del vuelo en cuestión: sale del
+     tramo afectado si está marcado, y si no del primero de la dirección afectada
+     (v2.1.2). En un redondo, el primer tramo del billete puede ser de otra aerolínea
+     que ni siquiera voló el trayecto del incidente. */
   var carrierCaso = null;
-  if (carriersPorSegmento.length) {
-    carrierCaso = carriersPorSegmento[0].carrier;
+  if (idxAfectado != null) {
+    carrierCaso = buscarAerolinea(idxAerolineas, segmentos[idxAfectado].carrier_operante);
+    if (!carrierCaso && segsDireccion.length) carrierCaso = buscarAerolinea(idxAerolineas, segsDireccion[0].carrier_operante);
+  } else if (segsDireccion.length) {
+    carrierCaso = buscarAerolinea(idxAerolineas, segsDireccion[0].carrier_operante);
   } else if (row.aerolinea) {
     carrierCaso = buscarAerolinea(idxAerolineas, row.aerolinea);
     avisos.push('carrier tomado de la columna `aerolinea` (declarada en el formulario); Tabla A fila 5 pide el transportista OPERANTE, cargar `segmentos` para precisarlo');
@@ -431,6 +526,14 @@ export function normalizarCaso(row, idxAeropuertos, idxAerolineas, paises) {
     origen: origen,
     destino_final: destinoFinal,
     ruta: ruta,
+    direccion_afectada: segsDireccion.length ? {
+      desde: segsDireccion[0].origen_iata,
+      hasta: segsDireccion[segsDireccion.length - 1].destino_iata,
+      ordenes: segsDireccion.map(function (s) { return s.orden; }),
+      /* false = la eligió el motor por ser la primera, no la marcó nadie. */
+      marcada: idxAfectado != null,
+    } : null,
+    direcciones_total: direcciones.length,
     carrier_operante: carrierCaso,
     carriers_por_segmento: carriersPorSegmento,
     internacional: internacional,

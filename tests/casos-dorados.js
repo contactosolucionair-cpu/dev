@@ -323,6 +323,49 @@ export var CASOS = [
        marcarlo provisional igual. Es criterio, no implementación. */
     esperado: {},
   },
+
+  {
+    id: 'CD-13',
+    descripcion: 'Ida y vuelta EZE→MAD→EZE en billete único con cancelación en la VUELTA: el análisis va sobre la dirección MAD→EZE (enmienda v2.1.2)',
+    caso: {
+      ref_code: 'CD-13',
+      billete_unico: true,
+      /* Las dos direcciones comparten billete, pero cada una es un itinerario aparte a
+         efectos de los tests, la distancia y el destino final. El tramo marcado define
+         cuál se analiza: acá la vuelta, que sale de MAD (aeropuerto UE → Test A1). */
+      segmentos: [
+        { orden: 1, origen_iata: 'EZE', destino_iata: 'MAD', carrier_operante: 'Iberia', fecha: '2026-05-10' },
+        { orden: 2, origen_iata: 'MAD', destino_iata: 'EZE', carrier_operante: 'Iberia', fecha: '2026-05-24', afectado: true },
+      ],
+      incidentes: ['cancelacion'], antelacion_aviso_dias: 2,
+      fecha_incidente: '2026-05-24', checkin_presentacion: 'no_aplica',
+      causa_alegada: 'Problema operativo de la aerolínea',
+    },
+    /* completar JPA — criterio legal.
+       Salida actual del motor (a confirmar, no asertada):
+         normalizacion: MAD → EZE, 10.087 km, banda >3500, internacional
+           (leído como itinerario completo daría EZE → EZE y 0 km: eso es lo que la
+            enmienda v2.1.2 vino a cerrar)
+         EU261: si · Test A1 (salida desde MAD) · gate check-in: pasa (no exigible en
+           cancelación, Art. 3(2))
+         EU261.compensacion_tarifada: RECLAMABLE, EUR 600
+         EU261.reembolso / reencaminamiento / atencion: RECLAMABLE
+         EU261.dano_moral y compensacion_suplementaria: REQUIERE_EVALUACION
+         prescripcion EU261: segun_foro, sin fecha (Pin 7)
+         MONTREAL: si (ES→AR, ambos Estados parte) · prescripción firme 2 años → 2028-05-24
+         RES1532: no · DOT: no · ANAC400: no
+         nodos_eval: circunstancias_extraordinarias, suficiencia_probatoria,
+           dano_moral_suplementario
+         provisional: true (checkin_presentacion, incidentes y antelacion_aviso_dias
+           están cargados pero sin verificar)
+
+       PREGUNTA PARA JPA: RES1532 sale 'no' porque la dirección analizada no parte de
+       Argentina, aunque el billete sí incluya un tramo que salió de EZE. Es la
+       consecuencia directa de tratar cada dirección como itinerario independiente.
+       ¿Es el resultado querido, o el marco argentino debería mirar el billete entero
+       aunque los tests EU261 miren solo la dirección? */
+    esperado: {},
+  },
 ];
 
 export default CASOS;

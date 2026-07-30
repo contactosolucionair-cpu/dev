@@ -264,6 +264,56 @@ var UNITARIOS = [
     },
   },
   {
+    /* Enmienda legal v2.1.2: cada dirección de un billete redondo es un itinerario
+       aparte. La partición es mecánica (corta donde el itinerario no engancha o vuelve
+       sobre un aeropuerto ya visitado), así que se puede asertar sin criterio legal. */
+    nombre: 'dirección afectada: el redondo parte en dos, la conexión no',
+    correr: function () {
+      var vuelta = norm({ segmentos: [
+        { orden: 1, origen_iata: 'EZE', destino_iata: 'MAD' },
+        { orden: 2, origen_iata: 'MAD', destino_iata: 'EZE', afectado: true },
+      ] });
+      var hub = norm({ segmentos: [
+        { orden: 1, origen_iata: 'JFK', destino_iata: 'MAD' },
+        { orden: 2, origen_iata: 'MAD', destino_iata: 'EZE' },
+      ] });
+      return igual('redondo: dos direcciones', vuelta.direcciones_total, 2)
+        || igual('redondo: origen de la vuelta', vuelta.origen_iata, 'MAD')
+        || igual('redondo: destino de la vuelta', vuelta.destino_iata, 'EZE')
+        /* Sin la enmienda esto daba 0 km: origen = destino. */
+        || igual('redondo: distancia real', vuelta.distancia_km, 10087)
+        || igual('conexión: una sola dirección', hub.direcciones_total, 1)
+        || igual('conexión: extremos del itinerario', hub.origen_iata + '→' + hub.destino_iata, 'JFK→EZE')
+        || igual('conexión: nodo borde por hub UE', hub.transita_hub_eu261, true);
+    },
+  },
+  {
+    nombre: 'dirección afectada: sin tramo marcado se analiza la primera y se avisa',
+    correr: function () {
+      var r = norm({ segmentos: [
+        { orden: 1, origen_iata: 'EZE', destino_iata: 'MAD' },
+        { orden: 2, origen_iata: 'MAD', destino_iata: 'EZE' },
+      ] });
+      var unTramo = norm({ segmentos: [{ orden: 1, origen_iata: 'EZE', destino_iata: 'MAD' }] });
+      return igual('cae en la ida', r.origen_iata + '→' + r.destino_iata, 'EZE→MAD')
+        || igual('no la eligió nadie', r.direccion_afectada.marcada, false)
+        || igual('queda constancia', r.avisos.some(function (a) { return a.indexOf('ninguna está marcada') !== -1; }), true)
+        /* Un solo tramo no tiene ambigüedad posible: no corresponde avisar nada. */
+        || igual('un tramo, sin aviso', unTramo.avisos.length, 0);
+    },
+  },
+  {
+    nombre: 'el carrier del Test A2 sale del tramo afectado, no del primero del billete',
+    correr: function () {
+      var r = norm({ segmentos: [
+        { orden: 1, origen_iata: 'EZE', destino_iata: 'MAD', carrier_operante: 'Iberia' },
+        { orden: 2, origen_iata: 'MAD', destino_iata: 'EZE', carrier_operante: 'Aerolíneas Argentinas', afectado: true },
+      ] });
+      return igual('carrier de la vuelta', r.carrier_operante && r.carrier_operante.nombre, 'Aerolíneas Argentinas')
+        || igual('no comunitario', r.carrier_operante && r.carrier_operante.comunitario, false);
+    },
+  },
+  {
     nombre: 'campo crítico en conflicto → FALTA_DATO en la categoría que lo consume (§1.1)',
     correr: function () {
       var a = analizarRow({

@@ -1,6 +1,12 @@
 # Motor Capa 1 — Contratos de entrada/salida y migración
 
-**Versión:** 1.1 · **Fecha:** 29-jul-2026 · **Depende de:** `Capa_1_-_Logica_legal_determinista_v2.1.md` (v2.1.1, fuente de verdad legal)
+**Versión:** 1.2 · **Fecha:** 30-jul-2026 · **Depende de:** `Capa_1_-_Logica_legal_determinista_v2.1.md` (v2.1.2, fuente de verdad legal)
+
+> **v1.2 (mini-ciclo correctivo "dirección afectada").** Recoge la enmienda legal v2.1.2:
+> la unidad de análisis del motor es la **dirección afectada** por el incidente, no el
+> billete completo. Se fija la semántica canónica de `origen_iata`/`destino_iata` (§1.2
+> filas 1-2) y se agrega `afectado` a la estructura de `segmentos` (§1.3). Sin cambios de
+> schema: `afectado` entra en el JSONB que ya existe.
 
 > **Errata v1.1 (cierre del ciclo de implementación).** La v1.0 nombraba tres columnas que
 > NO existen en `reclamos`: `gastos_monto`, `gastos_moneda` e `incidencia_detectada`. Las
@@ -33,7 +39,7 @@ Este documento define los dos contratos del motor determinista y la migración d
 
 | Tabla A | Columna | Tipo | Estado | Lo llena | Crítico |
 |---|---|---|---|---|---|
-| 1, 2 Origen/Destino | `origen_iata`, `destino_iata` | TEXT(3) | **nueva**. La captura YA valida IATA (`airport-select.js`, `data-iata`) pero hoy solo persiste el label; se persiste el `data-iata` en los submits y `origen`/`destino` quedan como display. Backfill histórico: portar `resolve()` de `airport-select.js` a un script | form (ya validado) + extracción | no |
+| 1, 2 Origen/Destino | `origen_iata`, `destino_iata` | TEXT(3) | **Semántica canónica (v1.2, enmienda legal v2.1.2): primer origen y destino final DE LA DIRECCIÓN AFECTADA por el incidente** — nunca el tramo suelto donde ocurrió el hecho, y nunca el viaje redondo completo. En un EZE→MAD→EZE con la incidencia en la vuelta, el par canónico es `MAD`/`EZE`, no `EZE`/`EZE` ni el tramo aislado. Con `segmentos` cargados, la dirección afectada la marca `segmentos[].afectado` (§1.3) y el motor deriva el par de ahí. **nueva**. La captura YA valida IATA (`airport-select.js`, `data-iata`) pero hoy solo persiste el label; se persiste el `data-iata` en los submits y `origen`/`destino` quedan como display. Backfill histórico: portar `resolve()` de `airport-select.js` a un script | form (ya validado) + extracción | no |
 | 3 Segmentos | `segmentos` | JSONB | **nueva** | admin + extracción | no |
 | 4 Billete único | `billete_unico` | BOOLEAN | **nueva** | admin | sí (afecta Test A) |
 | 5 Carrier operante | `segmentos[].carrier_operante` + lookup en `api/_data/aerolineas.json` | — | **nueva** | admin + extracción | no |
@@ -61,7 +67,12 @@ Este documento define los dos contratos del motor determinista y la migración d
 ```js
 // segmentos: uno por tramo, en orden
 [{ orden: 1, origen_iata: 'EZE', destino_iata: 'MAD',
-   carrier_operante: 'Iberia', fecha: 'YYYY-MM-DD' }]
+   carrier_operante: 'Iberia', fecha: 'YYYY-MM-DD', afectado: false }]
+// afectado (v1.2): el tramo donde ocurrió el incidente. A lo sumo UNO en true.
+// Marca la DIRECCIÓN afectada (enmienda legal v2.1.2): de ahí salen el origen, el
+// destino final, la distancia y el carrier operante del Test A2. Ausente = false.
+// Sin ningún tramo marcado, el motor no puede saber qué dirección analizar en un
+// billete de ida y vuelta: lo avisa y el backoffice pide confirmarlo.
 
 // incidentes: conjunto (v2.1 Tabla A fila 6)
 ['demora'] // valores: demora|cancelacion|denegacion_embarque|downgrade|

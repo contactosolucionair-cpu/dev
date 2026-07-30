@@ -832,7 +832,7 @@ export default async function handler(req, res) {
       }
 
       if (body.segmentos !== undefined) {
-        sdl.segmentos = (Array.isArray(body.segmentos) ? body.segmentos : [])
+        var segsSdl = (Array.isArray(body.segmentos) ? body.segmentos : [])
           .map(function (s, i) {
             return {
               orden: aEntero(s && s.orden) != null ? aEntero(s.orden) : i + 1,
@@ -840,11 +840,23 @@ export default async function handler(req, res) {
               destino_iata: aIata(s && s.destino_iata),
               carrier_operante: aTexto(s && s.carrier_operante),
               fecha: aFecha(s && s.fecha),
+              /* `afectado`: el tramo del incidente (enmienda legal v2.1.2). De él sale la
+                 DIRECCIÓN que el motor analiza, así que solo puede haber uno. */
+              afectado: (s && s.afectado === true) || (s && s.afectado === 'true'),
             };
           })
           /* Un segmento sin ninguno de los dos extremos no aporta nada al ruteo. */
           .filter(function (s) { return s.origen_iata || s.destino_iata; })
           .sort(function (a, b) { return a.orden - b.orden; });
+        /* Si llegaran varios marcados (UI vieja, request armado a mano), se queda el
+           primero: un caso con dos direcciones afectadas no es representable. */
+        var yaMarcado = false;
+        segsSdl.forEach(function (s) {
+          if (!s.afectado) return;
+          if (yaMarcado) s.afectado = false;
+          yaMarcado = true;
+        });
+        sdl.segmentos = segsSdl;
       }
 
       /* ---- ESPEJO DE GASTOS ----

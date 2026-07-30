@@ -1288,11 +1288,12 @@
 
     function dlSegRowHtml(s){
       s=s||{};
-      return '<div class="dl-seg" style="display:grid;grid-template-columns:62px 62px 1fr 130px 24px;gap:4px;margin-bottom:4px;align-items:center">'
+      return '<div class="dl-seg" style="display:grid;grid-template-columns:62px 62px 1fr 130px 30px 24px;gap:4px;margin-bottom:4px;align-items:center">'
         +'<input class="dl-seg-o" maxlength="3" placeholder="ORI" value="'+esc(s.origen_iata||'')+'" style="'+IN_ESTILO+';text-transform:uppercase;font-family:var(--fm)">'
         +'<input class="dl-seg-d" maxlength="3" placeholder="DES" value="'+esc(s.destino_iata||'')+'" style="'+IN_ESTILO+';text-transform:uppercase;font-family:var(--fm)">'
         +'<input class="dl-seg-c" placeholder="Carrier operante" value="'+esc(s.carrier_operante||'')+'" style="'+IN_ESTILO+'">'
         +'<input class="dl-seg-f" type="date" value="'+esc(s.fecha||'')+'" style="'+IN_ESTILO+'">'
+        +'<label title="Tramo afectado por el incidente" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0"><input type="checkbox" class="dl-seg-af"'+(s.afectado===true?' checked':'')+'></label>'
         +'<button type="button" class="dl-quitar" title="Quitar tramo" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:0;line-height:1">✕</button></div>';
     }
     function dlGastoRowHtml(g){
@@ -1397,8 +1398,10 @@
       /* Segmentos */
       h+='<div style="border:1px solid var(--bdl);border-radius:6px;padding:8px;margin-bottom:10px">';
       h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+lbl('Segmentos (en orden)')+'<button class="btn btn--ghost" id="dl-add-seg" type="button" style="font-size:.66rem;padding:2px 8px">+ Tramo</button></div>';
+      h+='<div style="display:grid;grid-template-columns:62px 62px 1fr 130px 30px 24px;gap:4px;margin-bottom:3px;font-size:.58rem;color:var(--t4);text-transform:uppercase;letter-spacing:.04em"><div>Origen</div><div>Destino</div><div>Carrier operante</div><div>Fecha</div><div style="text-align:center" title="Tramo afectado por el incidente">Afec.</div><div></div></div>';
       h+='<div id="dl-segs">'+(segs.length?segs.map(dlSegRowHtml).join(''):'')+'</div>';
-      h+='<div style="font-size:.62rem;color:var(--t4);margin-top:4px">Si hay tramos cargados, definen el itinerario y ganan sobre el origen/destino de arriba.</div></div>';
+      h+='<div style="font-size:.62rem;color:var(--t4);margin-top:4px">Si hay tramos cargados, definen el itinerario y ganan sobre el origen/destino de arriba.</div>';
+      h+='<div style="font-size:.62rem;color:var(--t4);margin-top:2px"><strong>Afec.</strong> = tramo donde ocurrió el incidente, uno solo. En un ida y vuelta cada dirección es un itinerario aparte: el motor analiza la del tramo marcado y de ahí saca origen, destino final, distancia y carrier operante.</div></div>';
 
       /* Gastos itemizados */
       h+='<div style="border:1px solid var(--bdl);border-radius:6px;padding:8px;margin-bottom:12px">';
@@ -1422,7 +1425,8 @@
       var segs=[];
       Array.prototype.forEach.call(document.querySelectorAll('#dl-segs .dl-seg'),function(row,i){
         var g=function(cls){var e=row.querySelector('.'+cls);return e?e.value.trim():''};
-        segs.push({orden:i+1,origen_iata:g('dl-seg-o'),destino_iata:g('dl-seg-d'),carrier_operante:g('dl-seg-c'),fecha:g('dl-seg-f')});
+        var af=row.querySelector('.dl-seg-af');
+        segs.push({orden:i+1,origen_iata:g('dl-seg-o'),destino_iata:g('dl-seg-d'),carrier_operante:g('dl-seg-c'),fecha:g('dl-seg-f'),afectado:!!(af&&af.checked)});
       });
 
       var gastos=[];
@@ -1454,6 +1458,50 @@
       };
     }
 
+    /* ¿El par origen/destino de este caso es confiable? (enmienda legal v2.1.2)
+       La unidad de análisis del motor es la DIRECCIÓN afectada por el incidente. Queda
+       confirmada solo si los tramos están cargados y el del incidente está marcado (con
+       un tramo único no hay ambigüedad posible). Si no, se buscan indicios de que el
+       itinerario tenga más de una dirección o una conexión y se avisa.
+       Nota sobre el scan de IA: el prompt de extracción pide sistemáticamente la
+       dirección de IDA ("origen: donde COMIENZA el viaje de ida; destino: llegada FINAL
+       del último tramo de ida"). En un incidente de la vuelta, entonces, el dato que
+       quedó registrado no es dudoso: es sesgadamente el itinerario equivocado. Por eso
+       basta con que el caso haya podido entrar por ese camino para advertir. */
+    function dlMotivosDireccion(c){
+      var segs=Array.isArray(c.segmentos)?c.segmentos:[];
+      var marcados=segs.filter(function(s){return s&&s.afectado===true}).length;
+      if(segs.length===1)return [];                       /* un solo tramo: sin ambigüedad */
+      if(segs.length>1&&marcados===1)return [];           /* dirección confirmada a mano */
+
+      var motivos=[];
+      if(segs.length>1){
+        motivos.push('hay '+segs.length+' tramos cargados y '+(marcados?'más de uno marcado':'ninguno marcado')+' como afectado');
+        return motivos;
+      }
+      /* Sin tramos cargados: se mira lo que haya quedado en el registro. */
+      var esc_=function(v){return (v===null||v===undefined)?'':String(v).trim()};
+      var aiRaw=(c.ai_raw&&typeof c.ai_raw==='object')?c.ai_raw:{};
+      /* Sin escapar acá: los motivos se escapan una sola vez al pintarlos. */
+      if(esc_(aiRaw.escalas))motivos.push('la extracción de IA registró escalas ("'+esc_(aiRaw.escalas)+'")');
+      var de=Array.isArray(c.datos_extraidos)?c.datos_extraidos:[];
+      if(de.some(function(d){return d&&d.campo==='escalas'&&esc_(d.valor)}))motivos.push('la evidencia extraída incluye escalas');
+      if(c.origen_iata&&c.destino_iata&&c.origen_iata===c.destino_iata)motivos.push('el origen y el destino registrados son el mismo aeropuerto');
+      var adj=Array.isArray(c.adjuntos)?c.adjuntos:[];
+      if(adj.some(function(a){return a&&a.tipo==='documento_viaje'}))motivos.push('el itinerario pudo cargarse con el scan de IA, que extrae siempre la dirección de ida');
+      return motivos;
+    }
+
+    function dlAvisoDireccionHtml(c){
+      var motivos=dlMotivosDireccion(c);
+      if(!motivos.length)return '';
+      return '<div style="border-left:3px solid var(--warn);background:var(--warnbg);border-radius:5px;padding:8px 10px;margin-bottom:10px">'
+        +'<div style="font-size:.73rem;font-weight:700;color:var(--warn)">Origen/destino sin confirmar — verificar dirección afectada antes de usar este análisis</div>'
+        +'<div style="font-size:.66rem;color:var(--t3);margin-top:3px">'+motivos.map(esc).join(' · ')+'.</div>'
+        +'<div style="font-size:.66rem;color:var(--t3);margin-top:3px">En un billete de ida y vuelta cada dirección es un itinerario independiente. Cargá los tramos arriba y marcá el del incidente: de ahí salen el origen, el destino final y la distancia.</div>'
+        +'</div>';
+    }
+
     /* ---- Sección 2: render de la salida del motor ---- */
     function renderAnalisisLegalHtml(c){
       var env=c.analisis_legal&&typeof c.analisis_legal==='object'?c.analisis_legal:null;
@@ -1465,6 +1513,7 @@
       h+='<div class="detail__label" style="margin-bottom:0;font-size:.7rem">Análisis legal</div>';
       h+='<button class="btn btn--primary" id="btn-analizar-caso" type="button" style="font-size:.7rem;padding:4px 12px">'+(a?'Re-analizar':'Analizar caso')+'</button></div>';
       h+='<div id="analisis-msg" style="font-family:var(--fm);font-size:.66rem;min-height:14px;margin-bottom:6px"></div>';
+      h+=dlAvisoDireccionHtml(c);
 
       if(!a){
         h+='<p style="font-size:.72rem;color:var(--t4);margin:0">Sin análisis todavía. El motor no modifica el caso: solo lo lee.</p>';
@@ -1652,6 +1701,13 @@
         var fila=b.closest('.dl-seg')||b.closest('.dl-gasto');
         if(fila)fila.remove();
       });
+      /* "Tramo afectado": excluyente. El incidente ocurrió en un tramo, y de ese tramo
+         sale la dirección que el motor analiza; dos marcados no significan nada. */
+      if(segs)segs.addEventListener('change',function(e){
+        var t=e.target;
+        if(!t||!t.classList||!t.classList.contains('dl-seg-af')||!t.checked)return;
+        Array.prototype.forEach.call(segs.querySelectorAll('.dl-seg-af'),function(cb){if(cb!==t)cb.checked=false});
+      });
 
       var guardar=document.getElementById('dl-guardar');
       if(guardar)guardar.addEventListener('click',function(){
@@ -1667,6 +1723,11 @@
           Object.keys(d.campos).forEach(function(k){c[k]=d.campos[k]});
           claims.forEach(function(cl){if(cl.id===c.id)Object.keys(d.campos).forEach(function(k){cl[k]=d.campos[k]})});
           if(msg){msg.style.color='var(--ok)';msg.textContent='Guardado.'}
+          /* Se repinta solo la sección de análisis: si acaban de marcar el tramo
+             afectado, la advertencia de dirección tiene que irse ahí mismo. El editor
+             queda intacto, así no se pierde nada de lo que haya tipeado abajo. */
+          var cajaAn=document.getElementById('analisis-legal-box');
+          if(cajaAn){cajaAn.outerHTML=renderAnalisisLegalHtml(c);wireAnalisisLegal(c)}
           toast('Datos legales guardados.');
         }).catch(function(){guardar.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
       });
