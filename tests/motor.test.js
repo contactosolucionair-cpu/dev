@@ -467,7 +467,9 @@ var UNITARIOS = [
         protesta: { realizada: 'si', medio: 'pir', fecha: '2026-05-02' },
         billete_unico: true, checkin_presentacion: 'en_hora',
       });
-      var cat = buscarCategoria(a, 'RES1532.equipaje');
+      /* Fecha de 2026 → rige el Reglamento 809/2024, no la Res. 1532 (derogada). Lo que
+         prueba este caso es la regla 6 del §2, que no cambió entre vigencias. */
+      var cat = buscarCategoria(a, 'REGL809.equipaje');
       return igual('estado', cat && cat.estado, 'RECLAMABLE')
         || igual('cantidad pendiente', cat && cat.monto && cat.monto.cantidad_pendiente, true)
         || igual('sin valor numérico', cat && cat.monto && cat.monto.valor, undefined)
@@ -477,8 +479,119 @@ var UNITARIOS = [
   {
     nombre: 'seleccionarRuleset elige por fecha del incidente',
     correr: function () {
-      return igual('dentro de vigencia', seleccionarRuleset('2026-05-10').version, '2026-06-19')
-        || igual('sin fecha', seleccionarRuleset(null).version, '2026-06-19');
+      return igual('dentro de vigencia', seleccionarRuleset('2026-05-10').version, '2024-10-10')
+        || igual('sin fecha', seleccionarRuleset(null).version, '2024-10-10');
+    },
+  },
+  {
+    /* La 1532 fue derogada por el Dec. 809/2024, en vigor el 10-oct-2024 (Art. 7). El
+       borde tiene que ser exacto: un incidente del 9 se juzga con la norma vieja, uno del
+       10 con la nueva. Es ley al momento del hecho, no fecha de carga del caso. */
+    nombre: 'partición de vigencia AR: el 9-oct-2024 es 1532 y el 10-oct-2024 es 809/2024',
+    correr: function () {
+      return igual('9-oct-2024 → IV-A', seleccionarRuleset('2024-10-09').version, '2026-06-19')
+        || igual('10-oct-2024 → IV-B', seleccionarRuleset('2024-10-10').version, '2024-10-10')
+        || igual('marco AR de IV-A', seleccionarRuleset('2024-10-09').marcos.some(function (m) { return m.marco === 'RES1532'; }), true)
+        || igual('marco AR de IV-B', seleccionarRuleset('2024-10-10').marcos.some(function (m) { return m.marco === 'REGL809'; }), true)
+        /* EU261 y Montreal son los mismos objetos en las dos vigencias: si alguien los
+           duplica en vez de importarlos, esto se cae. */
+        || igual('EU261 compartido', seleccionarRuleset('2024-10-09').marcos.filter(function (m) { return m.marco === 'EU261'; })[0]
+          === seleccionarRuleset('2024-10-10').marcos.filter(function (m) { return m.marco === 'EU261'; })[0], true);
+    },
+  },
+  {
+    /* El cambio material del Reglamento: el alojamiento pasó de deberse a las 4 h a
+       deberse a las 8 h. Mismo caso, un día de diferencia, resultado distinto. */
+    nombre: 'partición de vigencia: demora de 6 h da alojamiento en IV-A y no en IV-B',
+    correr: function () {
+      function correrCon(fecha) {
+        return analizarRow({
+          origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+          incidentes: ['demora'], demora_salida_min: 360, fecha_incidente: fecha,
+          billete_unico: true, checkin_presentacion: 'en_hora',
+        });
+      }
+      var vieja = buscarCategoria(correrCon('2024-10-09'), 'RES1532.servicios_incidentales');
+      var nueva = buscarCategoria(correrCon('2024-10-10'), 'REGL809.servicios_incidentales');
+      /* El motor emite UNA categoría de incidentales, así que el escalón se lee en la
+         cita: bajo la 1532 el Art. 12 incluye el alojamiento desde las 4 h; bajo el
+         Reglamento, 6 h caen en el inciso b (comidas) y el alojamiento es el inciso c. */
+      var nueveHoras = buscarCategoria(analizarRow({
+        origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+        incidentes: ['demora'], demora_salida_min: 540, fecha_incidente: '2024-10-10',
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      }), 'REGL809.servicios_incidentales');
+      return igual('IV-A: reclamable', vieja && vieja.estado, 'RECLAMABLE')
+        || igual('IV-A: Art. 12 de la 1532', /Res\. 1532\/98 Art\. 12/.test((vieja && vieja.base_legal) || ''), true)
+        || igual('IV-B a las 6 h: reclamable', nueva && nueva.estado, 'RECLAMABLE')
+        || igual('IV-B a las 6 h: inciso b (comidas)', /Art\. 43 inc\. b/.test((nueva && nueva.base_legal) || ''), true)
+        || igual('IV-B a las 9 h: inciso c (alojamiento)', /Art\. 43 inc\. c/.test((nueveHoras && nueveHoras.base_legal) || ''), true);
+    },
+  },
+  {
+    /* D4: por debajo de 4 h el Reglamento no obliga a nada SALVO que la espera caiga entre
+       las 00:00 y las 06:00, y la hora programada de partida no existe en el intake. El
+       motor no puede presumir que no fue nocturno. */
+    nombre: 'D4: demora ≤ 4 h en IV-B → FALTA_DATO por la hora de partida, no NO_APLICA',
+    correr: function () {
+      var a = analizarRow({
+        origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+        incidentes: ['demora'], demora_salida_min: 180, fecha_incidente: '2026-05-10',
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      });
+      var cat = buscarCategoria(a, 'REGL809.servicios_incidentales');
+      return igual('estado', cat && cat.estado, 'FALTA_DATO')
+        || igual('dato_faltante', cat && cat.dato_faltante, 'hora_salida_programada')
+        /* Las otras bandas no dependen de la hora: no se contaminan. */
+        || igual('el reintegro sigue determinista', buscarCategoria(a, 'REGL809.reintegro').estado, 'NO_APLICA');
+    },
+  },
+  {
+    /* Art. 42: la reprogramación es tipo propio del Reglamento y tiene sus excepciones. */
+    nombre: 'reprogramación con aviso de 10 días y alternativo → sin incidentales (Art. 42 ii)',
+    correr: function () {
+      function conAviso(dias, ofrecido) {
+        return buscarCategoria(analizarRow({
+          origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+          incidentes: ['reprogramacion'], antelacion_aviso_dias: dias,
+          reencaminamiento: { ofrecido: ofrecido }, fecha_incidente: '2026-05-10',
+          billete_unico: true, checkin_presentacion: 'en_hora',
+        }), 'REGL809.servicios_incidentales');
+      }
+      return igual('10 días + alternativo → exceptuado', conAviso(10, true).estado, 'NO_APLICA')
+        || igual('20 días → exceptuado por antelación', conAviso(20, false).estado, 'NO_APLICA')
+        /* Sin alternativo y con menos de 2 semanas el derecho existe; cuál escalón del
+           Art. 43 corresponde depende de la demora efectiva, que acá no se sabe. Que
+           falte el escalón no puede borrar el derecho. */
+        || igual('10 días sin alternativo → hay derecho', conAviso(10, false).estado, 'RECLAMABLE');
+    },
+  },
+  {
+    /* D2: la sanción de caducidad doméstica no sobrevivió textualmente a la derogación del
+       Art. 20 b. En internacional la aporta Montreal Art. 31(4), que es expresa. */
+    nombre: 'gate D2: protesto fuera de plazo es inadmisible en internacional y provisional en doméstico',
+    correr: function () {
+      function gateDe(a, nombre) {
+        var m = (a.marcos || []).filter(function (x) { return x.marco === 'REGL809'; })[0];
+        return ((m && m.gates) || []).filter(function (g) { return g.gate === nombre; })[0];
+      }
+      var domestico = analizarRow({
+        origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+        incidentes: ['equipaje_perdida'], fecha_incidente: '2026-05-01',
+        protesta: { realizada: 'si', medio: 'escrita', fecha: '2026-05-20' },
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      });
+      var internacional = analizarRow({
+        origen_iata: 'EZE', destino_iata: 'MAD', aerolinea: 'Iberia',
+        incidentes: ['equipaje_perdida'], fecha_incidente: '2026-05-01',
+        protesta: { realizada: 'si', medio: 'escrita', fecha: '2026-05-30' },
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      });
+      return igual('doméstico fuera de plazo → pasa provisional', gateDe(domestico, 'protesto').resultado, 'pasa_provisional')
+        || igual('y no mata la categoría', buscarCategoria(domestico, 'REGL809.equipaje').estado, 'RECLAMABLE')
+        || igual('emite el nodo de la sanción', (domestico.nodos_eval || []).some(function (n) { return n.nodo === 'sancion_caducidad_domestica'; }), true)
+        || igual('internacional fuera de plazo → inadmisible', gateDe(internacional, 'protesto').resultado, 'inadmisible')
+        || igual('y mata la categoría', buscarCategoria(internacional, 'REGL809.equipaje').estado, 'NO_APLICA');
     },
   },
 ];

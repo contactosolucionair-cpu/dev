@@ -86,7 +86,7 @@ export function normalizarDireccionSugerida(raw, segmentos) {
 /* ------------------------------------------------------------------ */
 
 var INCIDENTES_VALIDOS = [
-  'demora', 'cancelacion', 'denegacion_embarque', 'downgrade', 'conexion_perdida',
+  'demora', 'cancelacion', 'reprogramacion', 'denegacion_embarque', 'downgrade', 'conexion_perdida',
   'equipaje_demora', 'equipaje_dano', 'equipaje_perdida', 'muerte_lesion',
 ];
 
@@ -100,10 +100,12 @@ var INCIDENTES_VALIDOS = [
  * Sin tipo de equipaje NO se presume 'equipaje_demora': correría el gate de protesta
  * con los plazos equivocados (3/7 días daño vs. 10/21 pérdida).
  *
- * TRANSITORIO — `reprogramacion` → `cancelacion` es el mapeo vigente (v2.1.1). Por
- * decisión legal D1 (v2.2), el mini-ciclo Ruleset IV-B introduce el tipo propio
- * `reprogramacion` y actualiza esta derivación a `['reprogramacion']`. No tocar acá
- * hasta ese ciclo: el WHERE de su errata D1 ya cubre las filas escritas con este mapeo.
+ * `reprogramacion` es tipo PROPIO desde la decisión legal D1 (v2.2): el Art. 42 del
+ * Reglamento Dec. 809/2024 le da un régimen distinto al de la cancelación —incidentales
+ * sí, alternativas y reintegro no—, así que mapearla a `cancelacion` concedía derechos
+ * que la norma no otorga. El mapeo viejo (v2.1.1) sigue siendo correcto para los
+ * incidentes anteriores al 10-oct-2024, y de eso se ocupa el ruleset IV-A: acá se escribe
+ * el tipo real y la ley aplicable la elige el motor por `fecha_incidente`.
  */
 export function derivarIncidentes(tipoReclamo, tipoIncidencia, tipoCasoEquipaje) {
   var tr = limpiarTexto(tipoReclamo) || 'vuelo';
@@ -112,7 +114,7 @@ export function derivarIncidentes(tipoReclamo, tipoIncidencia, tipoCasoEquipaje)
   if (tr === 'vuelo' || tr === 'vuelo_equipaje') {
     var porIncidencia = {
       cancelacion: 'cancelacion',
-      reprogramacion: 'cancelacion',
+      reprogramacion: 'reprogramacion',
       demora: 'demora',
       overbooking: 'denegacion_embarque',
       denegacion: 'denegacion_embarque',

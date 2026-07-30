@@ -106,8 +106,13 @@ export var CAMPOS_CRITICOS = [
 
 var CHECKIN_VALIDOS = ['en_hora', 'tarde', 'no_presentado', 'no_aplica', 'desconocido'];
 
+/* `reprogramacion` es válido en todo el dominio pero solo TIENE RÉGIMEN desde el
+   10-oct-2024 (Art. 42 del Reglamento Dec. 809/2024). Para incidentes anteriores rige la
+   Res. 1532, que no lo conoce como tipo propio: ahí el ruleset IV-A lo devuelve NO_APLICA
+   con el motivo explícito, en vez de que el normalizador lo descarte en silencio. Quién
+   decide es el ruleset, que es donde vive la ley. */
 var INCIDENTES_VALIDOS = [
-  'demora', 'cancelacion', 'denegacion_embarque', 'downgrade', 'conexion_perdida',
+  'demora', 'cancelacion', 'reprogramacion', 'denegacion_embarque', 'downgrade', 'conexion_perdida',
   'equipaje_demora', 'equipaje_dano', 'equipaje_perdida', 'muerte_lesion',
 ];
 

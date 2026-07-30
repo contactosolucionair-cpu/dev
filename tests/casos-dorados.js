@@ -68,7 +68,12 @@ export var CASOS = [
       incidentes: ['demora'],
       demora_salida_min: 300,
       causa_alegada: 'Motivo operativo de la aerolínea',
-      fecha_incidente: '2026-05-10',
+      /* Anclado a la vigencia para la que se escribió el criterio: la Res. 1532 rige los
+         incidentes hasta el 9-oct-2024 (derogada por el Dec. 809/2024). La salida esperada
+         de abajo es la validada por JPA y no se tocó; lo único que cambió es la fecha, que
+         antes decía 2026 y por lo tanto ya no era un caso de este régimen. El espejo de
+         este mismo caso bajo el Reglamento nuevo es CD-14. */
+      fecha_incidente: '2024-05-10',
       billete_unico: true,
       checkin_presentacion: 'en_hora',
     },
@@ -264,6 +269,10 @@ export var CASOS = [
   },
 
   {
+    /* Nota v2.2: con el Test D de ámbito amplio el marco argentino pasa a aplicar por el
+       DESTINO (EZE), aunque la dirección no parta de Argentina. No se aserta acá porque el
+       documento fija el criterio general y se pronuncia sobre el regreso MAD→EZE (CD-13),
+       no sobre estos hechos con hub; la aplicación la completa JPA. */
     id: 'CD-11',
     descripcion: 'Billete único vía hub UE sin origen ni destino en la UE (JFK→MAD→EZE): nodo borde Wegener (Pin 4)',
     caso: {
@@ -359,11 +368,49 @@ export var CASOS = [
          provisional: true (checkin_presentacion, incidentes y antelacion_aviso_dias
            están cargados pero sin verificar)
 
-       PREGUNTA PARA JPA: RES1532 sale 'no' porque la dirección analizada no parte de
-       Argentina, aunque el billete sí incluya un tramo que salió de EZE. Es la
-       consecuencia directa de tratar cada dirección como itinerario independiente.
-       ¿Es el resultado querido, o el marco argentino debería mirar el billete entero
-       aunque los tests EU261 miren solo la dirección? */
+       PREGUNTA PARA JPA — RESUELTA por la v2.2 (subsección Test D, ámbito amplio): el
+       criterio del Art. 1 de la Res. 1532 y del Art. 2 del Anexo I del Dec. 809/2024 es el
+       servicio explotado en el país, no la dirección del vuelo, y el documento se pronuncia
+       sobre estos hechos con todas las letras: "el regreso MAD→EZE está cubierto". Por eso
+       el marco argentino se aserta abajo. El incidente es del 24-may-2026, así que el
+       régimen es el Reglamento 809/2024 (REGL809), no la 1532.
+
+       El resto del caso sigue TODO-JPA: el criterio quedó resuelto por la v2.2, pero la
+       aplicación a estos hechos —categorías, montos, el nodo borde del hub— la completa
+       JPA. */
+    esperado: {
+      marcos: { REGL809: 'si' },
+    },
+  },
+
+  {
+    id: 'CD-14',
+    descripcion: 'Espejo IV-B de CD-01: mismo doméstico AR con demora de salida 5 h, pero bajo el Reglamento Dec. 809/2024',
+    caso: {
+      ref_code: 'CD-14',
+      origen_iata: 'AEP',
+      destino_iata: 'COR',
+      aerolinea: 'Aerolíneas Argentinas',
+      incidentes: ['demora'],
+      demora_salida_min: 300,
+      causa_alegada: 'Motivo operativo de la aerolínea',
+      /* Primer día de vigencia del Reglamento (Dec. 809/2024 Art. 7). Junto con CD-01
+         —idéntico salvo la fecha— cubre el borde de la partición por los dos lados. */
+      fecha_incidente: '2024-10-10',
+      billete_unico: true,
+      checkin_presentacion: 'en_hora',
+    },
+    /* completar JPA — criterio legal.
+       Salida actual del motor (a confirmar, no asertada):
+         REGL809: si · Test D doméstico
+         REGL809.servicios_incidentales: RECLAMABLE por el Art. 43 inc. b — comidas y
+           refrescos. DIFERENCIA MATERIAL con CD-01: bajo la 1532 las mismas 5 h daban
+           además alojamiento; el Reglamento lo corrió a las 8 h.
+         REGL809.reintegro: RECLAMABLE (Art. 48, demora > 4 h)
+         REGL809.compensacion_tarifada: NO_APLICA (el Reglamento tampoco tarifa)
+         prescripcion REGL809: firme, 1 año, con exclusión del día inicial (Art. 71 + def.
+           de DÍAS del Art. 1) → un día más tarde que el mismo cómputo en IV-A
+         EU261: no · MONTREAL: no */
     esperado: {},
   },
 ];

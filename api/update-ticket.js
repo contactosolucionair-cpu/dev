@@ -757,7 +757,7 @@ export default async function handler(req, res) {
         return s && /^\d{4}-\d{2}-\d{2}$/.test(s.slice(0, 10)) ? s.slice(0, 10) : null;
       };
 
-      var INCIDENTES_OK = ['demora', 'cancelacion', 'denegacion_embarque', 'downgrade',
+      var INCIDENTES_OK = ['demora', 'cancelacion', 'reprogramacion', 'denegacion_embarque', 'downgrade',
         'conexion_perdida', 'equipaje_demora', 'equipaje_dano', 'equipaje_perdida', 'muerte_lesion'];
       var CHECKIN_OK = ['en_hora', 'tarde', 'no_presentado', 'no_aplica', 'desconocido'];
       var ATENCION_OK = ['refrigerio', 'comida', 'alojamiento', 'transporte', 'comunicaciones'];

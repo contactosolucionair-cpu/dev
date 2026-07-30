@@ -28,12 +28,17 @@
  * Nunca lanza. Un error dentro de una regla se convierte en FALTA_DATO y queda anotado
  * en `avisos`, para que un bug no deje un caso sin análisis ni tape el problema.
  */
+import { RULESET as RULESET_2024_10_10 } from './rulesets/2024-10-10.js';
 import { RULESET as RULESET_2026_06_19 } from './rulesets/2026-06-19.js';
 
-export var VERSION_MOTOR = '1.0.0';
+export var VERSION_MOTOR = '1.1.0';
 
-/* Registro de rulesets, del más nuevo al más viejo por fecha de inicio de vigencia. */
-var REGISTRO = [RULESET_2026_06_19];
+/* Registro de rulesets, del más nuevo al más viejo por fecha de inicio de vigencia.
+   El régimen argentino está partido por la derogación de la Res. 1532/98: el Decreto
+   809/2024 rige los incidentes desde el 10-oct-2024 y la 1532 sigue siendo ley al momento
+   del hecho para los anteriores. EU261 y Montreal no se enteran de ese corte: viven en
+   `rulesets/_compartido.js` y los dos rulesets los importan. */
+var REGISTRO = [RULESET_2024_10_10, RULESET_2026_06_19];
 
 /* ------------------------------------------------------------------ */
 /* Fechas — días corridos, sin zona horaria                            */

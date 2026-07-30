@@ -1329,15 +1329,19 @@
        SOLO estos campos. `gastos_items` arrastra el espejo monto_gastos/moneda_gastos en
        el mismo PATCH: esos dos NO se editan directo (ver el comentario del endpoint). */
 
-    var INCIDENTE_LABELS={demora:'Demora',cancelacion:'Cancelación',denegacion_embarque:'Denegación de embarque',downgrade:'Downgrade',conexion_perdida:'Conexión perdida',equipaje_demora:'Equipaje · demora',equipaje_dano:'Equipaje · daño',equipaje_perdida:'Equipaje · pérdida',muerte_lesion:'Muerte o lesión'};
+    /* `reprogramacion` se muestra siempre: si el incidente es anterior al 10-oct-2024 el
+       motor lo devuelve NO_APLICA con el motivo, que es más útil que esconder la opción. */
+    var INCIDENTE_LABELS={demora:'Demora',cancelacion:'Cancelación',reprogramacion:'Reprogramación',denegacion_embarque:'Denegación de embarque',downgrade:'Downgrade',conexion_perdida:'Conexión perdida',equipaje_demora:'Equipaje · demora',equipaje_dano:'Equipaje · daño',equipaje_perdida:'Equipaje · pérdida',muerte_lesion:'Muerte o lesión'};
     var CHECKIN_LABELS_DL={desconocido:'Desconocido',en_hora:'En hora',tarde:'Tarde',no_presentado:'No se presentó',no_aplica:'No aplica (cancelación)'};
     var ATENCION_ITEM_LABELS={refrigerio:'Refrigerio',comida:'Comida',alojamiento:'Alojamiento',transporte:'Transporte',comunicaciones:'Comunicaciones'};
     var MEDIO_PROTESTA_LABELS={pir:'PIR de aeropuerto',escrita:'Protesta escrita'};
-    var MARCO_LABELS={EU261:'EU261/2004',RES1532:'Argentina · Res. ANAC 1532/98',MONTREAL:'Montreal 1999 (overlay)',DOT:'EE.UU. · DOT',ANAC400:'Brasil · ANAC 400/2016'};
+    /* El régimen argentino está partido por vigencia: los incidentes desde el 10-oct-2024
+       los rige el Reglamento del Dec. 809/2024 y los anteriores la Res. 1532, derogada. */
+    var MARCO_LABELS={EU261:'EU261/2004',REGL809:'Argentina · Reglamento Dec. 809/2024',RES1532:'Argentina · Res. ANAC 1532/98 (hasta 9-oct-2024)',MONTREAL:'Montreal 1999 (overlay)',DOT:'EE.UU. · DOT',ANAC400:'Brasil · ANAC 400/2016'};
     var ESTADO_CAT={RECLAMABLE:{cls:'badge--rec',txt:'Reclamable'},NO_APLICA:{cls:'badge--na',txt:'No aplica'},FALTA_DATO:{cls:'badge--fd',txt:'Falta dato'},REQUIERE_EVALUACION:{cls:'badge--eval',txt:'Requiere evaluación'}};
     var APLICA_MARCO={si:{cls:'badge--rec',txt:'Aplica'},no:{cls:'badge--na',txt:'No aplica'},pendiente_analisis_profundo:{cls:'badge--eval',txt:'Análisis profundo'},falta_dato:{cls:'badge--fd',txt:'Falta dato'}};
     var GATE_ESTADO={pasa:{cls:'badge--rec',txt:'Pasa'},pasa_provisional:{cls:'badge--fd',txt:'Pasa provisional'},inadmisible:{cls:'badge--na',txt:'Inadmisible'},falta_dato:{cls:'badge--fd',txt:'Falta dato'}};
-    var CATEGORIA_LABELS={compensacion_tarifada:'Compensación tarifada',reembolso:'Reembolso',reencaminamiento:'Reencaminamiento',atencion:'Atención / asistencia',downgrade:'Downgrade',equipaje:'Equipaje',dano_moral:'Daño moral',compensacion_suplementaria:'Compensación suplementaria',punitivo:'Daño punitivo',reintegro:'Reintegro',reencaminamiento_endoso:'Reencaminamiento / endoso',servicios_incidentales:'Servicios incidentales',dano_por_demora:'Daño por demora',dano_por_demora_pasajeros:'Daño por demora (pasajeros)',muerte_lesion:'Muerte o lesión',dano_emergente:'Daño emergente',dano_punitivo:'Daño punitivo'};
+    var CATEGORIA_LABELS={compensacion_tarifada:'Compensación tarifada',reembolso:'Reembolso',reencaminamiento:'Reencaminamiento',atencion:'Atención / asistencia',downgrade:'Downgrade',equipaje:'Equipaje',dano_moral:'Daño moral',compensacion_suplementaria:'Compensación suplementaria',punitivo:'Daño punitivo',reintegro:'Reintegro',reencaminamiento_endoso:'Reencaminamiento / endoso',servicios_incidentales:'Servicios incidentales',gastos_primera_necesidad:'Gastos de primera necesidad',dano_por_demora:'Daño por demora',dano_por_demora_pasajeros:'Daño por demora (pasajeros)',muerte_lesion:'Muerte o lesión',dano_emergente:'Daño emergente',dano_punitivo:'Daño punitivo'};
     var GATE_LABELS_DL={checkin:'Presentación al check-in',protesta:'Protesta (equipaje)'};
 
     function minAHm(min){if(min==null)return{h:'',m:''};return{h:Math.floor(min/60),m:min%60}}
