@@ -52,13 +52,23 @@ solucionair-web/
 │   ├── delete-ticket.js    # Soft-delete / restore / permanent (X-Admin-Password)
 │   ├── agency.js           # Portal B2B: register/login/claims/submit-claim/stats
 │   ├── abogados.js         # Portal abogados: register/login/claims/transicion/sign
-│   ├── admin.js            # Admin: agencias/abogados, comisiones, storage, docs legales
+│   ├── admin.js            # Admin: agencias/abogados, comisiones, storage, docs legales, motor legal
+│   ├── _data/              # Datos auxiliares del motor legal
+│   │   ├── paises-ue.js        # Sets UE / EEE+CH / Montreal en ISO-2 + territorios sin clasificar
+│   │   └── aerolineas.json     # {nombre, iata, pais_licencia, comunitario}
 │   └── _utils/
 │       ├── instancias.js       # Modelo instancia/momento/resultado + transiciones + etapaExterna
 │       ├── cliente-auth.js     # Valida el JWT del cliente (my-claims / my-actions)
 │       ├── agency-auth.js      # Valida el JWT de la agencia
 │       ├── abogado-auth.js     # Valida el JWT del abogado
-│       └── notify-agencia.js   # Mail a la agencia al cambiar la etapa de su caso
+│       ├── notify-agencia.js   # Mail a la agencia al cambiar la etapa de su caso
+│       ├── motor-normalizar.js # Fila de reclamos → objeto `caso` (función pura)
+│       ├── motor-legal.js      # Evaluador determinista `analizar(caso, ruleset, hoy)`
+│       ├── motor-datos.js      # Carga con caché de airports.json + aerolineas.json
+│       └── rulesets/
+│           └── 2026-06-19.js   # Reglas legales como datos. Un archivo por vigencia
+├── scripts/                # One-off / mantenimiento (Node, sin dependencias)
+├── tests/                  # Suite del motor legal (sin framework)
 └── supabase/               # Migraciones SQL (correr en el SQL Editor)
 ```
 
@@ -108,6 +118,36 @@ en ningún lado: se conserva solo como **espejo derivado**, escrito siempre vía
 `etapaExterna()` produce la **vista simplificada de 5+3 etapas** que consumen los
 portales externos (agencia y cliente): `evaluacion`, `reclamo`, `mediacion`,
 `acuerdo`, y `cerrado_exito` / `cerrado_sin_exito` / `cerrado_no_viable`.
+
+**Columnas del motor legal Capa 1** (`supabase/migration_015_motor_capa1.sql`). Son la
+**capa canónica** que lee el motor: un solo valor por campo, y lo que está en `null` se
+lee como falta de dato, nunca se presume.
+
+| Columna | Tipo | Para qué |
+|---|---|---|
+| `origen_iata` · `destino_iata` | TEXT(3) | Ruta canónica. `origen`/`destino` quedan como texto de display |
+| `segmentos` | JSONB | `[{orden, origen_iata, destino_iata, carrier_operante, fecha}]`. Si está cargado, define el itinerario y gana sobre las dos columnas de arriba |
+| `billete_unico` | BOOLEAN | Evaluar el itinerario como un todo vs. por tramos (Test A) |
+| `incidentes` | JSONB | **Conjunto**: `demora`, `cancelacion`, `denegacion_embarque`, `downgrade`, `conexion_perdida`, `equipaje_{demora,dano,perdida}`, `muerte_lesion` |
+| `demora_salida_min` · `demora_llegada_min` | INTEGER | En minutos. La llegada se mide como apertura de puertas |
+| `antelacion_aviso_dias` | NUMERIC | Antelación del aviso de cancelación (fraccionable) |
+| `reencaminamiento` | JSONB | `{ofrecido, delta_salida_min, delta_llegada_min, aceptado}`. Deltas contra el horario programado; negativos = antes |
+| `atencion_ofrecida` | JSONB | `{ofrecida, items:[refrigerio\|comida\|alojamiento\|transporte\|comunicaciones]}` |
+| `fecha_incidente` | DATE | En equipaje es la fecha de entrega o la que debió entregarse, **no** la del vuelo |
+| `causa_alegada` | TEXT | Insumo del nodo de circunstancias extraordinarias |
+| `protesta` | JSONB | `{realizada:'si'\|'no'\|'desconocido', fecha, medio:'pir'\|'escrita', numero}` |
+| `checkin_presentacion` | TEXT | `en_hora` \| `tarde` \| `no_presentado` \| `no_aplica` \| `desconocido` |
+| `comentarios_pasajero` | TEXT | Texto libre del pasajero |
+| `gastos_items` | JSONB | **Canónico** itemizado: `[{concepto, monto, moneda, fecha, archivo, fuente}]` |
+| `datos_extraidos` | JSONB | **Capa de evidencia**: candidatos con procedencia, sin pisar el canónico |
+| `campos_meta` | JSONB | `{campo: {verificado, fuente, conflicto}}` |
+| `analisis_legal` | JSONB | Salida del motor: `{actual, historial}` (historial capado a 10) |
+
+> **`monto_gastos` / `moneda_gastos` son un ESPEJO DERIVADO — no editar directo.** El
+> canónico es `gastos_items`. Todo PATCH que toca `gastos_items` reescribe esas dos con la
+> suma de la moneda dominante, en el mismo PATCH (mismo patrón que `estado` ← `instancia`).
+> Se conservan porque el backoffice, el panel de agencias y el perfil del cliente las leen
+> sin cambios. Ver la acción `set-datos-legales` en `api/update-ticket.js`.
 
 **Columnas deprecadas** (existen en la base pero ningún código las usa):
 `estado` (reemplazada por instancia/momento/resultado), `monto_compensacion`
@@ -201,6 +241,10 @@ reescribe `/api/agency/:action → /api/agency?action=:action` (ídem `abogados`
 | GET/POST | `/api/admin?action=abogados\|abogado-accion\|abogados-activos` | `X-Admin-Password` | Gestión de abogados |
 | POST | `/api/admin?action=create-case\|generar-documento` | `X-Admin-Password` | Alta manual de caso, generar poder/patrocinio/T&C |
 | POST | `/api/admin?action=sign\|upload\|remove\|retag\|download-zip` | `X-Admin-Password` | Gestión de adjuntos en Storage |
+| POST | `/api/admin?action=analizar-caso` | `X-Admin-Password` | Corre el motor legal sobre `{id}` y guarda `analisis_legal`. **No escribe ninguna otra columna.** Datos incompletos no son error: responde 200 con FALTA_DATO |
+
+`POST /api/update-ticket` con `action=set-datos-legales` escribe los campos del contrato de
+entrada del motor (y solo esos). Un campo que no venga en el body no se toca.
 
 ## Flujo del Sistema
 
@@ -245,6 +289,69 @@ La **integración con un proveedor de firma electrónica está pendiente de
 contratación**. Las columnas `firma_proveedor`, `firma_zoho_request_id` y
 `firma_zoho_url` quedaron en la base de una iteración anterior pero **ningún
 código las escribe**.
+
+## Motor legal determinista (Capa 1)
+
+Resuelve **por regla** qué marcos aplican a un caso y qué categorías son reclamables en
+cada uno. Los marcos **no son excluyentes**: un vuelo puede activar EU261 + Montreal +
+Res. 1532 a la vez y el motor devuelve **todos**, sin elegir ganador.
+
+Fuente de verdad legal: `docs/Capa_1_-_Logica_legal_determinista_v2.1.md`.
+Contratos de entrada/salida: `docs/motor-capa1-contratos.md`.
+**Lo que no está decidido: `docs/motor-capa1-pendientes-legales.md`.**
+
+| Pieza | Archivo | Rol |
+|---|---|---|
+| Normalizador | `api/_utils/motor-normalizar.js` | Fila → objeto `caso`. Deriva países, ámbito EU261, intl/doméstico, distancia ortodrómica, banda del Art. 7(1) y condición de comunitario. Clasifica los campos críticos en ausente / en conflicto / sin verificar |
+| Evaluador | `api/_utils/motor-legal.js` | `analizar(caso, ruleset, hoy)`. **Genérico y estable: no contiene ningún número legal.** Solo recorre la estructura del ruleset |
+| Ruleset | `api/_utils/rulesets/2026-06-19.js` | Reglas como datos: Tests A–E, árboles EU261 y AR, gates, prescripción. **Todos los umbrales viven acá**, con el `base_legal` literal del v2.1 |
+| Datos auxiliares | `api/_data/`, `src/data/airports.json` | Países en ISO-2, aerolíneas, y coordenadas + `pais_iso` por aeropuerto |
+
+**Dos principios que conviene no romper:**
+
+1. **Los umbrales legales viven solo en el ruleset.** Agregar la vigencia de la reforma
+   EU261 (~2027) debería ser un archivo nuevo en `rulesets/`, sin tocar el evaluador. Hay un
+   test que falla si un número legal se filtra a `motor-legal.js`.
+2. **El motor nunca presume.** Un dato ausente, sin verificar o en conflicto entre fuentes
+   sale como `FALTA_DATO`; lo difuso sale como `REQUIERE_EVALUACION` con su nodo. No
+   resuelve nodos de evaluación, no elige marco ganador y no emite fecha de prescripción
+   cuando el plazo depende de un foro no decidido.
+
+En el backoffice, todo esto vive en dos secciones del drawer del caso: **Datos legales del
+caso** (editor de la entrada) y **Análisis legal** (botón Analizar + render de la salida).
+
+### Tests
+
+```bash
+node tests/motor.test.js              # todo
+node tests/motor.test.js CD-05        # filtra casos dorados por id o descripción
+node tests/motor.test.js --verbose    # imprime el análisis completo de cada caso
+```
+
+Sin framework ni dependencias. Exit distinto de 0 si algo falla. Dos grupos:
+
+- **Unitarios** — hechos mecánicos (haversine, bandas, propagación del conflicto,
+  determinismo, que no lance nunca, `base_legal` en toda categoría).
+- **Casos dorados** (`tests/casos-dorados.js`) — la salida esperada es **criterio legal y la
+  escribe JPA**. Se comparan solo las claves declaradas en `esperado`. Un caso con
+  `esperado: {}` se **saltea con aviso** (`TODO-JPA`) y no rompe el suite: es cobertura
+  reservada esperando criterio.
+
+### Scripts
+
+Todos aceptan `--dry-run` y leen `SB_URL`/`SB_KEY` (o `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY`).
+
+```bash
+node scripts/backfill-iata.mjs --dry-run       # origen_iata/destino_iata del histórico
+node scripts/backfill-candidatos.mjs --dry-run # datos declarativos → datos_extraidos
+node scripts/enrich-airports.mjs --dry-run     # lat/lon + pais_iso desde OurAirports
+```
+
+`backfill-iata` porta el `resolve()` de `src/js/airport-select.js` y solo escribe cuando el
+match es inequívoco; lo ambiguo queda en `null` y se lista al final con ref, id y texto
+original. `backfill-candidatos` **no** escribe columnas canónicas: deja los datos
+declarativos como candidatos con procedencia, porque un campo crítico no se auto-verifica
+desde una sola fuente declarativa.
 
 ## URLs de Producción
 
