@@ -111,3 +111,155 @@ export function sanitizeRuta(origen, destino, escalas) {
 
   return { origen: o, destino: d, escalas: list.join(', ') };
 }
+
+/* ==================================================================== */
+/* Cortes de dirección sobre el itinerario tramo por tramo               */
+/* ==================================================================== */
+
+/**
+ * Forma mínima común a las DOS representaciones de un tramo, para que las reglas de
+ * corte se escriban una sola vez:
+ *
+ *   forma IA        {orden, direccion, origen: 'EZE - Buenos Aires', destino, ...}
+ *   forma canónica  {orden, origen_iata: 'EZE', destino_iata, carrier_operante, ...}
+ */
+function minimo(s) {
+  if (!s || typeof s !== 'object') return null;
+  var o = iataOf(s.origen_iata || s.origen);
+  var d = iataOf(s.destino_iata || s.destino);
+  var f = String(s.fecha || '').slice(0, 10);
+  return { o: o, d: d, fecha: /^\d{4}-\d{2}-\d{2}$/.test(f) ? f : '' };
+}
+
+function diasEntre(a, b) {
+  var ta = Date.parse(a + 'T00:00:00Z'), tb = Date.parse(b + 'T00:00:00Z');
+  if (!isFinite(ta) || !isFinite(tb)) return null;
+  return Math.round((tb - ta) / 86400000);
+}
+
+/**
+ * Índices donde el itinerario cambia de dirección. Un corte en `i` significa que la
+ * dirección termina en el tramo `i` y la siguiente empieza en `i + 1`.
+ *
+ * Reglas, en orden de confianza:
+ *
+ *   1. TEMPORAL — entre la llegada de un tramo y la salida del siguiente pasan 2 días o
+ *      más. El umbral es 2 y no 1 a propósito: sin horarios, una conexión que cruza
+ *      medianoche aparece como un día de diferencia y NO es un corte.
+ *   2. METROPOLITANA — se llega a un aeropuerto y se sale de OTRO de la misma ciudad
+ *      (EZE / AEP). Es el caso USH→EZE, AEP→USH que motivó el ciclo: no es una escala,
+ *      es el punto de retorno.
+ *   3. RETORNO AL ORIGEN — el itinerario termina en la ciudad de partida.
+ *
+ * La 3 corre SOLO si las dos primeras no encontraron nada, y esto es una decisión de
+ * implementación que vale la pena explicar: la regla es indiferente al punto de corte
+ * (mira el último destino del itinerario, no el tramo `i`), así que aplicada en paralelo
+ * marcaría TODOS los límites de cualquier ida y vuelta. En un EZE→ATL, ATL→TUL, TUL→ATL,
+ * ATL→EZE ensuciaría el corte correcto —que la regla 1 encuentra sola, porque ida y
+ * vuelta están a días de distancia— con dos falsos, y el itinerario terminaría marcado
+ * como ambiguo en vez de partido. Como último recurso, en cambio, resuelve justo el caso
+ * que las otras dos no ven: el ida y vuelta de dos tramos por el mismo aeropuerto y sin
+ * fechas utilizables, donde devuelve un único límite. Con más de dos tramos y sin
+ * ninguna otra señal devuelve varios, que es la respuesta honesta: no hay con qué saber.
+ */
+export function cortesDeDireccion(segmentos) {
+  var t = (Array.isArray(segmentos) ? segmentos : []).map(minimo).filter(Boolean);
+  if (t.length < 2) return [];
+
+  var cortes = [];
+  for (var i = 0; i < t.length - 1; i++) {
+    var a = t[i], b = t[i + 1];
+
+    var dias = (a.fecha && b.fecha) ? diasEntre(a.fecha, b.fecha) : null;
+    if (dias !== null && dias >= 2) { cortes.push(i); continue; }
+
+    var ma = a.d ? metroOf(a.d) : null;
+    var mb = b.o ? metroOf(b.o) : null;
+    if (a.d && b.o && a.d !== b.o && ma && ma === mb) { cortes.push(i); continue; }
+  }
+  if (cortes.length) return cortes;
+
+  var metroOrigen = t[0].o ? metroOf(t[0].o) : null;
+  var ultimo = t[t.length - 1].d;
+  if (!metroOrigen || !ultimo || metroOf(ultimo) !== metroOrigen) return [];
+  var candidatos = [];
+  for (var j = 0; j < t.length - 1; j++) candidatos.push(j);
+  return candidatos;
+}
+
+/** Comparador cronológico: por fecha cuando las dos existen, si no por `orden`. */
+function cronologico(a, b) {
+  var fa = String(a.fecha || '').slice(0, 10), fb = String(b.fecha || '').slice(0, 10);
+  if (fa && fb && fa !== fb) return fa < fb ? -1 : 1;
+  return (parseInt(a.orden, 10) || 0) - (parseInt(b.orden, 10) || 0);
+}
+
+/**
+ * Corrige la `direccion` de los tramos que devolvió el modelo (forma IA).
+ *
+ * NO inventa ni elimina tramos: solo los ordena cronológicamente y los re-etiqueta.
+ *
+ *   - Un corte  → todo lo anterior es 'ida', todo lo posterior 'vuelta'.
+ *   - Cero cortes → pasa tal cual, con las etiquetas del modelo.
+ *   - Más de un corte → NO se adivina: pasan tal cual y se marca `ambiguos`. Un
+ *     itinerario de tres tramos o más puede tener escalas largas, tramos abiertos o
+ *     tres ciudades; elegir uno de varios cortes sería inventar.
+ *
+ * Devuelve `{segmentos, ambiguos}` y no solo el array porque el flag tiene que llegar a
+ * la respuesta del endpoint.
+ */
+export function sanitizeSegmentos(segmentos) {
+  var segs = (Array.isArray(segmentos) ? segmentos : []).filter(function (s) {
+    return s && typeof s === 'object';
+  });
+  if (segs.length < 2) return { segmentos: segs, ambiguos: false };
+
+  var ordenados = segs.slice().sort(cronologico);
+  ordenados.forEach(function (s, i) { s.orden = i + 1; });
+
+  var cortes = cortesDeDireccion(ordenados);
+  if (cortes.length !== 1) return { segmentos: ordenados, ambiguos: cortes.length > 1 };
+
+  var corte = cortes[0];
+  ordenados.forEach(function (s, i) { s.direccion = i <= corte ? 'ida' : 'vuelta'; });
+  return { segmentos: ordenados, ambiguos: false };
+}
+
+/**
+ * La sugerencia de dirección sigue al TRAMO, no a la etiqueta vieja.
+ *
+ * Si el modelo dijo que la incidencia fue en la "ida" y el tramo que señalaba quedó
+ * re-etiquetado como vuelta, la sugerencia tiene que pasar a vuelta: lo que el modelo
+ * vio es dónde ocurrió el incidente, no cómo se llama esa mitad del viaje.
+ */
+export function seguirSugerencia(sugerida, antes, despues) {
+  var s = String(sugerida == null ? '' : sugerida).trim().toLowerCase();
+  if (s !== 'ida' && s !== 'vuelta') return '';
+  var previos = Array.isArray(antes) ? antes : [];
+  var ancla = null;
+  for (var i = 0; i < previos.length; i++) {
+    if (previos[i] && previos[i].direccion === s) { ancla = previos[i]; break; }
+  }
+  if (!ancla) return '';
+  var actuales = Array.isArray(despues) ? despues : [];
+  for (var j = 0; j < actuales.length; j++) {
+    var d = actuales[j];
+    if (d && d.origen === ancla.origen && d.destino === ancla.destino && d.vuelo_nro === ancla.vuelo_nro) {
+      return d.direccion || '';
+    }
+  }
+  return '';
+}
+
+/**
+ * ¿Los tramos canónicos que mandó el cliente describen MÁS DE UNA dirección?
+ *
+ * La forma canónica no tiene campo `direccion` —por diseño el formulario manda una sola
+ * dirección, la afectada— así que acá no hay nada que corregir: un corte es la evidencia
+ * de que llegó un itinerario que no debería. Los tramos se persisten intactos y el
+ * hallazgo viaja como candidato en `datos_extraidos`, porque la base no puede depender
+ * de que el front se porte bien.
+ */
+export function segmentosCanonicosAmbiguos(segmentos) {
+  return cortesDeDireccion(segmentos).length > 0;
+}

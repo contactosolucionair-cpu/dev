@@ -21,6 +21,7 @@ import {
   iata3, sanearSegmentosCanonicos, extremosDireccionAfectada,
   derivarIncidentes, candidatosItinerario,
 } from './_utils/intake.js';
+import { segmentosCanonicosAmbiguos } from './_utils/itinerario.js';
 
 export const config = {
   api: {
@@ -252,6 +253,12 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
      backoffice sabe que falta una dirección pero no cuál está mirando. */
   if (body.direccion_afectada === 'ida' || body.direccion_afectada === 'vuelta') {
     candidatosB2B.push({ campo: 'direccion_afectada', valor: body.direccion_afectada, fuente: 'declaracion_pasajero', extraido_en: ahoraB2B });
+  }
+  /* Los tramos canónicos describen UNA dirección. Un corte acá significa que llegó un
+     itinerario de dos: se persiste intacto y queda el rastro. Mismo criterio que el alta
+     pública; solo se escribe cuando hay anomalía. */
+  if (segmentosCanonicosAmbiguos(segmentosB2B)) {
+    candidatosB2B.push({ campo: 'segmentos_ambiguos', valor: true, fuente: body.itinerario_fuente === 'adjunto' ? 'adjunto' : 'declaracion_pasajero', extraido_en: ahoraB2B });
   }
 
   var row = {

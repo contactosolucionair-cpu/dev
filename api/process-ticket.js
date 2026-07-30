@@ -35,7 +35,9 @@ import {
   sanearSegmentosCanonicos, extremosDireccionAfectada, derivarIncidentes,
   candidatosItinerario,
 } from './_utils/intake.js';
-import { sanitizeRuta } from './_utils/itinerario.js';
+import {
+  sanitizeRuta, sanitizeSegmentos, seguirSugerencia, segmentosCanonicosAmbiguos,
+} from './_utils/itinerario.js';
 import { leerFlagsPublicos } from './_utils/config-publica.js';
 
 export const config = {
@@ -110,6 +112,14 @@ export default async function handler(req, res) {
          sin columna propia hasta que un ciclo toque el schema. */
       if (body.direccion_afectada === 'ida' || body.direccion_afectada === 'vuelta') {
         candidatosAlta.push({ campo: 'direccion_afectada', valor: body.direccion_afectada, fuente: 'declaracion_pasajero', extraido_en: ahoraIso });
+      }
+      /* Los tramos canónicos describen UNA dirección, la afectada. Si acá se detecta un
+         corte, llegó un itinerario que no debería: se persiste igual (no se inventa ni
+         se borra nada) pero queda el rastro, porque lo que manda el cliente es editable
+         y la base no puede depender de que el front se porte bien. Solo se escribe
+         cuando hay anomalía: un `false` en cada caso sano ensuciaría el JSONB. */
+      if (segmentosCanonicosAmbiguos(segmentosAlta)) {
+        candidatosAlta.push({ campo: 'segmentos_ambiguos', valor: true, fuente: body.itinerario_fuente === 'adjunto' ? 'adjunto' : 'declaracion_pasajero', extraido_en: ahoraIso });
       }
 
       var row = {
@@ -595,9 +605,21 @@ export default async function handler(req, res) {
     /* Itinerario tramo por tramo (Intake v2). El saneo vive en `_utils/intake.js`
        porque el alta de agencias hace exactamente lo mismo con el mismo JSON. */
     var segmentosIa = sanearSegmentosIa(parsed.segmentos);
+    /* Y acá se corrige la DIRECCIÓN de cada tramo. Las reglas del prompt piden razonar
+       en ciudades, pero un prompt es una petición y no una garantía: cuando el modelo no
+       ve el corte, etiqueta el ida y vuelta entero como una sola dirección y el front
+       reconstruye origen y destino desde estos tramos, pisando los campos sueltos que sí
+       vienen saneados. El resultado era USH→USH con EZE y AEP de escalas. Como esto corre
+       antes de armar `data`, arregla de una vez las TRES superficies que consumen el
+       escaneo (B2C, agencias y backoffice) sin tocar una línea de front. */
+    var corregidos = sanitizeSegmentos(segmentosIa);
     /* Sugerencia, nunca decisión: si el modelo no la vio explícita viaja vacía y la
-       resuelve el pasajero con un tap. */
-    var dirSugerida = normalizarDireccionSugerida(parsed.direccion_afectada_sugerida, segmentosIa);
+       resuelve el pasajero con un tap. Sigue al TRAMO donde el modelo vio la incidencia,
+       no a la etiqueta vieja: si ese tramo pasó a ser vuelta, la sugerencia también. */
+    var dirSugerida = normalizarDireccionSugerida(
+      seguirSugerencia(parsed.direccion_afectada_sugerida, segmentosIa, corregidos.segmentos),
+      corregidos.segmentos
+    );
 
     var data = {
       nombre: clean(parsed.nombre),
@@ -617,9 +639,12 @@ export default async function handler(req, res) {
       gastos_moneda: clean(parsed.gastos_moneda),
       /* Claves nuevas (Intake v2), aditivas: las viejas siguen todas arriba con el
          mismo nombre y el mismo formato, así que el autofill anterior no se entera. */
-      segmentos: segmentosIa,
+      segmentos: corregidos.segmentos,
       direccion_afectada_sugerida: dirSugerida,
     };
+    /* Solo cuando hay más de un corte y no se pudo decidir. Aditivo y sin consumidor en
+       el front todavía: queda para una UI que le pida al pasajero desambiguar. */
+    if (corregidos.ambiguos) data.segmentos_ambiguos = true;
 
     console.log('[process-ticket] AI scan done (' + images.length + ' files), returning data only');
 
