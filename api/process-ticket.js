@@ -103,6 +103,13 @@ export default async function handler(req, res) {
       if (body.tipo_viaje === 'solo_ida' || body.tipo_viaje === 'ida_vuelta') {
         candidatosAlta.push({ campo: 'tipo_viaje', valor: body.tipo_viaje, fuente: 'declaracion_pasajero', extraido_en: ahoraIso });
       }
+      /* Cuál de las dos direcciones del billete redondo describen `segmentos`. Sin esto,
+         `tipo_viaje: 'ida_vuelta'` deja al backoffice sabiendo que falta una dirección
+         pero no cuál está mirando. Mismo tratamiento que arriba: evidencia declarativa,
+         sin columna propia hasta que un ciclo toque el schema. */
+      if (body.direccion_afectada === 'ida' || body.direccion_afectada === 'vuelta') {
+        candidatosAlta.push({ campo: 'direccion_afectada', valor: body.direccion_afectada, fuente: 'declaracion_pasajero', extraido_en: ahoraIso });
+      }
 
       var row = {
         /* Identity */

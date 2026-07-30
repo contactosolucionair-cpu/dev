@@ -632,6 +632,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var elRutaBox = document.getElementById('ruta-box');
   var elRutaTramos = document.getElementById('ruta-tramos');
   var elTipoViaje = document.getElementById('f-tipo-viaje');
+  var elDireccion = document.getElementById('f-direccion');
+  var elCampoDireccion = document.getElementById('field-direccion');
+  var elHintDireccion = document.getElementById('hint-direccion');
   var elEscalas = document.getElementById('f-escalas');
   var elArmador = document.getElementById('armador');
   var elArmLista = document.getElementById('arm-lista');
@@ -751,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function () {
    * Vuelca UNA dirección en el paso 2: origen, destino, escalas intermedias y el tramo
    * afectado. Es el punto donde el camino con scan y el manual se juntan.
    */
-  function aplicarDireccion(segsDir, idxAfectado, tipoViaje) {
+  function aplicarDireccion(segsDir, idxAfectado, tipoViaje, dirAfectada) {
     if (!segsDir.length) return;
     S.metaTramos = {};
     segsDir.forEach(function (s) {
@@ -762,6 +765,13 @@ document.addEventListener('DOMContentLoaded', function () {
     S.tramoSel = idxAfectado;
 
     if (elTipoViaje && tipoViaje) { elTipoViaje.value = tipoViaje; elTipoViaje.dispatchEvent(new Event('change', { bubbles: true })); }
+    /* La dirección ya la resolvió el tap sobre el tramo: se refleja en el select para
+       que el pasajero vea sobre qué se le está preguntando y pueda corregirla sin
+       volver al scan. Va después del tipo de viaje, que al cambiar la limpia. */
+    if (elDireccion) {
+      elDireccion.value = (dirAfectada === 'ida' || dirAfectada === 'vuelta') ? dirAfectada : '';
+      aplicarDireccionAfectada();
+    }
     if (elEscalas) { elEscalas.value = segsDir.length > 1 ? 'si' : 'no'; }
 
     /* Escalas intermedias = los destinos de todos los tramos menos el último. */
@@ -790,7 +800,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     /* Un solo tramo: no hay nada que elegir, ese es el afectado. */
     if (segs.length === 1) {
-      aplicarDireccion(segs, 0, tipoViaje);
+      aplicarDireccion(segs, 0, tipoViaje, tramos[0].dir);
       mostrarPaso1Datos();
       return;
     }
@@ -814,7 +824,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (i === S.tramoSel) idxEnDir = segsDir.length;
         segsDir.push(s);
       });
-      aplicarDireccion(segsDir, idxEnDir, tipoViaje);
+      aplicarDireccion(segsDir, idxEnDir, tipoViaje, dirElegida);
       if (elRutaBox) elRutaBox.style.display = 'none';
       mostrarPaso1Datos();
     };
@@ -910,6 +920,43 @@ document.addEventListener('DOMContentLoaded', function () {
     pintarTramos(document.getElementById('arm-tramos-lista'), tramos, false, null);
   }
 
+  /* ---- Dirección afectada en el camino manual ----
+     Con scan la dirección sale de tocar el tramo. A mano no hay de dónde sacarla: un
+     ida y vuelta tiene dos itinerarios independientes (enmienda v2.1.2) y el pasajero
+     carga UNO. Cuál, solo él lo sabe, así que se pregunta en vez de presumirlo — un
+     análisis hecho sobre la dirección equivocada sale prolijo y mal, que es la peor
+     forma de estar mal. Elegida, las tres preguntas de abajo la nombran ('Origen de la
+     vuelta') para que no quede duda de qué ruta se está pidiendo. */
+
+  function rotularCampo(el, clave) {
+    var campo = el && el.closest ? el.closest('.field') : null;
+    var lbl = campo ? campo.querySelector('.field__lbl') : null;
+    /* Se cambia la CLAVE, no el texto: así el conmutador de idioma sigue funcionando
+       solo, sin que este bloque sepa nada de i18n. */
+    if (lbl) lbl.setAttribute('data-t', clave);
+  }
+
+  function aplicarDireccionAfectada() {
+    var idaVuelta = rutaActiva() && elTipoViaje && elTipoViaje.value === 'ida_vuelta';
+    if (elCampoDireccion) elCampoDireccion.style.display = idaVuelta ? '' : 'none';
+    /* Oculto no puede quedar con valor: un 'vuelta' de un intento anterior seguiría
+       rotulando —y viajando en el payload— sobre un viaje que ahora es de solo ida. */
+    if (!idaVuelta && elDireccion) elDireccion.value = '';
+
+    var dir = (idaVuelta && elDireccion && elDireccion.value) || '';
+    var suf = dir ? '_' + dir : '';
+    rotularCampo(elEscalas, 'lbl_escalas' + suf);
+    rotularCampo(document.getElementById('f-origin'), 'lbl_origin' + suf);
+    rotularCampo(document.getElementById('f-destination'), 'lbl_dest' + suf);
+    if (elHintDireccion) elHintDireccion.style.display = dir ? '' : 'none';
+
+    applyTexts(S.lang);
+    tick();
+  }
+
+  if (elTipoViaje) elTipoViaje.addEventListener('change', aplicarDireccionAfectada);
+  if (elDireccion) elDireccion.addEventListener('change', aplicarDireccionAfectada);
+
   /** Las preguntas de ruta son del reclamo de vuelo; el de equipaje no las muestra. */
   function rutaActiva() { return S.claimType !== 'equipaje'; }
 
@@ -919,6 +966,9 @@ document.addEventListener('DOMContentLoaded', function () {
       var campo = el && el.closest ? el.closest('.field') : null;
       if (campo) campo.style.display = vis;
     });
+    /* La de dirección no entra en la lista de arriba: su visibilidad depende además de
+       que el viaje sea ida y vuelta, y de eso ya decide `aplicarDireccionAfectada`. */
+    aplicarDireccionAfectada();
     sincronizarArmador();
   }
 
@@ -1274,6 +1324,10 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       var tipoViajeVal = gv('f-tipo-viaje');
       if (tipoViajeVal) payload.tipo_viaje = tipoViajeVal;
+      /* Cuál de las dos direcciones del billete es la que describen `segmentos`. Solo
+         viaja en ida y vuelta: en solo ida es redundante y el campo va vacío. */
+      var direccionVal = gv('f-direccion');
+      if (direccionVal) payload.direccion_afectada = direccionVal;
 
       return fetch('/api/process-ticket', {
       method: 'POST',
@@ -1342,7 +1396,12 @@ document.addEventListener('DOMContentLoaded', function () {
       ruta_ok:'Confirmar tramo', ruta_descartar:'La ruta no es correcta, la cargo a mano',
       ruta_ida:'Ida', ruta_vuelta:'Vuelta', ruta_sin_iata:'Vas a tener que confirmar este aeropuerto',
       lbl_tipoviaje:'¿Tu viaje era solo ida o ida y vuelta?', opt_solo_ida:'Solo ida', opt_ida_vuelta:'Ida y vuelta',
+      lbl_direccion:'¿En qué parte del viaje tuviste el problema?', opt_dir_ida:'La ida', opt_dir_vuelta:'La vuelta',
+      hint_direccion:'Cargá solo la dirección donde tuviste el problema. Si fue al volver, el origen es tu destino de ida.',
       lbl_escalas:'¿Tuviste escalas en el viaje del problema?', opt_sin_escalas:'No, fue directo', opt_con_escalas:'Sí, tuve escalas',
+      lbl_escalas_ida:'¿Tuviste escalas en la ida?', lbl_escalas_vuelta:'¿Tuviste escalas en la vuelta?',
+      lbl_origin_ida:'Origen de la ida', lbl_origin_vuelta:'Origen de la vuelta',
+      lbl_dest_ida:'Destino de la ida', lbl_dest_vuelta:'Destino de la vuelta',
       arm_t:'Escalas del viaje, en orden', arm_add:'+ Agregar escala', arm_escala:'Escala',
       arm_hint:'Solo las escalas intermedias: el origen y el destino son los de arriba.',
       arm_cual:'¿En qué tramo tuviste el problema?',
@@ -1440,7 +1499,12 @@ document.addEventListener('DOMContentLoaded', function () {
       ruta_ok:'Confirm leg', ruta_descartar:'The route is wrong, I will enter it manually',
       ruta_ida:'Outbound', ruta_vuelta:'Return', ruta_sin_iata:'You will need to confirm this airport',
       lbl_tipoviaje:'Was your trip one-way or round-trip?', opt_solo_ida:'One-way', opt_ida_vuelta:'Round-trip',
+      lbl_direccion:'Which part of the trip had the problem?', opt_dir_ida:'The outbound', opt_dir_vuelta:'The return',
+      hint_direccion:'Enter only the direction where you had the problem. If it happened on the way back, the origin is your outbound destination.',
       lbl_escalas:'Did the trip with the problem have connections?', opt_sin_escalas:'No, it was direct', opt_con_escalas:'Yes, it had connections',
+      lbl_escalas_ida:'Did the outbound have connections?', lbl_escalas_vuelta:'Did the return have connections?',
+      lbl_origin_ida:'Outbound origin', lbl_origin_vuelta:'Return origin',
+      lbl_dest_ida:'Outbound destination', lbl_dest_vuelta:'Return destination',
       arm_t:'Connections, in order', arm_add:'+ Add connection', arm_escala:'Connection',
       arm_hint:'Only the intermediate stops: origin and destination are the fields above.',
       arm_cual:'Which leg had the problem?',

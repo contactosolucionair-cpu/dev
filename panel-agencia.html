@@ -342,11 +342,15 @@
             <div class="form-group"><label>¿El viaje era solo ida o ida y vuelta?</label>
               <select id="f-tipo-viaje"><option value="">Seleccionar...</option><option value="solo_ida">Solo ida</option><option value="ida_vuelta">Ida y vuelta</option></select>
             </div>
-            <div class="form-group"><label>¿Hubo escalas en el viaje del problema?</label>
+            <div class="form-group" id="field-direccion" style="display:none"><label>¿En qué parte del viaje estuvo el problema?</label>
+              <select id="f-direccion"><option value="">Seleccionar...</option><option value="ida">La ida</option><option value="vuelta">La vuelta</option></select>
+            </div>
+            <div class="form-group"><label id="lbl-escalas">¿Hubo escalas en el viaje del problema?</label>
               <select id="f-escalas"><option value="">Seleccionar...</option><option value="no">No, fue directo</option><option value="si">Sí, hubo escalas</option></select>
             </div>
-            <div class="form-group"><label>Origen</label><input type="text" id="f-origen" placeholder="EZE - Buenos Aires" data-airport="true" autocomplete="off" /></div>
-            <div class="form-group"><label>Destino</label><input type="text" id="f-destino" placeholder="MIA - Miami" data-airport="true" autocomplete="off" /></div>
+            <div class="form-group"><label id="lbl-origen">Origen</label><input type="text" id="f-origen" placeholder="EZE - Buenos Aires" data-airport="true" autocomplete="off" /></div>
+            <div class="form-group"><label id="lbl-destino">Destino</label><input type="text" id="f-destino" placeholder="MIA - Miami" data-airport="true" autocomplete="off" /></div>
+            <p class="armador__hint form-group--full" id="hint-direccion" style="display:none">Cargá solo la dirección donde estuvo el problema. Si fue al volver, el origen es el destino de ida.</p>
             <div class="form-group form-group--full armador" id="armador" style="display:none">
               <div class="armador__head"><span class="armador__t">Escalas del viaje, en orden</span><button type="button" class="btn btn--ghost" id="arm-add" style="font-size:.7rem">+ Agregar escala</button></div>
               <div id="arm-lista"></div>
@@ -1104,6 +1108,9 @@
   var elRutaBox = document.getElementById('ruta-box');
   var elRutaTramos = document.getElementById('ruta-tramos');
   var elTipoViaje = document.getElementById('f-tipo-viaje');
+  var elDireccion = document.getElementById('f-direccion');
+  var elCampoDireccion = document.getElementById('field-direccion');
+  var elHintDireccion = document.getElementById('hint-direccion');
   var elEscalas = document.getElementById('f-escalas');
   var elArmador = document.getElementById('armador');
   var elArmLista = document.getElementById('arm-lista');
@@ -1160,7 +1167,32 @@
     return '';
   }
 
-  function aplicarDireccion(segsDir, idxAfectado, tipoViaje) {
+  /* ---- Dirección afectada en el camino manual ----
+     Mismo criterio que el form público: un ida y vuelta son dos itinerarios
+     independientes y acá se carga UNO, así que cuál es se pregunta en vez de
+     presumirse. Elegida, las etiquetas de abajo la nombran. */
+
+  function aplicarDireccionAfectada() {
+    var idaVuelta = elTipoViaje && elTipoViaje.value === 'ida_vuelta';
+    if (elCampoDireccion) elCampoDireccion.style.display = idaVuelta ? '' : 'none';
+    if (!idaVuelta && elDireccion) elDireccion.value = '';
+
+    var dir = (idaVuelta && elDireccion && elDireccion.value) || '';
+    var nombre = dir === 'vuelta' ? 'la vuelta' : (dir === 'ida' ? 'la ida' : '');
+    var lblEsc = document.getElementById('lbl-escalas');
+    var lblOri = document.getElementById('lbl-origen');
+    var lblDes = document.getElementById('lbl-destino');
+    if (lblEsc) lblEsc.textContent = nombre ? '¿Hubo escalas en ' + nombre + '?' : '¿Hubo escalas en el viaje del problema?';
+    if (lblOri) lblOri.textContent = nombre ? 'Origen de ' + nombre : 'Origen';
+    if (lblDes) lblDes.textContent = nombre ? 'Destino de ' + nombre : 'Destino';
+    if (elHintDireccion) elHintDireccion.style.display = dir ? '' : 'none';
+  }
+
+  if (elTipoViaje) elTipoViaje.addEventListener('change', aplicarDireccionAfectada);
+  if (elDireccion) elDireccion.addEventListener('change', aplicarDireccionAfectada);
+  aplicarDireccionAfectada();
+
+  function aplicarDireccion(segsDir, idxAfectado, tipoViaje, dirAfectada) {
     if (!segsDir.length) return;
     metaTramos = {};
     segsDir.forEach(function (s) {
@@ -1171,6 +1203,10 @@
     tramoSel = idxAfectado;
 
     if (elTipoViaje && tipoViaje) elTipoViaje.value = tipoViaje;
+    /* El tap sobre el tramo ya resolvió la dirección: se refleja en el select para que
+       quede visible y corregible sin volver al scan. */
+    if (elDireccion) elDireccion.value = (dirAfectada === 'ida' || dirAfectada === 'vuelta') ? dirAfectada : '';
+    aplicarDireccionAfectada();
     if (elEscalas) elEscalas.value = segsDir.length > 1 ? 'si' : 'no';
     pintarArmador(segsDir.slice(0, -1).map(function (s) { return s.destino; }));
     sincronizarArmador();
@@ -1199,7 +1235,7 @@
     tramos.forEach(function (t) { if (t.dir) dirs[t.dir] = true; });
     var tipoViaje = Object.keys(dirs).length > 1 ? 'ida_vuelta' : 'solo_ida';
 
-    if (segs.length === 1) { aplicarDireccion(segs, 0, tipoViaje); return; }
+    if (segs.length === 1) { aplicarDireccion(segs, 0, tipoViaje, tramos[0].dir); return; }
 
     tramoSel = 0;
     if (sugerida) {
@@ -1216,7 +1252,7 @@
         if (i === tramoSel) idxEnDir = segsDir.length;
         segsDir.push(s);
       });
-      aplicarDireccion(segsDir, idxEnDir, tipoViaje);
+      aplicarDireccion(segsDir, idxEnDir, tipoViaje, dirElegida);
       if (elRutaBox) elRutaBox.style.display = 'none';
     };
     document.getElementById('ruta-descartar').onclick = function () {
@@ -1429,6 +1465,9 @@
       }
       var tipoViajeVal = (document.getElementById('f-tipo-viaje') || {}).value || '';
       if (tipoViajeVal) payload.tipo_viaje = tipoViajeVal;
+      /* Cuál de las dos direcciones del billete redondo describen `segmentos`. */
+      var direccionVal = (document.getElementById('f-direccion') || {}).value || '';
+      if (direccionVal) payload.direccion_afectada = direccionVal;
     }
 
     if (esEquipaje) {

@@ -248,6 +248,11 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
   if (body.tipo_viaje === 'solo_ida' || body.tipo_viaje === 'ida_vuelta') {
     candidatosB2B.push({ campo: 'tipo_viaje', valor: body.tipo_viaje, fuente: 'declaracion_pasajero', extraido_en: ahoraB2B });
   }
+  /* Cuál de las dos direcciones del billete redondo describen `segmentos`: sin esto el
+     backoffice sabe que falta una dirección pero no cuál está mirando. */
+  if (body.direccion_afectada === 'ida' || body.direccion_afectada === 'vuelta') {
+    candidatosB2B.push({ campo: 'direccion_afectada', valor: body.direccion_afectada, fuente: 'declaracion_pasajero', extraido_en: ahoraB2B });
+  }
 
   var row = {
     canal: 'B2B', fuente: 'Agencia',

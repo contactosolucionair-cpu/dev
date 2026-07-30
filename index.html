@@ -424,14 +424,18 @@
           <div class="g g2">
             <div class="field"><label class="field__lbl" data-t="lbl_airline">Aerolínea <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-airline" data-required="true" placeholder="Aerolíneas Argentinas" /><span class="field__msg"></span></div>
             <div class="field"><label class="field__lbl" data-t="lbl_flight">Número de vuelo <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-flight" data-required="true" placeholder="AR1234" /><span class="field__msg"></span></div>
-            <!-- Intake v2 · dos preguntas antes de origen/destino. Orientan la carga a
-                 UNA dirección: la del viaje donde ocurrió el problema, que es la unidad
-                 de análisis del motor legal (enmienda v2.1.2). -->
+            <!-- Intake v2 · las preguntas de ruta van ANTES de origen/destino porque
+                 acotan qué hay que cargar ahí: UNA dirección, la del viaje donde ocurrió
+                 el problema, que es la unidad de análisis del motor legal (enmienda
+                 v2.1.2). La de dirección solo aparece en ida y vuelta —en solo ida no hay
+                 nada que elegir— y de ella salen las etiquetas de las tres de abajo. -->
             <div class="field"><label class="field__lbl" data-t="lbl_tipoviaje">¿Tu viaje era solo ida o ida y vuelta? <span class="field__ast">*</span></label><select class="field__in" id="f-tipo-viaje" data-required="true"><option value="" data-t="opt_select">Seleccionar...</option><option value="solo_ida" data-t="opt_solo_ida">Solo ida</option><option value="ida_vuelta" data-t="opt_ida_vuelta">Ida y vuelta</option></select><span class="field__msg"></span></div>
+            <div class="field" id="field-direccion" style="display:none"><label class="field__lbl" data-t="lbl_direccion">¿En qué parte del viaje tuviste el problema? <span class="field__ast">*</span></label><select class="field__in" id="f-direccion" data-required="true"><option value="" data-t="opt_select">Seleccionar...</option><option value="ida" data-t="opt_dir_ida">La ida</option><option value="vuelta" data-t="opt_dir_vuelta">La vuelta</option></select><span class="field__msg"></span></div>
             <div class="field"><label class="field__lbl" data-t="lbl_escalas">¿Tuviste escalas en el viaje del problema? <span class="field__ast">*</span></label><select class="field__in" id="f-escalas" data-required="true"><option value="" data-t="opt_select">Seleccionar...</option><option value="no" data-t="opt_sin_escalas">No, fue directo</option><option value="si" data-t="opt_con_escalas">Sí, tuve escalas</option></select><span class="field__msg"></span></div>
             <div class="field"><label class="field__lbl" data-t="lbl_origin">Origen <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-origin" data-required="true" data-airport="true" autocomplete="off" placeholder="Buenos Aires (EZE)" /><span class="field__msg"></span></div>
             <div class="field"><label class="field__lbl" data-t="lbl_dest">Destino <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-destination" data-required="true" data-airport="true" autocomplete="off" placeholder="Madrid (MAD)" /><span class="field__msg"></span></div>
           </div>
+          <p class="armador__hint" id="hint-direccion" style="display:none" data-t="hint_direccion">Cargá solo la dirección donde tuviste el problema. Si fue al volver, el origen es tu destino de ida.</p>
 
           <!-- Armador de escalas: solo las intermedias. Origen y destino son los campos
                de arriba, así el itinerario no se carga dos veces. -->
