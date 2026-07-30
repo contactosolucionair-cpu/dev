@@ -585,8 +585,17 @@ var UNITARIOS = [
         fecha_incidente: '2026-05-10', checkin_presentacion: 'no_aplica',
         segmentos: [{ orden: 1, origen_iata: 'EZE', destino_iata: 'MAD', carrier_operante: 'Iberia', fecha: '2026-05-10', afectado: true }],
       });
-      var sinSegmentos = analizarRow({
+      /* Doméstico cargado solo con las columnas sueltas: el foro interno no depende del
+         destino contractual, así que igual hay respuesta. */
+      var domesticoSinSegmentos = analizarRow({
         origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+        incidentes: ['demora'], demora_salida_min: 300, fecha_incidente: '2026-05-10',
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      });
+      /* Internacional sin segmentos: sin billete no hay destino contractual, y de él
+         dependen los cuatro foros del Art. 33. */
+      var sinSegmentos = analizarRow({
+        origen_iata: 'EZE', destino_iata: 'MAD', aerolinea: 'Iberia',
         incidentes: ['demora'], demora_salida_min: 300, fecha_incidente: '2026-05-10',
         billete_unico: true, checkin_presentacion: 'en_hora',
       });
@@ -596,7 +605,9 @@ var UNITARIOS = [
            emisión, así que no se afirma más de lo que se sabe. */
         || igual('solo ida → destino contractual MAD', soloIda.jurisdiccion.destino_contractual.iata, 'MAD')
         || igual('solo ida → foro posible', soloIda.jurisdiccion.foro_argentino, 'posible')
-        || igual('sin segmentos → no computable', sinSegmentos.jurisdiccion.foro_argentino, 'no_computable')
+        || igual('internacional sin segmentos → no computable', sinSegmentos.jurisdiccion.foro_argentino, 'no_computable')
+        || igual('doméstico sin segmentos → igual garantizado', domesticoSinSegmentos.jurisdiccion.foro_argentino, 'garantizado')
+        || igual('y sin destino contractual', domesticoSinSegmentos.jurisdiccion.destino_contractual, null)
         /* Y nunca es gate: el bloque informa, no bloquea ninguna categoría. */
         || igual('no bloquea categorías', buscarCategoria(soloIda, 'EU261.reembolso').estado, 'RECLAMABLE');
     },

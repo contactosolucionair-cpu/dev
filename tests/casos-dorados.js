@@ -413,6 +413,86 @@ export var CASOS = [
          EU261: no · MONTREAL: no */
     esperado: {},
   },
+
+  {
+    id: 'CD-15',
+    descripcion: 'Reprogramación post-809 avisada con 10 días y sin transporte alternativo (Art. 42, tipo propio)',
+    caso: {
+      ref_code: 'CD-15',
+      origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+      incidentes: ['reprogramacion'], antelacion_aviso_dias: 10,
+      reencaminamiento: { ofrecido: false },
+      fecha_incidente: '2026-03-15', billete_unico: true, checkin_presentacion: 'en_hora',
+    },
+    /* completar JPA — criterio legal.
+       Salida actual del motor (a confirmar, no asertada):
+         REGL809.servicios_incidentales: RECLAMABLE — el aviso de 10 días cae entre las 2
+           semanas y los 7 días, pero SIN transporte alternativo no se configura la
+           excepción del Art. 42 inc. ii. Qué escalón del Art. 43 corresponde depende de la
+           demora efectiva, que este caso no trae: el derecho existe igual.
+         REGL809.reintegro: NO_APLICA — el Art. 42 da incidentales, no el reintegro del
+           Art. 48: el vuelo se cumple, corrido de fecha.
+         REGL809.compensacion_tarifada: NO_APLICA
+       PREGUNTA PARA JPA: con aviso de 10 días y alternativo ofrecido el caso sale
+       NO_APLICA (excepción ii). ¿El "transporte alternativo que permita llegar al destino
+       final" exige además algún margen horario, como sí lo exige el Art. 5(1)(c) de
+       EU261? El Art. 42 no lo dice y el motor no lo presume. */
+    esperado: {},
+  },
+
+  {
+    id: 'CD-16',
+    descripcion: 'Equipaje doméstico perdido, protesto fuera de plazo, post-809: la caducidad ya no tiene sanción expresa (D2)',
+    caso: {
+      ref_code: 'CD-16',
+      origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+      incidentes: ['equipaje_perdida'],
+      /* Fecha en que el equipaje debió ponerse a disposición (Tabla A fila 13). */
+      fecha_incidente: '2026-03-01',
+      /* 19 días: fuera del plazo de 10 del transporte interno. */
+      protesta: { realizada: 'si', medio: 'escrita', fecha: '2026-03-20' },
+      billete_unico: true, checkin_presentacion: 'en_hora',
+    },
+    /* completar JPA — criterio legal.
+       Salida actual del motor (a confirmar, no asertada):
+         REGL809.gates.protesto: pasa_provisional + nodo EVAL sancion_caducidad_domestica
+         REGL809.equipaje: RECLAMABLE, monto simbólico en AO
+         El mismo caso en internacional (fuera del plazo de 21) sale `inadmisible` por
+         Montreal Art. 31(4), y ahí la categoría muere.
+       Es el borde de D2: el Anexo I formula el protesto como carga ("deberá presentar")
+       sin reproducir la inadmisibilidad del viejo Art. 20 b, derogado. La regla
+       conservadora deja pasar el caso y manda la pregunta a evaluación. */
+    esperado: {},
+  },
+
+  {
+    id: 'CD-17',
+    descripcion: 'Redondo EZE→MAD→EZE con la cancelación en la IDA: el foro argentino queda garantizado por el destino contractual',
+    caso: {
+      ref_code: 'CD-17',
+      billete_unico: true,
+      /* Espejo de CD-13: allá el incidente es en la vuelta, acá en la ida. La dirección
+         afectada cambia, el destino contractual NO: en un redondo es el punto de partida. */
+      segmentos: [
+        { orden: 1, origen_iata: 'EZE', destino_iata: 'MAD', carrier_operante: 'Iberia', fecha: '2026-05-10', afectado: true },
+        { orden: 2, origen_iata: 'MAD', destino_iata: 'EZE', carrier_operante: 'Iberia', fecha: '2026-05-24' },
+      ],
+      incidentes: ['cancelacion'], antelacion_aviso_dias: 2,
+      fecha_incidente: '2026-05-10', checkin_presentacion: 'no_aplica',
+      causa_alegada: 'Problema operativo de la aerolínea',
+    },
+    /* completar JPA — criterio legal.
+       Salida actual del motor (a confirmar, no asertada):
+         normalizacion: EZE → MAD (dirección afectada), internacional
+         jurisdiccion: foro_argentino GARANTIZADO · destino contractual EZE (punto de
+           partida del redondo, D3) · Montreal Art. 33, tribunal del destino
+         EU261: si (Test A1, sale de... no: sale de EZE, así que entra por A2 con carrier
+           comunitario) · REGL809: si (Test D, origen en AR) · MONTREAL: si
+       Lo que este caso cubre y ningún otro: que el destino contractual NO sigue a la
+       dirección afectada. Acá la dirección analizada termina en MAD y el foro igual es
+       argentino, porque el billete vuelve. */
+    esperado: {},
+  },
 ];
 
 export default CASOS;

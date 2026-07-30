@@ -839,31 +839,37 @@ export function jurisdiccion(caso, U) {
   var MONTREAL_33 = 'Convenio de Montreal Art. 33 (foros a elección del actor: domicilio del transportista, su sede principal, el establecimiento por cuyo conducto se celebró el contrato, o el tribunal del destino contractual)';
 
   var b = caso.billete;
-  if (!b || !b.primer_origen || !b.ultimo_destino) {
-    return {
-      foro_argentino: 'no_computable',
-      base_legal: MONTREAL_33,
-      destino_contractual: null,
-      nota: 'Sin segmentos cargados no hay billete que mirar: el destino contractual no se puede determinar. Cargá el itinerario para que el motor lo compute.',
+  var destinoContractual = null;
+  if (b && b.primer_origen && b.ultimo_destino) {
+    var dc = b.redondo ? b.primer_origen : b.ultimo_destino;
+    destinoContractual = {
+      iata: dc.iata || null,
+      pais_iso: dc.pais_iso || null,
+      /* Que el redondo vuelva al punto de partida es doctrina, no una lectura del
+         itinerario: conviene que quede dicho en la salida. */
+      regla: b.redondo ? 'ida y vuelta bajo billete único: el destino contractual es el punto de partida (D3)' : 'último aeropuerto del billete',
     };
   }
 
-  var dc = b.redondo ? b.primer_origen : b.ultimo_destino;
-  var destinoContractual = {
-    iata: dc.iata || null,
-    pais_iso: dc.pais_iso || null,
-    /* Que el redondo vuelva al punto de partida es doctrina, no una lectura del itinerario:
-       conviene que quede dicho en la salida. */
-    regla: b.redondo ? 'ida y vuelta bajo billete único: el destino contractual es el punto de partida (D3)' : 'último aeropuerto del billete',
-  };
-
-  /* Doméstico argentino: materia federal, foro argentino siempre. */
+  /* Doméstico argentino: materia federal, foro argentino siempre. Va ANTES de exigir el
+     billete a propósito — el foro interno no depende del destino contractual, así que un
+     caso cargado solo con las columnas sueltas igual tiene respuesta. */
   if (caso.internacional === false && parteDe(caso, 'AR')) {
     return {
       foro_argentino: 'garantizado',
       base_legal: U.jurisdiccion_base_domestica || 'Código Aeronáutico Art. 198 (materia federal)',
       destino_contractual: destinoContractual,
       nota: 'Transporte interno: competencia federal (CSJN y tribunales federales civiles y comerciales).',
+    };
+  }
+
+  /* De acá en adelante todo depende del destino contractual, que sale del billete. */
+  if (!destinoContractual) {
+    return {
+      foro_argentino: 'no_computable',
+      base_legal: MONTREAL_33,
+      destino_contractual: null,
+      nota: 'Sin segmentos cargados no hay billete que mirar: el destino contractual no se puede determinar, y de él dependen los foros del Art. 33. Cargá el itinerario para que el motor lo compute.',
     };
   }
 
