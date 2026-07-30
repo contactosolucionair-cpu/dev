@@ -1121,6 +1121,10 @@
   var metaTramos = {};
   var tramoSel = 0;
   var fuenteItinerario = 'declaracion_pasajero';
+  /* Los `segmentos` del último scan, guardados para que cambiar de dirección pueda
+     re-aplicar la otra sin volver a escanear. `null` = no hay itinerario escaneado vigente
+     (carga manual, ruta descartada, o caso ya enviado). */
+  var scanSegs = null;
 
   function iataDeTexto(txt) {
     var m = String(txt || '').trim().toUpperCase().match(/^([A-Z]{3})\b/);
@@ -1188,8 +1192,42 @@
     if (elHintDireccion) elHintDireccion.style.display = dir ? '' : 'none';
   }
 
+  /**
+   * Re-aplica al formulario la dirección recién elegida, con los tramos de esa dirección
+   * tomados del scan guardado (`scanSegs`).
+   *
+   * Sin esto el select era cosmético: renombraba la etiqueta a "Origen de la vuelta" y
+   * dejaba abajo los aeropuertos de la ida. En un ida y vuelta simétrico casi no se nota;
+   * en uno que vuelve por otro aeropuerto de la misma ciudad (EZE ida, AEP vuelta) el
+   * formulario queda mostrando el par equivocado con la etiqueta correcta.
+   *
+   * Solo actúa si el scan vigente contiene ESA dirección. Si no —carga manual, ruta
+   * descartada, o un solo-ida donde se elige "vuelta"— no toca nada: el renombrado ya
+   * corrió y los campos quedan como estaban. Vaciarlos sería borrar en silencio lo que el
+   * operador cargó.
+   */
+  function reaplicarDireccionDesdeScan() {
+    var dir = elDireccion && elDireccion.value;
+    if (dir !== 'ida' && dir !== 'vuelta') return;
+    if (!scanSegs || !scanSegs.length) return;
+    var segsDir = [];
+    scanSegs.forEach(function (s, i) { if (direccionDe(scanSegs, i) === dir) segsDir.push(s); });
+    if (!segsDir.length) return;
+    /* Índice 0: el tramo afectado de la dirección anterior ya no existe en esta. El resto
+       del pipeline (metadatos, escalas, armador, fecha) lo hace aplicarDireccion. */
+    aplicarDireccion(segsDir, 0, elTipoViaje ? elTipoViaje.value : '', dir);
+  }
+
+  /* Elegir dirección es una acción explícita: pisa lo que haya en origen/destino, incluso
+     una edición manual. Mismo criterio que el form público (src/js/app.js).
+     TODO: unificar consumo de escaneo entre superficies */
+  function alCambiarDireccion() {
+    aplicarDireccionAfectada();
+    reaplicarDireccionDesdeScan();
+  }
+
   if (elTipoViaje) elTipoViaje.addEventListener('change', aplicarDireccionAfectada);
-  if (elDireccion) elDireccion.addEventListener('change', aplicarDireccionAfectada);
+  if (elDireccion) elDireccion.addEventListener('change', alCambiarDireccion);
   aplicarDireccionAfectada();
 
   function aplicarDireccion(segsDir, idxAfectado, tipoViaje, dirAfectada) {
@@ -1223,6 +1261,8 @@
   }
 
   function procesarItinerarioIa(segs, sugerida) {
+    /* El itinerario escaneado queda disponible para el selector de dirección. */
+    scanSegs = (segs && segs.length) ? segs : null;
     if (!segs || !segs.length) return;
 
     var tramos = segs.map(function (s, i) {
@@ -1257,8 +1297,9 @@
     };
     document.getElementById('ruta-descartar').onclick = function () {
       /* Descartar la ruta no descarta el resto del scan: solo deja el itinerario en
-         blanco para cargarlo a mano. */
-      metaTramos = {}; fuenteItinerario = 'declaracion_pasajero'; tramoSel = 0;
+         blanco para cargarlo a mano. Y el itinerario escaneado deja de existir para el
+         selector: descartado explícitamente, no se resucita. */
+      metaTramos = {}; fuenteItinerario = 'declaracion_pasajero'; tramoSel = 0; scanSegs = null;
       if (elRutaBox) elRutaBox.style.display = 'none';
     };
   }
@@ -1515,6 +1556,9 @@
         document.getElementById('f-autorizado').checked = false;
         if (acompList) acompList.innerHTML = '';
         scannedFiles = []; renderUploadList();
+        /* El scan pertenece al caso que se acaba de enviar: si no se anula, elegir
+           dirección en el caso siguiente re-aplicaría los aeropuertos del anterior. */
+        scanSegs = null;
       } else {
         msg.className = 'form-msg form-msg--err';
         msg.textContent = d.error || 'Error al cargar el caso.';
