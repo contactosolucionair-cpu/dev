@@ -2,7 +2,7 @@
 
 ## **Ruteo de jurisdicción \+ Admisibilidad EU261 (piloto)**
 
-**Versión:** v2.1.1 · **Fecha:** 29-jul-2026 · **Estado:** validado JPA (decisiones 1–4 y pins 1–7 confirmados)
+**Versión:** v2.1.2 · **Fecha:** 30-jul-2026 · **Estado:** validado JPA (decisiones 1–4 y pins 1–7 confirmados)
 
 ---
 
@@ -19,6 +19,7 @@ Documento de lógica legal en papel. No contiene código, esquemas de datos, ni 
 
 ### **Changelog**
 
+* **v2.1.2 (30-jul-2026):** precisión al Pin 4 — en billetes de ida y vuelta (o multi-destino), cada **dirección** es un itinerario independiente; la unidad de análisis del motor es la **dirección afectada** por el incidente (nota en Test A). Motiva: la regla literal del Pin 4 daba origen \= destino en billetes redondos.
 * **v2.1.1 (29-jul-2026):** reprogramación → se caracteriza como cancelación (nota en Tabla A fila 6). Motiva: dominio real del intake (`tipo_incidencia='reprogramacion'`) sin destino en la fila 6.
 * **v2.1 (29-jul-2026):** integración de los **pins de implementación 1–7** (validados JPA), cierres necesarios para traducir el documento a motor determinista:
   * **Pin 1** — Medición de la llegada EU261: apertura de puertas (TJUE *Germanwings* C-452/13). Tabla A fila 7 desdoblada en 7a (demora de salida) y 7b (demora de llegada).
@@ -111,6 +112,8 @@ Aplica si se cumple **A1 o A2** (y no opera una exclusión):
 * Con **billete único**, el itinerario se evalúa como un todo: origen \= primer aeropuerto de salida, destino final \= último aeropuerto (Art. 2(h); *Folkerts* C-11/11). Los tests A1/A2 se corren sobre ese par origen→destino final.  
 * Si el itinerario **ni parte ni llega** a la UE/EEE/CH pero **transita** un hub UE → **no** se resuelve por regla: cae al nodo borde \[verificación caso a caso\] (línea *Wegener*, abajo).  
 * Con **billetes separados**, cada billete es un itinerario independiente: los tests se corren por billete.
+
+*Precisión (v2.1.2): en billetes de **ida y vuelta** (o multi-destino), cada **dirección** constituye un itinerario independiente a efectos de los tests, la distancia y el destino final, aunque compartan billete único. La unidad de análisis del motor es la **dirección afectada** por el incidente: su primer aeropuerto es el origen y su último es el destino final. \[decisión JPA; línea TJUE ida/vuelta como vuelos distintos — por-verificar cita al activar detalle\]*
 
 **Exclusiones:**
 
