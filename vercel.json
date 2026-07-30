@@ -6,7 +6,7 @@
   ],
   "functions": {
     "api/admin.js": {
-      "includeFiles": "templates/**"
+      "includeFiles": "{templates,src/data,api/_data}/**"
     }
   }
 }

@@ -30,6 +30,11 @@
  *                           como descarga directa. No se sube a Storage ni se toca `adjuntos`:
  *                           es solo un generador de documentos, la carga del PDF ya firmado
  *                           sigue siendo manual (como cualquier otro adjunto).
+ *   analizar-caso     POST  {id} → corre el motor legal determinista (Capa 1) sobre el caso
+ *                           y guarda el resultado en `analisis_legal = {actual, historial}`.
+ *                           Devuelve el análisis. NO escribe ninguna otra columna.
+ *                           Datos incompletos NO son error: el motor los emite como
+ *                           FALTA_DATO y el endpoint responde 200 igual.
  *
  * bodyParser desactivado: 'upload' necesita el body crudo; el resto parsea JSON a mano.
  */
@@ -100,6 +105,7 @@ export default async function handler(req, res) {
     if (action === 'download-zip')     return await downloadZip(req, res, SB_URL, SB_KEY);
     if (action === 'create-case')      return await createCase(req, res, SB_URL, SB_KEY);
     if (action === 'generar-documento') return await generarDocumento(req, res, SB_URL, SB_KEY);
+    if (action === 'analizar-caso')     return await analizarCasoLegal(req, res, SB_URL, SB_KEY);
     return res.status(404).json({ error: 'Acción no encontrada: ' + action });
   } catch (err) {
     console.error('[admin/' + action + '] Error:', err.message);
@@ -748,4 +754,104 @@ async function generarDocumento(req, res, SB_URL, SB_KEY) {
     console.error('[admin/generar-documento] Error:', err.message);
     return res.status(500).json({ error: 'Error al generar el documento.' });
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Motor legal Capa 1: analizar un caso                                */
+/* ------------------------------------------------------------------ */
+/**
+ * POST /api/admin?action=analizar-caso   body {id}
+ *
+ * Corre el motor determinista (normalizador + evaluador) sobre el caso y guarda el
+ * resultado en la columna `analisis_legal`, con forma {actual, historial}.
+ *
+ * Dos garantías que importan:
+ *
+ *  - NO escribe ninguna otra columna. El PATCH lleva una sola clave. El motor es de
+ *    lectura: no corrige datos del caso ni toca instancia, estado ni esperas.
+ *  - Datos incompletos NO son error. Un caso vacío devuelve 200 con un análisis lleno de
+ *    FALTA_DATO. Solo hay error si falla la base, falta el id, o no están los archivos
+ *    de datos auxiliares (eso sí es un problema de deploy y conviene que grite).
+ *
+ * El motor es determinista: dos llamadas seguidas sobre un caso sin cambios devuelven el
+ * mismo `actual` salvo `fecha_analisis`. Lo que sí cambia es `historial`, que apila el
+ * análisis anterior (capado a los últimos 10 para no inflar la fila).
+ */
+var HISTORIAL_MAX = 10;
+
+async function analizarCasoLegal(req, res, SB_URL, SB_KEY) {
+  var body = await getJson(req);
+  var id = (body.id || '').toString().trim();
+  if (!id) return res.status(400).json({ error: 'Falta el id del reclamo.' });
+
+  /* Módulos y datos del motor en carga diferida: airports.json pesa ~800 KB y no tiene
+     que costarle un cold start a las otras acciones de este handler. */
+  var normalizarCaso, analizar, seleccionarRuleset, datos;
+  try {
+    var mNorm = await import('./_utils/motor-normalizar.js');
+    var mMotor = await import('./_utils/motor-legal.js');
+    var mDatos = await import('./_utils/motor-datos.js');
+    normalizarCaso = mNorm.normalizarCaso;
+    analizar = mMotor.analizar;
+    seleccionarRuleset = mMotor.seleccionarRuleset;
+    datos = mDatos.cargarDatosMotor();
+  } catch (err) {
+    console.error('[admin/analizar-caso] No se pudieron cargar los datos del motor:', err.message);
+    return res.status(500).json({ error: 'El motor legal no está disponible: ' + err.message });
+  }
+
+  var caseResp = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + encodeURIComponent(id) + '&select=*&limit=1',
+    { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+  var caseText = await caseResp.text();
+  if (!caseResp.ok) {
+    console.error('[admin/analizar-caso] Supabase error:', caseText.substring(0, 300));
+    return res.status(500).json({ error: 'Error al leer el reclamo.' });
+  }
+  var filas;
+  try { filas = JSON.parse(caseText); } catch (e) { filas = []; }
+  if (!Array.isArray(filas) || !filas.length) return res.status(404).json({ error: 'Reclamo no encontrado.' });
+  var fila = filas[0];
+
+  /* De acá en adelante nada debería tirar: el motor emite FALTA_DATO en vez de fallar.
+     El try igual está por si una regla del ruleset tiene un bug, para responder con un
+     mensaje claro en vez de un 500 pelado. */
+  var analisis;
+  try {
+    var caso = normalizarCaso(fila, datos.idxAeropuertos, datos.idxAerolineas, datos.paises);
+    var ruleset = seleccionarRuleset(caso.fecha_incidente);
+    analisis = analizar(caso, ruleset, new Date().toISOString(), { disparado_por: 'manual' });
+  } catch (err) {
+    console.error('[admin/analizar-caso] Error del motor en', fila.ref_code, '·', err.message);
+    return res.status(500).json({ error: 'El motor falló al analizar el caso: ' + err.message });
+  }
+
+  /* Historial: el análisis anterior pasa a la pila, lo más nuevo primero. */
+  var previo = (fila.analisis_legal && typeof fila.analisis_legal === 'object') ? fila.analisis_legal : null;
+  var historial = (previo && Array.isArray(previo.historial)) ? previo.historial.slice() : [];
+  if (previo && previo.actual) historial.unshift(previo.actual);
+  if (historial.length > HISTORIAL_MAX) historial = historial.slice(0, HISTORIAL_MAX);
+
+  var patchRes = await fetch(SB_URL + '/rest/v1/reclamos?id=eq.' + encodeURIComponent(id), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Prefer': 'return=minimal' },
+    /* Una sola clave a propósito: el análisis no puede modificar el caso. */
+    body: JSON.stringify({ analisis_legal: { actual: analisis, historial: historial } }),
+  });
+  if (!patchRes.ok) {
+    var patchErr = await patchRes.text();
+    console.error('[admin/analizar-caso] PATCH error:', patchErr.substring(0, 300));
+    /* El análisis se corrió bien; lo que falló es guardarlo. Se devuelve igual para que
+       el backoffice pueda mostrarlo, avisando que no quedó persistido. */
+    return res.status(200).json({ success: true, guardado: false, error_guardado: 'No se pudo guardar el análisis.', analisis: analisis });
+  }
+
+  console.log('[admin/analizar-caso]', fila.ref_code, '· marcos:', (analisis.resumen.marcos_activos || []).join(',') || 'ninguno',
+    '· reclamables:', analisis.resumen.categorias_reclamables, '· provisional:', analisis.provisional);
+
+  return res.status(200).json({
+    success: true,
+    guardado: true,
+    analisis: analisis,
+    historial_len: historial.length,
+  });
 }
