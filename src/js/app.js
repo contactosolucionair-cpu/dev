@@ -503,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function () {
            va a haber. Antes esto caía en el camino de éxito y mostraba "Datos extraídos
            correctamente" con cero campos completados. */
         if (json && json.flagDisabled) { activarModoManual(); return; }
-        if (!json.success || !json.data) { showAiState('error'); mostrarPaso1Datos(); return; }
+        if (!json.success || !json.data) { showAiState('error'); mostrarContinuarPaso1(); return; }
 
         var d = json.data;
         /* Paso 1 fields */
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.error('[SA] Multi-file error:', err);
         showAiState('error');
         /* El scan es opcional: si se cae, el pasajero tiene que poder seguir a mano. */
-        mostrarPaso1Datos();
+        mostrarContinuarPaso1();
       })
       .finally(function () {
         if (btnV) { btnV.disabled = false; btnV.style.opacity = ''; }
@@ -627,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function () {
      paso 2, que el pasajero puede corregir, y de ahí sale todo al enviar. */
 
   var elPaso1Scan = document.getElementById('paso1-scan');
-  var elPaso1Datos = document.getElementById('paso1-datos');
+  var elPaso1Continuar = document.getElementById('paso1-continuar');
   var elPaso1Hr = document.getElementById('paso1-hr');
   var elRutaBox = document.getElementById('ruta-box');
   var elRutaTramos = document.getElementById('ruta-tramos');
@@ -677,13 +677,33 @@ document.addEventListener('DOMContentLoaded', function () {
     return m ? m[1] : '';
   }
 
-  function mostrarPaso1Datos() {
-    if (elPaso1Datos) elPaso1Datos.style.display = 'block';
+  /**
+   * Muestra el botón para salir del Paso 1. Se llama cuando el escaneo terminó de una u
+   * otra forma: sirvió, falló, o el pasajero eligió cargar a mano.
+   *
+   * Antes esto revelaba los datos personales, que vivían acá abajo. Se mudaron al Paso 3,
+   * junto a la declaración jurada: los dos responden lo mismo —quién sos y qué autorizás—
+   * y ponerlos entre el escaneo y el caso metía una pantalla de trámite justo donde el
+   * pasajero quiere ver qué leyó el analizador.
+   */
+  function mostrarContinuarPaso1() {
+    if (elPaso1Continuar) elPaso1Continuar.style.display = 'block';
     if (elPaso1Hr) elPaso1Hr.style.display = '';
     /* El botón "Continuar" lo habilita el script inline de index.html escuchando
        change sobre el panel; mostrar un bloque no dispara nada por sí solo. */
-    if (elPaso1Datos) elPaso1Datos.dispatchEvent(new Event('change', { bubbles: true }));
+    if (elPaso1Continuar) elPaso1Continuar.dispatchEvent(new Event('change', { bubbles: true }));
     tick();
+  }
+
+  /**
+   * El escaneo dejó algo para ver: se lleva al pasajero al Paso 2, que es donde están los
+   * campos que el analizador acaba de completar y la confirmación de tramo. Es el punto
+   * del cambio: el efecto del escaneo se ve enseguida, sin pasar por un formulario de
+   * datos personales en el medio.
+   */
+  function irAlCaso() {
+    mostrarContinuarPaso1();
+    if (typeof window.goToStep === 'function') window.goToStep(2);
   }
 
   function ocultarScanner() {
@@ -790,7 +810,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /** Recibe los `segmentos` del scan y decide si hay algo que preguntar. */
   function procesarItinerarioIa(segs, sugerida) {
-    if (!segs || !segs.length) { mostrarPaso1Datos(); return; }
+    if (!segs || !segs.length) { irAlCaso(); return; }
 
     var tramos = tramosDeSegmentosIa(segs);
     var dirs = {};
@@ -801,7 +821,7 @@ document.addEventListener('DOMContentLoaded', function () {
     /* Un solo tramo: no hay nada que elegir, ese es el afectado. */
     if (segs.length === 1) {
       aplicarDireccion(segs, 0, tipoViaje, tramos[0].dir);
-      mostrarPaso1Datos();
+      irAlCaso();
       return;
     }
 
@@ -826,7 +846,7 @@ document.addEventListener('DOMContentLoaded', function () {
       });
       aplicarDireccion(segsDir, idxEnDir, tipoViaje, dirElegida);
       if (elRutaBox) elRutaBox.style.display = 'none';
-      mostrarPaso1Datos();
+      irAlCaso();
     };
 
     var btnNo = document.getElementById('ruta-descartar');
@@ -840,8 +860,15 @@ document.addEventListener('DOMContentLoaded', function () {
          pasajero lo descartó explícitamente, cambiar de dirección no puede resucitarlo. */
       S.aiData = null;
       if (elRutaBox) elRutaBox.style.display = 'none';
-      mostrarPaso1Datos();
+      irAlCaso();
     };
+
+    /* Al final, y no antes de cablear los botones de arriba: la confirmación de tramo vive
+       en el Paso 2 junto a los campos que gobierna, así que hay que llevar al pasajero ahí
+       ahora —si no, se queda mirando un Paso 1 vacío con la pregunta en la pantalla
+       siguiente—, pero navegar antes de asignar los `onclick` deja los dos botones muertos
+       si algo falla en el medio. */
+    irAlCaso();
   }
 
   /* ---- Camino manual: armador de escalas ---- */
@@ -1081,19 +1108,22 @@ document.addEventListener('DOMContentLoaded', function () {
   /* ---- Arranque: scan-first, con el flag de IA como interruptor ---- */
 
   function activarScanFirst() {
-    if (!elPaso1Scan || !elPaso1Datos) return;
-    elPaso1Datos.style.display = 'none';
+    if (!elPaso1Scan || !elPaso1Continuar) return;
+    elPaso1Continuar.style.display = 'none';
     if (elPaso1Hr) elPaso1Hr.style.display = 'none';
   }
 
   function activarModoManual() {
     ocultarScanner();
     if (elRutaBox) elRutaBox.style.display = 'none';
-    mostrarPaso1Datos();
+    mostrarContinuarPaso1();
   }
 
   var btnManual = document.getElementById('btn-manual');
-  if (btnManual) btnManual.addEventListener('click', activarModoManual);
+  /* "Prefiero cargar los datos manualmente": el Paso 1 ya no tiene nada más que ofrecer,
+     así que se lo lleva directo al caso. `activarModoManual` sola no salta, porque también
+     la usa el arranque con el flag de IA apagado. */
+  if (btnManual) btnManual.addEventListener('click', function () { activarModoManual(); irAlCaso(); });
 
   activarScanFirst();
   aplicarVisibilidadRuta();

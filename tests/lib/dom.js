@@ -13,6 +13,10 @@
  *     durante la construcción, y `panel-agencia.html` hace `location.href='/agencias'`
  *     y corta el script si no encuentra token.
  *  2. `window.fetch` hay que stubearlo siempre, o el arranque explota por otro lado.
+ *  3. jsdom no implementa `Element.scrollIntoView`. El wizard lo usa al cambiar de paso
+ *     (`goToStep`), así que sin el stub cualquier navegación entre pasos tira un
+ *     TypeError que aborta el handler a mitad de camino y deja botones sin cablear. Se
+ *     stubea acá y no se guarda en el front: es un hueco del harness, no del producto.
  */
 import fs from 'fs';
 import path from 'path';
@@ -44,6 +48,7 @@ export function cargar(archivo, opts) {
     url: 'https://staging.solucionair.com/',
     beforeParse: function (window) {
       window.fetch = opts.fetch || function () { return new Promise(function () {}); };
+      window.Element.prototype.scrollIntoView = function () {};
       window.addEventListener('error', function (e) { errores.push(e.error || e.message); });
       if (opts.antes) opts.antes(window);
     },

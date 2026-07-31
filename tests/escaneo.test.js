@@ -91,6 +91,27 @@ function escanear(window) {
     chk(q.iata('f-destination') === 'USH', 'gana la dirección elegida: "' + q.val('f-destination') + '"');
   }
 
+  console.log('\n\x1b[1mDespués del escaneo se aterriza en "Tu caso", no en datos personales\x1b[0m');
+  {
+    var rp = abrir();
+    var qp = consultas(rp.window);
+    function panelActivo(w) { var p = w.document.querySelector('.wz-panel.active'); return p ? p.id : '(ninguno)'; }
+    function panelDe(w, id) {
+      var el = w.document.getElementById(id);
+      return el && el.closest ? (el.closest('.wz-panel') || {}).id : null;
+    }
+    chk(panelActivo(rp.window) === 'wz-1', 'antes del escaneo se está en el Paso 1');
+    await escanear(rp.window);
+    chk(panelActivo(rp.window) === 'wz-2', 'el escaneo lleva al Paso 2: ' + panelActivo(rp.window));
+    /* La confirmación de tramo tiene que estar en el mismo panel que los campos que
+       gobierna; si quedara en el Paso 1, el pasajero no la vería nunca. */
+    chk(panelDe(rp.window, 'ruta-box') === 'wz-2', 'la confirmación de tramo está en el Paso 2: ' + panelDe(rp.window, 'ruta-box'));
+    chk(qp.$('ruta-box').style.display === 'block', 'y es visible al aterrizar');
+    /* Los datos personales quedaron para el final, junto a la declaración jurada. */
+    chk(panelDe(rp.window, 'f-name') === 'wz-3', 'los datos personales están en el Paso 3: ' + panelDe(rp.window, 'f-name'));
+    chk(panelDe(rp.window, 'consent-cb') === 'wz-3', 'y la firma sigue en el Paso 3');
+  }
+
   console.log('\n\x1b[1mBorde: escaneo solo-ida y el usuario elige "vuelta"\x1b[0m');
   {
     var r2 = abrir(SEGMENTOS_SOLO_IDA);

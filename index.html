@@ -384,6 +384,18 @@
           <div class="scanfirst__alt"><button type="button" class="lnk-alt" id="btn-manual" data-t="scan_manual">Prefiero cargar los datos manualmente</button></div>
         </div>
 
+        <hr class="card__hr" id="paso1-hr"/>
+        <!-- El botón para seguir aparece cuando el escaneo terminó (bien o mal) o cuando
+             el pasajero elige cargar a mano. Con un escaneo exitoso ni se ve: app.js
+             lleva directo al Paso 2, que es donde aterrizan los campos completados. -->
+        <div id="paso1-continuar" style="display:none">
+        <div class="wz-nav"><button class="btn-verify" id="wz-next-1" type="button" data-t="btn_next2">Continuar al Paso 2 &rarr;</button></div>
+        </div>
+      </div>
+
+      <!-- PASO 2: DETALLES DEL CASO (vuelo o equipaje) -->
+      <div class="card wz-panel" id="wz-2">
+
         <!-- Confirmación de la ruta extraída. Solo aparece si el scan devolvió más de
              un tramo o más de una dirección: con un tramo no hay nada que preguntar. -->
         <div class="ruta-box" id="ruta-box" style="display:none">
@@ -396,31 +408,9 @@
           </div>
         </div>
 
-        <hr class="card__hr" id="paso1-hr"/>
-
-        <!-- Datos personales. En scan-first arranca oculto y se muestra al terminar el
-             scan o al tocar "prefiero cargar los datos manualmente". -->
-        <div id="paso1-datos">
-        <div class="card__blk"><div class="card__blk-head"><span class="badge-step">01</span><div><h3 class="card__blk-title" data-t="f_personal_t">Tus datos personales</h3><p class="card__blk-sub" data-t="f_personal_sub">Tal como figuran en tu documento de identidad.</p></div></div>
-          <div class="g g2">
-            <div class="field"><label class="field__lbl" data-t="lbl_name">Nombre y Apellido <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-name" data-required="true" placeholder="Juan Pablo Martínez" /><span class="field__msg"></span></div>
-            <div class="field"><label class="field__lbl" data-t="lbl_phone">Teléfono <span class="field__ast">*</span></label><input class="field__in" type="tel" id="f-phone" data-required="true" placeholder="+54 9 11 2557-8402" /><span class="field__msg"></span></div>
-            <div class="field"><label class="field__lbl" data-t="lbl_email">Mail <span class="field__ast">*</span></label><input class="field__in" type="email" id="f-email" data-required="true" placeholder="juan@email.com" /><span class="field__msg"></span></div>
-            <div class="field"><label class="field__lbl" data-t="lbl_doctype">Tipo de documento <span class="field__ast">*</span></label><select class="field__in" id="f-doctype" data-required="true"><option value="" data-t="opt_select">Seleccionar...</option><option value="DNI" data-t="opt_dni">DNI</option><option value="Pasaporte" data-t="opt_passport">Pasaporte</option><option value="ID" data-t="opt_id">ID / Cédula</option></select><span class="field__msg"></span></div>
-            <div class="field"><label class="field__lbl" data-t="lbl_docnum">Número de documento <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-docnum" data-required="true" placeholder="37.806.475" /><span class="field__msg"></span></div>
-          </div>
-          <div id="doc-extra-list"></div>
-          <div style="margin-top:8px"><button type="button" class="btn-add-acomp" id="doc-add">+ Agregar otro documento</button></div>
-        </div>
-        <div class="wz-nav"><button class="btn-verify" id="wz-next-1" type="button" data-t="btn_next2">Continuar al Paso 2 &rarr;</button></div>
-        </div>
-      </div>
-
-      <!-- PASO 2: DETALLES DEL CASO (vuelo o equipaje) -->
-      <div class="card wz-panel" id="wz-2">
 
         <!-- Identificación del vuelo (compartida para ambos tipos) -->
-        <div class="card__blk"><div class="card__blk-head"><span class="badge-step">02</span><div><h3 class="card__blk-title" data-t="f_flight_t">Identificación del vuelo</h3><p class="card__blk-sub" data-t="f_flight_sub">Si subiste tu pasaje con IA, estos campos ya están completos. Revisalos o corregí lo que haga falta.</p></div></div>
+        <div class="card__blk"><div class="card__blk-head"><span class="badge-step">01</span><div><h3 class="card__blk-title" data-t="f_flight_t">Identificación del vuelo</h3><p class="card__blk-sub" data-t="f_flight_sub">Si subiste tu pasaje con IA, estos campos ya están completos. Revisalos o corregí lo que haga falta.</p></div></div>
           <div class="g g2">
             <div class="field"><label class="field__lbl" data-t="lbl_airline">Aerolínea <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-airline" data-required="true" placeholder="Aerolíneas Argentinas" /><span class="field__msg"></span></div>
             <div class="field"><label class="field__lbl" data-t="lbl_flight">Número de vuelo <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-flight" data-required="true" placeholder="AR1234" /><span class="field__msg"></span></div>
@@ -583,12 +573,27 @@
         <div class="wz-nav"><button class="btn-verify" id="wz-back-2" type="button" style="background:transparent;color:var(--t2);border:1px solid var(--bd)" data-t="btn_back">&larr; Volver</button><button class="btn-verify" id="wz-next-2" type="button" data-t="btn_next3">Continuar al Paso 3 &rarr;</button></div>
       </div>
 
+
       <!-- PASO 3: FIRMA Y ENVÍO -->
       <div class="card wz-panel" id="wz-3">
         <div style="display:flex;gap:12px;align-items:flex-start;background:var(--g05,#eaf1ed);border:1px solid var(--bdl);border-left:3px solid var(--g);border-radius:10px;padding:16px 18px;margin-bottom:18px">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--g)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M12 2L3 7v6c0 5 3.5 8 9 9 5.5-1 9-4 9-9V7l-9-5z"/><path d="M9 12l2 2 4-4"/></svg>
           <p style="margin:0;font-size:.8rem;color:var(--t2);line-height:1.6"><strong style="color:var(--g)">SolucionAir opera bajo un esquema de honorarios por éxito:</strong> no se cobran costos iniciales y los honorarios equivalen al 25% de la compensación obtenida.</p>
         </div>
+        <!-- Datos personales. En scan-first arranca oculto y se muestra al terminar el
+             scan o al tocar "prefiero cargar los datos manualmente". -->
+        <div class="card__blk"><div class="card__blk-head"><span class="badge-step">02</span><div><h3 class="card__blk-title" data-t="f_personal_t">Tus datos personales</h3><p class="card__blk-sub" data-t="f_personal_sub">Tal como figuran en tu documento de identidad.</p></div></div>
+          <div class="g g2">
+            <div class="field"><label class="field__lbl" data-t="lbl_name">Nombre y Apellido <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-name" data-required="true" placeholder="Juan Pablo Martínez" /><span class="field__msg"></span></div>
+            <div class="field"><label class="field__lbl" data-t="lbl_phone">Teléfono <span class="field__ast">*</span></label><input class="field__in" type="tel" id="f-phone" data-required="true" placeholder="+54 9 11 2557-8402" /><span class="field__msg"></span></div>
+            <div class="field"><label class="field__lbl" data-t="lbl_email">Mail <span class="field__ast">*</span></label><input class="field__in" type="email" id="f-email" data-required="true" placeholder="juan@email.com" /><span class="field__msg"></span></div>
+            <div class="field"><label class="field__lbl" data-t="lbl_doctype">Tipo de documento <span class="field__ast">*</span></label><select class="field__in" id="f-doctype" data-required="true"><option value="" data-t="opt_select">Seleccionar...</option><option value="DNI" data-t="opt_dni">DNI</option><option value="Pasaporte" data-t="opt_passport">Pasaporte</option><option value="ID" data-t="opt_id">ID / Cédula</option></select><span class="field__msg"></span></div>
+            <div class="field"><label class="field__lbl" data-t="lbl_docnum">Número de documento <span class="field__ast">*</span></label><input class="field__in" type="text" id="f-docnum" data-required="true" placeholder="37.806.475" /><span class="field__msg"></span></div>
+          </div>
+          <div id="doc-extra-list"></div>
+          <div style="margin-top:8px"><button type="button" class="btn-add-acomp" id="doc-add">+ Agregar otro documento</button></div>
+        </div>
+
         <div class="card__blk"><div class="card__blk-head"><span class="badge-step">03</span><div><h3 class="card__blk-title" data-t="f_sign_t">Declaración jurada y firma electrónica</h3><p class="card__blk-sub" data-t="f_sign_sub">Leé atentamente antes de firmar y enviar.</p></div></div>
 
           <div style="background:var(--bg);border:1px solid var(--bdl);border-radius:8px;padding:16px;margin-bottom:16px;font-size:.76rem;color:var(--t2);line-height:1.65">
