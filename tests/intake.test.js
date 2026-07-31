@@ -18,7 +18,7 @@
 import {
   limpiarTexto, iataDeEtiqueta, iata3, sanearSegmentosIa, normalizarDireccionSugerida,
   derivarIncidentes, sanearSegmentosCanonicos, extremosDireccionAfectada,
-  candidatosItinerario,
+  candidatosItinerario, CAMPOS_DOMINIO_LEGAL,
 } from '../api/_utils/intake.js';
 
 /* Colores, apagados solos si la salida no es una terminal (igual que motor.test.js). */
@@ -101,6 +101,30 @@ correr('la sugerencia de dirección es sugerencia, y coherente con los tramos', 
     || igual('incoherente → vacía', normalizarDireccionSugerida('vuelta', segs), '')
     || igual('basura → vacía', normalizarDireccionSugerida('probablemente la ida', segs), '')
     || igual('ausente → vacía', normalizarDireccionSugerida(undefined, segs), '');
+});
+
+/* Un dominio, un escritor. El editor genérico del drawer (`set-campo`) es texto libre y no
+   deriva nada; el de datos legales valida y deriva. Que los dos pudieran escribir las
+   mismas columnas es lo que dejó `tipo_incidencia` e `incidentes` contradiciéndose en la
+   base (6bis.3). Este test fija el reparto. */
+correr('set-campo: el dominio legal es del editor de datos legales, no del genérico', function () {
+  function bloqueado(campo) { return CAMPOS_DOMINIO_LEGAL.indexOf(campo) !== -1; }
+  return igual('tipo_incidencia bloqueado', bloqueado('tipo_incidencia'), true)
+    || igual('incidentes bloqueado', bloqueado('incidentes'), true)
+    /* Las fuentes de la derivación también: cambiarlas por afuera desincroniza. */
+    || igual('tipo_reclamo bloqueado', bloqueado('tipo_reclamo'), true)
+    || igual('tipo_caso_equipaje bloqueado', bloqueado('tipo_caso_equipaje'), true)
+    /* El espejo derivado de gastos_items no se edita suelto. */
+    || igual('monto_gastos bloqueado', bloqueado('monto_gastos'), true)
+    || igual('moneda_gastos bloqueado', bloqueado('moneda_gastos'), true)
+    || igual('el resto del contrato del motor, bloqueado', ['fecha_incidente', 'protesta', 'segmentos', 'billete_unico', 'checkin_presentacion'].every(bloqueado), true)
+    /* Y lo que NO es del dominio legal sigue editándose por el genérico: la denylist es
+       chica y explícita, no un portón. */
+    || igual('nombre editable', bloqueado('nombre'), false)
+    || igual('aerolinea editable', bloqueado('aerolinea'), false)
+    || igual('origen (label de display) editable', bloqueado('origen'), false)
+    || igual('horas_retraso legacy editable', bloqueado('horas_retraso'), false)
+    || igual('gastos_detalle editable', bloqueado('gastos_detalle'), false);
 });
 
 /* Los valores que la base TIENE, no los que debería tener. Salieron de un GROUP BY sobre

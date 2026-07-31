@@ -31,6 +31,7 @@ import {
   INSTANCIAS_VALIDAS, MOMENTOS_VALIDOS, RESULTADOS_VALIDOS, MONEDAS_VALIDAS,
 } from './_utils/instancias.js';
 import { notificarCambioEtapa } from './_utils/notify-agencia.js';
+import { CAMPOS_DOMINIO_LEGAL } from './_utils/intake.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -685,11 +686,13 @@ export default async function handler(req, res) {
     /* documento_tipo/documento_numero excluidos a propósito: son un espejo de
        documentos[0] y patchearlos acá directo desincroniza el array. Usar la
        acción set-documentos para eso. */
+    /* `tipo_incidencia`, `monto_gastos` y `moneda_gastos` salieron de esta lista: son del
+       dominio legal y viven en CAMPOS_DOMINIO_LEGAL. Los dos de gastos son el espejo
+       derivado de `gastos_items` y editarlos sueltos los desincronizaba del itemizado. */
     var CAMPOS_EDITABLES = [
       'nombre', 'email', 'telefono', 'pnr',
       'aerolinea', 'vuelo_nro', 'fecha_vuelo', 'origen', 'destino',
-      'tipo_incidencia', 'causa_informada', 'horas_retraso',
-      'moneda_gastos', 'monto_gastos', 'gastos_detalle',
+      'causa_informada', 'horas_retraso', 'gastos_detalle',
       'cuil', 'fecha_nacimiento', 'domicilio_real', 'pais_emisor', 'id_fiscal_extranjero',
       'agente_nombre', 'agente_email', 'monto_reclamado', 'monto_acordado',
       'anticipacion_aviso', 'ofrecimiento_aerolinea', 'viajo_finalmente', 'embarque_presentado',
@@ -699,6 +702,14 @@ export default async function handler(req, res) {
 
     if (body.action === 'set-campo') {
       var campo = (body.campo || '').trim();
+      /* Un dominio, un escritor: las columnas del contrato del motor las gobierna
+         `set-datos-legales`, que valida contra el dominio y deriva. Este editor es texto
+         libre y no deriva nada, así que acá se bloquean antes que nada — el chequeo va
+         primero para que el mensaje diga a dónde ir, en vez del genérico de más abajo.
+         Ver 6bis.3 en docs/motor-capa1-pendientes-legales.md. */
+      if (CAMPOS_DOMINIO_LEGAL.indexOf(campo) !== -1) {
+        return res.status(400).json({ error: 'Este campo se edita desde el editor de datos legales del caso.' });
+      }
       if (CAMPOS_EDITABLES.indexOf(campo) === -1) return res.status(400).json({ error: 'Campo no editable: ' + campo });
       var valor = body.valor;
       var scfPatch = {};

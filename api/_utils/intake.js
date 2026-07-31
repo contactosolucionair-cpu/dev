@@ -86,6 +86,37 @@ export function normalizarDireccionSugerida(raw, segmentos) {
 /* ------------------------------------------------------------------ */
 
 /**
+ * Columnas del DOMINIO LEGAL: las escribe `set-datos-legales` y solo él.
+ *
+ * `set-campo` (el editor genérico del drawer) es un input de texto libre que persiste lo
+ * que el operador tipea y no deriva nada. Dejarlo tocar estas columnas producía DOS
+ * escritores con semánticas distintas sobre el mismo dato — el que valida contra el
+ * dominio y deriva, y el que escribe cualquier string— que es la anatomía exacta del
+ * defecto 6bis.3 (ver `docs/motor-capa1-pendientes-legales.md`): editar
+ * `tipo_incidencia` a mano dejaba `incidentes` sin actualizar, y gana el segundo porque es
+ * el que lee el motor.
+ *
+ * La regla es **un dominio, un escritor**. El editor de datos legales del drawer ya valida
+ * y deriva bien; el genérico rechaza estos campos con un error que dice a dónde ir.
+ *
+ * Dos grupos:
+ *  - Lo que `set-datos-legales` escribe (contrato de entrada del motor, §1.2).
+ *  - Las columnas legacy de las que se DERIVA `incidentes`: cambiarlas por afuera
+ *    desincroniza el campo crítico que el motor consume.
+ */
+export var CAMPOS_DOMINIO_LEGAL = [
+  /* Contrato de entrada del motor */
+  'incidentes', 'fecha_incidente', 'demora_salida_min', 'demora_llegada_min',
+  'antelacion_aviso_dias', 'billete_unico', 'causa_alegada', 'origen_iata', 'destino_iata',
+  'checkin_presentacion', 'protesta', 'reencaminamiento', 'atencion_ofrecida', 'segmentos',
+  /* `gastos_items` es el canónico; monto/moneda son su espejo derivado y se reescriben en
+     el mismo PATCH. Editarlos sueltos los desincroniza del itemizado. */
+  'gastos_items', 'monto_gastos', 'moneda_gastos',
+  /* Fuentes de la derivación de `incidentes` */
+  'tipo_incidencia', 'tipo_reclamo', 'tipo_caso_equipaje',
+];
+
+/**
  * Clave de comparación para un valor de DOMINIO CERRADO: minúsculas, sin acentos, sin
  * espacios de más.
  *

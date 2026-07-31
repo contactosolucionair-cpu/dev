@@ -369,7 +369,7 @@ crítico, análisis degradado, y ningún síntoma visible durante meses.
 4. Los tests de un mapeo cubren el **dominio observado**, no el teórico: ver
    `tests/intake.test.js` → "las variantes REALES de la base".
 
-### 6bis.3 `set-campo` escribe `tipo_incidencia` libre y no re-deriva `incidentes` — **ABIERTO** · deuda de este ciclo
+### 6bis.3 `set-campo` escribía `tipo_incidencia` libre y no re-derivaba `incidentes` — **RESUELTO** (31-jul-2026, por bloqueo)
 *Origen: mini-ciclo Ruleset IV-B, 31-jul-2026 · `api/update-ticket.js:691` + `backoffice.html:618`*
 
 Rastreando de dónde salían las etiquetas capitalizadas de 6bis.2 apareció el camino, y son
@@ -389,11 +389,29 @@ dos defectos encadenados:
 que no deriva nada. `migration_016` tampoco cubre esto: solo llena conjuntos **vacíos**, así
 que repara el daño histórico pero no una contradicción futura entre las dos columnas.
 
-**Fix propuesto** (contenido, ~10 líneas en `set-campo`): al editar `tipo_incidencia`,
-normalizar con `claveDominio()` antes de persistir y re-derivar `incidentes` **solo si está
-vacío** — mismo criterio conservador que la migración, para no pisar lo que un humano haya
-cargado en el editor de datos legales. Alternativa más de fondo: que el editor genérico
-sirva un `<select>` para los campos de dominio cerrado, en vez de texto libre.
+**Decisión (JPA, 31-jul-2026): se cierra por BLOQUEO, no por normalización.** `set-campo`
+rechaza los campos del dominio legal con un error explícito —*"Este campo se edita desde el
+editor de datos legales del caso"*— vía la denylist `CAMPOS_DOMINIO_LEGAL` de
+`api/_utils/intake.js`, y el backoffice dejó de ofrecerlos en el selector del editor
+genérico.
+
+Se descartaron expresamente las dos alternativas que parecían más suaves:
+
+- **Normalizar y re-derivar dentro de `set-campo`** dejaría dos escritores con semánticas
+  distintas sobre las mismas columnas. Esa convivencia *es* el problema, no su síntoma: la
+  misma clase de defecto que el ciclo de instancias vino a desarmar. **Un dominio, un
+  escritor.**
+- **Servir un `<select>` de dominio cerrado en el editor genérico** no hace falta si el
+  campo directamente no se edita por ahí.
+
+Alcance del bloqueo: lo que escribe `set-datos-legales` (contrato de entrada del motor) más
+las columnas legacy de las que se deriva `incidentes`. **Cambio visible para el operador:**
+`tipo_incidencia`, `monto_gastos` y `moneda_gastos` salieron del editor genérico. Los dos
+de gastos eran el espejo derivado de `gastos_items` y el propio contrato ya decía que no se
+editan directo; ahora el código lo hace cumplir. Test: `tests/intake.test.js` → "el dominio
+legal es del editor de datos legales, no del genérico", que también verifica que la
+denylist siga siendo chica —nombre, aerolínea, origen de display y los legacy siguen
+editándose por el genérico.
 
 ---
 

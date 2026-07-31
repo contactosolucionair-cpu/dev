@@ -980,8 +980,11 @@
       {campo:'__acompanantes__',label:'Acompañantes (agregar / editar / eliminar)'},
       {campo:'pnr',label:'PNR'},{campo:'aerolinea',label:'Aerolínea'},{campo:'vuelo_nro',label:'Número de vuelo'},
       {campo:'fecha_vuelo',label:'Fecha del vuelo'},{campo:'origen',label:'Origen'},{campo:'destino',label:'Destino'},
-      {campo:'tipo_incidencia',label:'Tipo de incidencia'},{campo:'causa_informada',label:'Causa informada'},{campo:'horas_retraso',label:'Horas de retraso'},
-      {campo:'moneda_gastos',label:'Moneda de gastos'},{campo:'monto_gastos',label:'Monto de gastos'},{campo:'gastos_detalle',label:'Detalle de gastos'},
+      /* Tipo de incidencia y los montos de gastos NO están acá: son del dominio legal y se
+         editan en "Datos legales del caso", que valida contra el dominio y deriva
+         `incidentes`. El server los rechaza igual (CAMPOS_DOMINIO_LEGAL). */
+      {campo:'causa_informada',label:'Causa informada'},{campo:'horas_retraso',label:'Horas de retraso'},
+      {campo:'gastos_detalle',label:'Detalle de gastos'},
       {campo:'cuil',label:'CUIT/CUIL'},{campo:'fecha_nacimiento',label:'Fecha de nacimiento (AAAA-MM-DD)'},{campo:'domicilio_real',label:'Domicilio real'},
       {campo:'pais_emisor',label:'País emisor (pasaporte)'},{campo:'id_fiscal_extranjero',label:'Identificación fiscal extranjera'},
       {campo:'agente_nombre',label:'Nombre del agente'},{campo:'agente_email',label:'Email del agente'},
