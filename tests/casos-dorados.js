@@ -84,7 +84,17 @@ export var CASOS = [
         'RES1532.compensacion_tarifada': 'NO_APLICA',
       },
       nodos_eval_incluye: ['causa_disrupcion'],
-      prescripcion: { RES1532: { tipo: 'firme', plazo: '1 año' } },
+      /* El criterio legal validado es el PLAZO y su tipo: 1 año, firme, régimen argentino.
+         `fecha_limite` y `vencida` son consecuencia aritmética determinista de ese plazo
+         —un año corrido desde el 10-may-2024, contra el `hoy` fijo del runner— y
+         transcribir la consecuencia de un criterio validado no es autoría legal.
+
+         Que el caso salga vencido es fiel, no un defecto del fixture: un caso IV-A tiene
+         por definición fecha anterior al 10-oct-2024, así que con el `hoy` del runner en
+         2026 la prescripción doméstica de 1 año ya corrió. La v2.2 lo dice: "los
+         domésticos pre-809 ya prescribieron". Asertarlo es lo que impide que el dorado
+         quede verde describiendo un caso prescripto sin decirlo. */
+      prescripcion: { RES1532: { tipo: 'firme', plazo: '1 año', fecha_limite: '2025-05-10', vencida: true } },
     },
   },
 

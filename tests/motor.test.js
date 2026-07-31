@@ -567,6 +567,67 @@ var UNITARIOS = [
     },
   },
   {
+    /* Aritmética de la prescripción. Nada de criterio legal acá: el plazo y su punto de
+       arranque los fija el documento; esto verifica que la CONSECUENCIA aritmética sea
+       coherente y que el cómputo del Reglamento (exclusión del dies a quo) esté aplicado.
+       Sin esto, un caso dorado puede estar prescripto hace más de un año y el test no se
+       entera, porque `vencida` y `dias_restantes` no están en ningún `esperado`. */
+    nombre: 'prescripción: vencida y dias_restantes son coherentes con fecha_limite y hoy',
+    correr: function () {
+      var fila = {
+        origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+        incidentes: ['demora'], demora_salida_min: 300, fecha_incidente: '2024-05-10',
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      };
+      var caso = norm(fila);
+      function presc(hoy) {
+        var a = analizar(caso, seleccionarRuleset(caso.fecha_incidente), hoy);
+        return a.marcos.filter(function (m) { return m.marco === 'RES1532'; })[0].prescripcion;
+      }
+      var limite = presc('2024-05-11').fecha_limite;
+      var antes = presc('2025-04-10');   // un mes antes del vencimiento
+      var justo = presc(limite);         // el último día
+      var despues = presc('2025-06-10'); // un mes después
+
+      return igual('la fecha límite no depende de hoy', presc('2030-01-01').fecha_limite, limite)
+        /* Pin 5: días corridos, vencimiento a las 24:00 del ÚLTIMO día. El día del
+           vencimiento todavía no está vencido. */
+        || igual('antes: no vencida', antes.vencida, false)
+        || igual('antes: dias_restantes = distancia real a la fecha límite', antes.dias_restantes, diasCorridos('2025-04-10', limite))
+        || igual('el último día: 0 días restantes', justo.dias_restantes, 0)
+        || igual('el último día: todavía NO vencida (24:00 del último día)', justo.vencida, false)
+        || igual('después: vencida', despues.vencida, true)
+        || igual('después: dias_restantes negativo', despues.dias_restantes < 0, true);
+    },
+  },
+  {
+    /* Exclusión del dies a quo (Anexo I Art. 1, def. DÍAS): en IV-B el plazo arranca al día
+       SIGUIENTE del hecho, así que la fecha límite corre exactamente un día respecto del
+       mismo cómputo bajo la 1532. Para aislar esa única variable se corre el MISMO caso
+       —misma fecha de incidente— contra los dos rulesets, pasando el ruleset a mano. La
+       combinación es deliberadamente sintética: sirve para medir el corrimiento, no para
+       afirmar que un incidente post-809 pueda juzgarse con la norma derogada. */
+    nombre: 'prescripción: la exclusión del dies a quo corre la fecha límite un día en IV-B',
+    correr: function () {
+      var fila = {
+        origen_iata: 'AEP', destino_iata: 'COR', aerolinea: 'Aerolíneas Argentinas',
+        incidentes: ['demora'], demora_salida_min: 300, fecha_incidente: '2025-03-01',
+        billete_unico: true, checkin_presentacion: 'en_hora',
+      };
+      var caso = norm(fila);
+      function limiteCon(version, marco) {
+        var rs = seleccionarRuleset(version === '2026-06-19' ? '2024-10-09' : '2024-10-10');
+        var a = analizar(caso, rs, HOY);
+        var m = a.marcos.filter(function (x) { return x.marco === marco; })[0];
+        return m.prescripcion.fecha_limite;
+      }
+      var iva = limiteCon('2026-06-19', 'RES1532');
+      var ivb = limiteCon('2024-10-10', 'REGL809');
+      return igual('IV-A: un año exacto desde el hecho', iva, sumarAnios('2025-03-01', 1))
+        || igual('IV-B: un día más', diasCorridos(iva, ivb), 1);
+    },
+  },
+  {
     /* D3: en un billete redondo el destino contractual es el PUNTO DE PARTIDA, no el
        último aeropuerto. Es lo que decide el foro, y es un plano distinto del de la
        dirección afectada, que sigue siendo la unidad de la admisibilidad. */
