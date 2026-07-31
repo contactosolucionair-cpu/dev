@@ -128,11 +128,10 @@ function extremos(segs) {
 }
 
 async function main() {
-  if (!SB_URL || !SB_KEY) {
-    console.error('Faltan SB_URL / SB_KEY (o SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).');
-    process.exit(1);
-  }
-  validarSbUrl(SB_URL);
+  /* Los dos argumentos, y se toma el valor de vuelta: el validador chequea que la clave
+     esté y devuelve la URL normalizada sin barra final. Llamarlo con uno solo lo hacía
+     morir con "faltan las variables" aunque estuvieran las dos. */
+  SB_URL = validarSbUrl(SB_URL, SB_KEY);
 
   var refs = CASOS.map(function (c) { return c.ref; });
   var url = SB_URL + '/rest/v1/reclamos?ref_code=in.(' + refs.join(',') + ')'
