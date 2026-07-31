@@ -62,24 +62,24 @@ var CASOS = [
 
   /* Ida y vuelta sin escalas, con la vuelta saliendo por OTRO aeropuerto de la misma
      ciudad (AEP a la ida, EZE a la vuelta) — el caso que motivó medio ciclo de trabajo.
-     PENDIENTE: cuál de los dos tramos se canceló. Define la dirección analizada. */
+     Se canceló la IDA, así que la dirección analizada es BRC→AEP. */
   {
     ref: 'CSA081',
-    pendiente: 'falta saber qué tramo se canceló (¿la ida BRC→AEP o la vuelta EZE→BRC?)',
     tramos: [
-      { o: 'BRC', d: 'AEP', afectado: false },
-      { o: 'EZE', d: 'BRC', afectado: false },
+      { o: 'BRC', d: 'AEP', afectado: true },
+      { o: 'EZE', d: 'BRC' },
     ],
   },
 
-  /* Tramo ida de un ida y vuelta europeo. Milán resuelto a MXP por JPA (el resolvedor
-     automático elegía LIN sin fundamento).
-     PENDIENTE: confirmar que "Barcelona" es BCN —hay otra Barcelona en Venezuela (BLA)— y
-     que la vuelta es MXP→BCN. Sin el segundo tramo el motor lo lee como solo-ida y el
-     destino contractual sale MXP en vez del punto de partida. */
+  /* Ida y vuelta europeo con el incidente en la ida. Los dos extremos los resolvió JPA: el
+     resolvedor automático elegía LIN entre los tres aeropuertos de Milán sin fundamento, y
+     "Barcelona" quedaba ambiguo contra la Barcelona de Venezuela (BLA).
+     SUPUESTO: la vuelta es simétrica, MXP→BCN. No está confirmado que el regreso haya
+     salido de Malpensa; si fue Linate o Bérgamo, cambia este tramo y nada más — el par
+     canónico sale de la dirección afectada (BCN→MXP) y el destino contractual de un
+     redondo es el punto de partida (BCN) en cualquier caso. */
   {
     ref: 'AA003',
-    pendiente: 'falta confirmar BCN como origen y el tramo de vuelta MXP→BCN',
     tramos: [
       { o: 'BCN', d: 'MXP', afectado: true },
       { o: 'MXP', d: 'BCN' },
