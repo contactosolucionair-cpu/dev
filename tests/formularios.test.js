@@ -117,6 +117,14 @@ console.log('\n\x1b[1mbackoffice.html\x1b[0m');
   q3.cambiar('nc-escalas', 'no');
   chk(!q3.visible('nc-armador'), 'sin escalas → oculto');
 
+  console.log('  \x1b[2m-- ventana del motor legal --\x1b[0m');
+  /* El contenido lo arma `abrirMotorLegal()` con un caso concreto, así que acá solo se
+     verifica el contenedor: que exista, que arranque cerrado y que arranque vacío. Que el
+     editor y el análisis se pinten bien adentro se prueba a mano sobre un caso. */
+  ['ml-ov', 'ml-body', 'ml-close'].forEach(function (id) { chk(q3.$(id) !== null, 'existe #' + id); });
+  chk(!q3.$('ml-ov').classList.contains('open'), 'la ventana arranca cerrada');
+  chk(q3.$('ml-body').innerHTML.trim() === '', 'y vacía: el render cuesta ~370 líneas y se paga al abrir, no al mirar el caso');
+
   console.log('  \x1b[2m-- vuelta a solo ida --\x1b[0m');
   q3.cambiar('nc-tipo-viaje', 'solo_ida');
   chk(q3.val('nc-direccion') === '', 'limpia el valor');

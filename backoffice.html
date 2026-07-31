@@ -633,6 +633,19 @@
       </div>
     </div>
 
+    <!-- Motor legal. Vive en su propia ventana porque son ~370 líneas de render entre el
+         editor de datos legales y el análisis: tenerlo siempre abierto en el drawer
+         enterraba el resto del caso. El drawer deja una línea de resumen y este botón. -->
+    <div class="cm-ov" id="ml-ov">
+      <div class="cm" style="max-width:860px;max-height:92vh;overflow-y:auto;text-align:left">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div class="cm__title" style="margin:0">Motor legal <span id="ml-ref" style="font-family:var(--fm);font-size:.7rem;color:var(--t4);font-weight:400"></span></div>
+          <button class="detail__close" id="ml-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div id="ml-body"></div>
+      </div>
+    </div>
+
     <!-- Monto obligatorio al reclamar a la aerolínea / alcanzar un acuerdo -->
     <div class="cm-ov" id="monto-ov">
       <div class="cm" style="max-width:380px;text-align:left">
@@ -1583,6 +1596,33 @@
     }
 
     /* ---- Sección 2: render de la salida del motor ---- */
+    /* Lo único del motor legal que se ve sin abrir nada: en qué estado está el análisis y
+       el botón para entrar. Si no hay análisis lo dice, que es distinto de que no haya
+       nada que analizar. */
+    function renderMotorLegalResumenHtml(c){
+      var env=c.analisis_legal&&typeof c.analisis_legal==='object'?c.analisis_legal:null;
+      var a=env&&env.actual?env.actual:null;
+      var h='<div class="detail__section" id="motor-legal-resumen">';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">';
+      h+='<div style="min-width:0"><div class="detail__label" style="margin-bottom:2px">Motor legal</div>';
+      if(a){
+        var marcos=(a.resumen&&a.resumen.marcos_activos)||[];
+        var recl=(a.resumen&&a.resumen.categorias_reclamables)||0;
+        h+='<div style="font-size:.74rem;color:var(--t2)">'+recl+' categoría'+(recl===1?'':'s')+' reclamable'+(recl===1?'':'s');
+        if(marcos.length)h+=' · '+esc(marcos.map(function(m){return MARCO_LABELS[m]||m}).join(' · '));
+        h+='</div>';
+        h+='<div style="font-family:var(--fm);font-size:.62rem;color:var(--t4);margin-top:1px">'+fmtFechaHora(a.fecha_analisis);
+        if(a.provisional)h+=' · <span style="color:var(--warn)">provisional</span>';
+        h+='</div>';
+      } else {
+        h+='<div style="font-size:.74rem;color:var(--t4)">Sin análisis todavía</div>';
+      }
+      h+='</div>';
+      h+='<button class="btn btn--primary" id="btn-motor-legal" type="button" style="font-size:.72rem;padding:5px 14px;flex-shrink:0">Abrir motor legal</button>';
+      h+='</div></div>';
+      return h;
+    }
+
     function renderAnalisisLegalHtml(c){
       var env=c.analisis_legal&&typeof c.analisis_legal==='object'?c.analisis_legal:null;
       var a=env&&env.actual?env.actual:null;
@@ -1759,6 +1799,34 @@
     }
 
     /* Engancha las dos secciones nuevas. Se llama después de pintar el drawer. */
+    /* El botón del drawer: arma la ventana con el editor y el análisis, y recién ahí
+       cablea. Se pinta al abrir y no antes, así el drawer no paga el render de ~370
+       líneas cada vez que alguien mira un caso. */
+    function wireMotorLegalBoton(c){
+      var btn=document.getElementById('btn-motor-legal');
+      if(btn)btn.addEventListener('click',function(){abrirMotorLegal(c)});
+    }
+
+    function abrirMotorLegal(c){
+      var body=document.getElementById('ml-body');
+      var ov=document.getElementById('ml-ov');
+      if(!body||!ov)return;
+      var ref=document.getElementById('ml-ref');
+      if(ref)ref.textContent=c.ref_code||'';
+      body.innerHTML=renderDatosLegalesHtml(c)+'<div class="detail__divider"></div>'+renderAnalisisLegalHtml(c);
+      wireMotorLegal(c);
+      ov.classList.add('open');
+    }
+
+    /* El resumen del drawer queda atrás cuando se analiza desde la ventana: se repinta y
+       se vuelve a cablear, porque reemplazar el nodo se lleva puesto el listener. */
+    function refrescarResumenMotorLegal(c){
+      var res=document.getElementById('motor-legal-resumen');
+      if(!res)return;
+      res.outerHTML=renderMotorLegalResumenHtml(c);
+      wireMotorLegalBoton(c);
+    }
+
     function wireMotorLegal(c){
       /* --- editor --- */
       var toggle=document.getElementById('dl-toggle'),cuerpo=document.getElementById('dl-cuerpo');
@@ -1824,6 +1892,7 @@
              queda intacto, así no se pierde nada de lo que haya tipeado abajo. */
           var cajaAn=document.getElementById('analisis-legal-box');
           if(cajaAn){cajaAn.outerHTML=renderAnalisisLegalHtml(c);wireAnalisisLegal(c)}
+          refrescarResumenMotorLegal(c);
           toast('Datos legales guardados.');
         }).catch(function(){guardar.disabled=false;if(msg){msg.style.color='var(--err)';msg.textContent='Error de conexión.'}});
       });
@@ -1860,6 +1929,7 @@
             cajaAct.outerHTML=renderAnalisisLegalHtml(c);
             wireAnalisisLegal(c);
           }
+          refrescarResumenMotorLegal(c);
           if(d.guardado===false)toast('Análisis hecho, pero no se pudo guardar: '+(d.error_guardado||''),true);
           else toast('Análisis actualizado.');
         }).catch(function(){
@@ -2056,13 +2126,12 @@
       }
       h+='</div>'; /* section gestión */
 
-      /* Motor legal Capa 1: dos secciones NUEVAS, aditivas. En un caso viejo sin datos
-         nuevos el resto del drawer se ve igual que siempre; acá aparece el editor
-         colapsado y un análisis lleno de FALTA_DATO. */
+      /* Motor legal Capa 1: en el drawer queda SOLO el resumen y el botón. El editor de
+         datos legales y el análisis completo viven en su propia ventana (#ml-ov): son
+         ~370 líneas de render y tenerlas siempre desplegadas enterraba el resto del caso,
+         que es lo que se mira el 90 % de las veces que se abre un expediente. */
       h+='<div class="detail__divider"></div>';
-      h+=renderDatosLegalesHtml(c);
-      h+='<div class="detail__divider"></div>';
-      h+=renderAnalisisLegalHtml(c);
+      h+=renderMotorLegalResumenHtml(c);
 
       /* Historial de instancias (timestamps) */
       var hist=Array.isArray(c.instancia_historial)?c.instancia_historial:[];
@@ -2140,8 +2209,8 @@
 
       detailBody.innerHTML=h;
 
-      /* Secciones nuevas del motor legal (editor + análisis) */
-      wireMotorLegal(c);
+      /* Motor legal: el drawer solo cablea el botón que abre la ventana. */
+      wireMotorLegalBoton(c);
 
       /* Signed URL buttons (Supabase Storage) */
       detailBody.querySelectorAll('[data-path]').forEach(function(btn){
@@ -3941,6 +4010,13 @@
     if(editcampoClose)editcampoClose.addEventListener('click',function(){editcampoOv.classList.remove('open')});
     if(editcampoCancel)editcampoCancel.addEventListener('click',function(){editcampoOv.classList.remove('open')});
     if(editcampoOv)editcampoOv.addEventListener('click',function(e){if(e.target===editcampoOv)editcampoOv.classList.remove('open')});
+
+    /* Motor legal: mismo patrón que el resto de las ventanas. El contenido lo arma
+       `abrirMotorLegal()` cada vez, así que cerrar no necesita limpiar nada. */
+    var mlOv=document.getElementById('ml-ov');
+    var mlClose=document.getElementById('ml-close');
+    if(mlClose)mlClose.addEventListener('click',function(){mlOv.classList.remove('open')});
+    if(mlOv)mlOv.addEventListener('click',function(e){if(e.target===mlOv)mlOv.classList.remove('open')});
 
     var btnSaveCampo=document.getElementById('btn-save-campo');
     var inpCampoVal=document.getElementById('edit-campo-val');
