@@ -133,6 +133,26 @@ async function main() {
      morir con "faltan las variables" aunque estuvieran las dos. */
   SB_URL = validarSbUrl(SB_URL, SB_KEY);
 
+  var cab = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+
+  /* Pre-flight: que las columnas que se van a escribir EXISTAN. Este script falló ocho
+     veces seguidas mandando `itinerario_fuente`, que parece columna porque los formularios
+     la mandan en el payload, pero es la procedencia con la que se etiquetan los candidatos
+     de `datos_extraidos`. El `--dry-run` no lo detectó porque no toca el camino de
+     escritura: un ensayo que nunca arma el PATCH no puede validarlo. Ahora sí. */
+  var COLUMNAS_PATCH = ['origen_iata', 'destino_iata', 'segmentos'];
+  var muestraRes = await fetch(SB_URL + '/rest/v1/reclamos?select=*&limit=1', { headers: cab });
+  if (!muestraRes.ok) { console.error('Error al leer el esquema:', await muestraRes.text()); process.exit(1); }
+  var muestra = await muestraRes.json();
+  if (muestra.length) {
+    var inexistentes = COLUMNAS_PATCH.filter(function (c) { return !(c in muestra[0]); });
+    if (inexistentes.length) {
+      console.error('\n[backfill-ruta] Estas columnas no existen en `reclamos`: ' + inexistentes.join(', ')
+        + '\n      El PATCH las rechazaría entero. Corregí COLUMNAS_PATCH y el objeto `patch`.\n');
+      process.exit(1);
+    }
+  }
+
   var refs = CASOS.map(function (c) { return c.ref; });
   var url = SB_URL + '/rest/v1/reclamos?ref_code=in.(' + refs.join(',') + ')'
     + '&select=id,ref_code,origen,destino,origen_iata,destino_iata,segmentos,fecha_incidente';
@@ -165,13 +185,13 @@ async function main() {
 
     var segs = armarSegmentos(caso, fila.fecha_incidente);
     var ext = extremos(segs);
+    /* Solo columnas reales. `itinerario_fuente` NO es una: es la etiqueta de procedencia
+       con la que los endpoints marcan los candidatos de `datos_extraidos`, y mandarla en
+       el PATCH hacía que PostgREST rechazara la fila entera. */
     var patch = {
       origen_iata: ext.origen_iata,
       destino_iata: ext.destino_iata,
       segmentos: segs,
-      /* La ruta salió del texto libre que declaró el pasajero o la agencia, interpretado
-         a mano: no es un adjunto ni una API de vuelos. */
-      itinerario_fuente: 'declaracion_pasajero',
     };
 
     console.log('  → ' + caso.ref + ': "' + (fila.origen || '—') + '" / "' + (fila.destino || '—') + '"'
