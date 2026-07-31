@@ -2,11 +2,11 @@
 --
 -- Corrido el: ____________  (completar al ejecutar, como en migration_001)
 --
--- ---------------------------------------------------------------------------
+-- ===========================================================================
 -- POR QUÉ
--- ---------------------------------------------------------------------------
+-- ===========================================================================
 -- `migration_015` derivó `incidentes` desde `tipo_incidencia` con un CASE por igualdad
--- exacta contra valores en minúscula. La base, en cambio, tiene etiquetas de interfaz:
+-- exacta contra los valores en minúscula. La base, en cambio, tiene etiquetas de interfaz:
 -- 'Reprogramación', 'Denegación Embarque', 'Cancelación', 'Demora'. Esas filas no
 -- matchearon ninguna rama del CASE y quedaron con `incidentes = '[]'`.
 --
@@ -23,44 +23,56 @@
 --   CSA081  Cancelación           2026-06-01      CSA084  Cancelación           2026-06-12
 --   CSA086  Demora                2026-06-12      CSA085  Demora                2026-06-22
 --
--- El camino de escritura ya quedó tapado en el mismo ciclo: `derivarIncidentes()` de
--- `api/_utils/intake.js` normaliza (minúsculas, sin acentos, espacios colapsados) y tiene
--- unitarios con las variantes reales. Sin eso, este backfill sería una foto.
+-- Los dos caminos de escritura ya quedaron cerrados en el mismo ciclo: `derivarIncidentes()`
+-- normaliza en el alta (`api/_utils/intake.js`), y el editor genérico del drawer dejó de
+-- poder tocar el dominio legal (denylist `CAMPOS_DOMINIO_LEGAL`, ítem 6bis.3 del registro
+-- de pendientes). Sin eso, este backfill sería una foto y no una reparación.
 --
 -- Incluye la errata D1 de la v2.2: una reprogramación con `fecha_incidente >= 2024-10-10`
 -- deriva al tipo propio `reprogramacion` (Art. 42 del Reglamento Dec. 809/2024); una
 -- anterior conserva el mapeo v2.1.1 a `cancelacion`, que es el correcto para su vigencia.
 --
--- ---------------------------------------------------------------------------
--- CÓMO CORRERLA
--- ---------------------------------------------------------------------------
--- Todo el bloque va en una sola transacción. Se ejecuta hasta el SELECT de verificación,
--- se comparan los números con los esperados de abajo y recién ahí se descomenta COMMIT.
--- Si no coinciden: ROLLBACK y reportar. Es idempotente: una segunda corrida no encuentra
--- filas vacías y no mueve nada.
+-- ===========================================================================
+-- CÓMO CORRERLA — cuatro bloques, cada uno se pega ENTERO y se ejecuta de una
+-- ===========================================================================
+-- Una transacción NO sobrevive entre dos ejecuciones del SQL Editor: cada "Run" toma una
+-- conexión nueva del pool, así que un BEGIN sin COMMIT en la misma tanda se descarta. Por
+-- eso el "mirar antes de confirmar" se hace corriendo el UPDATE dos veces: primero con
+-- ROLLBACK (ejecuta de verdad y lo deshace) y después idéntico con COMMIT.
+--
+--   BLOQUE 1  control de población ANTES        · solo lee
+--   BLOQUE 2  ensayo: UPDATE + control, ROLLBACK · no deja nada
+--   BLOQUE 3  igual al 2 pero con COMMIT         · escribe
+--   BLOQUE 4  las ocho filas, ya commiteadas     · solo lee
+--
+-- Si el editor muestra un solo resultado por corrida, el que importa es el ÚLTIMO SELECT,
+-- que es el control de población.
 
-BEGIN;
 
--- ---------------------------------------------------------------------------
--- 1. CONTROL DE POBLACIÓN — ANTES
--- ---------------------------------------------------------------------------
--- Población entera, no solo las filas que el UPDATE va a tocar. Un conteo dirigido que da
--- cero no distingue "no hay nada que corregir" de "la consulta miró donde no era"; esta
--- vista muestra las dos cosas a la vez.
-SELECT COALESCE(tipo_incidencia, '(null)')                       AS tipo_incidencia,
-       count(*)                                                  AS filas,
-       count(*) FILTER (WHERE COALESCE(incidentes, '[]'::jsonb) = '[]'::jsonb) AS vacias,
+-- ===========================================================================
+-- BLOQUE 1 — CONTROL DE POBLACIÓN, ANTES  (solo lee)
+-- ===========================================================================
+-- La población entera, no solo las filas que el UPDATE va a tocar. Un conteo dirigido que
+-- da cero no distingue "no hay nada que corregir" de "la consulta miró donde no era" —
+-- exactamente lo que pasó con el primer dry-run de la errata D1.
+
+SELECT COALESCE(tipo_incidencia, '(null)')                                  AS tipo_incidencia,
+       count(*)                                                             AS filas,
+       count(*) FILTER (WHERE COALESCE(incidentes, '[]'::jsonb) =  '[]'::jsonb) AS vacias,
        count(*) FILTER (WHERE COALESCE(incidentes, '[]'::jsonb) <> '[]'::jsonb) AS derivadas
 FROM reclamos
 WHERE deleted_at IS NULL
 GROUP BY 1
 ORDER BY filas DESC;
 
--- ---------------------------------------------------------------------------
--- 2. BACKFILL
--- ---------------------------------------------------------------------------
--- Solo filas con el conjunto VACÍO: una edición humana en el drawer nunca se pisa, y de
--- ahí sale la idempotencia. La normalización replica la de `claveDominio()` en JS.
+
+-- ===========================================================================
+-- BLOQUE 2 — ENSAYO  (ejecuta el UPDATE y lo deshace: no deja nada)
+-- ===========================================================================
+-- Pegar desde BEGIN hasta ROLLBACK inclusive y ejecutar de una sola vez.
+
+BEGIN;
+
 UPDATE reclamos SET incidentes = (
   CASE WHEN COALESCE(lower(trim(tipo_reclamo)), 'vuelo') IN ('vuelo', 'vuelo_equipaje') THEN
     CASE lower(regexp_replace(trim(translate(tipo_incidencia,
@@ -72,7 +84,76 @@ UPDATE reclamos SET incidentes = (
       WHEN 'denegacion embarque'    THEN '["denegacion_embarque"]'::jsonb
       WHEN 'denegacion de embarque' THEN '["denegacion_embarque"]'::jsonb
       -- Errata D1: el tipo propio existe desde la entrada en vigor del Dec. 809/2024.
-      -- Sin fecha no se decide la vigencia, así que no se deriva nada (ver esperados).
+      -- Sin fecha no se puede decidir la vigencia, así que no se deriva nada.
+      WHEN 'reprogramacion' THEN
+        CASE WHEN fecha_incidente >= DATE '2024-10-10' THEN '["reprogramacion"]'::jsonb
+             WHEN fecha_incidente IS NOT NULL          THEN '["cancelacion"]'::jsonb
+             ELSE '[]'::jsonb END
+      ELSE '[]'::jsonb
+    END
+  ELSE '[]'::jsonb END
+  ||
+  CASE WHEN lower(trim(tipo_reclamo)) IN ('equipaje', 'vuelo_equipaje') THEN
+    CASE lower(regexp_replace(trim(translate(tipo_caso_equipaje,
+           'ÁÉÍÓÚÜÑáéíóúüñ', 'AEIOUUNaeiouun')), '\s+', ' ', 'g'))
+      WHEN 'perdida' THEN '["equipaje_perdida"]'::jsonb
+      WHEN 'danio'   THEN '["equipaje_dano"]'::jsonb
+      WHEN 'dano'    THEN '["equipaje_dano"]'::jsonb
+      WHEN 'demora'  THEN '["equipaje_demora"]'::jsonb
+      ELSE '[]'::jsonb
+    END
+  ELSE '[]'::jsonb END
+)
+-- Solo conjuntos VACÍOS: una edición humana en el drawer nunca se pisa, y de ahí sale la
+-- idempotencia — una segunda corrida no encuentra nada que hacer.
+WHERE deleted_at IS NULL
+  AND COALESCE(incidentes, '[]'::jsonb) = '[]'::jsonb
+  AND (tipo_incidencia IS NOT NULL OR tipo_caso_equipaje IS NOT NULL);
+
+SELECT COALESCE(tipo_incidencia, '(null)')                                  AS tipo_incidencia,
+       count(*)                                                             AS filas,
+       count(*) FILTER (WHERE COALESCE(incidentes, '[]'::jsonb) =  '[]'::jsonb) AS vacias,
+       count(*) FILTER (WHERE COALESCE(incidentes, '[]'::jsonb) <> '[]'::jsonb) AS derivadas
+FROM reclamos
+WHERE deleted_at IS NULL
+GROUP BY 1
+ORDER BY filas DESC;
+
+ROLLBACK;
+
+
+-- ===========================================================================
+-- NÚMEROS ESPERADOS — comparar el bloque 2 contra el bloque 1
+-- ===========================================================================
+--   · `vacias` pasa a 0 en 'Reprogramación', 'Cancelación', 'Demora' y
+--     'Denegación Embarque'. Las de 'cancelacion', 'demora' y 'overbooking' en minúscula
+--     ya estaban derivadas y no se mueven.
+--   · `filas` por tipo: IDÉNTICO en los dos bloques. Total 19 invariante. Esta migración
+--     no crea, no borra y no reclasifica: solo llena un conjunto vacío.
+--   · Filas afectadas por el UPDATE = la suma de `vacias` del bloque 1 sobre tipos
+--     mapeables. Según el relevamiento del 31-jul-2026: 8.
+--
+-- Si el UPDATE mueve MÁS filas que esa suma, algo está mal en el WHERE: no correr el
+-- bloque 3 y reportar. El bloque 2 ya deshizo todo, así que no hay nada que limpiar.
+
+
+-- ===========================================================================
+-- BLOQUE 3 — DEFINITIVO  (idéntico al 2, pero commitea)
+-- ===========================================================================
+-- Correr SOLO si los números del bloque 2 coincidieron. Pegar desde BEGIN hasta COMMIT.
+
+BEGIN;
+
+UPDATE reclamos SET incidentes = (
+  CASE WHEN COALESCE(lower(trim(tipo_reclamo)), 'vuelo') IN ('vuelo', 'vuelo_equipaje') THEN
+    CASE lower(regexp_replace(trim(translate(tipo_incidencia,
+           'ÁÉÍÓÚÜÑáéíóúüñ', 'AEIOUUNaeiouun')), '\s+', ' ', 'g'))
+      WHEN 'cancelacion'            THEN '["cancelacion"]'::jsonb
+      WHEN 'demora'                 THEN '["demora"]'::jsonb
+      WHEN 'overbooking'            THEN '["denegacion_embarque"]'::jsonb
+      WHEN 'denegacion'             THEN '["denegacion_embarque"]'::jsonb
+      WHEN 'denegacion embarque'    THEN '["denegacion_embarque"]'::jsonb
+      WHEN 'denegacion de embarque' THEN '["denegacion_embarque"]'::jsonb
       WHEN 'reprogramacion' THEN
         CASE WHEN fecha_incidente >= DATE '2024-10-10' THEN '["reprogramacion"]'::jsonb
              WHEN fecha_incidente IS NOT NULL          THEN '["cancelacion"]'::jsonb
@@ -96,50 +177,39 @@ WHERE deleted_at IS NULL
   AND COALESCE(incidentes, '[]'::jsonb) = '[]'::jsonb
   AND (tipo_incidencia IS NOT NULL OR tipo_caso_equipaje IS NOT NULL);
 
--- ---------------------------------------------------------------------------
--- 3. CONTROL DE POBLACIÓN — DESPUÉS
--- ---------------------------------------------------------------------------
-SELECT COALESCE(tipo_incidencia, '(null)')                       AS tipo_incidencia,
-       count(*)                                                  AS filas,
-       count(*) FILTER (WHERE COALESCE(incidentes, '[]'::jsonb) = '[]'::jsonb) AS vacias,
+SELECT COALESCE(tipo_incidencia, '(null)')                                  AS tipo_incidencia,
+       count(*)                                                             AS filas,
+       count(*) FILTER (WHERE COALESCE(incidentes, '[]'::jsonb) =  '[]'::jsonb) AS vacias,
        count(*) FILTER (WHERE COALESCE(incidentes, '[]'::jsonb) <> '[]'::jsonb) AS derivadas
 FROM reclamos
 WHERE deleted_at IS NULL
 GROUP BY 1
 ORDER BY filas DESC;
 
--- Y las ocho filas, una por una, para verlas derivadas.
-SELECT ref_code, tipo_incidencia, fecha_incidente, incidentes
+COMMIT;
+
+
+-- ===========================================================================
+-- BLOQUE 4 — LAS OCHO FILAS, YA COMMITEADAS  (solo lee)
+-- ===========================================================================
+
+SELECT ref_code, tipo_incidencia, fecha_incidente, incidentes,
+       analisis_legal IS NOT NULL AS tiene_analisis
 FROM reclamos
 WHERE deleted_at IS NULL
   AND ref_code IN ('AA001','AA002','AA003','CSA081','CSA084','CSA085','CSA086','CSA087')
 ORDER BY ref_code;
 
--- ---------------------------------------------------------------------------
--- 4. NÚMEROS ESPERADOS — comparar antes de commitear
--- ---------------------------------------------------------------------------
---   · El UPDATE tiene que reportar exactamente tantas filas como `vacias` sumaba el
---     control ANTES sobre tipos mapeables. Según el relevamiento del 31-jul-2026: 8.
---   · Control DESPUÉS: `vacias` en 0 para 'Reprogramación', 'Cancelación', 'Demora' y
---     'Denegación Embarque'. Las filas de 'cancelacion', 'demora' y 'overbooking' en
---     minúscula ya estaban derivadas y no se mueven.
---   · `filas` por tipo: IDÉNTICO antes y después. Total 19 invariante. Esta migración no
---     crea, no borra y no reclasifica: solo llena un conjunto vacío.
---   · Las ocho del listado: `incidentes` no vacío. AA001 y AA002 con ["reprogramacion"]
---     —las dos son posteriores al 10-oct-2024—, AA003 con ["denegacion_embarque"],
---     CSA081 y CSA084 con ["cancelacion"], CSA085/086/087 con ["demora"].
---
--- Si algún número no coincide: ROLLBACK. En particular, si el UPDATE mueve MÁS filas que
--- las `vacias` del control ANTES, algo está mal en el WHERE y hay que frenar.
+-- Esperado: `incidentes` no vacío en las ocho. AA001 y AA002 con ["reprogramacion"] —las
+-- dos son posteriores al 10-oct-2024—, AA003 con ["denegacion_embarque"], CSA081 y CSA084
+-- con ["cancelacion"], CSA085/086/087 con ["demora"]. `tiene_analisis` sigue en false: eso
+-- lo resuelve el paso de abajo, no el SQL.
 
--- COMMIT;
--- ROLLBACK;
 
--- ---------------------------------------------------------------------------
--- 5. DESPUÉS DEL COMMIT (no es SQL)
--- ---------------------------------------------------------------------------
--- La migración habilita el análisis pero no lo corre: los ocho casos siguen con
--- `analisis_legal IS NULL`. Hay que apretar "Analizar caso" en el backoffice sobre cada
--- uno. Sirve además como verificación funcional del motor sobre casos reales de los dos
--- canales (AA* y CSA*), incluidas las dos reprogramaciones, que son los primeros casos
--- reales que van a ejercitar el Art. 42 del ruleset IV-B.
+-- ===========================================================================
+-- DESPUÉS DEL COMMIT (no es SQL)
+-- ===========================================================================
+-- La migración habilita el análisis pero no lo corre. Hay que apretar "Analizar caso" en
+-- el backoffice sobre cada uno de los ocho. Sirve además como verificación funcional del
+-- motor sobre casos reales de los dos canales, incluidas las dos reprogramaciones, que son
+-- los primeros casos reales que van a ejercitar el Art. 42 del ruleset IV-B.
