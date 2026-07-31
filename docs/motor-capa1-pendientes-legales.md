@@ -369,6 +369,32 @@ crítico, análisis degradado, y ningún síntoma visible durante meses.
 4. Los tests de un mapeo cubren el **dominio observado**, no el teórico: ver
    `tests/intake.test.js` → "las variantes REALES de la base".
 
+### 6bis.3 `set-campo` escribe `tipo_incidencia` libre y no re-deriva `incidentes` — **ABIERTO** · deuda de este ciclo
+*Origen: mini-ciclo Ruleset IV-B, 31-jul-2026 · `api/update-ticket.js:691` + `backoffice.html:618`*
+
+Rastreando de dónde salían las etiquetas capitalizadas de 6bis.2 apareció el camino, y son
+dos defectos encadenados:
+
+1. **El editor genérico de campos del drawer es texto libre.** `backoffice.html:618` es un
+   `<input>` sin dominio y `tipo_incidencia` está en la whitelist de `set-campo`
+   (`update-ticket.js:691`), así que lo que el operador tipea se guarda tal cual. De ahí
+   salen `'Demora'` y `'Cancelación'` en filas creadas por la API con hora real de carga
+   (CSA081, CSA085, CSA086): nacieron bien y se editaron a mano después.
+2. **`set-campo` no vuelve a derivar `incidentes`.** Aunque se tipee el valor canónico, la
+   columna que el motor realmente lee no se actualiza. `tipo_incidencia` e `incidentes`
+   pueden quedar contradiciéndose, y gana el segundo — en silencio.
+
+**Por qué la normalización del alta no alcanza acá:** `claveDominio()` protege
+`derivarIncidentes()`, y `set-campo` nunca la llama. Es un camino de escritura distinto,
+que no deriva nada. `migration_016` tampoco cubre esto: solo llena conjuntos **vacíos**, así
+que repara el daño histórico pero no una contradicción futura entre las dos columnas.
+
+**Fix propuesto** (contenido, ~10 líneas en `set-campo`): al editar `tipo_incidencia`,
+normalizar con `claveDominio()` antes de persistir y re-derivar `incidentes` **solo si está
+vacío** — mismo criterio conservador que la migración, para no pisar lo que un humano haya
+cargado en el editor de datos legales. Alternativa más de fondo: que el editor genérico
+sirva un `<select>` para los campos de dominio cerrado, en vez de texto libre.
+
 ---
 
 ## 7. Decisiones ya tomadas en este ciclo (rastro)
