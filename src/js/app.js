@@ -1467,13 +1467,13 @@ document.addEventListener('DOMContentLoaded', function () {
       step1_t:'Cargás tu caso', step1_d:'Subís los datos y documentación desde tu PC o celular. Nuestra IA lee tu pasaje automáticamente.',
       step2_t:'Hacemos el reclamo por vos', step2_d:'Te mantenemos informado y cubrimos todos los costos del proceso.',
       step3_t:'Obtenés tu compensación', step3_d:'La aerolínea responde con un acuerdo o derivamos a mediación online profesional.',
-      step4_t:'Pagás 20% por el servicio', step4_d:'Si no ganás, no pagás.',
+      step4_t:'Pagás 25% por el servicio', step4_d:'Si no ganás, no pagás.',
       /* Contingency */
       ctg_title:'¿Sin respuesta de la aerolínea?',
       ctg1_t:'Abogado especializado', ctg1_d:'Un abogado de nuestra Red de Profesionales, especializado en derechos del pasajero.',
       ctg2_t:'Estrategia legal', ctg2_d:'Armamos la mejor estrategia basada en normativa vigente y jurisprudencia.',
       ctg3_t:'Mediación por videollamada', ctg3_d:'Resolución 100% online, sin necesidad de trasladarte a ningún tribunal.',
-      ctg4_t:'Pagás 20% por el servicio', ctg4_d:'Si no ganás, no pagás.',
+      ctg4_t:'Pagás 25% por el servicio', ctg4_d:'Si no ganás, no pagás.',
       /* Cases */
       cases_title:'Casos que podés reclamar',
       case1_t:'Vuelo demorado', case1_d:'Si llegaste tarde a destino por culpa de la aerolínea.',
@@ -1505,7 +1505,7 @@ document.addEventListener('DOMContentLoaded', function () {
       about_p3:'¿Tenés alguna consulta? Escribinos a contacto@solucionair.com',
       /* FAQ */
       faq_title:'Preguntas frecuentes',
-      faq1_q:'¿Cuánto cuesta usar SolucionAir?', faq1_a:'Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión del 20% sobre la compensación obtenida si el reclamo es exitoso.',
+      faq1_q:'¿Cuánto cuesta usar SolucionAir?', faq1_a:'Nada por adelantado. El servicio inicial es 100% gratuito. Solo cobramos una comisión del 25% sobre la compensación obtenida si el reclamo es exitoso.',
       faq2_q:'¿Cuándo cobran sus honorarios?', faq2_a:'Únicamente cuando vos cobrás tu compensación. Si no se consigue nada, no nos debés nada.',
       faq3_q:'¿Qué pasa si mi reclamo no prospera?', faq3_a:'No pagás absolutamente nada. Nosotros asumimos el riesgo y los costos del proceso completo.',
       faq4_q:'¿Cuánto tarda el proceso?', faq4_a:'Depende de la aerolínea y el tipo de reclamo. Los casos simples pueden resolverse en semanas, mientras que los que van a mediación pueden tomar algunos meses.',
@@ -1570,13 +1570,13 @@ document.addEventListener('DOMContentLoaded', function () {
       step1_t:'Upload your case', step1_d:'Upload your data and documents from your PC or phone. Our AI reads your ticket automatically.',
       step2_t:'We claim for you', step2_d:'We keep you informed and cover all process costs.',
       step3_t:'You get your compensation', step3_d:'The airline responds with an agreement or we refer to professional online mediation.',
-      step4_t:'You pay 20% for the service', step4_d:'If you don\'t win, you don\'t pay.',
+      step4_t:'You pay 25% for the service', step4_d:'If you don\'t win, you don\'t pay.',
       /* Contingency */
       ctg_title:'No response from the airline?',
       ctg1_t:'Specialized attorney', ctg1_d:'A lawyer from our Professional Network, specialised in passenger rights.',
       ctg2_t:'Legal strategy', ctg2_d:'We build the best strategy based on current regulations and case law.',
       ctg3_t:'Video call mediation', ctg3_d:'100% online resolution, no need to travel to any court.',
-      ctg4_t:'You pay 20% for the service', ctg4_d:'If you don\'t win, you don\'t pay.',
+      ctg4_t:'You pay 25% for the service', ctg4_d:'If you don\'t win, you don\'t pay.',
       /* Cases */
       cases_title:'Cases you can claim',
       case1_t:'Delayed flight', case1_d:'If you arrived late at your destination due to the airline\'s fault.',
@@ -1608,7 +1608,7 @@ document.addEventListener('DOMContentLoaded', function () {
       about_p3:'Have a question? Write to us at contacto@solucionair.com',
       /* FAQ */
       faq_title:'Frequently asked questions',
-      faq1_q:'How much does SolucionAir cost?', faq1_a:'Nothing upfront. The initial service is 100% free. We only charge a 20% commission on the compensation obtained if the claim is successful.',
+      faq1_q:'How much does SolucionAir cost?', faq1_a:'Nothing upfront. The initial service is 100% free. We only charge a 25% commission on the compensation obtained if the claim is successful.',
       faq2_q:'When do you charge your fees?', faq2_a:'Only when you receive your compensation. If nothing is obtained, you owe us nothing.',
       faq3_q:'What happens if my claim doesn\'t succeed?', faq3_a:'You pay absolutely nothing. We assume the risk and costs of the entire process.',
       faq4_q:'How long does the process take?', faq4_a:'It depends on the airline and type of claim. Simple cases can be resolved in weeks, while those going to mediation may take a few months.',

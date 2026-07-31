@@ -1,4 +1,4 @@
-%%version: TYC-SA-v2.3-2026
+%%version: TYC-SA-v2.4-2026
 %% Traducción al inglés del texto que vive en index.html (TYC_HTML + PRIVACY_HTML).
 %% La versión de arriba se compara contra CONSENT_VERSION al generar el documento: si
 %% no coinciden, la generación en inglés falla a propósito, para no mandar a firmar una
@@ -45,8 +45,8 @@ For the purposes of this Agreement, capitalized terms shall have the following m
 5.2. In particular: (a) the initial assessment is free of charge; (b) management of the Direct Claim creates no payment obligation for the Applicant in the absence of Compensation; (c) the costs associated with the Mediation referred to in clause 7 are borne entirely by SA, with no reimbursement payable by the Applicant; (d) if the Referral ends without a Mediation Agreement, SA receives no commission from the Applicant.
 
 **6. SA's fees and commissions. Collection and Settlement of the Compensation**
-6.1. Where Compensation is obtained through a Direct Claim, the Applicant shall pay SA a commission equal to twenty percent (20%) of the Compensation effectively collected.
-6.2. Where Compensation is obtained following a Referral by means of a Mediation Agreement, the Applicant shall pay: (i) to SA, a commission equal to fifteen percent (15%) of the Compensation effectively collected; and (ii) to the Designated Professional, as a contingency fee, five percent (5%) of the Compensation effectively collected, in accordance with the instrument executed separately between the Applicant and the Professional.
+6.1. Where Compensation is obtained through a Direct Claim, the Applicant shall pay SA a commission equal to twenty-five percent (25%) of the Compensation effectively collected.
+6.2. Where Compensation is obtained following a Referral by means of a Mediation Agreement, the Applicant shall pay: (i) to SA, a commission equal to twenty percent (20%) of the Compensation effectively collected; and (ii) to the Designated Professional, as a contingency fee, five percent (5%) of the Compensation effectively collected, in accordance with the instrument executed separately between the Applicant and the Professional.
 6.3. SA's commission and the Professional's contingency fee are invoiced separately and directly to the Applicant by each of them, without prejudice to the deduction mechanism provided for in paragraph 6.6.
 6.4. Calculation basis. SA's commission and the Professional's contingency fee are calculated on the Compensation as defined in clause 2; that is, on every monetary item obtained, including fixed compensation, refunds, damages (including moral damages where applicable), interest and any other monetary item, irrespective of whether it is received by the Applicant, by the Passenger or by SA on their behalf.
 6.5. Collection on the Applicant's behalf in a Direct Claim. Pursuant to the special power of attorney granted by the Applicant to SA, and exclusively in respect of Compensation obtained through a Direct Claim, SA is empowered to collect it for the account and order of the Applicant or the Passenger by having it credited to the Collection Account. Payment made by the airline, the authority or the paying third party into the Collection Account has full discharging effect and releases the payer vis-a-vis the Applicant and the Passenger to the extent of the amount so paid.
