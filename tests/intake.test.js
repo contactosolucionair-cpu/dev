@@ -103,6 +103,30 @@ correr('la sugerencia de dirección es sugerencia, y coherente con los tramos', 
     || igual('ausente → vacía', normalizarDireccionSugerida(undefined, segs), '');
 });
 
+/* Los valores que la base TIENE, no los que debería tener. Salieron de un GROUP BY sobre
+   `tipo_incidencia` el 31-jul-2026, cuando el dry-run del backfill devolvió cero y el
+   control de población mostró por qué: 8 de 19 casos guardaban la etiqueta de interfaz
+   ("Reprogramación", "Denegación Embarque", "Demora") y la derivación —que comparaba por
+   igualdad exacta— les dejaba `incidentes: []`, o sea FALTA_DATO en un campo crítico.
+   Este test es esa lección: si alguien vuelve a comparar sin normalizar, se cae acá y no
+   dentro de seis meses en la base. */
+correr('derivarIncidentes: las variantes REALES de la base, no las teóricas', function () {
+  return igual('Reprogramación (mayúscula + acento)', derivarIncidentes('vuelo', 'Reprogramación', null), ['reprogramacion'])
+    || igual('Cancelación', derivarIncidentes('vuelo', 'Cancelación', null), ['cancelacion'])
+    || igual('Demora', derivarIncidentes('vuelo', 'Demora', null), ['demora'])
+    /* Variante con espacio y sin "de": así está escrita en la base. */
+    || igual('Denegación Embarque', derivarIncidentes('vuelo', 'Denegación Embarque', null), ['denegacion_embarque'])
+    /* Y la etiqueta completa de los tres formularios, por las dudas. */
+    || igual('Denegación de embarque', derivarIncidentes('vuelo', 'Denegación de embarque', null), ['denegacion_embarque'])
+    || igual('espacios de sobra', derivarIncidentes('vuelo', '  demora  ', null), ['demora'])
+    || igual('tipo_reclamo capitalizado', derivarIncidentes('Vuelo', 'Demora', null), ['demora'])
+    /* Equipaje: "Daño" pierde la tilde de la ñ al normalizar y tiene que caer igual. */
+    || igual('Daño', derivarIncidentes('equipaje', null, 'Daño'), ['equipaje_dano'])
+    || igual('Pérdida', derivarIncidentes('equipaje', null, 'Pérdida'), ['equipaje_perdida'])
+    /* Un valor que no está en el dominio sigue sin derivar nada: normalizar no es adivinar. */
+    || igual('valor desconocido → vacío', derivarIncidentes('vuelo', 'Huelga de pilotos', null), []);
+});
+
 correr('derivarIncidentes: tipos reales, la vigencia la elige el motor', function () {
   return igual('demora', derivarIncidentes('vuelo', 'demora', null), ['demora'])
     /* D1 (v2.2): la reprogramación pasó a ser tipo propio. Mapearla a cancelación

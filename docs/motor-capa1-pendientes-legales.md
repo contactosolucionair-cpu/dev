@@ -346,6 +346,31 @@ ese ciclo exista, este FALTA_DATO se cierra solo, sin tocar formularios.
 
 ---
 
+### 6bis.2 Regla de método: antes de mapear un dominio, `GROUP BY` sobre los valores reales — **VIGENTE**
+*Origen: mini-ciclo Ruleset IV-B, 31-jul-2026 · `migration_015` → `migration_016`*
+
+`migration_015` derivó `incidentes` con un `CASE tipo_incidencia WHEN 'cancelacion'…` por
+igualdad exacta contra los valores canónicos. La base tenía además etiquetas de interfaz
+—`Reprogramación`, `Denegación Embarque`, `Cancelación`, `Demora`—, que no matchearon
+ninguna rama y dejaron **8 de 19 casos con `incidentes: []`**: FALTA_DATO en un campo
+crítico, análisis degradado, y ningún síntoma visible durante meses.
+
+**Regla, para que la clase de defecto no se repita:**
+
+1. **Antes** de escribir un mapeo sobre una columna de dominio cerrado, correr un
+   `GROUP BY` sobre esa columna y mirar los valores que la base **tiene**, no los que
+   debería tener.
+2. Todo conteo dirigido lleva al lado el **conteo de la población** que lo contiene. Un
+   `count(*)` filtrado que da cero no distingue "no hay nada que corregir" de "la consulta
+   miró donde no era" — fue exactamente lo que pasó con el dry-run de la errata D1.
+3. Todo backfill se acompaña del arreglo del **camino de escritura**, o se declara
+   explícitamente que la fuente ya está cerrada y cómo se verificó. Un backfill sin cerrar
+   la fuente es una foto, no una reparación.
+4. Los tests de un mapeo cubren el **dominio observado**, no el teórico: ver
+   `tests/intake.test.js` → "las variantes REALES de la base".
+
+---
+
 ## 7. Decisiones ya tomadas en este ciclo (rastro)
 
 | Ítem | Decisión | Dónde quedó |

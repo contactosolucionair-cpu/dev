@@ -85,6 +85,29 @@ export function normalizarDireccionSugerida(raw, segmentos) {
 /* Columnas del motor legal (contrato §1)                              */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Clave de comparación para un valor de DOMINIO CERRADO: minúsculas, sin acentos, sin
+ * espacios de más.
+ *
+ * Existe por un defecto real y caro: `tipo_incidencia` llegó a la base con etiquetas de
+ * interfaz —"Reprogramación", "Denegación Embarque", "Demora"— y tanto esta derivación
+ * como el `CASE` de `migration_015` comparaban por igualdad exacta contra las claves en
+ * minúscula. Resultado: 8 de 19 casos con `incidentes: []`, que es un campo CRÍTICO, así
+ * que el motor los leía como FALTA_DATO y no podía clasificar el incidente. Nadie se
+ * enteró durante meses porque el síntoma es silencioso.
+ *
+ * La lección quedó anotada en el registro de pendientes: antes de mapear un dominio, mirar
+ * los valores que la base TIENE, no los que debería tener.
+ */
+export function claveDominio(v) {
+  if (v === null || v === undefined) return '';
+  return String(v)
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')   // saca acentos y la tilde de la ñ
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 var INCIDENTES_VALIDOS = [
   'demora', 'cancelacion', 'reprogramacion', 'denegacion_embarque', 'downgrade', 'conexion_perdida',
   'equipaje_demora', 'equipaje_dano', 'equipaje_perdida', 'muerte_lesion',
@@ -108,24 +131,35 @@ var INCIDENTES_VALIDOS = [
  * el tipo real y la ley aplicable la elige el motor por `fecha_incidente`.
  */
 export function derivarIncidentes(tipoReclamo, tipoIncidencia, tipoCasoEquipaje) {
-  var tr = limpiarTexto(tipoReclamo) || 'vuelo';
+  var tr = claveDominio(tipoReclamo) || 'vuelo';
   var out = [];
 
   if (tr === 'vuelo' || tr === 'vuelo_equipaje') {
+    /* Las claves están normalizadas: minúsculas, sin acentos y con los espacios
+       colapsados. Las variantes con espacio existen porque la base las tiene. */
     var porIncidencia = {
       cancelacion: 'cancelacion',
       reprogramacion: 'reprogramacion',
       demora: 'demora',
       overbooking: 'denegacion_embarque',
       denegacion: 'denegacion_embarque',
+      'denegacion embarque': 'denegacion_embarque',
+      'denegacion de embarque': 'denegacion_embarque',
     };
-    var i = porIncidencia[limpiarTexto(tipoIncidencia)];
+    var i = porIncidencia[claveDominio(tipoIncidencia)];
     if (i) out.push(i);
   }
 
   if (tr === 'equipaje' || tr === 'vuelo_equipaje') {
-    var porEquipaje = { perdida: 'equipaje_perdida', danio: 'equipaje_dano', demora: 'equipaje_demora' };
-    var e = porEquipaje[limpiarTexto(tipoCasoEquipaje)];
+    /* `dano` es lo que queda de "daño" al descomponer la ñ; `danio` es el valor canónico
+       del formulario. Los dos tienen que llegar al mismo lado. */
+    var porEquipaje = {
+      perdida: 'equipaje_perdida',
+      danio: 'equipaje_dano',
+      dano: 'equipaje_dano',
+      demora: 'equipaje_demora',
+    };
+    var e = porEquipaje[claveDominio(tipoCasoEquipaje)];
     if (e) out.push(e);
   }
 
