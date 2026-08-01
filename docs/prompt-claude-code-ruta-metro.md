@@ -250,3 +250,10 @@ Resumir: reglas agregadas a cada prompt (citar líneas), ubicación del reemplaz
 ### 4d. Prueba de aceptación manual (la hace Juan en preview, no vos)
 
 Subir al preview de Vercel el pasaje real USH→EZE / AEP→USH. Esperado: Origen `Ushuaia (USH)`, Destino `Buenos Aires (EZE)`, sin escalas. Verificar también una reserva ida y vuelta simétrica (mismo aeropuerto) para confirmar que no hubo regresión.
+
+---
+
+> **Nota posterior:** el extractor `api/analyze-document.js` al que esta tarea
+> aplicó `sanitizeRuta` resultó ser código muerto (sin llamadores) y fue
+> eliminado en el ciclo `limpieza-analyze-document`. El fix sigue vigente en
+> `api/process-ticket.js`, que es el único camino vivo.

@@ -93,21 +93,28 @@ Si alguna superficie sigue mostrando el colapso después de este ciclo, el probl
 ## CENSO OFICIAL DE SUPERFICIES DE ESCANEO (Fase 0, 2026-07-30)
 
 Checklist obligatorio ante cualquier cambio del extractor: si se toca el contrato de
-respuesta de un endpoint de IA, hay que revisar estas cuatro filas.
+respuesta de un endpoint de IA, hay que revisar estas tres filas.
+
+> **Actualización 2026-08-01 (ciclo `limpieza-analyze-document`):** la fila «B2C por
+> documento → `POST /api/analyze-document`» salió del censo. Ese camino era código
+> muerto: `setupDocAnalyzer()` buscaba los ids `f-reserva` / `f-boarding`, que no
+> existían en ningún HTML, así que nunca llegó a ejecutarse. El endpoint y la función
+> fueron eliminados. Toda mención a `analyze-document` más abajo en este documento es
+> registro histórico del ciclo original, no una superficie viva.
 
 | # | Superficie | Endpoint | ¿Prompt propio? | Campos que consume | ¿Lee `segmentos`? | ¿`sanitizeRuta` server-side? |
 |---|---|---|---|---|---|---|
 | 1 | B2C `index.html` + `src/js/app.js:489` (escaneo multi-archivo) | `POST /api/process-ticket` `{images, multiFile}` | No | 15 campos planos | Sí (`app.js:541`) | Sí |
-| 2 | B2C por documento `src/js/app.js:1125` | `POST /api/analyze-document` | No | aerolinea, numero_vuelo, origen, destino, fecha_vuelo, pnr | No (el endpoint no los devuelve) | Sí |
-| 3 | Agencias `panel-agencia.html:1067` | `POST /api/process-ticket` `{images}` | No | los mismos 15 | Sí (`:1094`) | Sí |
-| 4 | Backoffice modal `nc-*` `backoffice.html:4902` | `POST /api/process-ticket` `{images}` | No | los mismos 15 | Sí (`:4926`) | Sí |
+| 2 | Agencias `panel-agencia.html:1067` | `POST /api/process-ticket` `{images}` | No | los mismos 15 | Sí (`:1094`) | Sí |
+| 3 | Backoffice modal `nc-*` `backoffice.html:4902` | `POST /api/process-ticket` `{images}` | No | los mismos 15 | Sí (`:4926`) | Sí |
 
 `src/js/app.js:1380` también pega a `process-ticket`, pero es el **alta** del caso, no una
 superficie de escaneo.
 
-**Endpoints de IA en `/api`: exactamente dos** — `process-ticket.js` y `analyze-document.js`.
+**Endpoints de IA en `/api`: exactamente uno** — `process-ticket.js`. (En el censo original
+eran dos; el segundo resultó ser código muerto y se eliminó, ver la actualización de arriba.)
 Verificado por tres vías (`openrouter`, `image_url`, y un barrido de proveedores).
-No hay endpoint huérfano ni código muerto con prompt. Falsos positivos conocidos del censo:
+Falsos positivos conocidos del censo:
 `_utils/legal-pdf.js:94` ("extractores de PDF" en un comentario) y `backoffice.html:1819`
 (`'Analizando...'` del motor legal, no del extractor). `api/utils/` y `api/zoho/` están vacíos.
 
