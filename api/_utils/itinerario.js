@@ -5,7 +5,7 @@
  * vuelta AEP→USH), la IA colapsa todo en un viaje con escalas y devuelve
  * origen == destino. Acá se razona por CIUDAD (área metropolitana), se
  * limpian escalas espurias y se recupera el destino real de la ida.
- * Compartido por api/process-ticket.js y api/analyze-document.js.
+ * Usado por api/process-ticket.js, el único camino vivo de extracción por IA.
  *
  * ALCANCE: esto cubre los CAMPOS SUELTOS de compatibilidad, que desde el ciclo
  * Intake v2 son el camino de fallback — el itinerario primario viaja en
