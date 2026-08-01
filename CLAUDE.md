@@ -7,7 +7,8 @@ una única tabla `reclamos`.
 ## Stack y restricciones del entorno
 
 - HTML estático + **JavaScript vanilla ES5** en el navegador. Sin framework,
-  sin bundler, **sin build step**. No hay suite de tests.
+  sin bundler, **sin build step**. Sí hay suite de tests: `npm test` (7 suites,
+  tres de ellas con jsdom sobre los formularios).
 - Funciones serverless en `/api` (Vercel). Base de datos: Supabase, accedida por
   **fetch a la REST API**, sin cliente oficial.
 - El código del navegador es ES5 estricto: `var`, `function`, concatenación de
@@ -109,5 +110,8 @@ plantilla contractual. Esto es un criterio de aceptación negativo permanente.
   el código: HALT.** Reportar archivo:línea y esperar instrucciones. No
   improvisar una solución alternativa ni "arreglarlo de paso".
 - Un commit por fase, con el criterio de aceptación de esa fase verificado.
-- Sin tests automáticos: antes de dar por cerrado un ciclo, verificar sintaxis de
-  todos los `api/*.js` y de los scripts inline de los HTML.
+- Antes de dar por cerrado un ciclo: `npm test` en verde, más chequeo de sintaxis
+  de todos los `api/**/*.js` y de los scripts inline de los siete HTML. Las
+  suites no cubren la ida y vuelta real contra los endpoints ni el
+  comportamiento en el browser: lo que dependa de eso se reporta como
+  **pendiente de prueba manual**, nunca como verificado.
