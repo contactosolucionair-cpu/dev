@@ -39,6 +39,7 @@ import {
   sanitizeRuta, sanitizeSegmentos, seguirSugerencia, segmentosCanonicosAmbiguos,
 } from './_utils/itinerario.js';
 import { leerFlagsPublicos } from './_utils/config-publica.js';
+import { aplicarGastos } from './_utils/gastos.js';
 
 export const config = {
   api: {
@@ -162,10 +163,13 @@ export default async function handler(req, res) {
         anticipacion_aviso:    body.anticipacion_aviso || null,
         ofrecimiento_aerolinea: body.ofrecimiento_aerolinea || null,
         causa_informada:       body.causa_informada || null,
-        /* Expenses (vuelo) */
-        moneda_gastos:         body.moneda_gastos || null,
-        monto_gastos:          body.monto_gastos ? parseFloat(body.monto_gastos) || null : null,
+        /* Expenses (vuelo) — `moneda_gastos`/`monto_gastos` NO se setean acá: son un
+           espejo derivado y los escribe `aplicarGastos()` más abajo, junto al canónico
+           `gastos_items`. `gastos_detalle` es texto libre sin rol funcional: no alimenta
+           ningún cálculo, existe para lectura humana o de una IA que revise el caso.
+           Como todo texto libre del pasajero, nunca entra en una plantilla contractual. */
         gastos_detalle:        body.gastos_detalle || null,
+        comentarios_pasajero:  body.comentarios_pasajero || null,
         /* Baggage fields (equipaje claim, or combined vuelo+equipaje) */
         tipo_caso_equipaje:    body.tipo_caso_equipaje    || null,
         descripcion_equipaje:  body.descripcion_equipaje  || null,
@@ -210,6 +214,13 @@ export default async function handler(req, res) {
         user_agent:            body.user_agent || null,
         ip_firmante:           ip,
       };
+
+      /* Gastos: canónico + espejo en la MISMA fila que se inserta. Antes esta vía
+         escribía solo `monto_gastos`/`moneda_gastos` y dejaba `gastos_items` vacío, así
+         que el motor evaluaba todos los casos del formulario público como si el pasajero
+         no hubiera declarado ningún gasto (cuenta `gastos_items.length` para el nodo de
+         suficiencia probatoria). */
+      aplicarGastos(row, body.gastos_items, 'declaracion_pasajero');
 
       console.log('[process-ticket] Inserting row with ref:', refCode, 'email:', email);
 

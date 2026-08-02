@@ -12,6 +12,7 @@
  *   stats         GET   KPIs y comisión estimada
  */
 import { verifyAgency } from './_utils/agency-auth.js';
+import { aplicarGastos } from './_utils/gastos.js';
 import { etapaExterna } from './_utils/instancias.js';
 import { emailEnUso, mensajeEmailEnUso, crearUsuarioAuth, borrarUsuarioAuth } from './_utils/cuentas.js';
 /* Helpers puros del intake, los mismos que usa el alta pública. `iata3` sanea sin
@@ -305,9 +306,12 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
     pasaje_alternativo_monto:  body.pasaje_alternativo_monto  ? parseFloat(body.pasaje_alternativo_monto) || null : null,
     pasaje_alternativo_moneda: body.pasaje_alternativo_moneda || null,
     causa_informada: body.causa_informada || null,
-    moneda_gastos:   body.moneda_gastos   || null,
-    monto_gastos:    body.monto_gastos   ? parseFloat(body.monto_gastos)  || null : null,
+    /* `moneda_gastos`/`monto_gastos` NO van acá: son espejo derivado y los escribe
+       `aplicarGastos()` junto al canónico `gastos_items`, después de armar la fila.
+       `gastos_detalle` es texto libre sin rol funcional, igual que
+       `comentarios_pasajero`: solo lectura y análisis, nunca una plantilla legal. */
     gastos_detalle:  body.gastos_detalle  || null,
+    comentarios_pasajero: body.comentarios_pasajero || null,
     tipo_caso_equipaje:    body.tipo_caso_equipaje    || null,
     descripcion_equipaje:  body.descripcion_equipaje  || null,
     valor_equipaje:        body.valor_equipaje       ? parseFloat(body.valor_equipaje) || null : null,
@@ -320,6 +324,11 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
     ref_code: refCode, estado: 'pendiente', fecha_carga: new Date().toISOString(),
     ip_firmante: (req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim() || null,
   };
+
+  /* Gastos: canónico + espejo en la misma fila. Antes esta vía escribía solo el espejo
+     y dejaba `gastos_items` vacío, así que el motor evaluaba los casos cargados por
+     agencias como si no hubiera gastos declarados. */
+  aplicarGastos(row, body.gastos_items, 'agencia');
 
   var insertRes = await fetch(SB_URL + '/rest/v1/reclamos', {
     method: 'POST',

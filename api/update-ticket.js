@@ -32,6 +32,7 @@ import {
 } from './_utils/instancias.js';
 import { notificarCambioEtapa } from './_utils/notify-agencia.js';
 import { CAMPOS_DOMINIO_LEGAL } from './_utils/intake.js';
+import { aplicarGastos } from './_utils/gastos.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -751,13 +752,8 @@ export default async function handler(req, res) {
         var s = (v === null || v === undefined) ? '' : String(v).trim().toUpperCase();
         return /^[A-Z]{3}$/.test(s) ? s : null;
       };
-      /* La moneda se normaliza a mayúsculas SIEMPRE: el espejo de gastos agrupa por este
-         string, y sin normalizar 'EUR' y 'eur' contarían como dos monedas distintas y la
-         suma dominante saldría mal. */
-      var aMoneda = function (v) {
-        var s = aTexto(v);
-        return s ? s.toUpperCase() : null;
-      };
+      /* (La normalización de moneda vive en `_utils/gastos.js`, junto al espejo que la
+         necesita: agrupar por 'EUR' y 'eur' por separado rompía la moneda dominante.) */
       var aBooleanNulo = function (v) {
         if (v === true || v === 'true' || v === 'si') return true;
         if (v === false || v === 'false' || v === 'no') return false;
@@ -871,39 +867,11 @@ export default async function handler(req, res) {
       }
 
       /* ---- ESPEJO DE GASTOS ----
-         `gastos_items` es el canónico itemizado. `monto_gastos`/`moneda_gastos` son un
-         ESPEJO DERIVADO: no se editan directo, se reescriben acá con la suma de la moneda
-         dominante, en el MISMO PATCH (mismo patrón que `estado` ← instanciaAEstadoLegacy).
-         La UI actual (backoffice, panel de agencias, perfil del cliente) los sigue
-         leyendo sin cambios.
-         Con varias monedas el espejo solo puede reflejar una: se elige la de mayor suma.
-         Eso NO pierde información, porque el detalle completo vive en `gastos_items`. */
+         Canónico + espejo se escriben juntos en `api/_utils/gastos.js`, que es el único
+         lugar donde vive esa regla. Las tres vías que tocan gastos —alta pública, alta
+         por agencia y este editor— llaman a la misma función. */
       if (body.gastos_items !== undefined) {
-        var items = (Array.isArray(body.gastos_items) ? body.gastos_items : [])
-          .map(function (g) {
-            return {
-              concepto: aTexto(g && g.concepto),
-              monto: aNumero(g && g.monto),
-              moneda: aMoneda(g && g.moneda),
-              fecha: aFecha(g && g.fecha),
-              archivo: aTexto(g && g.archivo),
-              fuente: aTexto(g && g.fuente) || 'admin',
-            };
-          })
-          .filter(function (g) { return g.monto != null; });
-        sdl.gastos_items = items;
-
-        var porMoneda = {};
-        items.forEach(function (g) {
-          var m = g.moneda || 'ARS';
-          porMoneda[m] = (porMoneda[m] || 0) + g.monto;
-        });
-        var dominante = null;
-        Object.keys(porMoneda).forEach(function (m) {
-          if (dominante === null || porMoneda[m] > porMoneda[dominante]) dominante = m;
-        });
-        sdl.monto_gastos = dominante ? Math.round(porMoneda[dominante] * 100) / 100 : null;
-        sdl.moneda_gastos = dominante;
+        aplicarGastos(sdl, body.gastos_items, 'admin');
       }
 
       if (!Object.keys(sdl).length) return res.status(400).json({ error: 'No se recibió ningún campo para guardar.' });
