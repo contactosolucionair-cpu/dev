@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/src/css/intake-wizard.css" />
   <title>SolucionAir — Backoffice</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
@@ -348,6 +349,17 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <div class="cm__title" style="margin:0">Nuevo caso</div>
           <button class="detail__close" id="nc-close" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+
+        <!-- Intake v3: mismo wizard que usan el sitio público y las agencias. El
+             formulario largo de abajo sigue disponible: es más rápido cuando ya se
+             tienen todos los datos a mano. -->
+        <div style="background:var(--g05,#eaf1ed);border:1px solid var(--bdl);border-left:3px solid var(--g);border-radius:8px;padding:12px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-family:var(--fh);font-weight:700;font-size:.82rem;color:var(--t1)">Carga guiada</div>
+            <div style="font-size:.7rem;color:var(--t3);line-height:1.45;margin-top:1px">Una pregunta por pantalla, con gastos itemizados y su comprobante.</div>
+          </div>
+          <button class="cm__btn cm__btn--confirm" id="nc-wizard" type="button" style="flex-shrink:0">Abrir carga guiada</button>
         </div>
 
         <!-- Intake v2 · scan-first. Los archivos que se cargan acá son los mismos que se
@@ -1389,14 +1401,21 @@
         +'<label title="Tramo afectado por el incidente" style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0"><input type="checkbox" class="dl-seg-af"'+(s.afectado===true?' checked':'')+'></label>'
         +'<button type="button" class="dl-quitar" title="Quitar tramo" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:0;line-height:1">✕</button></div>';
     }
+    /* `archivo` es el comprobante del ítem. Estaba en el contrato de `gastos_items`
+       pero este editor no lo mostraba, así que un gasto cargado por un admin quedaba
+       sin comprobante mientras los del cliente sí lo tienen. Acá se edita el NOMBRE
+       del archivo ya subido al caso, no se sube nada: el alta guiada lo deja como
+       `Gasto N - MONEDA MONTO.ext`. */
     function dlGastoRowHtml(g){
       g=g||{};
-      return '<div class="dl-gasto" style="display:grid;grid-template-columns:1fr 90px 70px 130px 24px;gap:4px;margin-bottom:4px;align-items:center">'
+      return '<div class="dl-gasto" style="display:grid;grid-template-columns:1fr 90px 70px 120px 24px;gap:4px;margin-bottom:4px;align-items:center">'
         +'<input class="dl-g-concepto" placeholder="Concepto" value="'+esc(g.concepto||'')+'" style="'+IN_ESTILO+'">'
         +'<input class="dl-g-monto" type="number" step="0.01" min="0" placeholder="0.00" value="'+esc(g.monto!=null?String(g.monto):'')+'" style="'+IN_ESTILO+'">'
         +'<input class="dl-g-moneda" maxlength="3" placeholder="EUR" value="'+esc(g.moneda||'')+'" style="'+IN_ESTILO+';text-transform:uppercase;font-family:var(--fm)">'
         +'<input class="dl-g-fecha" type="date" value="'+esc(g.fecha||'')+'" style="'+IN_ESTILO+'">'
-        +'<button type="button" class="dl-quitar" title="Quitar ítem" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:0;line-height:1">✕</button></div>';
+        +'<button type="button" class="dl-quitar" title="Quitar ítem" style="background:none;border:none;cursor:pointer;color:var(--t4);padding:0;line-height:1">✕</button>'
+        +'<input class="dl-g-archivo" placeholder="Comprobante (nombre del archivo en el caso)" value="'+esc(g.archivo||'')+'" style="'+IN_ESTILO+';grid-column:1 / -1;font-family:var(--fm);font-size:.64rem">'
+        +'</div>';
     }
 
     /* ---- Sección 1: editor de los campos del contrato ---- */
@@ -1525,7 +1544,7 @@
       var gastos=[];
       Array.prototype.forEach.call(document.querySelectorAll('#dl-gastos .dl-gasto'),function(row){
         var g=function(cls){var e=row.querySelector('.'+cls);return e?e.value.trim():''};
-        gastos.push({concepto:g('dl-g-concepto'),monto:g('dl-g-monto'),moneda:g('dl-g-moneda'),fecha:g('dl-g-fecha'),fuente:'admin'});
+        gastos.push({concepto:g('dl-g-concepto'),monto:g('dl-g-monto'),moneda:g('dl-g-moneda'),fecha:g('dl-g-fecha'),archivo:g('dl-g-archivo'),fuente:'admin'});
       });
 
       var prRealizada=dlVal('dl-pr-realizada');
@@ -4652,6 +4671,118 @@
     if(btnNuevoCaso)btnNuevoCaso.addEventListener('click',function(){if(ncOv){ncReset();ncOv.classList.add('open')}});
     var ncTipo=document.getElementById('nc-tipo');if(ncTipo)ncTipo.addEventListener('change',ncToggleSecciones);
     var ncBagType=document.getElementById('nc-bag-type');if(ncBagType)ncBagType.addEventListener('change',function(){ncSetDisp('nc-bag-delivery-wrap',ncBagType.value==='demora')});
+    /* ---- Intake v3: el mismo wizard que el sitio público y las agencias ----
+       Se abre desde el modal de nuevo caso y lo reemplaza mientras está activo. Sin
+       escáner (el backoffice ya tiene el suyo, con su propio flujo de ruta) y sin
+       firma: el pasajero no está presente. Los gastos entran itemizados con su
+       comprobante, que es lo que este alta no permitía. */
+    var WZ_BO=null,WZ_BO_FILES={};
+    function wzBoLeer(file){
+      return new Promise(function(res){
+        var r=new FileReader();
+        r.onload=function(){var i=r.result.indexOf(',');res({base64:r.result.substring(i+1),mimeType:file.type||'application/octet-stream',name:file.name})};
+        r.onerror=function(){res(null)};
+        r.readAsDataURL(file);
+      });
+    }
+    function wzBoElegir(clave,listo){
+      var inp=document.createElement('input');inp.type='file';inp.accept='.pdf,.jpg,.jpeg,.png,.webp';inp.style.display='none';
+      document.body.appendChild(inp);
+      inp.addEventListener('change',function(){
+        var f=inp.files&&inp.files[0];
+        if(inp.parentNode)inp.parentNode.removeChild(inp);
+        if(!f){listo(null);return}
+        WZ_BO_FILES[f.name]=f;listo(f.name);
+      });
+      inp.click();
+    }
+    function wzBoSegmentos(p){
+      var pts=(p.puntos_ruta||[]).filter(function(n){return n.iata});
+      if(pts.length<2)return[];
+      var segs=[];
+      for(var i=0;i<pts.length-1;i++)segs.push({orden:i+1,origen_iata:pts[i].iata,destino_iata:pts[i+1].iata,carrier_operante:'',fecha:i===0?(p.fecha_vuelo||''):'',afectado:i===0});
+      return segs;
+    }
+    function wzBoEnviar(p,listo){
+      var ahora=new Date().toISOString();
+      var gastos=(p.gastos_items||[]).map(function(g){return{concepto:g.concepto,monto:g.monto,moneda:g.moneda,archivo:g.archivo,fuente:g.fuente}});
+      var aSubir=[];
+      (p.gastos_items||[]).forEach(function(g){if(WZ_BO_FILES[g.archivo_original])aSubir.push({file:WZ_BO_FILES[g.archivo_original],nombre:g.archivo})});
+      (p.otros_archivos||[]).forEach(function(n){if(WZ_BO_FILES[n])aSubir.push({file:WZ_BO_FILES[n],nombre:n})});
+      var candidatos=[];
+      if(p.tipo_viaje)candidatos.push({campo:'tipo_viaje',valor:p.tipo_viaje,fuente:'declaracion_pasajero',extraido_en:ahora});
+      if(p.direccion_afectada)candidatos.push({campo:'direccion_afectada',valor:p.direccion_afectada,fuente:'declaracion_pasajero',extraido_en:ahora});
+      /* El alta de backoffice NO recibe los archivos en el body: `create-case` crea el
+         caso y los adjuntos se suben después, uno por uno, contra
+         `?action=upload&id=...`. Mandarlos en `scanned_files` los perdía en silencio.
+         Se suben con el nombre ya renombrado, para que el comprobante quede asociado
+         a su gasto. */
+      function wzBoSubir(caseId,cb){
+        if(!aSubir.length||!caseId){cb();return}
+        var hechos=0;
+        aSubir.forEach(function(a){
+          var url='/api/admin?action=upload&id='+encodeURIComponent(caseId)
+            +'&filename='+encodeURIComponent(a.nombre)+'&tipo=documento&nombre='+encodeURIComponent(a.nombre);
+          fetch(url,{method:'POST',headers:{'Content-Type':a.file.type||'application/octet-stream','X-Admin-Password':adminPwd},body:a.file})
+            .then(function(){hechos++;if(hechos===aSubir.length)cb()})
+            .catch(function(){hechos++;if(hechos===aSubir.length)cb()});
+        });
+      }
+      Promise.resolve()
+        .then(function(){
+          return fetch('/api/admin?action=create-case',{
+            method:'POST',
+            headers:{'Content-Type':'application/json','X-Admin-Password':adminPwd},
+            body:JSON.stringify({
+              tipo_reclamo:p.tipo_reclamo,nombre:p.nombre,email:p.email,telefono:p.telefono,
+              documento_tipo:p.documento_tipo,documento_numero:p.documento_numero,
+              aerolinea:p.aerolinea,vuelo_nro:p.vuelo_nro,fecha_vuelo:p.fecha_vuelo,
+              origen:p.origen,destino:p.destino,pnr:p.pnr,
+              tipo_viaje:p.tipo_viaje,direccion_afectada:p.direccion_afectada,
+              segmentos:wzBoSegmentos(p),itinerario_fuente:'declaracion_pasajero',
+              datos_extraidos_extra:candidatos,
+              tipo_incidencia:p.tipo_incidencia,horas_retraso:p.horas_retraso,
+              anticipacion_aviso:p.anticipacion_aviso,embarque_presentado:p.embarque_presentado,
+              ofrecimiento_aerolinea:p.ofrecimiento_aerolinea,viajo_finalmente:p.viajo_finalmente,
+              causa_informada:p.causa_informada,
+              pasaje_alternativo_monto:p.pasaje_alternativo_monto,pasaje_alternativo_moneda:p.pasaje_alternativo_moneda,
+              tipo_caso_equipaje:p.tipo_caso_equipaje,descripcion_equipaje:p.descripcion_equipaje,
+              valor_equipaje:p.valor_equipaje,fecha_entrega_equipaje:p.fecha_entrega_equipaje,
+              equipaje_no_entregado:p.equipaje_no_entregado,
+              pir_presentado:p.pir_presentado,pir_numero:p.pir_numero,
+              gastos_items:gastos,comentarios_pasajero:p.comentarios_pasajero,
+              acompanantes:p.acompanantes||[]
+            })
+          });
+        })
+        .then(function(r){return r.json()})
+        .then(function(d){
+          if(!d||!d.success){listo(new Error((d&&d.error)||'No se pudo crear el caso.'),null);return}
+          wzBoSubir(d.id,function(){
+            WZ_BO_FILES={};
+            toast('Caso '+(d.refCode||'')+' creado');
+            listo(null,{ref_code:d.refCode||'—'});
+          });
+        })
+        .catch(function(){listo(new Error('Error de conexión.'),null)});
+    }
+    var ncWizard=document.getElementById('nc-wizard');
+    if(ncWizard)ncWizard.addEventListener('click',function(){
+      if(!window.IntakeWizard){toast('No se pudo cargar la carga guiada',true);return}
+      if(!WZ_BO){
+        WZ_BO=window.IntakeWizard.crear({
+          superficie:'backoffice',escaner:false,datosPersonales:true,acompanantes:true,firma:false,
+          alElegirArchivo:wzBoElegir,
+          alQuitarArchivo:function(clave,nombre){delete WZ_BO_FILES[nombre]},
+          alMontarCampoAeropuerto:function(n){if(window.AirportSelect&&window.AirportSelect.attach)window.AirportSelect.attach(n)},
+          alEnviar:wzBoEnviar,
+          alCerrar:function(){if(typeof load==='function')load()}
+        });
+      }
+      if(ncOv)ncOv.classList.remove('open');
+      WZ_BO.abrir();
+    });
+
     var ncClose=document.getElementById('nc-close');var ncCancel=document.getElementById('nc-cancel');
     if(ncClose)ncClose.addEventListener('click',function(){ncOv.classList.remove('open')});
     if(ncCancel)ncCancel.addEventListener('click',function(){ncOv.classList.remove('open')});
@@ -5326,5 +5457,6 @@
     </div>
   </div>
   <script src="/src/js/airport-select.js"></script>
+  <script src="/src/js/intake-wizard.js"></script>
 </body>
 </html>

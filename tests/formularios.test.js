@@ -255,6 +255,53 @@ console.log('\n\x1b[1mpanel-agencia.html + intake-wizard.js\x1b[0m');
   chk(r5.errores.length === 0, 'sin errores tras abrirlo: ' + (r5.errores.join(' | ') || 'ninguno'));
 }
 
+/* ============ 6. INTAKE v3 EN EL BACKOFFICE ============
+   Se abre desde el modal de nuevo caso y lo reemplaza mientras está activo. */
+console.log('\n\x1b[1mbackoffice.html + intake-wizard.js\x1b[0m');
+{
+  var r6 = cargar('backoffice.html', {
+    scripts: ['src/js/intake-wizard.js'],
+    antes: function (w) { w.sessionStorage.setItem('bo_admin_pwd', 'test'); },
+  });
+  var w6 = r6.window, q6 = consultas(w6);
+
+  chk(r6.errores.length === 0, 'carga sin errores: ' + (r6.errores.join(' | ') || 'ninguno'));
+  chk(q6.$('nc-wizard') !== null, 'existe el botón de carga guiada en el modal de nuevo caso');
+  chk(q6.$('nc-save') !== null && q6.$('nc-nombre') !== null,
+    'el alta manual sigue entera: se suma, no se reemplaza');
+
+  q6.$('nc-wizard').click();
+  var ov6 = w6.document.querySelector('.iw-ov');
+  chk(ov6 !== null && ov6.className.indexOf('iw-open') > -1, 'el botón lo abre');
+  chk(!q6.$('nc-ov').classList.contains('open'),
+    'y cierra el modal viejo: no quedan dos formularios encimados');
+  chk(w6.document.getElementById('iw-consent') === null, 'sin firma: el pasajero no está presente');
+  chk(w6.document.querySelector('.iw-ms[data-ms="scan"]') === null,
+    'sin escáner: el backoffice tiene el suyo con su propio flujo de ruta');
+
+  console.log('  \x1b[2m-- comprobante por ítem en el editor legal --\x1b[0m');
+  /* `archivo` estaba en el contrato de gastos_items pero este editor no lo mostraba:
+     un gasto cargado por un admin quedaba sin comprobante. */
+  var filaGasto = w6.dlGastoRowHtml
+    ? w6.dlGastoRowHtml({ concepto: 'Hotel', monto: 120, moneda: 'USD', archivo: 'Gasto 1 - USD 120.00.pdf' })
+    : null;
+  if (filaGasto === null) {
+    /* La función vive dentro del closure: se verifica sobre el markup del editor ya
+       renderizado en su lugar. */
+    var fuenteBo = w6.document.documentElement.innerHTML;
+    chk(fuenteBo.indexOf('dl-g-archivo') > -1, 'la fila de gasto declara el campo de comprobante');
+  } else {
+    chk(filaGasto.indexOf('dl-g-archivo') > -1, 'la fila de gasto incluye el comprobante');
+  }
+
+  console.log('  \x1b[2m-- aislamiento de estilos --\x1b[0m');
+  var sinPrefijo6 = w6.document.querySelectorAll('.iw-dlg .field, .iw-dlg .card, .iw-dlg .drop, .iw-dlg .btn').length;
+  chk(sinPrefijo6 === 0, 'el wizard no usa clases genéricas adentro (' + sinPrefijo6 + ')');
+  chk(w6.document.querySelectorAll('.cm-ov').length > 0, 'los modales propios del backoffice siguen ahí');
+
+  chk(r6.errores.length === 0, 'sin errores tras abrirlo: ' + (r6.errores.join(' | ') || 'ninguno'));
+}
+
 console.log('\nResumen');
 console.log('  \x1b[32m' + chk.estado.ok + ' ok\x1b[0m   ' + (chk.estado.fail ? '\x1b[31m' + chk.estado.fail + ' fallan\x1b[0m' : '\x1b[2m0 fallan\x1b[0m') + '\n');
 process.exit(chk.estado.fail ? 1 : 0);
