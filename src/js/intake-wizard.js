@@ -274,10 +274,15 @@
       'En orden. Solo las intermedias: el origen y el destino se cargan en el paso siguiente.',
       '<div data-arm-list></div><button type="button" class="iw-add" data-arm-add>+ Agregar escala</button>');
 
+    /* `data-airport` deja que la superficie enganche el combo de aeropuertos: de ahí
+       sale el código IATA en `data-iata`, que es el dato canónico que consume el motor
+       legal. Sin combo el campo sigue funcionando como texto libre. */
     h += paso('ruta', '¿De dónde a dónde volaba?', '',
       '<div class="iw-g iw-g2">' +
-      campo('origen', '<span data-lbl-origen>El viaje despegó en</span>', input('origen', 'text', 'Buenos Aires (EZE)', true), true) +
-      campo('destino', '<span data-lbl-destino>El viaje finalizó en</span>', input('destino', 'text', 'Madrid (MAD)', true), true) +
+      campo('origen', '<span data-lbl-origen>El viaje despegó en</span>',
+        input('origen', 'text', 'Buenos Aires (EZE)', true, ' data-airport="true" autocomplete="off"'), true) +
+      campo('destino', '<span data-lbl-destino>El viaje finalizó en</span>',
+        input('destino', 'text', 'Madrid (MAD)', true, ' data-airport="true" autocomplete="off"'), true) +
       '</div>');
 
     h += paso('fecha', '¿Cuándo era ese vuelo?',
@@ -846,19 +851,49 @@
       q('[data-scan-skip]').addEventListener('click', function () { ir(1); });
     }
 
+    /* Deja que la superficie enganche el combo de aeropuertos, también en los inputs
+       que se crean en caliente (las escalas). `AirportSelect.attach` es idempotente. */
+    function montarCampo(n) {
+      if (n && typeof o.alMontarCampoAeropuerto === 'function') o.alMontarCampoAeropuerto(n);
+    }
+    montarCampo(el('origen'));
+    montarCampo(el('destino'));
+
+    /* Campos que se muestran pero no se editan, con la razón al lado. Se muestran y no
+       se saltean a propósito: el usuario tiene que ver qué dato trajo su identidad. */
+    (function () {
+      var lista = o.soloLectura || [], i;
+      for (i = 0; i < lista.length; i++) {
+        var n = el(lista[i]);
+        if (n) { n.readOnly = true; n.setAttribute('data-ro', '1'); }
+      }
+      var notas = o.notas || {};
+      for (var clave in notas) {
+        if (!notas.hasOwnProperty(clave)) continue;
+        var f = q('[data-field="' + clave + '"]');
+        if (!f) continue;
+        var p = document.createElement('p');
+        p.className = 'iw-hint';
+        p.textContent = notas[clave];
+        f.appendChild(p);
+      }
+    })();
+
     /* ---- filas dinámicas ---- */
-    function fila(cont, ph1, ph2) {
+    function fila(cont, ph1, ph2, aeropuerto) {
       var d = document.createElement('div');
       d.className = 'iw-row';
-      d.innerHTML = '<input class="iw-in" type="text" placeholder="' + esc(ph1) + '" />' +
+      d.innerHTML = '<input class="iw-in" type="text" placeholder="' + esc(ph1) + '"' +
+        (aeropuerto ? ' data-airport="true" autocomplete="off"' : '') + ' />' +
         (ph2 ? '<input class="iw-in" type="text" placeholder="' + esc(ph2) + '" />' : '') +
         '<button type="button" class="iw-row-del" aria-label="Quitar">&times;</button>';
       q('.iw-row-del', d).addEventListener('click', function () { cont.removeChild(d); });
       cont.appendChild(d);
+      if (aeropuerto) montarCampo(d.querySelector('.iw-in'));
     }
     var armList = q('[data-arm-list]');
-    q('[data-arm-add]').addEventListener('click', function () { fila(armList, 'Ciudad o código de escala (ej: GRU)', ''); });
-    fila(armList, 'Ciudad o código de escala (ej: GRU)', '');
+    q('[data-arm-add]').addEventListener('click', function () { fila(armList, 'Ciudad o código de escala (ej: GRU)', '', true); });
+    fila(armList, 'Ciudad o código de escala (ej: GRU)', '', true);
 
     if (o.acompanantes) {
       var acompList = q('[data-acomp-list]');
@@ -1064,6 +1099,29 @@
       return out;
     }
 
+    /* Puntos de la ruta en orden, con el IATA que dejó el combo de aeropuertos.
+       El componente NO arma `segmentos`: eso depende de helpers que ya viven en cada
+       superficie (metadatos del escaneo, tramo afectado). Acá se entrega la materia
+       prima y cada una construye el contrato del motor con lo suyo. */
+    function puntosRuta() {
+      var nodo = function (n) {
+        if (!n) return null;
+        return { label: trim(n.value), iata: n.getAttribute('data-iata') || '' };
+      };
+      var pts = [], o1 = nodo(el('origen'));
+      if (o1) pts.push(o1);
+      if (OCULTOS.escalas === 'si') {
+        var ins = armList.querySelectorAll('.iw-in'), i;
+        for (i = 0; i < ins.length; i++) {
+          var n = nodo(ins[i]);
+          if (n && (n.label || n.iata)) pts.push(n);
+        }
+      }
+      var d1 = nodo(el('destino'));
+      if (d1) pts.push(d1);
+      return pts;
+    }
+
     function payload() {
       var esVuelo = OCULTOS.tipo_reclamo === 'vuelo';
       /* El nombre del comprobante se calcula ACÁ, sobre la lista ya cerrada.
@@ -1097,6 +1155,7 @@
         fecha_vuelo: el('fecha_vuelo').value || null,
         pnr: trim(el('pnr').value) || null,
         escalas: filasDe(armList, false),
+        puntos_ruta: puntosRuta(),
         gastos_items: items,
         comentarios_pasajero: trim(el('comentarios_pasajero').value) || null,
         otros_archivos: (ARCHIVOS.otros || []).slice(0),

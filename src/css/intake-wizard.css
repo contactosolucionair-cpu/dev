@@ -70,6 +70,10 @@
 .iw-ta{min-height:84px;resize:vertical;line-height:1.5}
 .iw-in::placeholder{color:var(--t4,#999);font-weight:400}
 .iw-in:focus{outline:none;border-color:var(--g,#2D4A3E);box-shadow:0 0 0 3px var(--g10,rgba(45,74,62,.10))}
+/* Visible pero no editable: se muestra para que el usuario vea qué dato trajo su
+   identidad, no se saltea. */
+.iw-in[readonly]{background:var(--bg,#F7F5F0);color:var(--t3,#6B6B6B);cursor:default;border-style:dashed}
+.iw-in[readonly]:focus{border-color:var(--bd,#E0DCD4);box-shadow:none}
 select.iw-in{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg width='10' height='7' viewBox='0 0 10 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
 .iw-msg{font-family:var(--fm,monospace);font-size:.66rem;min-height:13px;line-height:1.2;color:var(--err,#C0392B)}
 .iw-field.iw-bad .iw-in{border-color:var(--err,#C0392B);background:var(--errbg,#FDF0EE)}

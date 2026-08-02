@@ -483,6 +483,63 @@ var SALTO = 240;
   igual('la fuente del gasto es "agencia"', ag2.wz.payload().gastos_items[0].fuente, 'agencia');
 
   /* ============================================================
+     8b · identidad prellenada (muro de Google en B2C)
+     ============================================================ */
+  seccion('identidad prellenada y campos bloqueados');
+  var enganchados = [];
+  var gg = montar({
+    superficie: 'b2c',
+    escaner: false,
+    acompanantes: false,
+    soloLectura: ['email'],
+    notas: { email: 'Viene de tu cuenta de Google y no se puede cambiar.' },
+    alMontarCampoAeropuerto: function (n) { enganchados.push(n.id || 'escala'); },
+  });
+  gg.wz.abrir({ nombre: 'Juanpi', email: 'juanpi89@gmail.com' });
+
+  afirmar('el mail queda visible pero bloqueado',
+    gg.raiz.querySelector('#iw-email').readOnly === true);
+  afirmar('el nombre queda editable',
+    gg.raiz.querySelector('#iw-nombre').readOnly === false);
+  igual('el nombre llega prellenado y a la vista',
+    gg.raiz.querySelector('#iw-nombre').value, 'Juanpi');
+  igual('el mail también', gg.raiz.querySelector('#iw-email').value, 'juanpi89@gmail.com');
+  afirmar('el campo bloqueado explica por qué',
+    gg.raiz.querySelector('[data-field="email"] .iw-hint').textContent.indexOf('Google') > -1);
+  afirmar('los pasos de datos personales siguen existiendo, no se saltean',
+    gg.raiz.querySelector('.iw-ms[data-ms="pers1"]') !== null &&
+    gg.raiz.querySelector('.iw-ms[data-ms="pers2"]') !== null);
+  afirmar('el combo de aeropuertos se engancha a origen, destino y la escala inicial',
+    enganchados.length === 3 && enganchados.indexOf('iw-origen') > -1 && enganchados.indexOf('iw-destino') > -1,
+    JSON.stringify(enganchados));
+
+  /* puntos de ruta con IATA, para que la superficie arme `segmentos` */
+  gg.tipo('vuelo'); await gg.esperar(SALTO);
+  gg.set('aerolinea', 'AR'); gg.set('vuelo_nro', 'AR1'); gg.seguir();
+  gg.elegir('solo_ida'); await gg.esperar(SALTO);
+  gg.elegir('si'); await gg.esperar(SALTO);
+  var escalaInp = gg.raiz.querySelector('[data-arm-list] .iw-in');
+  escalaInp.value = 'San Pablo (GRU)';
+  escalaInp.setAttribute('data-iata', 'GRU');
+  gg.seguir();
+  var oIn = gg.raiz.querySelector('#iw-origen'), dIn = gg.raiz.querySelector('#iw-destino');
+  oIn.value = 'Buenos Aires (EZE)'; oIn.setAttribute('data-iata', 'EZE');
+  dIn.value = 'Madrid (MAD)'; dIn.setAttribute('data-iata', 'MAD');
+  var pts = gg.wz.payload().puntos_ruta;
+  igual('los puntos van en orden origen → escalas → destino',
+    pts.map(function (n) { return n.iata; }), ['EZE', 'GRU', 'MAD']);
+  igual('y conservan la etiqueta que ve el usuario', pts[0].label, 'Buenos Aires (EZE)');
+
+  var gg2 = montar({ superficie: 'b2c', escaner: false, acompanantes: false });
+  gg2.tipo('vuelo'); await gg2.esperar(SALTO);
+  gg2.set('aerolinea', 'AR'); gg2.set('vuelo_nro', 'AR1'); gg2.seguir();
+  gg2.elegir('solo_ida'); await gg2.esperar(SALTO);
+  gg2.elegir('no'); await gg2.esperar(SALTO);
+  gg2.set('origen', 'EZE'); gg2.set('destino', 'MAD');
+  igual('sin escalas los puntos son solo los dos extremos',
+    gg2.wz.payload().puntos_ruta.length, 2);
+
+  /* ============================================================
      9 · seguridad y cierre
      ============================================================ */
   seccion('escapado y cierre');
