@@ -1079,8 +1079,15 @@
         });
       }
 
+      /* Un reclamo de vuelo que ADEMÁS trae equipaje es `vuelo_equipaje`, no `vuelo`.
+         `derivarIncidentes()` (api/_utils/intake.js:168,184) decide por este campo qué
+         familias de incidente deriva: con `vuelo` a secas, el incidente de equipaje del
+         caso combinado no se derivaría nunca e `incidentes` —campo crítico del motor—
+         saldría incompleto sin que falle nada a la vista. */
+      var combinado = esVuelo && OCULTOS._combo_gate === 'si' && !!el('tipo_caso_equipaje').value;
+
       var p = {
-        tipo_reclamo: OCULTOS.tipo_reclamo || 'vuelo',
+        tipo_reclamo: combinado ? 'vuelo_equipaje' : (OCULTOS.tipo_reclamo || 'vuelo'),
         aerolinea: trim(el('aerolinea').value) || null,
         vuelo_nro: trim(el('vuelo_nro').value) || null,
         tipo_viaje: OCULTOS.tipo_viaje || null,

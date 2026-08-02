@@ -377,6 +377,50 @@ var SALTO = 240;
   afirmar('sin errores de consola en la rama equipaje', e.errores.length === 0, e.errores.join(' | '));
 
   /* ============================================================
+     7b · caso combinado vuelo + equipaje
+     ============================================================ */
+  seccion('vuelo + equipaje en el mismo caso');
+  var cb2 = montar({ superficie: 'b2c', escaner: false, acompanantes: false, firma: false });
+  cb2.tipo('vuelo'); await cb2.esperar(SALTO);
+  cb2.set('aerolinea', 'AR'); cb2.set('vuelo_nro', 'AR1'); cb2.seguir();
+  cb2.elegir('solo_ida'); await cb2.esperar(SALTO);
+  cb2.elegir('no'); await cb2.esperar(SALTO);
+  cb2.set('origen', 'EZE'); cb2.set('destino', 'MAD'); cb2.seguir();
+  cb2.set('fecha_vuelo', '2026-08-01'); cb2.set('pnr', 'CB1234'); cb2.seguir();
+  cb2.elegir('demora'); await cb2.esperar(SALTO);
+  cb2.set('horas_retraso', '4'); cb2.seguir();
+  cb2.seguir();                                  /* causa opcional */
+  cb2.elegir('no'); await cb2.esperar(SALTO);    /* sin gastos */
+  igual('llega a la compuerta de equipaje combinado', cb2.paso(), 'combogate');
+  cb2.elegir('si'); await cb2.esperar(SALTO);
+  igual('"sí" abre el mini formulario de equipaje', cb2.paso(), 'combo');
+  cb2.set('tipo_caso_equipaje', 'danio');
+  cb2.set('pir_presentado', 'si');
+  cb2.set('descripcion_equipaje_combo', 'La valija llegó con la rueda rota');
+  var pc = cb2.wz.payload();
+  igual('tipo_reclamo pasa a vuelo_equipaje, no queda en vuelo', pc.tipo_reclamo, 'vuelo_equipaje');
+  igual('viaja el tipo de incidencia de equipaje', pc.tipo_caso_equipaje, 'danio');
+  igual('y su PIR', pc.pir_presentado, 'si');
+  igual('y su descripción', pc.descripcion_equipaje, 'La valija llegó con la rueda rota');
+  igual('el incidente de vuelo sigue viajando', pc.tipo_incidencia, 'demora');
+
+  var cb3 = montar({ superficie: 'b2c', escaner: false, acompanantes: false, firma: false });
+  cb3.tipo('vuelo'); await cb3.esperar(SALTO);
+  cb3.set('aerolinea', 'AR'); cb3.set('vuelo_nro', 'AR1'); cb3.seguir();
+  cb3.elegir('solo_ida'); await cb3.esperar(SALTO);
+  cb3.elegir('no'); await cb3.esperar(SALTO);
+  cb3.set('origen', 'EZE'); cb3.set('destino', 'MAD'); cb3.seguir();
+  cb3.set('fecha_vuelo', '2026-08-01'); cb3.set('pnr', 'CB9'); cb3.seguir();
+  cb3.elegir('demora'); await cb3.esperar(SALTO);
+  cb3.set('horas_retraso', '4'); cb3.seguir();
+  cb3.seguir();
+  cb3.elegir('no'); await cb3.esperar(SALTO);
+  cb3.elegir('no'); await cb3.esperar(SALTO);    /* SIN equipaje combinado */
+  igual('sin equipaje combinado sigue siendo vuelo', cb3.wz.payload().tipo_reclamo, 'vuelo');
+  afirmar('y no arrastra campos de equipaje',
+    cb3.wz.payload().tipo_caso_equipaje === null && cb3.wz.payload().descripcion_equipaje === null);
+
+  /* ============================================================
      8 · variantes por superficie
      ============================================================ */
   seccion('variantes por superficie');
