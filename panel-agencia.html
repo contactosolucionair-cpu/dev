@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SolucionAir — Panel de Agencia</title>
+  <!-- Componente compartido de alta. Sus clases van prefijadas `iw-`, así no toca
+       nada del CSS de esta página. -->
+  <link rel="stylesheet" href="/src/css/intake-wizard.css" />
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
     :root{--g:#2D4A3E;--gl:#3A6154;--gd:#1E332B;--g10:rgba(45,74,62,.10);--g05:rgba(45,74,62,.05);--au:#D4A853;--aul:#E0BE7A;--bg:#F5F3EE;--bgd:#EDE9E1;--w:#FFF;--t1:#111;--t2:#3A3A3A;--t3:#6B6B6B;--t4:#999;--bd:#E0DCD4;--bdl:#EDEAE4;--ok:#1B9B5A;--okbg:#EDF9F0;--err:#C0392B;--errbg:#FDF0EE;--warn:#D4A853;--warnbg:#FDF8EE;--f:'Inter',system-ui,sans-serif;--fh:'Plus Jakarta Sans','Inter',sans-serif;--fm:'JetBrains Mono',monospace;--ez:cubic-bezier(.4,0,.2,1)}
@@ -255,6 +258,16 @@
     <!-- ============ CARGAR CASO ============ -->
     <div id="view-nuevo" style="display:none">
       <div class="main__header"><h1 class="main__title">Cargar caso</h1></div>
+
+      <!-- Intake v3: camino guiado, una pregunta por pantalla. El formulario largo
+           de abajo sigue disponible para quien prefiera cargar todo de una. -->
+      <div style="background:var(--w);border:1px solid var(--bdl);border-left:3px solid var(--g);border-radius:10px;padding:16px 18px;margin-bottom:16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+        <div style="flex:1;min-width:220px">
+          <div style="font-family:var(--fh);font-weight:800;font-size:.92rem;color:var(--t1);letter-spacing:-.01em">Carga guiada</div>
+          <div style="font-size:.78rem;color:var(--t3);line-height:1.5;margin-top:2px">Una pregunta por pantalla, con los gastos itemizados y su comprobante. Recomendado.</div>
+        </div>
+        <button type="button" class="btn btn--primary" id="wz-abrir" style="flex-shrink:0">Cargar caso guiado</button>
+      </div>
 
       <div class="scan-banner">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
@@ -1610,10 +1623,168 @@
     document.getElementById('p-estado').textContent  = ag.estado || '—';
   }
 
+  /* ============================================================
+     INTAKE v3 — el wizard de micro-pasos, compartido con B2C y backoffice.
+     ------------------------------------------------------------
+     Se suma como camino alternativo: el formulario largo de abajo sigue
+     intacto. Acá el pasajero no está presente, así que no hay firma ni
+     declaración jurada — la autorización queda pendiente de envío, igual que
+     en cualquier alta cargada por un tercero.
+     ============================================================ */
+
+  var WZ = null;
+  var WZ_FILES = {};
+
+  function wzElegirArchivo(clave, listo) {
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.pdf,.jpg,.jpeg,.png,.webp';
+    inp.style.display = 'none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0];
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      if (!f) { listo(null); return; }
+      WZ_FILES[f.name] = f;
+      listo(f.name);
+    });
+    inp.click();
+  }
+
+  function wzLeerBase64(file) {
+    return new Promise(function (resolve) {
+      var r = new FileReader();
+      r.onload = function () {
+        var i = r.result.indexOf(',');
+        resolve({ base64: r.result.substring(i + 1), mimeType: file.type || 'application/octet-stream', name: file.name });
+      };
+      r.onerror = function () { resolve(null); };
+      r.readAsDataURL(file);
+    });
+  }
+
+  /* Los tramos salen de los puntos que devuelve el wizard, ya con IATA del combo.
+     Si la ruta está incompleta se manda vacío: una columna en null es FALTA_DATO,
+     que es honesto, y no una ruta inventada. */
+  function wzSegmentos(p) {
+    var pts = (p.puntos_ruta || []).filter(function (n) { return n.iata; });
+    if (pts.length < 2) return [];
+    var segs = [];
+    for (var i = 0; i < pts.length - 1; i++) {
+      segs.push({
+        orden: i + 1,
+        origen_iata: pts[i].iata,
+        destino_iata: pts[i + 1].iata,
+        carrier_operante: '',
+        fecha: i === 0 ? (p.fecha_vuelo || '') : '',
+        afectado: i === 0,
+      });
+    }
+    return segs;
+  }
+
+  function wzEnviar(p, listo) {
+    var ahora = new Date().toISOString();
+    var gastos = (p.gastos_items || []).map(function (g) {
+      return { concepto: g.concepto, monto: g.monto, moneda: g.moneda, archivo: g.archivo, fuente: g.fuente };
+    });
+
+    var aSubir = [];
+    (p.gastos_items || []).forEach(function (g) {
+      if (WZ_FILES[g.archivo_original]) aSubir.push({ file: WZ_FILES[g.archivo_original], nombre: g.archivo });
+    });
+    (p.otros_archivos || []).forEach(function (n) {
+      if (WZ_FILES[n]) aSubir.push({ file: WZ_FILES[n], nombre: n });
+    });
+
+    var candidatos = [];
+    if (p.tipo_viaje) candidatos.push({ campo: 'tipo_viaje', valor: p.tipo_viaje, fuente: 'declaracion_pasajero', extraido_en: ahora });
+    if (p.direccion_afectada) candidatos.push({ campo: 'direccion_afectada', valor: p.direccion_afectada, fuente: 'declaracion_pasajero', extraido_en: ahora });
+
+    Promise.all(aSubir.map(function (a) {
+      return wzLeerBase64(a.file).then(function (r) {
+        return r ? { base64: r.base64, mimeType: r.mimeType, name: a.nombre } : null;
+      });
+    })).then(function (subidos) {
+      var body = {
+        tipo_reclamo: p.tipo_reclamo,
+        nombre: p.nombre, email: p.email, telefono: p.telefono,
+        documento_tipo: p.documento_tipo, documento_numero: p.documento_numero,
+        aerolinea: p.aerolinea, vuelo_nro: p.vuelo_nro, fecha_vuelo: p.fecha_vuelo,
+        origen: p.origen, destino: p.destino, pnr: p.pnr,
+        tipo_viaje: p.tipo_viaje, direccion_afectada: p.direccion_afectada,
+        segmentos: wzSegmentos(p),
+        itinerario_fuente: 'declaracion_pasajero',
+        datos_extraidos_extra: candidatos,
+        tipo_incidencia: p.tipo_incidencia,
+        horas_retraso: p.horas_retraso,
+        anticipacion_aviso: p.anticipacion_aviso,
+        embarque_presentado: p.embarque_presentado,
+        ofrecimiento_aerolinea: p.ofrecimiento_aerolinea,
+        viajo_finalmente: p.viajo_finalmente,
+        causa_informada: p.causa_informada,
+        pasaje_alternativo_monto: p.pasaje_alternativo_monto,
+        pasaje_alternativo_moneda: p.pasaje_alternativo_moneda,
+        tipo_caso_equipaje: p.tipo_caso_equipaje,
+        descripcion_equipaje: p.descripcion_equipaje,
+        valor_equipaje: p.valor_equipaje,
+        fecha_entrega_equipaje: p.fecha_entrega_equipaje,
+        equipaje_no_entregado: p.equipaje_no_entregado,
+        pir_presentado: p.pir_presentado,
+        pir_numero: p.pir_numero,
+        gastos_items: gastos,
+        comentarios_pasajero: p.comentarios_pasajero,
+        acompanantes: p.acompanantes || [],
+        scanned_files: subidos.filter(Boolean),
+      };
+      return fetch('/api/agency/submit-claim', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+        body: JSON.stringify(body),
+      });
+    }).then(function (r) {
+      if (r.status === 401) { agencyLogout(); throw new Error('401'); }
+      return r.json();
+    }).then(function (d) {
+      if (!d || !d.success) { listo(new Error((d && d.error) || 'Error al cargar el caso.'), null); return; }
+      toast('Caso ' + d.refCode + ' cargado');
+      WZ_FILES = {};
+      listo(null, { ref_code: d.refCode });
+    }).catch(function (err) {
+      if (err && err.message === '401') return;
+      listo(new Error('Error de conexión.'), null);
+    });
+  }
+
+  var btnWizard = document.getElementById('wz-abrir');
+  if (btnWizard) {
+    btnWizard.addEventListener('click', function () {
+      if (!window.IntakeWizard) { toast('No se pudo cargar el formulario guiado', true); return; }
+      if (!WZ) {
+        WZ = window.IntakeWizard.crear({
+          superficie: 'agencia',
+          escaner: false,
+          datosPersonales: true,
+          acompanantes: true,
+          firma: false,
+          alElegirArchivo: wzElegirArchivo,
+          alQuitarArchivo: function (clave, nombre) { delete WZ_FILES[nombre]; },
+          alMontarCampoAeropuerto: function (n) {
+            if (window.AirportSelect && window.AirportSelect.attach) window.AirportSelect.attach(n);
+          },
+          alEnviar: wzEnviar,
+          alCerrar: function () { if (typeof loadClaims === 'function') loadClaims(); },
+        });
+      }
+      WZ.abrir();
+    });
+  }
+
   /* ---- Init ---- */
   loadStats();
 })();
 </script>
 <script src="/src/js/airport-select.js"></script>
+<script src="/src/js/intake-wizard.js"></script>
 </body>
 </html>

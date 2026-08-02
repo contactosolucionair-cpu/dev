@@ -209,6 +209,52 @@ console.log('\n\x1b[1mindex.html + intake-wizard.js — arranque tras el login d
   chk(r4.errores.length === 0, 'sin errores en todo el recorrido: ' + (r4.errores.join(' | ') || 'ninguno'));
 }
 
+/* ============ 5. INTAKE v3 EN EL PORTAL DE AGENCIAS ============
+   Acá el wizard se suma como camino alternativo: el formulario largo sigue
+   entero. Sin firma, porque el pasajero no está presente. */
+console.log('\n\x1b[1mpanel-agencia.html + intake-wizard.js\x1b[0m');
+{
+  var r5 = cargar('panel-agencia.html', {
+    scripts: ['src/js/intake-wizard.js'],
+    antes: function (w) {
+      w.localStorage.setItem('sa_ag_token', 'test');
+      w.localStorage.setItem('sa_ag_email', 'test@test.com');
+      w.localStorage.setItem('sa_ag_data', JSON.stringify({ nombre: 'Test', estado: 'aprobada' }));
+    },
+  });
+  var w5 = r5.window, q5 = consultas(w5);
+
+  chk(r5.errores.length === 0, 'carga sin errores: ' + (r5.errores.join(' | ') || 'ninguno'));
+  chk(q5.$('wz-abrir') !== null, 'existe el botón de carga guiada');
+  chk(q5.$('f-nombre') !== null && q5.$('f-tipo-reclamo') !== null,
+    'el formulario largo sigue entero: se suma, no se reemplaza');
+  chk(w5.document.querySelector('.iw-ov') === null, 'el wizard no se monta hasta que se lo pide');
+
+  q5.$('wz-abrir').click();
+  var ov5 = w5.document.querySelector('.iw-ov');
+  chk(ov5 !== null && ov5.className.indexOf('iw-open') > -1, 'el botón lo abre');
+  chk(w5.document.querySelector('.iw-ms[data-ms="scan"]') === null,
+    'sin escáner: en agencias el documento lo carga la agencia, no se escanea acá');
+  chk(w5.document.getElementById('iw-consent') === null,
+    'sin consentimiento: el pasajero no está presente para firmar');
+  chk(w5.document.querySelector('.iw-ms[data-ms="firma"]') !== null,
+    'pero el paso final existe igual: es desde donde se dispara el envío');
+  chk(w5.document.getElementById('iw-nombre') !== null,
+    'pide los datos del pasajero completos');
+  chk(w5.document.querySelector('.iw-ms[data-ms="acompgate"]') !== null,
+    'y los acompañantes');
+
+  console.log('  \x1b[2m-- aislamiento de estilos --\x1b[0m');
+  /* La página tiene sus propias .btn, .form-group, .card. El componente no puede
+     pisarlas: por eso todo va prefijado. */
+  var propias = w5.document.querySelectorAll('.form-wrap .form-group').length;
+  chk(propias > 0, 'las clases propias de la página siguen presentes (' + propias + ' .form-group)');
+  var sinPrefijo = w5.document.querySelectorAll('.iw-dlg .field, .iw-dlg .card, .iw-dlg .drop').length;
+  chk(sinPrefijo === 0, 'el wizard no usa ninguna clase genérica adentro (' + sinPrefijo + ')');
+
+  chk(r5.errores.length === 0, 'sin errores tras abrirlo: ' + (r5.errores.join(' | ') || 'ninguno'));
+}
+
 console.log('\nResumen');
 console.log('  \x1b[32m' + chk.estado.ok + ' ok\x1b[0m   ' + (chk.estado.fail ? '\x1b[31m' + chk.estado.fail + ' fallan\x1b[0m' : '\x1b[2m0 fallan\x1b[0m') + '\n');
 process.exit(chk.estado.fail ? 1 : 0);
