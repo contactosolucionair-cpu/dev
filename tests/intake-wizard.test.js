@@ -327,8 +327,13 @@ var SALTO = 240;
   igual('comentarios_pasajero llega entero', p.comentarios_pasajero, ta.value);
   igual('otros_archivos', p.otros_archivos.length, 4);
   igual('gastos_items: quedaron 3', p.gastos_items.length, 3);
-  igual('cada gasto trae las claves del contrato',
-    Object.keys(p.gastos_items[0]).sort(), ['archivo', 'concepto', 'fuente', 'moneda', 'monto']);
+  igual('cada gasto trae las claves del contrato, más el original de transporte',
+    Object.keys(p.gastos_items[0]).sort(),
+    ['archivo', 'archivo_original', 'concepto', 'fuente', 'moneda', 'monto']);
+  afirmar('`archivo_original` es el nombre con el que se subió, distinto del guardado',
+    p.gastos_items[0].archivo_original !== p.gastos_items[0].archivo &&
+    !!p.gastos_items[0].archivo_original,
+    p.gastos_items[0].archivo_original + ' vs ' + p.gastos_items[0].archivo);
   igual('la fuente es la del formulario público', p.gastos_items[0].fuente, 'declaracion_pasajero');
   afirmar('el nombre del comprobante se calcula al enviar, ya renumerado',
     /^Gasto 1 - USD 30\.00\./.test(p.gastos_items[0].archivo), p.gastos_items[0].archivo);

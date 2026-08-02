@@ -131,6 +131,84 @@ console.log('\n\x1b[1mbackoffice.html\x1b[0m');
   chk(q3.ph('nc-origen') === 'Origen', 'placeholder vuelve a neutro');
 }
 
+/* ============ 4. INTAKE v3 SOBRE EL FORMULARIO PÚBLICO ============
+   El wizard no se abre solo: entra después del muro de Google. Acá se carga
+   index.html con el componente y app.js juntos y se simula el login, que es el
+   único camino real por el que un pasajero llega al formulario. */
+console.log('\n\x1b[1mindex.html + intake-wizard.js — arranque tras el login de Google\x1b[0m');
+{
+  var r4 = cargar('index.html', { scripts: ['src/js/intake-wizard.js', 'src/js/app.js'] });
+  var w4 = r4.window, q4 = consultas(w4);
+
+  chk(r4.errores.length === 0, 'carga sin errores: ' + (r4.errores.join(' | ') || 'ninguno'));
+  chk(typeof w4.IntakeWizard === 'object' && typeof w4.IntakeWizard.crear === 'function',
+    'el componente quedó expuesto en window.IntakeWizard');
+  chk(typeof w4.__abrirIntake === 'function',
+    'app.js publicó __abrirIntake para que lo llame el login');
+  chk(w4.CONSENT_VERSION === 'TYC-SA-v2.4-2026',
+    'CONSENT_VERSION quedó accesible fuera de su IIFE: ' + w4.CONSENT_VERSION);
+  chk(w4.document.querySelector('.iw-ov') === null,
+    'antes del login el wizard todavía no se montó');
+  chk(!q4.visible('wz-launcher'), 'y la tarjeta de entrada arranca oculta');
+
+  console.log('  \x1b[2m-- login de Google (token armado a mano) --\x1b[0m');
+  /* Un JWT sin firmar: el front solo decodifica el payload, no lo valida. */
+  function b64url(o) {
+    return Buffer.from(JSON.stringify(o), 'utf8').toString('base64')
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  var token = b64url({ alg: 'none' }) + '.' + b64url({
+    sub: '1234567890', email: 'juanpi89@gmail.com', email_verified: true,
+    name: 'Juanpi', iss: 'https://accounts.google.com',
+  }) + '.';
+  w4.recibirLoginGoogle({ credential: token });
+
+  chk(!q4.visible('google-login-wall'), 'el muro se oculta');
+  chk(q4.visible('form-content-wrapper'), 'y aparece el contenido');
+
+  var ov = w4.document.querySelector('.iw-ov');
+  chk(ov !== null, 'el wizard se montó');
+  chk(!!ov && ov.className.indexOf('iw-open') > -1, 'y se abrió solo tras verificar la identidad');
+  chk(q4.visible('wz-launcher'), 'la tarjeta de entrada queda a la vista para volver');
+
+  console.log('  \x1b[2m-- el formulario largo queda inalcanzable --\x1b[0m');
+  var cont4 = q4.$('form-content-wrapper');
+  ['.ctype-tabs', '#wizard-steps', '.prog'].forEach(function (sel) {
+    var n = cont4.querySelector(sel);
+    chk(!!n && n.style.display === 'none', 'oculto: ' + sel);
+  });
+  var panelesVisibles = Array.prototype.filter.call(
+    cont4.querySelectorAll('.wz-panel'), function (n) { return n.style.display !== 'none'; });
+  chk(panelesVisibles.length === 0, 'ningún panel viejo queda visible (' + panelesVisibles.length + ')');
+  chk(q4.$('wz-1') !== null, 'pero el markup viejo sigue en el DOM: se borra en su propia fase');
+
+  console.log('  \x1b[2m-- identidad prellenada --\x1b[0m');
+  var nom = w4.document.getElementById('iw-nombre');
+  var mail = w4.document.getElementById('iw-email');
+  chk(!!nom && nom.value === 'Juanpi', 'el nombre de Google llega al wizard: ' + (nom && nom.value));
+  chk(!!mail && mail.value === 'juanpi89@gmail.com', 'el mail también: ' + (mail && mail.value));
+  chk(!!mail && mail.readOnly === true, 'el mail queda bloqueado');
+  chk(!!nom && nom.readOnly === false, 'el nombre queda editable: el poder necesita el del documento');
+  var nota = w4.document.querySelector('[data-field="email"] .iw-hint');
+  chk(!!nota && nota.textContent.indexOf('Google') > -1, 'y el mail explica por qué no se edita');
+  chk(w4.firmaGoogle && w4.firmaGoogle.nombre === 'Juanpi',
+    'el nombre de Google queda guardado aparte, para detectar la discrepancia después');
+
+  console.log('  \x1b[2m-- cerrar y volver --\x1b[0m');
+  w4.document.querySelector('.iw-ov [data-cerrar]').click();
+  chk(w4.document.querySelector('.iw-ov-cfm').className.indexOf('iw-open') > -1,
+    'cerrar pide confirmación');
+  w4.document.querySelector('[data-cfm-si]').click();
+  chk(w4.document.querySelector('.iw-ov').className.indexOf('iw-open') === -1, 'y cierra');
+  q4.$('wz-reabrir').click();
+  chk(w4.document.querySelector('.iw-ov').className.indexOf('iw-open') > -1,
+    'la tarjeta lo vuelve a abrir');
+  chk(w4.document.getElementById('iw-nombre').value === 'Juanpi',
+    'y conserva lo cargado: reabrir no reinicia');
+
+  chk(r4.errores.length === 0, 'sin errores en todo el recorrido: ' + (r4.errores.join(' | ') || 'ninguno'));
+}
+
 console.log('\nResumen');
 console.log('  \x1b[32m' + chk.estado.ok + ' ok\x1b[0m   ' + (chk.estado.fail ? '\x1b[31m' + chk.estado.fail + ' fallan\x1b[0m' : '\x1b[2m0 fallan\x1b[0m') + '\n');
 process.exit(chk.estado.fail ? 1 : 0);

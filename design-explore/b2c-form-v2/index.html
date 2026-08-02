@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SolucionAir · Explorador de diseño — Formulario B2C v2</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+/* ============================================================
+   Variables copiadas TAL CUAL de src/css/styles.css (:root).
+   No se editó el archivo original: esto es una copia local para
+   que el mockup sea standalone.
+   ============================================================ */
+:root{
+  --g:#2D4A3E;--gl:#3A6154;--gd:#1E332B;--g10:rgba(45,74,62,.10);--g05:rgba(45,74,62,.05);
+  --au:#D4A853;--aul:#E0BE7A;--aud:#B8903D;
+  --bg:#F7F5F0;--bgd:#EDE9E1;--w:#FFF;
+  --t1:#111;--t2:#3A3A3A;--t3:#6B6B6B;--t4:#999;
+  --bd:#E0DCD4;--bdl:#EDEAE4;
+  --err:#C0392B;--errbg:#FDF0EE;--ok:#1B9B5A;--okbg:#EDF9F0;
+  --ai:#6366F1;--aibg:#EEF0FF;--ai10:rgba(99,102,241,.10);
+  --f:'Inter',system-ui,sans-serif;
+  --fh:'Plus Jakarta Sans','Inter',sans-serif;
+  --fm:'JetBrains Mono','SF Mono',monospace;
+  --r2:4px;--r4:6px;--r8:10px;--r12:14px;--r16:20px;
+  --s1:0 1px 2px rgba(0,0,0,.04);--s2:0 2px 8px rgba(0,0,0,.05);--s3:0 4px 20px rgba(0,0,0,.07);--s4:0 12px 40px rgba(0,0,0,.10);
+  --ez:cubic-bezier(.4,0,.2,1);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px}
+body{font-family:var(--f);color:var(--t1);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+button{font-family:var(--f);cursor:pointer;border:none;background:none}
+.hidden{display:none!important}
+
+/* ==== Banda de contexto (solo para el mockup) ==== */
+.mk{max-width:760px;margin:0 auto;padding:56px 24px 80px;text-align:center}
+.mk__tag{display:inline-block;font-family:var(--fm);font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ai);background:var(--aibg);border:1px solid var(--ai10);border-radius:var(--r2);padding:4px 10px;margin-bottom:20px}
+.mk__h{font-family:var(--fh);font-size:clamp(1.6rem,4vw,2.3rem);font-weight:800;color:var(--g);letter-spacing:-.02em;line-height:1.15;margin-bottom:12px}
+.mk__d{font-size:.9rem;color:var(--t3);max-width:520px;margin:0 auto 32px}
+.mk__cta{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;background:var(--au);color:var(--gd);font-family:var(--fh);font-weight:800;font-size:1.08rem;border-radius:var(--r8);box-shadow:0 10px 30px rgba(212,168,83,.28);transition:all .25s var(--ez)}
+.mk__cta:hover{background:var(--aul);transform:translateY(-2px);box-shadow:0 14px 36px rgba(212,168,83,.36)}
+.mk__note{font-family:var(--fm);font-size:.68rem;color:var(--t4);margin-top:28px;line-height:1.9}
+
+/* ==== POPUP ==== */
+.ov{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(30,51,43,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.ov.is-open{display:flex;animation:ovIn .22s var(--ez)}
+@keyframes ovIn{from{opacity:0}to{opacity:1}}
+
+.dlg{position:relative;width:100%;max-width:560px;max-height:calc(100vh - 48px);background:var(--w);border-radius:var(--r16);box-shadow:var(--s4);display:flex;flex-direction:column;overflow:hidden;animation:dlgIn .28s var(--ez)}
+@keyframes dlgIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+
+/* Sin banda de marca: la X va integrada al propio recuadro, arriba a
+   la derecha, y el encabezado queda solo con el progreso. */
+.dlg__head{position:relative;flex-shrink:0;min-height:50px;display:flex;flex-direction:column;justify-content:center;padding:13px 54px 13px 22px;border-bottom:1px solid var(--bdl);background:var(--w)}
+.dlg__x{position:absolute;top:50%;right:13px;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--t4);transition:all .2s var(--ez)}
+.dlg__x:hover{background:var(--bgd);color:var(--t2)}
+.dlg__t{font-family:var(--fh);font-weight:800;font-size:.92rem;color:var(--t1);letter-spacing:-.01em}
+
+/* Progreso: SOLO % y "Paso N". Deliberadamente sin checklist de pasos
+   pendientes — ver el detalle de todo lo que falta desalienta. */
+.prog__top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.prog__step{font-family:var(--fm);font-size:.68rem;font-weight:500;color:var(--t3);letter-spacing:.02em}
+.prog__pct{font-family:var(--fm);font-size:.68rem;font-weight:600;color:var(--g);letter-spacing:.02em}
+.prog__bar{height:5px;background:var(--bgd);border-radius:3px;overflow:hidden}
+.prog__fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--g) 0%,var(--au) 100%);transition:width .38s var(--ez)}
+
+.dlg__body{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 22px 8px;min-height:0}
+.dlg__foot{flex-shrink:0;display:flex;gap:10px;padding:14px 22px 18px;border-top:1px solid var(--bdl);background:var(--w)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:var(--r8);font-family:var(--fh);font-weight:700;font-size:.86rem;transition:all .2s var(--ez)}
+.btn--go{flex:1;background:var(--g);color:var(--w)}
+.btn--go:hover{background:var(--gl)}
+.btn--back{background:transparent;color:var(--t3);border:1px solid var(--bd);padding:12px 16px}
+.btn--back:hover{color:var(--t2);border-color:var(--t4);background:var(--bg)}
+.btn--send{flex:1;background:var(--au);color:var(--gd)}
+.btn--send:hover{background:var(--aul)}
+
+/* ==== Micro-paso ==== */
+.ms{display:none}
+.ms.is-on{display:block}
+.ms.is-on.dir-fwd{animation:msF .26s var(--ez)}
+.ms.is-on.dir-back{animation:msB .26s var(--ez)}
+@keyframes msF{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes msB{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:none}}
+
+.ms__q{font-family:var(--fh);font-size:1.16rem;font-weight:800;color:var(--t1);letter-spacing:-.02em;line-height:1.28;margin-bottom:6px}
+.ms__d{font-size:.8rem;color:var(--t3);line-height:1.55;margin-bottom:20px}
+.ms__d:last-of-type{margin-bottom:18px}
+
+/* ==== Campos (mismo lenguaje que styles.css) ==== */
+.g{display:grid;gap:14px}.g2{grid-template-columns:repeat(2,1fr)}.g1{grid-template-columns:1fr}
+@media(max-width:520px){.g2{grid-template-columns:1fr}}
+.field{display:flex;flex-direction:column;gap:3px;min-width:0}
+.field__lbl{font-size:.76rem;font-weight:600;color:var(--t2);display:flex;align-items:center;gap:3px}
+.field__ast{color:var(--err);font-size:.8em}
+.field__in{font-family:var(--f);font-size:.88rem;padding:11px 13px;border:1.5px solid var(--bd);border-radius:var(--r4);background:var(--w);color:var(--t1);transition:border-color .2s var(--ez),box-shadow .2s var(--ez);width:100%;appearance:none}
+.field__ta{min-height:84px;resize:vertical;line-height:1.5}
+.field__in::placeholder{color:var(--t4);font-weight:400}
+.field__in:focus{outline:none;border-color:var(--g);box-shadow:0 0 0 3px var(--g10)}
+select.field__in{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg width='10' height='7' viewBox='0 0 10 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+.field__msg{font-family:var(--fm);font-size:.66rem;min-height:13px;line-height:1.2;color:var(--err)}
+.field.is-bad .field__in{border-color:var(--err);background:var(--errbg)}
+
+/* ==== Opciones grandes (una pregunta = tarjetas, no select) ==== */
+.opts{display:grid;gap:9px}
+.opt{display:flex;align-items:flex-start;gap:11px;text-align:left;width:100%;padding:14px 16px;border:1.5px solid var(--bd);border-radius:var(--r8);background:var(--w);transition:all .18s var(--ez)}
+.opt:hover{border-color:var(--gl);background:var(--g05)}
+.opt.is-sel{border-color:var(--g);background:var(--g05);box-shadow:0 0 0 3px var(--g10)}
+.opt__ic{font-size:1.1rem;line-height:1.3;flex-shrink:0}
+/* columna explícita: como spans inline, título y subtítulo se pegaban
+   en una sola línea ("CancelaciónEl vuelo no salió") */
+.opt__b{min-width:0;display:flex;flex-direction:column;gap:3px}
+.opt__t{font-family:var(--fh);font-size:.88rem;font-weight:700;color:var(--t1);letter-spacing:-.01em;line-height:1.3}
+.opt__s{font-size:.74rem;color:var(--t3);line-height:1.4}
+
+/* ==== Tabs tipo de reclamo ==== */
+.ctype{display:grid;gap:11px}
+.ctype__b{display:flex;align-items:center;gap:14px;text-align:left;padding:20px 18px;border:1.5px solid var(--bd);border-radius:var(--r12);background:var(--w);transition:all .2s var(--ez)}
+.ctype__b:hover{border-color:var(--gl);transform:translateY(-1px);box-shadow:var(--s2)}
+.ctype__b.is-sel{border-color:var(--g);background:var(--g05);box-shadow:0 0 0 3px var(--g10)}
+.ctype__ic{font-size:1.7rem;line-height:1;flex-shrink:0}
+.ctype__t{font-family:var(--fh);font-size:1rem;font-weight:800;color:var(--t1);letter-spacing:-.01em}
+.ctype__d{font-size:.76rem;color:var(--t3);line-height:1.4}
+
+/* ==== Escáner IA ==== */
+.scan{border:1.5px dashed var(--bd);border-radius:var(--r12);background:var(--bg);padding:26px 20px;text-align:center;transition:all .2s var(--ez)}
+.scan:hover{border-color:var(--ai);background:var(--aibg)}
+.scan__ic{position:relative;display:inline-flex;margin-bottom:10px;color:var(--ai)}
+.scan__badge{position:absolute;right:-11px;top:-6px;font-family:var(--fm);font-size:.54rem;font-weight:600;letter-spacing:.06em;background:var(--ai);color:#fff;border-radius:var(--r2);padding:1px 5px}
+.scan__t{font-size:.84rem;font-weight:600;color:var(--t2)}
+.scan__m{font-family:var(--fm);font-size:.66rem;color:var(--t4);margin-top:5px}
+.scan__load{text-align:center;padding:26px 20px}
+.scan__sp{width:26px;height:26px;border:2.5px solid var(--ai10);border-top-color:var(--ai);border-radius:50%;margin:0 auto 12px;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.scan__st{font-size:.82rem;color:var(--t2);font-weight:600}
+.scan__sub{font-family:var(--fm);font-size:.66rem;color:var(--t4);margin-top:4px}
+.lnk{display:inline-block;margin-top:14px;font-size:.76rem;font-weight:600;color:var(--t3);text-decoration:underline;text-underline-offset:3px}
+.lnk:hover{color:var(--g)}
+
+/* ==== Dropzone mockeada ==== */
+.drop{border:1.5px dashed var(--bd);border-radius:var(--r8);background:var(--bg);padding:16px;text-align:center;transition:all .2s var(--ez)}
+.drop:hover{border-color:var(--gl);background:var(--g05)}
+.drop__t{font-size:.78rem;color:var(--t2);font-weight:600}
+.drop__m{font-family:var(--fm);font-size:.62rem;color:var(--t4);margin-top:3px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:.64rem;color:var(--t2);background:var(--w);border:1px solid var(--bd);border-radius:var(--r2);padding:4px 9px;margin:6px 5px 0 0}
+.chip__x{color:var(--t4);font-weight:700}.chip__x:hover{color:var(--err)}
+.drop.is-full{opacity:.55;cursor:default}
+.drop.is-full:hover{border-color:var(--bd);background:var(--bg)}
+.cnt{font-family:var(--fm);font-size:.64rem;color:var(--t4);text-align:right;margin-top:5px}
+
+/* ==== Filas dinámicas (escalas / acompañantes) ==== */
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.row .field__in{flex:1}
+.row__del{width:32px;height:32px;flex-shrink:0;border-radius:var(--r4);border:1px solid var(--bd);color:var(--t4);display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1}
+.row__del:hover{color:var(--err);border-color:var(--err);background:var(--errbg)}
+.addbtn{font-family:var(--fh);font-size:.76rem;font-weight:700;color:var(--g);padding:8px 14px;border:1px dashed var(--bd);border-radius:var(--r4);width:100%;transition:all .2s var(--ez)}
+.addbtn:hover{border-color:var(--g);background:var(--g05)}
+.hint{font-family:var(--fm);font-size:.66rem;color:var(--t4);line-height:1.5;margin-top:8px}
+
+/* ==== Agregador de gastos ==== */
+.gitem{display:flex;gap:11px;align-items:flex-start;border:1px solid var(--bd);border-radius:var(--r8);background:var(--w);padding:12px 13px;margin-bottom:8px}
+.gitem__b{flex:1;min-width:0;display:flex;flex-direction:column}
+.gitem__t{display:block;font-family:var(--fh);font-size:.84rem;font-weight:700;color:var(--t1);letter-spacing:-.01em;line-height:1.3;overflow-wrap:anywhere}
+.gitem__m{font-family:var(--fm);font-size:.68rem;color:var(--t3);margin-top:3px;display:block}
+.gitem__f{font-family:var(--fm);font-size:.62rem;color:var(--t3);margin-top:5px;display:flex;align-items:baseline;gap:5px;flex-wrap:wrap}
+.gitem__orig{font-style:normal;color:var(--t4);opacity:.8}
+.gitem__del{width:28px;height:28px;flex-shrink:0;border-radius:var(--r4);border:1px solid var(--bd);color:var(--t4);display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1}
+.gitem__del:hover{color:var(--err);border-color:var(--err);background:var(--errbg)}
+.gempty{text-align:center;border:1.5px dashed var(--bd);border-radius:var(--r8);padding:20px 16px;font-size:.78rem;color:var(--t4);margin-bottom:10px}
+.gtotal{display:flex;justify-content:space-between;align-items:center;gap:14px;background:var(--g05);border:1px solid var(--g10);border-radius:var(--r8);padding:11px 14px;margin-top:12px}
+.gtotal__l{font-size:.74rem;font-weight:600;color:var(--t2);flex-shrink:0}
+.gtotal__v{font-family:var(--fm);font-size:.86rem;font-weight:600;color:var(--g);display:flex;gap:4px 14px;flex-wrap:wrap;justify-content:flex-end}
+/* Varias monedas: una debajo de otra. No se suman entre sí. */
+.gtotal--multi{align-items:flex-start}
+.gtotal--multi .gtotal__v{flex-direction:column;align-items:flex-end;gap:3px}
+.gtotal--multi .gtotal__i{font-size:.8rem}
+.gform{border:1.5px solid var(--g);border-radius:var(--r8);background:var(--g05);padding:15px;margin-bottom:10px}
+.gform__act{display:flex;gap:9px;margin-top:14px}
+.gform__act .btn{flex:1;padding:10px 14px;font-size:.8rem}
+.gerr{font-family:var(--fm);font-size:.66rem;color:var(--err);min-height:14px;margin-top:8px}
+
+/* ==== DDJJ / firma ==== */
+/* Mismo bloque verde del original, con un poco más de aire y de peso
+   tipográfico. El texto es el de producción, sin reescribir. */
+.fee{display:flex;gap:12px;align-items:flex-start;background:var(--g05);border:1px solid var(--bdl);border-left:3px solid var(--g);border-radius:var(--r8);padding:16px 18px;margin-bottom:16px}
+.fee__ic{flex-shrink:0;color:var(--g);margin-top:1px}
+.fee p{margin:0;font-size:.82rem;color:var(--t2);line-height:1.6}
+.fee strong{color:var(--g)}
+
+.doclink{font-weight:600;color:var(--g);text-decoration:underline;text-underline-offset:2px;padding:0;font-size:inherit;font-family:inherit}
+.doclink:hover{color:var(--au)}
+.ddjj{background:var(--bg);border:1px solid var(--bdl);border-radius:var(--r8);padding:15px;margin-bottom:14px;font-size:.74rem;color:var(--t2);line-height:1.6;max-height:190px;overflow-y:auto}
+.ddjj p{margin-bottom:9px}.ddjj ul{padding-left:17px;margin-bottom:9px}.ddjj li{margin-bottom:4px}
+.cons{border:1.5px solid var(--bd);border-radius:var(--r8);padding:13px 15px;transition:all .2s var(--ez)}
+.cons.is-sel{border-color:var(--g);background:var(--g05)}
+.cons__r{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.cons__cb{width:17px;height:17px;flex-shrink:0;margin-top:1px;accent-color:var(--g);cursor:pointer}
+.cons__t{font-size:.76rem;color:var(--t2);line-height:1.5}
+.cons__meta{font-family:var(--fm);font-size:.62rem;color:var(--t4);margin-top:9px;padding-top:9px;border-top:1px dashed var(--bd);display:none}
+.cons.is-sel .cons__meta{display:block}
+
+/* ==== Éxito ==== */
+.done{text-align:center;padding:14px 4px 8px}
+.done__ic{width:56px;height:56px;border-radius:50%;background:var(--okbg);display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.done__t{font-family:var(--fh);font-size:1.24rem;font-weight:800;color:var(--g);margin-bottom:6px}
+.done__d{font-size:.84rem;color:var(--t3);margin-bottom:18px;line-height:1.6}
+.done__box{background:var(--bg);border:1px solid var(--bdl);border-radius:var(--r8);padding:15px 22px;display:inline-block;margin-bottom:16px}
+.done__lbl{font-size:.62rem;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.done__id{font-family:var(--fm);font-size:1.35rem;font-weight:700;color:var(--g);letter-spacing:.04em}
+
+/* ==== Popups anidados: documentos legales y confirmación de cierre ==== */
+.ov--doc{z-index:210;background:rgba(30,51,43,.5)}
+.ov--cfm{z-index:220;background:rgba(30,51,43,.5)}
+.docbody{font-size:.78rem;color:var(--t2);line-height:1.68}
+.docbody h4{font-family:var(--fh);font-size:.86rem;font-weight:800;color:var(--t1);margin:16px 0 6px}
+.docbody h4:first-child{margin-top:0}
+.docbody p{margin-bottom:9px}
+.docbody ul{padding-left:18px;margin-bottom:9px}
+.docbody li{margin-bottom:4px}
+.cfm{width:100%;max-width:380px;background:var(--w);border-radius:var(--r16);box-shadow:var(--s4);padding:24px 22px;text-align:center;animation:dlgIn .22s var(--ez)}
+.cfm__t{font-family:var(--fh);font-size:1.04rem;font-weight:800;color:var(--t1);letter-spacing:-.01em;margin-bottom:7px}
+.cfm__d{font-size:.8rem;color:var(--t3);line-height:1.55;margin-bottom:18px}
+.cfm__act{display:flex;gap:9px}
+.cfm__act .btn{flex:1;padding:11px 12px;font-size:.82rem}
+.btn--danger{background:var(--errbg);color:var(--err);border:1px solid rgba(192,57,43,.3)}
+.btn--danger:hover{background:var(--err);color:var(--w);border-color:var(--err)}
+
+/* ==== Mobile: fullscreen ==== */
+@media(max-width:640px){
+  .ov{padding:0}
+  .dlg{max-width:none;max-height:none;height:100%;border-radius:0}
+  .dlg__body{padding:20px 18px 8px}
+  .dlg__head{padding:12px 50px 12px 18px}
+  .dlg__foot{padding:12px 18px 16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .ms__q{font-size:1.08rem}
+  .ov--cfm{padding:24px}
+}
+</style>
+</head>
+<body>
+
+<div class="mk">
+  <span class="mk__tag">Explorador de diseño · no productivo</span>
+  <h1 class="mk__h">Formulario B2C v2 — flujo conversacional en popup</h1>
+  <p class="mk__d">Mockup navegable con datos simulados. Replica el árbol condicional real de <code>app.js</code>, pero troceado en micro-pasos dentro de un modal.</p>
+  <button class="mk__cta" id="open">Iniciá tu reclamo &rarr;</button>
+  <p class="mk__note">
+    Sin backend · sin Supabase · sin OpenRouter<br/>
+    El escaneo IA y el envío son simulaciones locales
+  </p>
+</div>
+
+<div class="ov" id="ov" role="dialog" aria-modal="true" aria-label="Formulario de reclamo">
+  <div class="dlg">
+
+    <div class="dlg__head">
+      <button class="dlg__x" id="close" type="button" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div id="prog-wrap">
+        <div class="prog__top">
+          <span class="prog__step" id="prog-step">Paso 1</span>
+          <span class="prog__pct" id="prog-pct">0%</span>
+        </div>
+        <div class="prog__bar"><div class="prog__fill" id="prog-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="dlg__body" id="body">
+
+      <!-- ══ 0 · TIPO DE RECLAMO ══════════════════════════════ -->
+      <section class="ms" data-ms="tipo">
+        <h2 class="ms__q">¿Qué te pasó?</h2>
+        <p class="ms__d">Elegí el tipo de reclamo para empezar.</p>
+        <div class="ctype">
+          <button class="ctype__b is-sel" type="button" data-ctype="vuelo">
+            <span class="ctype__ic">&#9992;&#65039;</span>
+            <span class="opt__b"><span class="ctype__t">Reclamo por vuelo</span><span class="ctype__d">Retraso, cancelación, overbooking</span></span>
+          </button>
+          <button class="ctype__b" type="button" data-ctype="equipaje">
+            <span class="ctype__ic">&#129523;</span>
+            <span class="opt__b"><span class="ctype__t">Reclamo por equipaje</span><span class="ctype__d">Pérdida, daño o demora en entrega</span></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ══ 1 · ESCANEO IA ═══════════════════════════════════ -->
+      <section class="ms" data-ms="scan">
+        <h2 class="ms__q">Cargá tu reserva</h2>
+        <p class="ms__d">Es el documento con el itinerario completo de tu viaje.</p>
+        <div id="scan-idle">
+          <button class="scan" type="button" id="scan-go" style="width:100%">
+            <span class="scan__ic">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              <span class="scan__badge">IA</span>
+            </span>
+            <span class="scan__t" style="display:block">Arrastrá tu reserva aquí para autocompletar la carga &#9889;</span>
+            <span class="scan__m" style="display:block">JPG, PNG, PDF · Máx. 10MB c/u</span>
+          </button>
+          <div style="text-align:center"><button type="button" class="lnk" id="scan-skip">Prefiero cargar los datos manualmente</button></div>
+        </div>
+        <div class="scan__load hidden" id="scan-load">
+          <div class="scan__sp"></div>
+          <p class="scan__st">La IA está analizando tus documentos...</p>
+          <p class="scan__sub">Extrayendo datos combinados de todos los archivos</p>
+        </div>
+      </section>
+
+      <!-- ══ 2 · AEROLÍNEA + Nº VUELO ═════════════════════════ -->
+      <section class="ms" data-ms="airline">
+        <h2 class="ms__q">¿Con qué vuelo viajabas?</h2>
+        <p class="ms__d" id="airline-d">Si escaneaste tu pasaje, esto ya está completo. Revisá que sea correcto.</p>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Aerolínea <span class="field__ast">*</span></label><input class="field__in" type="text" id="m-airline" data-req="1" placeholder="Aerolíneas Argentinas" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Número de vuelo <span class="field__ast">*</span></label><input class="field__in" type="text" id="m-flight" data-req="1" placeholder="AR1234" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <!-- ══ 3 · TIPO DE VIAJE ════════════════════════════════ -->
+      <section class="ms" data-ms="tipoviaje">
+        <h2 class="ms__q">¿Tu viaje era solo ida o ida y vuelta?</h2>
+        <p class="ms__d">Esto define qué parte del itinerario vamos a analizar.</p>
+        <div class="opts" data-pick="m-tipo-viaje">
+          <button class="opt" type="button" data-val="solo_ida"><span class="opt__ic">&#10142;</span><span class="opt__b"><span class="opt__t">Solo ida</span></span></button>
+          <button class="opt" type="button" data-val="ida_vuelta"><span class="opt__ic">&#8646;</span><span class="opt__b"><span class="opt__t">Ida y vuelta</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ 3b · DIRECCIÓN (solo ida y vuelta) ═══════════════ -->
+      <section class="ms" data-ms="direccion">
+        <h2 class="ms__q">¿En qué parte del viaje tuviste el problema?</h2>
+        <p class="ms__d">Analizamos una sola dirección: aquella donde ocurrió el incidente.</p>
+        <div class="opts" data-pick="m-direccion">
+          <button class="opt" type="button" data-val="ida"><span class="opt__ic">&#9992;&#65039;</span><span class="opt__b"><span class="opt__t">La ida</span></span></button>
+          <button class="opt" type="button" data-val="vuelta"><span class="opt__ic">&#128748;</span><span class="opt__b"><span class="opt__t">La vuelta</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ 4 · ESCALAS ══════════════════════════════════════ -->
+      <section class="ms" data-ms="escalas">
+        <h2 class="ms__q">¿Tuviste escalas en el viaje del problema?</h2>
+        <p class="ms__d">Un vuelo directo y uno con conexiones se analizan distinto.</p>
+        <div class="opts" data-pick="m-escalas">
+          <button class="opt" type="button" data-val="no"><span class="opt__ic">&#10132;</span><span class="opt__b"><span class="opt__t">No, fue directo</span></span></button>
+          <button class="opt" type="button" data-val="si"><span class="opt__ic">&#8631;</span><span class="opt__b"><span class="opt__t">Sí, tuve escalas</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ 4b · ARMADOR DE ESCALAS ══════════════════════════ -->
+      <section class="ms" data-ms="armador">
+        <h2 class="ms__q">¿Por dónde hiciste escala?</h2>
+        <p class="ms__d">En orden. Solo las escalas intermedias — el origen y el destino los cargás en el paso siguiente.</p>
+        <div id="arm-list"></div>
+        <button type="button" class="addbtn" id="arm-add">+ Agregar escala</button>
+      </section>
+
+      <!-- ══ 5 · ORIGEN / DESTINO ═════════════════════════════ -->
+      <section class="ms" data-ms="ruta">
+        <h2 class="ms__q" id="ruta-q" style="margin-bottom:20px">¿De dónde a dónde volabas?</h2>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl" id="lbl-origin">Tu viaje despegó en <span class="field__ast">*</span></label><input class="field__in" type="text" id="m-origin" data-req="1" placeholder="Buenos Aires (EZE)" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl" id="lbl-dest">Tu viaje finalizó en <span class="field__ast">*</span></label><input class="field__in" type="text" id="m-destination" data-req="1" placeholder="Madrid (MAD)" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <!-- ══ 6 · FECHA + PNR ══════════════════════════════════ -->
+      <section class="ms" data-ms="fecha">
+        <h2 class="ms__q">¿Cuándo era ese vuelo?</h2>
+        <p class="ms__d">Necesitamos el código de reserva para poder gestionar tu reclamo.</p>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Fecha del vuelo <span class="field__ast">*</span></label><input class="field__in" type="date" id="m-date" data-req="1" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">PNR (código de reserva) <span class="field__ast">*</span></label><input class="field__in" type="text" id="m-pnr" data-req="1" placeholder="ABC123" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <!-- ══ 7 · TIPO DE INCIDENCIA (vuelo) ═══════════════════ -->
+      <section class="ms" data-ms="incident">
+        <h2 class="ms__q">¿Qué pasó con tu vuelo?</h2>
+        <p class="ms__d">Elegí la situación que mejor describe lo que viviste.</p>
+        <div class="opts" data-pick="m-incident">
+          <button class="opt" type="button" data-val="cancelacion"><span class="opt__ic">&#10060;</span><span class="opt__b"><span class="opt__t">Cancelación</span><span class="opt__s">El vuelo no salió</span></span></button>
+          <button class="opt" type="button" data-val="demora"><span class="opt__ic">&#9201;&#65039;</span><span class="opt__b"><span class="opt__t">Demora</span><span class="opt__s">Salió tarde y llegaste tarde</span></span></button>
+          <button class="opt" type="button" data-val="overbooking"><span class="opt__ic">&#128101;</span><span class="opt__b"><span class="opt__t">Overbooking</span><span class="opt__s">Sobreventa: no había lugar para vos</span></span></button>
+          <button class="opt" type="button" data-val="reprogramacion"><span class="opt__ic">&#128197;</span><span class="opt__b"><span class="opt__t">Reprogramación</span><span class="opt__s">Te cambiaron el vuelo de día u horario</span></span></button>
+          <button class="opt" type="button" data-val="denegacion"><span class="opt__ic">&#128683;</span><span class="opt__b"><span class="opt__t">Denegación de embarque</span><span class="opt__s">No te dejaron subir</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ 7a · DEMORA ══════════════════════════════════════ -->
+      <section class="ms" data-ms="demora">
+        <h2 class="ms__q">¿Cuántas horas más tarde llegaste a tu destino final?</h2>
+        <p class="ms__d">Lo que importa es la demora en la llegada, no en la salida.</p>
+        <div class="g g1">
+          <div class="field"><label class="field__lbl">Horas de demora <span class="field__ast">*</span></label><input class="field__in" type="number" id="m-delay-hours" data-req="1" min="1" placeholder="4" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <!-- ══ 7b · AVISO (cancelación / reprogramación) ════════ -->
+      <section class="ms" data-ms="notice">
+        <h2 class="ms__q">¿Con cuánta anticipación te avisaron?</h2>
+        <p class="ms__d">El plazo del aviso cambia mucho lo que te corresponde.</p>
+        <div class="opts" data-pick="m-notice">
+          <button class="opt" type="button" data-val="mas_14_dias"><span class="opt__b"><span class="opt__t">Más de 14 días</span></span></button>
+          <button class="opt" type="button" data-val="7_a_14_dias"><span class="opt__b"><span class="opt__t">Entre 7 y 14 días</span></span></button>
+          <button class="opt" type="button" data-val="menos_7_dias"><span class="opt__b"><span class="opt__t">Menos de 7 días</span></span></button>
+          <button class="opt" type="button" data-val="menos_24h"><span class="opt__b"><span class="opt__t">Menos de 24 horas</span></span></button>
+          <button class="opt" type="button" data-val="en_aeropuerto"><span class="opt__b"><span class="opt__t">En el aeropuerto, sin aviso previo</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ 7c · EMBARQUE (overbooking / denegación) ═════════ -->
+      <section class="ms" data-ms="embarque">
+        <h2 class="ms__q">¿Te presentaste al embarque en tiempo y con reserva confirmada?</h2>
+        <p class="ms__d">Es la condición que habilita el reclamo por sobreventa.</p>
+        <div class="opts" data-pick="m-embarque">
+          <button class="opt" type="button" data-val="si"><span class="opt__ic">&#9989;</span><span class="opt__b"><span class="opt__t">Sí</span></span></button>
+          <button class="opt" type="button" data-val="no"><span class="opt__ic">&#10060;</span><span class="opt__b"><span class="opt__t">No</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ 7d · QUÉ OFRECIÓ ═════════════════════════════════ -->
+      <section class="ms" data-ms="refund">
+        <h2 class="ms__q">¿Qué te ofreció la aerolínea?</h2>
+        <p class="ms__d">Aunque hayas aceptado algo, el reclamo puede seguir en pie.</p>
+        <div class="opts" data-pick="m-refund">
+          <button class="opt" type="button" data-val="reubicacion"><span class="opt__b"><span class="opt__t">Reubicación en otro vuelo</span></span></button>
+          <button class="opt" type="button" data-val="reembolso"><span class="opt__b"><span class="opt__t">Reembolso</span></span></button>
+          <button class="opt" type="button" data-val="reubicacion_y_reembolso"><span class="opt__b"><span class="opt__t">Reubicación y reembolso</span></span></button>
+          <button class="opt" type="button" data-val="voucher"><span class="opt__b"><span class="opt__t">Voucher / compensación en el momento</span></span></button>
+          <button class="opt" type="button" data-val="nada"><span class="opt__b"><span class="opt__t">Nada</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ 7e · VIAJASTE ════════════════════════════════════ -->
+      <section class="ms" data-ms="viajo">
+        <h2 class="ms__q">¿Finalmente viajaste a tu destino?</h2>
+        <p class="ms__d">Con esto calculamos el perjuicio real.</p>
+        <div class="opts" data-pick="m-viajo">
+          <button class="opt" type="button" data-val="reubicado"><span class="opt__ic">&#9992;&#65039;</span><span class="opt__b"><span class="opt__t">Sí, me reubicó la aerolínea</span></span></button>
+          <button class="opt" type="button" data-val="medios_propios"><span class="opt__ic">&#128179;</span><span class="opt__b"><span class="opt__t">Sí, por mis propios medios</span><span class="opt__s">Compré otro pasaje</span></span></button>
+          <button class="opt" type="button" data-val="no_viajo"><span class="opt__ic">&#128683;</span><span class="opt__b"><span class="opt__t">No viajé</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ 7f · HORAS (reubicado / medios propios) ══════════ -->
+      <section class="ms" data-ms="viajohoras">
+        <h2 class="ms__q">¿Cuántas horas más tarde llegaste?</h2>
+        <p class="ms__d">Respecto del horario de llegada que tenías previsto originalmente.</p>
+        <div class="g g1">
+          <div class="field"><label class="field__lbl">Horas de demora <span class="field__ast">*</span></label><input class="field__in" type="number" id="m-viajo-horas" data-req="1" min="0" placeholder="4" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <!-- ══ 7g · PASAJE ALTERNATIVO ══════════════════════════ -->
+      <section class="ms" data-ms="pasajealt" data-req-file="pasaje">
+        <h2 class="ms__q">¿Cuánto te costó el pasaje que compraste?</h2>
+        <p class="ms__d">Adjuntá el comprobante.</p>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Moneda <span class="field__ast">*</span></label><select class="field__in" id="m-pasaje-moneda" data-req="1"><option value="ARS">ARS (Peso argentino)</option><option value="USD">USD (Dólar)</option><option value="EUR">EUR (Euro)</option><option value="BRL">BRL (Real)</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Costo del nuevo pasaje <span class="field__ast">*</span></label><input class="field__in" type="number" id="m-pasaje-monto" data-req="1" min="0" step="0.01" placeholder="0.00" /><span class="field__msg"></span></div>
+        </div>
+        <div style="margin-top:14px">
+          <button class="drop" type="button" data-drop="pasaje" data-max="5" style="width:100%">
+            <span class="drop__t" style="display:block">Constancia del nuevo pasaje (ticket / factura) <span class="field__ast">*</span></span>
+            <span class="drop__m" style="display:block">PDF, JPG, PNG · Hasta 5 archivos · 10MB c/u</span>
+          </button>
+          <div data-chips="pasaje"></div>
+          <div class="gerr" data-file-err></div>
+        </div>
+      </section>
+
+      <!-- ══ 8 · CAUSA ════════════════════════════════════════ -->
+      <section class="ms" data-ms="cause">
+        <h2 class="ms__q">¿Qué causa te informó la aerolínea?</h2>
+        <p class="ms__d">Si no te dijeron nada o no la recordás, seguí sin completar — es opcional.</p>
+        <div class="opts" data-pick="m-cause">
+          <button class="opt" type="button" data-val="operativa"><span class="opt__b"><span class="opt__t">Operativa</span></span></button>
+          <button class="opt" type="button" data-val="tecnica"><span class="opt__b"><span class="opt__t">Técnica</span></span></button>
+          <button class="opt" type="button" data-val="climatica"><span class="opt__b"><span class="opt__t">Climática</span></span></button>
+          <button class="opt" type="button" data-val="atc"><span class="opt__b"><span class="opt__t">Control de tráfico aéreo (ATC)</span></span></button>
+          <button class="opt" type="button" data-val="otra"><span class="opt__b"><span class="opt__t">Otra</span></span></button>
+          <button class="opt" type="button" data-val="no_informada"><span class="opt__b"><span class="opt__t">No me informaron</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ E1 · TIPO EQUIPAJE ═══════════════════════════════ -->
+      <section class="ms" data-ms="bagtype">
+        <h2 class="ms__q">¿Qué pasó con tu equipaje?</h2>
+        <p class="ms__d">Elegí la situación que corresponde.</p>
+        <div class="opts" data-pick="m-bag-type">
+          <button class="opt" type="button" data-val="perdida"><span class="opt__ic">&#10060;</span><span class="opt__b"><span class="opt__t">Pérdida</span><span class="opt__s">Nunca apareció</span></span></button>
+          <button class="opt" type="button" data-val="danio"><span class="opt__ic">&#128296;</span><span class="opt__b"><span class="opt__t">Daño</span><span class="opt__s">Llegó roto o forzado</span></span></button>
+          <button class="opt" type="button" data-val="demora"><span class="opt__ic">&#9201;&#65039;</span><span class="opt__b"><span class="opt__t">Demora en entrega</span><span class="opt__s">Llegó tarde</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ E1b · FECHA DE ENTREGA (demora) ══════════════════ -->
+      <section class="ms" data-ms="bagdelivery">
+        <h2 class="ms__q">¿Cuándo te entregaron el equipaje?</h2>
+        <p class="ms__d">Los días sin tus cosas son parte del reclamo.</p>
+        <div class="g g1">
+          <div class="field"><label class="field__lbl">Fecha de entrega</label><input class="field__in" type="date" id="m-bag-delivery" /><span class="field__msg"></span></div>
+        </div>
+        <div class="cons" id="cons-noent" style="margin-top:12px">
+          <label class="cons__r"><input type="checkbox" class="cons__cb" id="m-bag-noent" /><span class="cons__t">Todavía no me lo entregaron</span></label>
+        </div>
+      </section>
+
+      <!-- ══ E1c · VALOR ══════════════════════════════════════ -->
+      <section class="ms" data-ms="bagvalue">
+        <h2 class="ms__q" id="bagvalue-q">¿Cuánto valía lo que perdiste?</h2>
+        <p class="ms__d" id="bagvalue-d">Una estimación razonable alcanza. No hace falta que sea exacta.</p>
+        <div class="g g1">
+          <div class="field"><label class="field__lbl" id="lbl-bagvalue">Valor estimado (USD)</label><input class="field__in" type="number" id="m-bag-value" min="0" placeholder="500" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <!-- ══ E2 · PIR ═════════════════════════════════════════ -->
+      <section class="ms" data-ms="bagpir">
+        <h2 class="ms__q">¿Presentaste el reporte de equipaje (PIR) en el aeropuerto?</h2>
+        <p class="ms__d">Es el formulario que se completa en el mostrador de la aerolínea al notar el problema.</p>
+        <div class="opts" data-pick="m-bag-pir">
+          <button class="opt" type="button" data-val="si"><span class="opt__ic">&#9989;</span><span class="opt__b"><span class="opt__t">Sí</span></span></button>
+          <button class="opt" type="button" data-val="no"><span class="opt__ic">&#10060;</span><span class="opt__b"><span class="opt__t">No</span></span></button>
+          <button class="opt" type="button" data-val="no_sabe"><span class="opt__ic">&#129300;</span><span class="opt__b"><span class="opt__t">No sé</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ E2b · Nº PIR ═════════════════════════════════════ -->
+      <section class="ms" data-ms="bagpirnum">
+        <h2 class="ms__q">¿Tenés el número de PIR?</h2>
+        <p class="ms__d">Figura en el comprobante que te dieron en el aeropuerto.</p>
+        <div class="g g1">
+          <div class="field"><label class="field__lbl">Número de PIR</label><input class="field__in" type="text" id="m-bag-pir-num" placeholder="EZEAR12345" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <!-- ══ E3 · DESCRIPCIÓN + ADJUNTOS ══════════════════════ -->
+      <section class="ms" data-ms="bagdesc">
+        <h2 class="ms__q">Contanos qué pasó</h2>
+        <p class="ms__d">Con tus palabras. Si tenés fotos del daño o el PIR, sumalos.</p>
+        <div class="g g1">
+          <div class="field"><textarea class="field__in field__ta" id="m-bag-desc" data-req="1" rows="3" placeholder="Ej: Mi maleta azul llegó con la rueda rota y la cerradura forzada. Presenté el formulario PIR en el aeropuerto."></textarea><span class="field__msg"></span></div>
+        </div>
+        <div style="margin-top:12px">
+          <button class="drop" type="button" data-drop="bag" style="width:100%">
+            <span class="drop__t" style="display:block">Fotos del daño, formulario PIR y comprobantes</span>
+            <span class="drop__m" style="display:block">PDF, JPG, PNG · Máx. 5 · 10MB c/u</span>
+          </button>
+          <div data-chips="bag"></div>
+        </div>
+      </section>
+
+      <!-- ══ 9 · GASTOS: COMPUERTA ════════════════════════════ -->
+      <section class="ms" data-ms="gastosgate">
+        <h2 class="ms__q">¿Tuviste gastos extra por el incidente?</h2>
+        <p class="ms__d">Hotel, comidas, transporte, ropa de reposición.</p>
+        <div class="opts" data-pick="m-gastos-gate">
+          <button class="opt" type="button" data-val="si"><span class="opt__ic">&#128176;</span><span class="opt__b"><span class="opt__t">Sí, tuve gastos</span></span></button>
+          <button class="opt" type="button" data-val="no"><span class="opt__ic">&#8212;</span><span class="opt__b"><span class="opt__t">No, ninguno</span></span></button>
+        </div>
+      </section>
+
+      <!-- ══ 9b · GASTOS · agregador individual ════════════════
+           Cada gasto se carga completo (comprobante + descripción +
+           moneda + monto) y se ve en un resumen editable. -->
+      <section class="ms" data-ms="gastos">
+        <h2 class="ms__q">Cargá tus gastos uno por uno</h2>
+        <p class="ms__d">Cada gasto necesita su comprobante: es la prueba que respalda el reclamo.</p>
+
+        <div id="gastos-list"></div>
+        <div class="gempty" id="gastos-empty">Todavía no cargaste ningún gasto.</div>
+
+        <div class="gform" id="gform" style="display:none">
+          <div class="g g1">
+            <div class="field"><label class="field__lbl">Descripción del gasto <span class="field__ast">*</span></label><input class="field__in" type="text" id="g-desc" placeholder="Ej: Hotel una noche en Madrid" /></div>
+          </div>
+          <div class="g g2" style="margin-top:12px">
+            <div class="field"><label class="field__lbl">Moneda <span class="field__ast">*</span></label><select class="field__in" id="g-cur"><option value="ARS">ARS (Peso argentino)</option><option value="USD">USD (Dólar)</option><option value="EUR">EUR (Euro)</option><option value="BRL">BRL (Real)</option></select></div>
+            <div class="field"><label class="field__lbl">Monto <span class="field__ast">*</span></label><input class="field__in" type="number" id="g-amt" min="0" step="0.01" placeholder="0.00" /></div>
+          </div>
+          <div style="margin-top:12px">
+            <button class="drop" type="button" id="g-drop" style="width:100%">
+              <span class="drop__t" style="display:block">Ticket / comprobante del gasto <span class="field__ast">*</span></span>
+              <span class="drop__m" style="display:block">PDF, JPG, PNG · Máx. 10MB</span>
+            </button>
+            <div data-chips="gasto-item"></div>
+          </div>
+          <div class="gerr" id="g-err"></div>
+          <div class="gform__act">
+            <button class="btn btn--back" type="button" id="g-cancel">Cancelar</button>
+            <button class="btn btn--go" type="button" id="g-save">Agregar gasto</button>
+          </div>
+        </div>
+
+        <button type="button" class="addbtn" id="gasto-add">+ Agregar gasto</button>
+        <div class="gtotal" id="gastos-total" style="display:none">
+          <span class="gtotal__l" id="gastos-total-l">Total cargado</span>
+          <span class="gtotal__v" id="gastos-total-v"></span>
+        </div>
+      </section>
+
+      <!-- ══ 10 · EQUIPAJE COMBINADO (rama vuelo) ═════════════ -->
+      <section class="ms" data-ms="combogate">
+        <h2 class="ms__q">¿También tuviste un problema con tu equipaje en este vuelo?</h2>
+        <p class="ms__d">Si es así lo sumamos al mismo reclamo, sin abrir un caso aparte.</p>
+        <div class="opts" data-pick="m-combo-gate">
+          <button class="opt" type="button" data-val="si"><span class="opt__ic">&#129523;</span><span class="opt__b"><span class="opt__t">Sí, también con el equipaje</span></span></button>
+          <button class="opt" type="button" data-val="no"><span class="opt__ic">&#8212;</span><span class="opt__b"><span class="opt__t">No, solo el vuelo</span></span></button>
+        </div>
+      </section>
+
+      <section class="ms" data-ms="combo">
+        <h2 class="ms__q">¿Qué pasó con tu equipaje?</h2>
+        <p class="ms__d">Lo básico alcanza: si hace falta te lo pedimos después.</p>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Tipo de incidencia <span class="field__ast">*</span></label><select class="field__in" id="m-combo-type" data-req="1"><option value="">Seleccionar...</option><option value="perdida">Pérdida</option><option value="danio">Daño</option><option value="demora">Demora en entrega</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">¿Presentaste el PIR? <span class="field__ast">*</span></label><select class="field__in" id="m-combo-pir" data-req="1"><option value="">Seleccionar...</option><option value="si">Sí</option><option value="no">No</option><option value="no_sabe">No sé</option></select><span class="field__msg"></span></div>
+        </div>
+        <div class="g g1" style="margin-top:14px">
+          <div class="field"><label class="field__lbl">Descripción</label><textarea class="field__in field__ta" id="m-combo-desc" rows="2" placeholder="Ej: Mi maleta llegó con la rueda rota."></textarea><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <!-- ══ 11 · ACOMPAÑANTES ════════════════════════════════ -->
+      <section class="ms" data-ms="acompgate">
+        <h2 class="ms__q">¿Viajabas con alguien más afectado?</h2>
+        <p class="ms__d">Podemos reclamar por todos en el mismo caso.</p>
+        <div class="opts" data-pick="m-acomp-gate">
+          <button class="opt" type="button" data-val="si"><span class="opt__ic">&#128101;</span><span class="opt__b"><span class="opt__t">Sí, viajaba acompañado/a</span></span></button>
+          <button class="opt" type="button" data-val="no"><span class="opt__ic">&#128100;</span><span class="opt__b"><span class="opt__t">No, viajaba solo/a</span></span></button>
+        </div>
+      </section>
+
+      <section class="ms" data-ms="acomp">
+        <h2 class="ms__q">¿Quiénes te acompañaban?</h2>
+        <p class="ms__d">Nombre y documento de cada persona afectada por el mismo vuelo.</p>
+        <div id="acomp-list"></div>
+        <button type="button" class="addbtn" id="acomp-add">+ Agregar pasajero</button>
+      </section>
+
+      <!-- ══ 11b · OTRA DOCUMENTACIÓN ═════════════════════════
+           Dropzone común, sin lectura por IA: acá entra todo lo que el
+           caso no preguntó explícitamente. -->
+      <section class="ms" data-ms="otrosdocs">
+        <h2 class="ms__q">¿Tenés algún otro documento para sumar?</h2>
+        <p class="ms__d">Cualquier cosa que respalde tu reclamo: mails con la aerolínea, capturas de pantalla, certificados. Es opcional.</p>
+        <button class="drop" type="button" data-drop="otros" data-max="5" style="width:100%;padding:26px 16px">
+          <span class="drop__t" style="display:block">Arrastrá acá cualquier otra documentación</span>
+          <span class="drop__m" style="display:block">PDF, JPG, PNG · Hasta 5 archivos · Máx. 10MB c/u</span>
+        </button>
+        <div data-chips="otros"></div>
+      </section>
+
+      <!-- ══ 11c · COMENTARIOS LIBRES ═════════════════════════ -->
+      <section class="ms" data-ms="comentario">
+        <h2 class="ms__q">¿Querés contarnos algo más?</h2>
+        <p class="ms__d">Cualquier detalle que creas importante y que no te hayamos preguntado. Es opcional.</p>
+        <div class="g g1">
+          <div class="field">
+            <textarea class="field__in field__ta" id="m-comentario" rows="6" maxlength="1500" style="min-height:140px" placeholder="Ej: Viajaba con mi hija de 3 años y estuvimos 9 horas en el aeropuerto sin asistencia ni información. En el mostrador nos dijeron que era por mantenimiento, pero en la app figuraba otra cosa."></textarea>
+          </div>
+        </div>
+        <div class="cnt"><span id="com-cnt">0</span> / 1500</div>
+      </section>
+
+      <!-- ══ 12 · DATOS PERSONALES (troceados) ════════════════ -->
+      <section class="ms" data-ms="pers1">
+        <h2 class="ms__q">Listo. ¿Cómo te llamás?</h2>
+        <p class="ms__d">Tal como figura en tu documento de identidad.</p>
+        <div class="g g1">
+          <div class="field"><label class="field__lbl">Nombre y apellido <span class="field__ast">*</span></label><input class="field__in" type="text" id="m-name" data-req="1" placeholder="Juan Pablo Martínez" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <section class="ms" data-ms="pers2">
+        <h2 class="ms__q">¿Dónde te contactamos?</h2>
+        <p class="ms__d">El seguimiento del caso va principalmente por WhatsApp.</p>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Teléfono <span class="field__ast">*</span></label><input class="field__in" type="tel" id="m-phone" data-req="1" placeholder="+54 9 11 2557-8402" /><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Mail <span class="field__ast">*</span></label><input class="field__in" type="email" id="m-email" data-req="1" placeholder="juan@email.com" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <section class="ms" data-ms="pers3">
+        <h2 class="ms__q">¿Cuál es tu documento?</h2>
+        <p class="ms__d">Lo necesitamos para el poder que autoriza a representarte.</p>
+        <div class="g g2">
+          <div class="field"><label class="field__lbl">Tipo <span class="field__ast">*</span></label><select class="field__in" id="m-doctype" data-req="1"><option value="">Seleccionar...</option><option value="DNI">DNI</option><option value="Pasaporte">Pasaporte</option><option value="ID">ID / Cédula</option></select><span class="field__msg"></span></div>
+          <div class="field"><label class="field__lbl">Número <span class="field__ast">*</span></label><input class="field__in" type="text" id="m-docnum" data-req="1" placeholder="37.806.475" /><span class="field__msg"></span></div>
+        </div>
+      </section>
+
+      <!-- ══ 13 · DDJJ + FIRMA ════════════════════════════════ -->
+      <section class="ms" data-ms="firma">
+        <h2 class="ms__q">Declaración jurada y firma</h2>
+        <p class="ms__d">Leé antes de firmar. Es el último paso.</p>
+        <div class="fee">
+          <span class="fee__ic"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v6c0 5 3.5 8 9 9 5.5-1 9-4 9-9V7l-9-5z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <p><strong>SolucionAir opera bajo un esquema de honorarios por éxito:</strong> no se cobran costos iniciales y los honorarios equivalen al <strong>25%</strong> de la compensación obtenida.</p>
+        </div>
+        <!-- Texto idéntico al de producción (index.html:600-609). No se
+             reescribe ni se abrevia: es texto contractual. -->
+        <div class="ddjj">
+          <p>Mediante la presente, el/la reclamante declara bajo juramento que toda la información proporcionada en este formulario es verídica, completa y exacta. Autorizo expresamente a <strong>SolucionAir</strong>, representada por <strong>Juan Pablo Mario Adaniya</strong> (DNI 37.806.475) y <strong>Tomás Gregorio Dicranian</strong> (DNI 37.606.877), a:</p>
+          <ul>
+            <li>Gestionar y presentar reclamos formales ante la aerolínea y/o autoridades competentes en mi nombre.</li>
+            <li>Acceder, utilizar y compartir la documentación provista exclusivamente con fines de gestión del presente reclamo.</li>
+            <li>Representarme en instancias de mediación privada online, si correspondiera.</li>
+            <li>Percibir y cobrar en mi nombre las sumas que resulten del reclamo, acreditándolas en la cuenta bancaria informada en el poder especial, y liquidarme el importe neto de la comisión dentro de los 10 días hábiles de acreditados los fondos.</li>
+            <li>Declaro estar autorizado/a a gestionar este reclamo en nombre de los acompañantes que haya incluido, y ser responsable legal o tutor/a de aquellos identificados como menores de edad.</li>
+          </ul>
+          <p>Entiendo que SolucionAir opera bajo un esquema de honorarios por éxito: <strong>no se cobran costos iniciales</strong> y los honorarios equivalen al 25% de la compensación obtenida, únicamente si el reclamo prospera.</p>
+          <p>Esta declaración constituye una firma electrónica válida en los términos de la Ley 25.506 de Firma Digital de la República Argentina.</p>
+        </div>
+        <div class="cons" id="cons-box">
+          <label class="cons__r">
+            <input type="checkbox" class="cons__cb" id="m-consent" data-req="1" />
+            <span class="cons__t">Acepto los <button type="button" class="doclink" data-doc="tyc">Términos y Condiciones</button>, la <button type="button" class="doclink" data-doc="priv">Política de Privacidad</button> y la declaración jurada precedente. Firmo digitalmente este reclamo autorizando a SolucionAir a actuar en mi representación.</span>
+          </label>
+          <div class="cons__meta" id="cons-meta"></div>
+        </div>
+      </section>
+
+      <!-- ══ ÉXITO ════════════════════════════════════════════ -->
+      <section class="ms" data-ms="done">
+        <div class="done">
+          <div class="done__ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1B9B5A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <h2 class="done__t">&#161;Reclamo enviado con éxito!</h2>
+          <p class="done__d">Tu caso fue registrado correctamente. Nuestro equipo ya está procesando tu reclamo.</p>
+          <div class="done__box">
+            <div class="done__lbl">Tu número de caso</div>
+            <div class="done__id" id="done-id">—</div>
+          </div>
+          <p style="font-size:.76rem;color:var(--t3);line-height:1.55">Guardá este código para consultar el estado de tu caso. Te contactamos por WhatsApp con novedades.</p>
+          <p class="hint" style="margin-top:18px">Simulación local · no se envió nada a ningún servidor</p>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="dlg__foot" id="foot">
+      <button class="btn btn--back" id="back" type="button">&larr; Atrás</button>
+      <button class="btn btn--go" id="next" type="button">Continuar</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ Popup de documento legal (T&C / Privacidad) ══════════ -->
+<div class="ov ov--doc" id="ov-doc" role="dialog" aria-modal="true">
+  <div class="dlg" style="max-width:600px">
+    <div class="dlg__head">
+      <span class="dlg__t" id="doc-title">Términos y Condiciones</span>
+      <button class="dlg__x" id="doc-close" type="button" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="dlg__body"><div class="docbody" id="doc-body"></div></div>
+    <div class="dlg__foot"><button class="btn btn--go" id="doc-ok" type="button">Entendido</button></div>
+  </div>
+</div>
+
+<!-- ══ Confirmación antes de cerrar ═════════════════════════ -->
+<div class="ov ov--cfm" id="ov-cfm" role="dialog" aria-modal="true">
+  <div class="cfm">
+    <h3 class="cfm__t">¿Cerrar el formulario?</h3>
+    <p class="cfm__d">Vas a perder lo que cargaste hasta acá. Tu reclamo todavía no fue enviado.</p>
+    <div class="cfm__act">
+      <button class="btn btn--back" id="cfm-no" type="button">Seguir cargando</button>
+      <button class="btn btn--danger" id="cfm-si" type="button">Cerrar y descartar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Mockup exploratorio · ES5 estricto (var / function / concat),
+   igual que src/js/app.js, por si algo de esto se levanta al
+   código real más adelante.
+
+   TODO acá es simulado: no hay fetch, ni Supabase, ni OpenRouter.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  /* ---- Estado ----
+     Se navega por ID, no por índice: cada respuesta agrega o saca
+     pasos de la lista visible, así que un índice guardado se
+     desincroniza. `hist` es la pila real del botón Atrás. */
+  var S = { ctype: 'vuelo', cur: 'tipo', hist: [], dir: 'fwd' };
+
+  function el(id) { return document.getElementById(id); }
+  function v(id) { var n = el(id); return n ? n.value : ''; }
+  function chk(id) { var n = el(id); return !!(n && n.checked); }
+
+  /* ---- Árbol de micro-pasos ----
+     Replica el condicional real de app.js:240-257 (incidencia) y
+     app.js:969-1055 (dirección / escalas). Cada paso declara cuándo
+     aplica; el % se calcula SOLO sobre los pasos aplicables ahora. */
+  var esComun = function () {
+    var x = v('m-incident');
+    return x === 'cancelacion' || x === 'reprogramacion' || x === 'overbooking' || x === 'denegacion';
+  };
+  var esVuelo = function () { return S.ctype === 'vuelo'; };
+  var esEquipaje = function () { return S.ctype === 'equipaje'; };
+
+  var STEPS = [
+    { id: 'tipo' },
+    { id: 'scan' },
+    { id: 'airline' },
+    { id: 'tipoviaje' },
+    { id: 'direccion', when: function () { return v('m-tipo-viaje') === 'ida_vuelta'; } },
+    { id: 'escalas' },
+    { id: 'armador', when: function () { return v('m-escalas') === 'si'; } },
+    { id: 'ruta' },
+    { id: 'fecha' },
+
+    /* rama vuelo */
+    { id: 'incident',   when: esVuelo },
+    { id: 'demora',     when: function () { return esVuelo() && v('m-incident') === 'demora'; } },
+    { id: 'notice',     when: function () { return esVuelo() && (v('m-incident') === 'cancelacion' || v('m-incident') === 'reprogramacion'); } },
+    { id: 'embarque',   when: function () { return esVuelo() && (v('m-incident') === 'overbooking' || v('m-incident') === 'denegacion'); } },
+    { id: 'refund',     when: function () { return esVuelo() && esComun(); } },
+    { id: 'viajo',      when: function () { return esVuelo() && esComun(); } },
+    { id: 'viajohoras', when: function () { return esVuelo() && esComun() && (v('m-viajo') === 'reubicado' || v('m-viajo') === 'medios_propios'); } },
+    { id: 'pasajealt',  when: function () { return esVuelo() && esComun() && v('m-viajo') === 'medios_propios'; } },
+    { id: 'cause',      when: esVuelo },
+
+    /* rama equipaje */
+    { id: 'bagtype',     when: esEquipaje },
+    { id: 'bagdelivery', when: function () { return esEquipaje() && v('m-bag-type') === 'demora'; } },
+    { id: 'bagvalue',    when: esEquipaje },
+    { id: 'bagpir',      when: esEquipaje },
+    { id: 'bagpirnum',   when: function () { return esEquipaje() && v('m-bag-pir') === 'si'; } },
+    { id: 'bagdesc',     when: esEquipaje },
+
+    /* común */
+    { id: 'gastosgate' },
+    { id: 'gastos',    when: function () { return v('m-gastos-gate') === 'si'; } },
+    { id: 'combogate', when: esVuelo },
+    { id: 'combo',     when: function () { return esVuelo() && v('m-combo-gate') === 'si'; } },
+    { id: 'acompgate' },
+    { id: 'acomp',     when: function () { return v('m-acomp-gate') === 'si'; } },
+    { id: 'otrosdocs' },
+    { id: 'comentario' },
+    { id: 'pers1' },
+    { id: 'pers2' },
+    { id: 'pers3' },
+    { id: 'firma' },
+    { id: 'done' }
+  ];
+
+  function visibles() {
+    var out = [], i;
+    for (i = 0; i < STEPS.length; i++) {
+      if (!STEPS[i].when || STEPS[i].when()) out.push(STEPS[i]);
+    }
+    return out;
+  }
+
+  function idxDe(id) {
+    var vis = visibles(), i;
+    for (i = 0; i < vis.length; i++) if (vis[i].id === id) return i;
+    return 0;
+  }
+
+  var ov = el('ov'), body = el('body'), foot = el('foot');
+  var btnBack = el('back'), btnNext = el('next');
+
+  /* ---- Render ---- */
+  function pintar() {
+    var vis = visibles();
+    var pos = idxDe(S.cur);
+    var cur = vis[pos];
+
+    var secs = body.querySelectorAll('.ms'), i;
+    for (i = 0; i < secs.length; i++) {
+      secs[i].className = 'ms';
+      if (secs[i].getAttribute('data-ms') === cur.id) {
+        secs[i].className = 'ms is-on dir-' + S.dir;
+      }
+    }
+    body.scrollTop = 0;
+
+    /* Progreso: SOLO % y "Paso N". Nunca el total ni el detalle
+       de lo que falta — requisito explícito del rediseño. */
+    var pct = Math.round((pos / (vis.length - 1)) * 100);
+    el('prog-fill').style.width = pct + '%';
+    el('prog-pct').textContent = pct + '%';
+    el('prog-step').textContent = cur.id === 'done' ? 'Completado' : 'Paso ' + (pos + 1);
+    el('prog-wrap').style.display = cur.id === 'tipo' ? 'none' : '';
+
+    /* Pie */
+    if (cur.id === 'done') {
+      foot.style.display = 'none';
+    } else {
+      foot.style.display = '';
+      btnBack.style.display = S.hist.length === 0 ? 'none' : '';
+      btnNext.className = 'btn ' + (cur.id === 'firma' ? 'btn--send' : 'btn--go');
+      btnNext.textContent = cur.id === 'firma' ? 'Firmar y enviar reclamo' : 'Continuar';
+    }
+
+    /* Etiquetas contextuales */
+    if (cur.id === 'ruta') {
+      /* Etiquetas como frase, no como sustantivo suelto: "Tu viaje de
+         vuelta despegó en" saca la ambigüedad de "Origen" cuando lo que
+         se pide es el origen del tramo de vuelta. */
+      var dir = v('m-direccion');
+      var suj = dir === 'ida' ? 'Tu viaje de ida' : dir === 'vuelta' ? 'Tu viaje de vuelta' : 'Tu viaje';
+      el('lbl-origin').innerHTML = suj + ' despegó en <span class="field__ast">*</span>';
+      el('lbl-dest').innerHTML = suj + ' finalizó en <span class="field__ast">*</span>';
+      /* Sin bajada: las etiquetas de los campos ya dicen de qué tramo se
+         trata. Cualquier aclaración extra sumaba confusión. */
+      el('ruta-q').textContent = dir === 'vuelta' ? '¿Cómo era tu vuelo de vuelta?'
+        : dir === 'ida' ? '¿Cómo era tu vuelo de ida?' : '¿De dónde a dónde volabas?';
+    }
+    if (cur.id === 'bagvalue') {
+      var bt = v('m-bag-type');
+      if (bt === 'perdida') {
+        el('bagvalue-q').textContent = '¿Cuánto valía lo que perdiste?';
+        el('lbl-bagvalue').innerHTML = 'Valor estimado del contenido (USD) <span class="field__ast">*</span>';
+        el('m-bag-value').setAttribute('data-req', '1');
+      } else if (bt === 'danio') {
+        el('bagvalue-q').textContent = '¿Cuánto costaría repararlo o reponerlo?';
+        el('lbl-bagvalue').textContent = 'Costo estimado de reparación/reposición (USD)';
+        el('m-bag-value').removeAttribute('data-req');
+      } else {
+        el('bagvalue-q').textContent = '¿Cuánto valía el equipaje demorado?';
+        el('lbl-bagvalue').textContent = 'Valor estimado del equipaje (USD)';
+        el('m-bag-value').removeAttribute('data-req');
+      }
+    }
+  }
+
+  /* ---- Validación mínima del paso visible ---- */
+  function validar() {
+    var sec = body.querySelector('.ms[data-ms="' + S.cur + '"]');
+    if (!sec) return true;
+    var reqs = sec.querySelectorAll('[data-req]'), ok = true, i, n, f;
+    for (i = 0; i < reqs.length; i++) {
+      n = reqs[i];
+      f = n.closest ? n.closest('.field') : null;
+      var vacio = n.type === 'checkbox' ? !n.checked : !String(n.value).trim();
+      if (vacio) {
+        ok = false;
+        if (f) { f.className = 'field is-bad'; var m = f.querySelector('.field__msg'); if (m) m.textContent = 'Completá este campo'; }
+        if (n.type === 'checkbox') { var cb = el('cons-box'); if (cb) cb.style.borderColor = 'var(--err)'; }
+      } else if (f) {
+        f.className = 'field';
+        var m2 = f.querySelector('.field__msg'); if (m2) m2.textContent = '';
+      }
+    }
+    /* Adjunto obligatorio declarado por la pantalla */
+    var reqFile = sec.getAttribute('data-req-file');
+    if (reqFile) {
+      var cf = document.querySelector('[data-chips="' + reqFile + '"]');
+      if (!cf || !cf.children.length) {
+        var ef = sec.querySelector('[data-file-err]');
+        if (ef) ef.textContent = 'Falta adjuntar el comprobante.';
+        ok = false;
+      }
+    }
+
+    /* Si dijo que tuvo gastos, tiene que haber cargado al menos uno */
+    if (S.cur === 'gastos' && !GASTOS.length) {
+      el('gastos-empty').style.borderColor = 'var(--err)';
+      el('gastos-empty').style.color = 'var(--err)';
+      el('gastos-empty').textContent = 'Agregá al menos un gasto para continuar.';
+      return false;
+    }
+
+    /* Los pasos de tarjetas guardan en un input oculto */
+    var pick = sec.querySelector('[data-pick]');
+    if (pick && S.cur !== 'cause') {
+      var hid = el(pick.getAttribute('data-pick'));
+      if (hid && !hid.value) {
+        ok = false;
+        var q = sec.querySelector('.ms__d');
+        if (q) { q.style.color = 'var(--err)'; setTimeout(function () { q.style.color = ''; }, 1600); }
+      }
+    }
+    return ok;
+  }
+
+  function ir(delta) {
+    if (delta > 0) {
+      if (!validar()) return;
+      if (S.cur === 'firma') { enviar(); return; }
+      /* La lista visible se recalcula DESPUÉS de guardar la respuesta,
+         así que el "siguiente" ya refleja lo que la respuesta destapó. */
+      var vis = visibles(), pos = idxDe(S.cur);
+      if (pos >= vis.length - 1) return;
+      S.hist.push(S.cur);
+      S.cur = vis[pos + 1].id;
+      S.dir = 'fwd';
+    } else {
+      if (!S.hist.length) return;
+      S.cur = S.hist.pop();
+      S.dir = 'back';
+    }
+    pintar();
+  }
+
+  btnNext.addEventListener('click', function () { ir(1); });
+  btnBack.addEventListener('click', function () { ir(-1); });
+
+  /* ---- Tarjetas de opción → input oculto ---- */
+  function hidden(id) {
+    var h = el(id);
+    if (!h) { h = document.createElement('input'); h.type = 'hidden'; h.id = id; document.body.appendChild(h); }
+    return h;
+  }
+  var picks = document.querySelectorAll('[data-pick]');
+  (function () {
+    var i;
+    for (i = 0; i < picks.length; i++) {
+      (function (grupo) {
+        hidden(grupo.getAttribute('data-pick'));
+        grupo.addEventListener('click', function (e) {
+          /* Subir hasta el <button>: el click suele caer en un <span>
+             interno, y 'opt__ic' también empieza con 'opt'. */
+          var b = e.target;
+          while (b && b !== grupo && b.nodeName !== 'BUTTON') b = b.parentNode;
+          if (!b || b === grupo) return;
+          var opts = grupo.querySelectorAll('.opt'), k;
+          for (k = 0; k < opts.length; k++) opts[k].className = 'opt';
+          b.className = 'opt is-sel';
+          hidden(grupo.getAttribute('data-pick')).value = b.getAttribute('data-val');
+          /* Una respuesta destapa la siguiente: avance automático,
+             como en una conversación. */
+          setTimeout(function () { ir(1); }, 180);
+        });
+      })(picks[i]);
+    }
+  })();
+
+  /* ---- Tipo de reclamo ---- */
+  var ctBtns = document.querySelectorAll('[data-ctype]');
+  (function () {
+    var i;
+    for (i = 0; i < ctBtns.length; i++) {
+      ctBtns[i].addEventListener('click', function () {
+        var j;
+        for (j = 0; j < ctBtns.length; j++) ctBtns[j].className = 'ctype__b';
+        this.className = 'ctype__b is-sel';
+        S.ctype = this.getAttribute('data-ctype');
+        setTimeout(function () { ir(1); }, 180);
+      });
+    }
+  })();
+
+  /* ---- Escáner IA simulado ---- */
+  var MOCK = {
+    airline: 'Aerolíneas Argentinas', flight: 'AR1134',
+    origin: 'Buenos Aires (EZE)', destination: 'Madrid (MAD)',
+    date: '2026-06-14', pnr: 'QK7X2M'
+  };
+  el('scan-go').addEventListener('click', function () {
+    el('scan-idle').className = 'hidden';
+    el('scan-load').className = 'scan__load';
+    setTimeout(function () {
+      el('m-airline').value = MOCK.airline;
+      el('m-flight').value = MOCK.flight;
+      el('m-origin').value = MOCK.origin;
+      el('m-destination').value = MOCK.destination;
+      el('m-date').value = MOCK.date;
+      el('m-pnr').value = MOCK.pnr;
+      el('airline-d').textContent = 'La IA leyó tus documentos y completó esto. Revisalo por las dudas.';
+      el('scan-idle').className = '';
+      el('scan-load').className = 'scan__load hidden';
+      ir(1);
+    }, 1700);
+  });
+  el('scan-skip').addEventListener('click', function () { ir(1); });
+
+  /* ---- Filas dinámicas ---- */
+  function fila(cont, ph, extra) {
+    var d = document.createElement('div');
+    d.className = 'row';
+    d.innerHTML = '<input class="field__in" type="text" placeholder="' + ph + '" />' +
+      (extra ? '<input class="field__in" type="text" placeholder="' + extra + '" />' : '') +
+      '<button type="button" class="row__del">&times;</button>';
+    d.querySelector('.row__del').addEventListener('click', function () { cont.removeChild(d); });
+    cont.appendChild(d);
+  }
+  el('arm-add').addEventListener('click', function () { fila(el('arm-list'), 'Ciudad o código de escala (ej: GRU)', ''); });
+  el('acomp-add').addEventListener('click', function () { fila(el('acomp-list'), 'Nombre y apellido', 'Documento'); });
+  fila(el('arm-list'), 'Ciudad o código de escala (ej: GRU)', '');
+  fila(el('acomp-list'), 'Nombre y apellido', 'Documento');
+
+  /* ---- Dropzones simuladas ---- */
+  var FAKE = {
+    pasaje:  ['pasaje_nuevo.pdf', 'factura_agencia.pdf', 'comprobante_pago.jpg'],
+    bag:     ['foto_valija_rota.jpg', 'formulario_pir.pdf', 'recibo_equipaje.jpg'],
+    otros:   ['mail_aerolinea.pdf', 'captura_whatsapp.jpg', 'certificado_medico.pdf', 'reclamo_anac.pdf', 'foto_pantalla_vuelos.jpg'],
+    _def:    ['documento_1.pdf', 'documento_2.jpg', 'documento_3.pdf']
+  };
+  function limiteDe(btn) { return parseInt(btn.getAttribute('data-max'), 10) || 3; }
+  function refrescarDrop(btn, cont) {
+    var lleno = cont.children.length >= limiteDe(btn);
+    btn.className = lleno ? 'drop is-full' : 'drop';
+    var meta = btn.querySelector('.drop__m');
+    if (lleno && meta) {
+      if (!meta.getAttribute('data-orig')) meta.setAttribute('data-orig', meta.textContent);
+      meta.textContent = 'Llegaste al máximo de ' + limiteDe(btn) + ' archivos';
+    } else if (meta && meta.getAttribute('data-orig')) {
+      meta.textContent = meta.getAttribute('data-orig');
+    }
+  }
+  var drops = document.querySelectorAll('[data-drop]');
+  (function () {
+    var i;
+    for (i = 0; i < drops.length; i++) {
+      drops[i].addEventListener('click', function () {
+        var k = this.getAttribute('data-drop');
+        var cont = document.querySelector('[data-chips="' + k + '"]');
+        var btn = this;
+        if (!cont || cont.children.length >= limiteDe(btn)) return;
+        var nombres = FAKE[k] || FAKE._def;
+        var c = document.createElement('span');
+        c.className = 'chip';
+        c.innerHTML = nombres[cont.children.length % nombres.length] + ' <span class="chip__x">&times;</span>';
+        c.querySelector('.chip__x').addEventListener('click', function () {
+          cont.removeChild(c); refrescarDrop(btn, cont);
+        });
+        cont.appendChild(c);
+        refrescarDrop(btn, cont);
+        var err = btn.parentNode.querySelector('[data-file-err]');
+        if (err) err.textContent = '';
+      });
+    }
+  })();
+
+  /* ---- Contador del comentario libre ---- */
+  el('m-comentario').addEventListener('input', function () {
+    el('com-cnt').textContent = String(this.value.length);
+  });
+
+  /* ---- Agregador de gastos ----
+     Cada gasto es una unidad completa: comprobante + descripción +
+     moneda + monto. El resumen permite borrar y volver a agregar. */
+  var GASTOS = [];
+  var MONEDAS = { ARS: 'ARS', USD: 'USD', EUR: 'EUR', BRL: 'BRL' };
+
+  function gastoAdjunto() {
+    var c = document.querySelector('[data-chips="gasto-item"]');
+    return c && c.children.length ? c.children[0].textContent.replace('×', '').trim() : '';
+  }
+  function limpiarForm() {
+    el('g-desc').value = ''; el('g-amt').value = ''; el('g-cur').value = 'ARS';
+    el('g-err').textContent = '';
+    var c = document.querySelector('[data-chips="gasto-item"]');
+    while (c.firstChild) c.removeChild(c.firstChild);
+  }
+  /* Nombre con el que se guarda el comprobante en el bucket. Se calcula al
+     final, sobre la lista ya cerrada: si se numerara al agregar, borrar un
+     gasto dejaría los nombres corridos. */
+  function nombreGuardado(g, idx) {
+    var punto = g.file.lastIndexOf('.');
+    var ext = punto > -1 ? g.file.slice(punto) : '';
+    return 'Gasto ' + (idx + 1) + ' - ' + g.cur + ' ' + Number(g.amt).toFixed(2) + ext;
+  }
+
+  function pintarGastos() {
+    var cont = el('gastos-list'), i;
+    while (cont.firstChild) cont.removeChild(cont.firstChild);
+    for (i = 0; i < GASTOS.length; i++) {
+      (function (g, idx) {
+        var d = document.createElement('div');
+        d.className = 'gitem';
+        d.innerHTML =
+          '<span class="gitem__b">' +
+            '<span class="gitem__t"></span>' +
+            '<span class="gitem__m"></span>' +
+            '<span class="gitem__f">&#128206; <span></span><em class="gitem__orig"></em></span>' +
+          '</span>' +
+          '<button type="button" class="gitem__del" aria-label="Eliminar">&times;</button>';
+        /* textContent, no innerHTML: el detalle lo escribe el usuario */
+        d.querySelector('.gitem__t').textContent = g.desc;
+        d.querySelector('.gitem__m').textContent = g.cur + ' ' + Number(g.amt).toFixed(2);
+        d.querySelector('.gitem__f span').textContent = nombreGuardado(g, idx);
+        d.querySelector('.gitem__orig').textContent = 'subiste ' + g.file;
+        d.querySelector('.gitem__del').addEventListener('click', function () {
+          GASTOS.splice(idx, 1); pintarGastos();
+        });
+        cont.appendChild(d);
+      })(GASTOS[i], i);
+    }
+    el('gastos-empty').style.display = GASTOS.length ? 'none' : '';
+    el('gastos-empty').style.borderColor = '';
+    el('gastos-empty').style.color = '';
+    el('gastos-empty').textContent = 'Todavía no cargaste ningún gasto.';
+
+    /* Se suma DENTRO de cada moneda y se listan por separado. Sumar entre
+       monedas distintas sería inventar un tipo de cambio. */
+    var tot = {}, k, partes = [];
+    for (k = 0; k < GASTOS.length; k++) {
+      tot[GASTOS[k].cur] = (tot[GASTOS[k].cur] || 0) + Number(GASTOS[k].amt);
+    }
+    for (k in tot) if (tot.hasOwnProperty(k)) partes.push(k + ' ' + tot[k].toFixed(2));
+    el('gastos-total').style.display = GASTOS.length ? '' : 'none';
+    el('gastos-total').className = partes.length > 1 ? 'gtotal gtotal--multi' : 'gtotal';
+    el('gastos-total-l').textContent = partes.length > 1 ? 'Totales por moneda' : 'Total cargado';
+    var cv = el('gastos-total-v');
+    while (cv.firstChild) cv.removeChild(cv.firstChild);
+    for (k = 0; k < partes.length; k++) {
+      var li = document.createElement('span');
+      li.className = 'gtotal__i';
+      li.textContent = partes[k];
+      cv.appendChild(li);
+    }
+  }
+  el('gasto-add').addEventListener('click', function () {
+    el('gform').style.display = 'block';
+    this.style.display = 'none';
+    el('g-desc').focus();
+  });
+  el('g-cancel').addEventListener('click', function () {
+    el('gform').style.display = 'none';
+    el('gasto-add').style.display = '';
+    limpiarForm();
+  });
+  el('g-drop').addEventListener('click', function () {
+    var c = document.querySelector('[data-chips="gasto-item"]');
+    if (c.children.length) return;                 /* un comprobante por gasto */
+    var nombres = ['ticket_hotel.pdf', 'factura_taxi.jpg', 'comida_aeropuerto.pdf', 'ropa_reposicion.jpg'];
+    var s = document.createElement('span');
+    s.className = 'chip';
+    s.innerHTML = nombres[GASTOS.length % nombres.length] + ' <span class="chip__x">&times;</span>';
+    s.querySelector('.chip__x').addEventListener('click', function () { c.removeChild(s); });
+    c.appendChild(s);
+  });
+  el('g-save').addEventListener('click', function () {
+    var desc = el('g-desc').value.trim(), amt = el('g-amt').value, file = gastoAdjunto();
+    if (!desc) { el('g-err').textContent = 'Poné una descripción del gasto.'; return; }
+    if (!amt || Number(amt) <= 0) { el('g-err').textContent = 'Poné el monto del gasto.'; return; }
+    if (!file) { el('g-err').textContent = 'Falta el ticket o comprobante de este gasto.'; return; }
+    GASTOS.push({ desc: desc, cur: MONEDAS[el('g-cur').value] || 'ARS', amt: amt, file: file });
+    limpiarForm();
+    el('gform').style.display = 'none';
+    el('gasto-add').style.display = '';
+    pintarGastos();
+  });
+  pintarGastos();
+
+  /* ---- Documentos legales en popup anidado ---- */
+  var DOCS = {
+    tyc: {
+      t: 'Términos y Condiciones',
+      h: '<h4>1. Objeto del servicio</h4><p>SolucionAir gestiona reclamos de compensación frente a aerolíneas en representación del pasajero, en sede administrativa, extrajudicial y de mediación privada online.</p>' +
+         '<h4>2. Honorarios</h4><p>El servicio opera bajo esquema de honorarios por éxito. No se cobran costos iniciales. Los honorarios equivalen al <strong>25% de la compensación efectivamente obtenida</strong>, y solo se devengan si el reclamo prospera.</p>' +
+         '<h4>3. Obligaciones del reclamante</h4><ul><li>Proporcionar información verídica, completa y exacta.</li><li>Entregar la documentación de respaldo que le sea requerida.</li><li>Informar cualquier contacto o propuesta que reciba de la aerolínea.</li></ul>' +
+         '<h4>4. Plazos</h4><p>Los plazos de gestión dependen de la aerolínea y del organismo interviniente. SolucionAir no garantiza un resultado ni un plazo determinado.</p>' +
+         '<h4>5. Liquidación</h4><p>Obtenida la compensación, se liquida al reclamante el importe neto de la comisión dentro de los 10 días hábiles de acreditados los fondos.</p>' +
+         '<p style="font-family:var(--fm);font-size:.66rem;color:var(--t4);margin-top:14px">[ Texto de muestra — mockup de diseño. El documento real se define aparte. ]</p>'
+    },
+    priv: {
+      t: 'Política de Privacidad',
+      h: '<h4>1. Datos que recolectamos</h4><p>Datos identificatorios (nombre, documento, contacto), datos del viaje (itinerario, reserva, aerolínea) y la documentación de respaldo que subas.</p>' +
+         '<h4>2. Finalidad</h4><p>Los datos se usan exclusivamente para gestionar tu reclamo: presentarlo ante la aerolínea y/o el organismo competente, y comunicarte novedades.</p>' +
+         '<h4>3. Con quién se comparten</h4><ul><li>La aerolínea reclamada y sus representantes.</li><li>Organismos de defensa del consumidor y de aviación civil que intervengan.</li><li>Abogados y mediadores intervinientes en tu caso.</li></ul><p>No vendemos ni cedemos tus datos con fines publicitarios.</p>' +
+         '<h4>4. Conservación</h4><p>Los datos se conservan mientras dure la gestión del reclamo y por el plazo legal de prescripción posterior.</p>' +
+         '<h4>5. Tus derechos</h4><p>Podés solicitar acceso, rectificación o supresión de tus datos escribiendo a nuestro canal de contacto, conforme a la Ley 25.326 de Protección de Datos Personales.</p>' +
+         '<p style="font-family:var(--fm);font-size:.66rem;color:var(--t4);margin-top:14px">[ Texto de muestra — mockup de diseño. El documento real se define aparte. ]</p>'
+    }
+  };
+  var ovDoc = el('ov-doc');
+  var docLinks = document.querySelectorAll('[data-doc]');
+  (function () {
+    var i;
+    for (i = 0; i < docLinks.length; i++) {
+      docLinks[i].addEventListener('click', function (e) {
+        /* El botón vive dentro del <label>: sin esto, abrir el documento
+           tildaría el consentimiento sin que el usuario lo lea. */
+        e.preventDefault(); e.stopPropagation();
+        var d = DOCS[this.getAttribute('data-doc')];
+        el('doc-title').textContent = d.t;
+        el('doc-body').innerHTML = d.h;
+        ovDoc.className = 'ov ov--doc is-open';
+      });
+    }
+  })();
+  function cerrarDoc() { ovDoc.className = 'ov ov--doc'; }
+  el('doc-close').addEventListener('click', cerrarDoc);
+  el('doc-ok').addEventListener('click', cerrarDoc);
+  ovDoc.addEventListener('click', function (e) { if (e.target === ovDoc) cerrarDoc(); });
+
+  /* ---- Consentimiento ---- */
+  el('m-consent').addEventListener('change', function () {
+    var box = el('cons-box');
+    box.className = this.checked ? 'cons is-sel' : 'cons';
+    box.style.borderColor = '';
+    if (this.checked) {
+      el('cons-meta').textContent = 'Firmado el ' + new Date().toLocaleString('es-AR') + ' · IP 200.x.x.x (simulado)';
+    }
+  });
+  el('m-bag-noent').addEventListener('change', function () {
+    el('cons-noent').className = this.checked ? 'cons is-sel' : 'cons';
+    el('m-bag-delivery').disabled = this.checked;
+  });
+
+  /* ---- Envío simulado ---- */
+  function enviar() {
+    btnNext.textContent = 'Enviando...';
+    setTimeout(function () {
+      var n = Math.floor(Math.random() * 9000) + 1000;
+      el('done-id').textContent = 'SA-2026-' + n;
+      S.hist.push(S.cur);
+      S.cur = 'done';
+      S.dir = 'fwd';
+      pintar();
+    }, 900);
+  }
+
+  /* ---- Abrir / cerrar ----
+     Un click afuera no puede tirar abajo la carga: desde que el popup
+     abre y hasta que el reclamo se envía, cerrar pide confirmación. */
+  var ovCfm = el('ov-cfm');
+
+  function cerrarYa() {
+    ov.className = 'ov';
+    ovCfm.className = 'ov ov--cfm';
+  }
+  function intentarCerrar() {
+    if (S.cur === 'done') { cerrarYa(); return; }   /* ya enviado: no hay nada que perder */
+    ovCfm.className = 'ov ov--cfm is-open';
+  }
+
+  el('open').addEventListener('click', function () {
+    ov.className = 'ov is-open';
+    S.cur = 'tipo'; S.hist = []; S.dir = 'fwd';
+    pintar();
+  });
+  el('close').addEventListener('click', intentarCerrar);
+  ov.addEventListener('click', function (e) { if (e.target === ov) intentarCerrar(); });
+  el('cfm-no').addEventListener('click', function () { ovCfm.className = 'ov ov--cfm'; });
+  el('cfm-si').addEventListener('click', cerrarYa);
+  ovCfm.addEventListener('click', function (e) { if (e.target === ovCfm) ovCfm.className = 'ov ov--cfm'; });
+
+  /* Escape respeta la misma jerarquía: primero cierra el popup de arriba */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (ovCfm.className.indexOf('is-open') > -1) { ovCfm.className = 'ov ov--cfm'; return; }
+    if (ovDoc.className.indexOf('is-open') > -1) { cerrarDoc(); return; }
+    if (ov.className.indexOf('is-open') > -1) intentarCerrar();
+  });
+
+  pintar();
+})();
+</script>
+</body>
+</html>

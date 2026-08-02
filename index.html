@@ -6,6 +6,7 @@
   <title>SolucionAir — Compensaciones Aéreas</title>
   <meta name="description" content="Gestionamos reclamos por vuelos demorados, cancelados, sobreventa y problemas de equipaje. Sin costo inicial." />
   <link rel="stylesheet" href="src/css/styles.css" />
+  <link rel="stylesheet" href="src/css/intake-wizard.css" />
   <style>
     .sec{max-width:1060px;margin:0 auto;padding:60px 24px}
     .sec__ey{font-family:var(--fm);font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--au);margin-bottom:8px}
@@ -328,6 +329,17 @@
             <span class="gchip__email"><span id="chip-email"></span><span class="gchip__ver">&#10003; verificado</span></span>
           </div>
           <button class="gchip__out" type="button" onclick="cerrarSesionGoogle()">Cambiar cuenta</button>
+        </div>
+      </div>
+
+      <!-- Intake v3: con el wizard activo, el formulario largo de abajo se oculta y
+           esta tarjeta queda como puerta de entrada. Si el pasajero cierra el popup,
+           vuelve por acá sin perder lo cargado. -->
+      <div id="wz-launcher" style="display:none">
+        <div class="card" style="text-align:center;padding:32px 28px">
+          <h3 style="font-family:var(--fh);font-size:1.15rem;font-weight:800;color:var(--g);margin-bottom:6px">Tu reclamo está en curso</h3>
+          <p style="font-size:.84rem;color:var(--t3);line-height:1.6;margin-bottom:20px">Completá los pasos y enviá tu reclamo. Podés volver acá si cerrás la ventana.</p>
+          <button class="btn-verify" id="wz-reabrir" type="button">Continuar con mi reclamo</button>
         </div>
       </div>
 
@@ -770,6 +782,8 @@
   </div>
 
   <script src="src/js/airport-select.js"></script>
+  <!-- Componente compartido de alta. Va ANTES de app.js, que lo instancia. -->
+  <script src="src/js/intake-wizard.js"></script>
   <script src="src/js/app.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer
     onload="typeof onGoogleLibraryLoad==='function' && onGoogleLibraryLoad()">
@@ -869,6 +883,10 @@
        así que va con versión nueva: los casos ya firmados conservan la v2.2 y la
        cláusula 19.2 los deja regidos por esa versión. */
     const CONSENT_VERSION = 'TYC-SA-v2.4-2026';
+    /* El wizard de intake vive en otro archivo y necesita la versión al firmar. Esta
+       IIFE la encierra, así que se expone explícitamente en vez de confiar en el
+       alcance léxico entre scripts. */
+    window.CONSENT_VERSION = CONSENT_VERSION;
 
     const TYC_HTML = `
 <h2>Términos y Condiciones del Servicio SolucionAir</h2>

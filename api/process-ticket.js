@@ -122,6 +122,26 @@ export default async function handler(req, res) {
       if (segmentosCanonicosAmbiguos(segmentosAlta)) {
         candidatosAlta.push({ campo: 'segmentos_ambiguos', valor: true, fuente: body.itinerario_fuente === 'adjunto' ? 'adjunto' : 'declaracion_pasajero', extraido_en: ahoraIso });
       }
+      /* Candidatos que arma el formulario y no tienen columna propia. Hoy lo usa el
+         wizard para dejar el nombre que trajo Google cuando difiere del declarado: el
+         poder se emite con el nombre del documento, y la discrepancia queda auditable
+         en la capa de evidencia en vez de perderse. Se sanea acá porque viene del
+         cliente: solo se aceptan las cuatro claves del contrato, con campo y fuente
+         obligatorios. */
+      if (Array.isArray(body.datos_extraidos_extra)) {
+        body.datos_extraidos_extra.forEach(function (c) {
+          if (!c || typeof c !== 'object') return;
+          var campo = limpiarTexto(c.campo);
+          var fuente = limpiarTexto(c.fuente);
+          if (!campo || !fuente) return;
+          candidatosAlta.push({
+            campo: campo,
+            valor: typeof c.valor === 'string' ? limpiarTexto(c.valor) : c.valor,
+            fuente: fuente,
+            extraido_en: ahoraIso,
+          });
+        });
+      }
 
       var row = {
         /* Identity */

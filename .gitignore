@@ -4,3 +4,8 @@ node_modules
 
 # PDFs de prueba que deja el generador legal al correr con rutas absolutas
 UsersUsuarioAppData*.pdf
+
+# Skills instalados por `npx skills add` — herramientas locales, no del producto
+.agents/
+.claude/skills/
+skills-lock.json

@@ -930,6 +930,9 @@
             ARCHIVOS[clave].splice(idx, 1);
             pintarChips(clave);
             refrescarDrop(q('[data-drop="' + clave + '"]'), clave);
+            /* La superficie guarda el File real: sin este aviso se le quedaría
+               colgado y lo subiría igual. */
+            if (typeof o.alQuitarArchivo === 'function') o.alQuitarArchivo(clave, nombre);
           });
           c.appendChild(x);
           cont.appendChild(c);
@@ -1134,6 +1137,10 @@
           moneda: GASTOS[i].moneda,
           archivo: nombreGuardado(GASTOS[i], i),
           fuente: fuenteGastos,
+          /* Nombre con el que el usuario subió el archivo. Es de transporte: le sirve
+             a la superficie para encontrar el File real y renombrarlo antes de subir.
+             Se descarta antes de mandar el caso a la base. */
+          archivo_original: GASTOS[i].archivo,
         });
       }
 
@@ -1286,6 +1293,14 @@
         if (valores) prellenar(valores);
         pintar();
       },
+      /* Vuelve a mostrarlo SIN reiniciar: el DOM conserva lo cargado, así que cerrar
+         por error no cuesta nada. `abrir()` sí arranca de cero. */
+      reabrir: function () {
+        ov.className = 'iw-ov iw-open';
+        S.enviando = false;
+        pintar();
+      },
+      pasoActual: function () { return S.cur; },
       cerrar: cerrarYa,
       payload: payload,
       elemento: ov,

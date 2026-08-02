@@ -23,14 +23,19 @@ window.recibirLoginGoogle = function (response) {
     if (pad) b64 += '===='.slice(pad);
     var payload = JSON.parse(atob(b64));
 
+    var nombre = payload.name || '';
+    var email  = payload.email || '';
+
     window.firmaGoogle = {
       sub: payload.sub,
       email_verified: payload.email_verified === true,
-      iss: payload.iss
+      iss: payload.iss,
+      /* El wizard prellena con esto. `nombre` se guarda aparte del declarado: el
+         reclamo pide el nombre del documento y el de una cuenta de Google casi nunca
+         lo es, así que si el pasajero lo corrige la diferencia queda registrada. */
+      nombre: nombre,
+      email: email
     };
-
-    var nombre = payload.name || '';
-    var email  = payload.email || '';
 
     document.querySelectorAll('#f-name').forEach(function (el) { el.value = nombre; el.readOnly = true; });
     document.querySelectorAll('#f-email').forEach(function (el) { el.value = email;  el.readOnly = true; });
@@ -50,6 +55,12 @@ window.recibirLoginGoogle = function (response) {
     var wrapper = document.getElementById('form-content-wrapper');
     if (wall)    wall.style.display    = 'none';
     if (wrapper) wrapper.style.display = '';
+
+    /* Intake v3: verificada la identidad se abre el wizard. `__abrirIntake` lo define
+       app.js dentro de su closure; si por lo que sea no está, el formulario largo
+       sigue ahí abajo y el pasajero puede completarlo igual. Degradar mostrando de
+       más nunca deja a nadie sin poder reclamar. */
+    if (typeof window.__abrirIntake === 'function') window.__abrirIntake();
   } catch (e) { console.error('[SA] Google login error:', e); }
 };
 
@@ -1377,6 +1388,265 @@ document.addEventListener('DOMContentLoaded', function () {
       alert('Error de conexión. Intentá de nuevo.');
     });
   });
+
+  /* ============================================================
+     INTAKE v3 — el wizard de micro-pasos
+     ------------------------------------------------------------
+     Reemplaza al formulario largo de tres pantallas. El componente vive en
+     `src/js/intake-wizard.js` y lo comparten B2C, agencias y backoffice; acá
+     solo se lo configura y se traduce su payload al contrato de
+     `/api/process-ticket`.
+
+     El muro de Google se mantiene tal cual: el wizard se abre DESPUÉS del
+     login, con la identidad ya resuelta. El mail viaja bloqueado (es el ancla
+     de la verificación y el canal que Google confirmó) y el nombre editable,
+     porque el reclamo necesita el nombre del documento y el de una cuenta de
+     Google casi nunca lo es — y ese nombre es el que termina en el poder.
+     ============================================================ */
+
+  var WZ = null;
+  var WZ_FILES = {};   /* nombre de archivo → File real, para subirlo después */
+
+  function wzGuardarArchivo(nombre, file) { WZ_FILES[nombre] = file; }
+  function wzOlvidarArchivo(nombre) { delete WZ_FILES[nombre]; }
+
+  /* Abre el selector nativo y devuelve el nombre al componente, que solo maneja
+     nombres: el File real queda acá hasta el submit. */
+  function wzElegirArchivo(clave, listo) {
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.pdf,.jpg,.jpeg,.png,.webp';
+    inp.style.display = 'none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0];
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      if (!f) { listo(null); return; }
+      wzGuardarArchivo(f.name, f);
+      listo(f.name);
+    });
+    inp.click();
+  }
+
+  /* Escaneo IA: mismo endpoint y mismo contrato que usaba el paso 1 del form viejo. */
+  function wzEscanear(listo) {
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.jpg,.jpeg,.png,.webp,.pdf';
+    inp.multiple = true;
+    inp.style.display = 'none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(inp.files || []);
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      if (!files.length) { listo(null, null); return; }
+      Promise.all(files.map(readFileAsBase64)).then(function (results) {
+        var utiles = results.filter(Boolean);
+        utiles.forEach(function (r, i) { if (files[i]) wzGuardarArchivo(files[i].name, files[i]); });
+        S.scannedFiles = utiles;
+        return fetch('/api/process-ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            images: utiles.map(function (r) { return { base64: r.base64, mimeType: r.mimeType, name: r.name }; }),
+            multiFile: true,
+            email: (window.firmaGoogle && window.firmaGoogle.email) || '',
+          }),
+        });
+      }).then(function (r) { return r.json(); }).then(function (json) {
+        /* Con el flag de extracción apagado no hay datos ni los va a haber: se sigue
+           a mano, que es honesto, en vez de anunciar un escaneo exitoso vacío. */
+        if (!json || json.flagDisabled || !json.success || !json.data) { listo(null, null); return; }
+        var d = json.data;
+        listo(null, {
+          aerolinea: d.aerolinea, vuelo_nro: d.vuelo_nro,
+          origen: d.origen, destino: d.destino,
+          fecha_vuelo: d.fecha_vuelo, pnr: d.pnr,
+          telefono: d.telefono, documento_numero: d.doc_numero,
+        });
+      }).catch(function (err) {
+        console.error('[SA] wizard scan error:', err);
+        listo(err, null);
+      });
+    });
+    inp.click();
+  }
+
+  /* Los tramos del itinerario, con el mismo helper que usa el form viejo: los puntos
+     ya vienen con IATA del combo de aeropuertos. Si la ruta está incompleta devuelve
+     lista vacía y mandan los campos sueltos — una columna en null es FALTA_DATO, que
+     es honesto, y no una ruta inventada. */
+  function wzSegmentos(p) {
+    var pts = (p.puntos_ruta || []).filter(function (n) { return n.label || n.iata; });
+    if (pts.length < 2) return [];
+    var tramos = tramosDePuntos(pts);
+    if (!tramos.length) return [];
+    if (!tramos.every(function (t) { return t.oIata && t.dIata; })) return [];
+    return tramos.map(function (t, i) {
+      return {
+        orden: i + 1,
+        origen_iata: t.oIata,
+        destino_iata: t.dIata,
+        /* El carrier operante nunca se le pregunta al pasajero: solo viaja si salió
+           de un documento escaneado (Tabla A fila 5). */
+        carrier_operante: t.carrier || '',
+        fecha: t.fecha || (i === 0 ? (p.fecha_vuelo || '') : ''),
+        afectado: i === 0,
+      };
+    });
+  }
+
+  function wzEnviar(p, listo) {
+    var fg = window.firmaGoogle || {};
+    var ahora = new Date().toISOString();
+
+    /* Los gastos van al canónico `gastos_items`. `archivo_original` es de transporte:
+       sirve para encontrar el File y renombrarlo, y no viaja a la base. */
+    var gastos = (p.gastos_items || []).map(function (g) {
+      return { concepto: g.concepto, monto: g.monto, moneda: g.moneda, archivo: g.archivo, fuente: g.fuente };
+    });
+
+    /* Todo lo adjuntado, con el comprobante de cada gasto ya renombrado
+       `Gasto N - MONEDA MONTO.ext` para que la asociación sobreviva en el bucket. */
+    var aSubir = [];
+    (p.gastos_items || []).forEach(function (g) {
+      var f = WZ_FILES[g.archivo_original];
+      if (f) aSubir.push({ file: f, nombre: g.archivo });
+    });
+    (p.otros_archivos || []).forEach(function (n) {
+      if (WZ_FILES[n]) aSubir.push({ file: WZ_FILES[n], nombre: n });
+    });
+
+    /* El nombre que trajo Google, si difiere del declarado, va como evidencia con su
+       procedencia. Mismo patrón que `tipo_viaje` y `direccion_afectada`: dato
+       declarativo sin columna propia, que queda auditable en vez de perderse. */
+    var candidatos = [];
+    if (fg.nombre && p.nombre && fg.nombre !== p.nombre) {
+      candidatos.push({ campo: 'nombre', valor: fg.nombre, fuente: 'google', extraido_en: ahora });
+    }
+    if (p.tipo_viaje) candidatos.push({ campo: 'tipo_viaje', valor: p.tipo_viaje, fuente: 'declaracion_pasajero', extraido_en: ahora });
+    if (p.direccion_afectada) candidatos.push({ campo: 'direccion_afectada', valor: p.direccion_afectada, fuente: 'declaracion_pasajero', extraido_en: ahora });
+
+    Promise.all(aSubir.map(function (a) {
+      return readFileAsBase64(a.file).then(function (r) {
+        return r ? { base64: r.base64, mimeType: r.mimeType, name: a.nombre } : null;
+      });
+    })).then(function (subidos) {
+      var body = {
+        manualSubmit: true,
+        tipo_reclamo: p.tipo_reclamo,
+        nombre: p.nombre, telefono: p.telefono, email: p.email,
+        documento_tipo: p.documento_tipo, documento_numero: p.documento_numero,
+        aerolinea: p.aerolinea, vuelo_nro: p.vuelo_nro, fecha_vuelo: p.fecha_vuelo,
+        origen: p.origen, destino: p.destino, pnr: p.pnr,
+        tipo_viaje: p.tipo_viaje, direccion_afectada: p.direccion_afectada,
+        segmentos: wzSegmentos(p),
+        itinerario_fuente: S.fuenteItinerario || 'declaracion_pasajero',
+        datos_extraidos_extra: candidatos,
+        tipo_incidencia: p.tipo_incidencia,
+        horas_retraso: p.horas_retraso,
+        anticipacion_aviso: p.anticipacion_aviso,
+        embarque_presentado: p.embarque_presentado,
+        ofrecimiento_aerolinea: p.ofrecimiento_aerolinea,
+        viajo_finalmente: p.viajo_finalmente,
+        causa_informada: p.causa_informada,
+        pasaje_alternativo_monto: p.pasaje_alternativo_monto,
+        pasaje_alternativo_moneda: p.pasaje_alternativo_moneda,
+        tipo_caso_equipaje: p.tipo_caso_equipaje,
+        descripcion_equipaje: p.descripcion_equipaje,
+        valor_equipaje: p.valor_equipaje,
+        fecha_entrega_equipaje: p.fecha_entrega_equipaje,
+        equipaje_no_entregado: p.equipaje_no_entregado,
+        pir_presentado: p.pir_presentado,
+        pir_numero: p.pir_numero,
+        gastos_items: gastos,
+        comentarios_pasajero: p.comentarios_pasajero,
+        acompanantes: p.acompanantes || [],
+        consent_tyc: p.consent_tyc,
+        consent_autorizacion: p.consent_autorizacion,
+        consent_version: window.CONSENT_VERSION || null,
+        firma_fecha: ahora.slice(0, 10),
+        firma_ts: p.firma_ts || ahora,
+        user_agent: p.user_agent || navigator.userAgent,
+        google_sub: fg.sub || null,
+        google_email_verified: fg.email_verified || null,
+        google_iss: fg.iss || null,
+        scanned_files: subidos.filter(Boolean),
+      };
+      return fetch('/api/process-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }).then(function (r) { return r.json(); }).then(function (json) {
+      if (!json || !json.success) {
+        listo(new Error((json && json.error) || 'No se pudo enviar el reclamo.'), null);
+        return;
+      }
+      S.lastRef = json.refCode || null;
+      listo(null, { ref_code: json.refCode || 'CSA000' });
+    }).catch(function (err) {
+      console.error('[SA] wizard submit error:', err);
+      listo(new Error('Error de conexión. Probá de nuevo.'), null);
+    });
+  }
+
+  function wzInstancia() {
+    if (WZ) return WZ;
+    if (!window.IntakeWizard) { console.error('[SA] IntakeWizard no cargó'); return null; }
+    WZ = window.IntakeWizard.crear({
+      superficie: 'b2c',
+      escaner: true,
+      datosPersonales: true,
+      acompanantes: true,
+      firma: true,
+      soloLectura: ['email'],
+      notas: { email: 'Viene de tu cuenta de Google. Si querés usar otra, cambiá de cuenta arriba.' },
+      /* Acá la instancia es única y vive mientras dure la página, así que cerrar no
+         pierde nada: el texto lo dice en vez de asustar de más. */
+      textos: { cerrarD: 'Podés volver a abrirlo y seguir donde estabas. Tu reclamo todavía no fue enviado.' },
+      alEscanear: wzEscanear,
+      alElegirArchivo: wzElegirArchivo,
+      alQuitarArchivo: function (clave, nombre) { wzOlvidarArchivo(nombre); },
+      alMontarCampoAeropuerto: function (n) {
+        if (window.AirportSelect && window.AirportSelect.attach) window.AirportSelect.attach(n);
+      },
+      alEnviar: wzEnviar,
+    });
+    return WZ;
+  }
+
+  /* Deja a la vista solo la tarjeta de entrada: el formulario largo sigue en el DOM
+     pero inalcanzable, y se borra en su propia fase para que el diff sea legible y
+     revertir siga siendo barato. */
+  function wzOcultarFormViejo() {
+    var cont = document.getElementById('form-content-wrapper');
+    if (!cont) return;
+    var sel = ['.ctype-tabs', '#wizard-steps', '.prog', '.wz-panel'], i, j;
+    for (i = 0; i < sel.length; i++) {
+      var nodos = cont.querySelectorAll(sel[i]);
+      for (j = 0; j < nodos.length; j++) nodos[j].style.display = 'none';
+    }
+    var launcher = document.getElementById('wz-launcher');
+    if (launcher) launcher.style.display = '';
+  }
+
+  /* Lo llama `recibirLoginGoogle`, que vive fuera de este closure. */
+  window.__abrirIntake = function () {
+    var wz = wzInstancia();
+    if (!wz) return;
+    wzOcultarFormViejo();
+    var fg = window.firmaGoogle || {};
+    wz.abrir({ nombre: fg.nombre || '', email: fg.email || '' });
+  };
+
+  var btnReabrir = document.getElementById('wz-reabrir');
+  if (btnReabrir) {
+    btnReabrir.addEventListener('click', function () {
+      var wz = wzInstancia();
+      if (wz) wz.reabrir();
+    });
+  }
 
   /* Built-in translations for all data-t keys */
   var DICT = {
