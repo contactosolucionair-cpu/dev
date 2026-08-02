@@ -240,7 +240,9 @@ export default async function handler(req, res) {
          que el motor evaluaba todos los casos del formulario público como si el pasajero
          no hubiera declarado ningún gasto (cuenta `gastos_items.length` para el nodo de
          suficiencia probatoria). */
-      aplicarGastos(row, body.gastos_items, 'declaracion_pasajero');
+      aplicarGastos(row, body.gastos_items, 'declaracion_pasajero', {
+    monto: body.monto_gastos, moneda: body.moneda_gastos, detalle: body.gastos_detalle,
+  });
 
       console.log('[process-ticket] Inserting row with ref:', refCode, 'email:', email);
 

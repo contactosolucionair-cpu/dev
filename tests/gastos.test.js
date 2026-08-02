@@ -206,6 +206,54 @@ correr('REGRESIÓN inversa: espejo null obliga a canónico vacío', function () 
     || igual('espejo null', fila.monto_gastos, null);
 });
 
+/* ---------- compatibilidad con el formato viejo ----------
+   No todas las superficies mandan `gastos_items` al mismo tiempo. Mientras alguna
+   siga mandando el formato viejo —un monto, una moneda y un detalle de texto libre
+   para todo el caso— hay que convertirlo, no descartarlo. */
+
+correr('el formato viejo se convierte en un ítem del canónico', function () {
+  var fila = {};
+  aplicarGastos(fila, undefined, 'agencia', { monto: '4500', moneda: 'ars', detalle: 'Hotel y comidas' });
+  return igual('un ítem', fila.gastos_items.length, 1)
+    || igual('el detalle pasa a ser el concepto', fila.gastos_items[0].concepto, 'Hotel y comidas')
+    || igual('monto', fila.gastos_items[0].monto, 4500)
+    || igual('moneda normalizada', fila.gastos_items[0].moneda, 'ARS')
+    || igual('fuente', fila.gastos_items[0].fuente, 'agencia')
+    || igual('espejo coherente', [fila.monto_gastos, fila.moneda_gastos], [4500, 'ARS']);
+});
+
+correr('sin detalle, el concepto no queda vacío', function () {
+  var fila = {};
+  aplicarGastos(fila, [], 'admin', { monto: 100, moneda: 'USD' });
+  return igual('concepto por defecto', fila.gastos_items[0].concepto, 'Gastos declarados');
+});
+
+correr('los ítems ganan: si llegan, el formato viejo se ignora', function () {
+  var fila = {};
+  aplicarGastos(fila, [{ concepto: 'Taxi', monto: 30, moneda: 'USD' }], 'declaracion_pasajero',
+    { monto: 9999, moneda: 'ARS', detalle: 'no debería aparecer' });
+  return igual('un solo ítem, el nuevo', fila.gastos_items.length, 1)
+    || igual('concepto', fila.gastos_items[0].concepto, 'Taxi')
+    || igual('espejo del nuevo', [fila.monto_gastos, fila.moneda_gastos], [30, 'USD']);
+});
+
+correr('REGRESIÓN: un alta con formato viejo NO puede perder el monto', function () {
+  /* Se rompió al centralizar el espejo: el alta de agencias manda `monto_gastos` sin
+     `gastos_items`, y el monto declarado se descartaba entero. Nunca llegó a
+     producción, pero lo habría hecho. */
+  var fila = {};
+  aplicarGastos(fila, undefined, 'agencia', { monto: '1200', moneda: 'USD', detalle: 'Hotel' });
+  return igual('el monto sobrevive', fila.monto_gastos, 1200)
+    || igual('y además queda itemizado para el motor', fila.gastos_items.length, 1);
+});
+
+correr('sin nada, no se inventa un gasto', function () {
+  var fila = {};
+  aplicarGastos(fila, undefined, 'agencia', { monto: null, moneda: null, detalle: null });
+  return igual('vacío', fila.gastos_items, [])
+    || igual('espejo null', fila.monto_gastos, null);
+});
+
 console.log('\nResumen');
 console.log('  ' + verde(ok + ' ok') + '   ' + (fail ? rojo(fail + ' fallan') : '0 fallan') + '\n');
 process.exit(fail ? 1 : 0);

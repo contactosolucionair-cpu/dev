@@ -328,7 +328,9 @@ async function handleSubmitClaim(req, res, SB_URL, SB_KEY) {
   /* Gastos: canónico + espejo en la misma fila. Antes esta vía escribía solo el espejo
      y dejaba `gastos_items` vacío, así que el motor evaluaba los casos cargados por
      agencias como si no hubiera gastos declarados. */
-  aplicarGastos(row, body.gastos_items, 'agencia');
+  aplicarGastos(row, body.gastos_items, 'agencia', {
+    monto: body.monto_gastos, moneda: body.moneda_gastos, detalle: body.gastos_detalle,
+  });
 
   var insertRes = await fetch(SB_URL + '/rest/v1/reclamos', {
     method: 'POST',

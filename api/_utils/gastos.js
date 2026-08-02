@@ -87,16 +87,40 @@ export function espejoDeGastos(items) {
 }
 
 /**
+ * Convierte el formato viejo —un monto, una moneda y un detalle de texto libre para
+ * todo el caso— en un ítem del canónico.
+ *
+ * Existe porque no todas las superficies mandan `gastos_items` al mismo tiempo: el
+ * formulario de agencias todavía manda el formato viejo. Sin esto, el monto declarado
+ * se perdía entero. Y convertirlo no es solo compatibilidad: un caso que antes llegaba
+ * con cero ítems ahora llega con uno, que es lo que el motor cuenta para el nodo de
+ * suficiencia probatoria.
+ *
+ * @returns {Array} cero o un ítem
+ */
+export function gastosDesdeLegado(legado, fuenteDef) {
+  if (!legado) return [];
+  return normalizarGastosItems([{
+    concepto: aTexto(legado.detalle) || 'Gastos declarados',
+    monto: legado.monto,
+    moneda: legado.moneda,
+  }], fuenteDef);
+}
+
+/**
  * Escribe canónico + espejo sobre `destino`, en el mismo objeto que va a la base.
  * Es la única forma correcta de tocar gastos: nunca setear el espejo por separado.
  *
  * @param {object} destino   fila que se va a insertar o patchear (se muta)
  * @param {*} raw            array crudo de gastos
  * @param {string} fuenteDef procedencia por defecto
+ * @param {object} [legado]  `{monto, moneda, detalle}` del formato viejo, usado SOLO
+ *                           si no llegó ningún ítem
  * @returns {Array} los ítems normalizados que quedaron
  */
-export function aplicarGastos(destino, raw, fuenteDef) {
+export function aplicarGastos(destino, raw, fuenteDef, legado) {
   var items = normalizarGastosItems(raw, fuenteDef);
+  if (!items.length) items = gastosDesdeLegado(legado, fuenteDef);
   var espejo = espejoDeGastos(items);
   destino.gastos_items = items;
   destino.monto_gastos = espejo.monto_gastos;
