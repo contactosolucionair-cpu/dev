@@ -484,8 +484,17 @@
         'SolucionAir a actuar en mi representación.</span></label></div>' +
         '<div class="iw-err" data-envio-err></div>');
     } else {
+      /* Sin firma del pasajero, pero puede haber una declaración de quien carga: en
+         agencias, que cuenta con la autorización del cliente. Es obligatoria y se
+         registra — hasta ahora era solo una compuerta del navegador que no se
+         guardaba en ningún lado. */
       h += paso('firma', 'Revisá antes de guardar', 'Es el último paso.',
         '<div class="iw-fee"><span class="iw-fee-ic">&#9989;</span><p>' + esc(o.textos.sinFirmaNota) + '</p></div>' +
+        (o.declaracion
+          ? '<div class="iw-cons" data-cons-box><label class="iw-cons-r">' +
+            '<input type="checkbox" class="iw-cb" id="iw-declaracion" data-req="1" />' +
+            '<span class="iw-cons-t">' + esc(o.declaracion) + '</span></label></div>'
+          : '') +
         '<div class="iw-err" data-envio-err></div>');
     }
 
@@ -1075,8 +1084,9 @@
     ovDoc.querySelector('[data-doc-ok]').addEventListener('click', cerrarDoc);
     ovDoc.addEventListener('click', function (e) { if (e.target === ovDoc) cerrarDoc(); });
 
-    if (o.firma) {
-      el('consent').addEventListener('change', function () {
+    var cbCierre = o.firma ? el('consent') : el('declaracion');
+    if (cbCierre) {
+      cbCierre.addEventListener('change', function () {
         var caja = q('[data-cons-box]');
         caja.className = this.checked ? 'iw-cons iw-sel' : 'iw-cons';
         caja.style.borderColor = '';
@@ -1220,6 +1230,10 @@
         p.consent_autorizacion = !!el('consent').checked;
         p.firma_ts = new Date().toISOString();
         p.user_agent = global.navigator ? global.navigator.userAgent : null;
+      }
+      if (o.declaracion) {
+        p.declaracion_aceptada = !!(el('declaracion') && el('declaracion').checked);
+        p.declaracion_texto = o.declaracion;
       }
       return p;
     }
