@@ -19,18 +19,14 @@
 @keyframes iw-in{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
 .iw-dlg *,.iw-dlg *::before,.iw-dlg *::after{box-sizing:border-box}
 
-.iw-head{position:relative;flex-shrink:0;min-height:50px;display:flex;flex-direction:column;justify-content:center;padding:13px 54px 13px 22px;border-bottom:1px solid var(--bdl,#EDEAE4);background:var(--w,#fff)}
+.iw-head{position:relative;flex-shrink:0;min-height:46px;display:flex;flex-direction:column;justify-content:center;padding:10px 54px 10px 22px;border-bottom:1px solid var(--bdl,#EDEAE4);background:var(--w,#fff)}
 .iw-x{position:absolute;top:50%;right:13px;transform:translateY(-50%);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--t4,#999);background:none;border:none;cursor:pointer;padding:0;transition:all .2s ease}
 .iw-x:hover{background:var(--bgd,#EDE9E1);color:var(--t2,#3A3A3A)}
 .iw-ttl{font-family:var(--fh,'Plus Jakarta Sans',sans-serif);font-weight:800;font-size:.92rem;color:var(--t1,#111);letter-spacing:-.01em}
 
-/* Progreso: SOLO % y "Paso N". Nunca la lista de pasos pendientes: ver el
-   detalle de cuánto falta desalienta y es el motivo del rediseño. */
-.iw-prog-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-.iw-prog-step{font-family:var(--fm,monospace);font-size:.68rem;font-weight:500;color:var(--t3,#6B6B6B);letter-spacing:.02em}
-.iw-prog-pct{font-family:var(--fm,monospace);font-size:.68rem;font-weight:600;color:var(--g,#2D4A3E);letter-spacing:.02em}
-.iw-prog-bar{height:5px;background:var(--bgd,#EDE9E1);border-radius:3px;overflow:hidden}
-.iw-prog-fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--g,#2D4A3E) 0%,var(--au,#D4A853) 100%);transition:width .38s cubic-bezier(.4,0,.2,1)}
+/* Sin indicador de progreso: ni barra, ni "Paso N", ni %. La cantidad de pasos
+   depende de las respuestas, así que cualquier número sería una promesa que el
+   wizard no puede cumplir, y ver cuánto falta desalienta. */
 
 .iw-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 22px 8px;min-height:0}
 .iw-foot{flex-shrink:0;display:flex;gap:10px;padding:14px 22px 18px;border-top:1px solid var(--bdl,#EDEAE4);background:var(--w,#fff)}
@@ -118,6 +114,12 @@ select.iw-in{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg widt
 .iw-drop-m{display:block;font-family:var(--fm,monospace);font-size:.62rem;color:var(--t4,#999);margin-top:3px}
 .iw-drop.iw-full{opacity:.55;cursor:default}
 .iw-drop.iw-full:hover{border-color:var(--bd,#E0DCD4);background:var(--bg,#F7F5F0)}
+
+/* Arrastre en curso. Los hijos no reciben eventos de puntero: sin esto, mover el
+   cursor sobre el texto interno dispara `dragleave` y el resaltado parpadea. */
+.iw-scan>*,.iw-drop>*{pointer-events:none}
+.iw-scan.iw-dragover,.iw-drop.iw-dragover{border-style:solid;border-color:var(--ai,#6366F1);background:var(--aibg,#EEF0FF)}
+.iw-drop.iw-dragover{border-color:var(--gl,#3A6154);background:var(--g05,rgba(45,74,62,.05))}
 .iw-chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--fm,monospace);font-size:.64rem;color:var(--t2,#3A3A3A);background:var(--w,#fff);border:1px solid var(--bd,#E0DCD4);border-radius:var(--r2,4px);padding:4px 9px;margin:6px 5px 0 0}
 .iw-chip-x{color:var(--t4,#999);font-weight:700;cursor:pointer}
 .iw-chip-x:hover{color:var(--err,#C0392B)}

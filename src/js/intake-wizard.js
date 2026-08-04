@@ -235,20 +235,25 @@
       '<span class="iw-ctype-d">Pérdida, daño o demora en entrega</span></span></button></div>');
 
     if (o.escaner) {
-      h += paso('scan', 'Cargá tu reserva', 'Es el documento con el itinerario completo de tu viaje.',
+      h += paso('scan', o.textos.scanT, o.textos.scanD,
         '<div data-scan-idle>' +
         '<button class="iw-scan" type="button" data-scan-go>' +
         '<span class="iw-scan-ic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
         'stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/>' +
         '<circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>' +
         '<span class="iw-scan-badge">IA</span></span>' +
-        '<span class="iw-scan-t">Arrastrá tu reserva aquí para autocompletar la carga &#9889;</span>' +
+        '<span class="iw-scan-t">' + o.textos.scanCta + '</span>' +
         '<span class="iw-scan-m">JPG, PNG, PDF · Máx. 10MB c/u</span></button>' +
         '<div style="text-align:center"><button type="button" class="iw-lnk" data-scan-skip>' +
-        'Prefiero cargar los datos manualmente</button></div></div>' +
+        esc(o.textos.scanSkip) + '</button></div></div>' +
         '<div class="iw-load" data-scan-load style="display:none"><div class="iw-sp"></div>' +
         '<p style="font-size:.82rem;color:var(--t2,#3A3A3A);font-weight:600;margin:0">Leyendo tus documentos...</p>' +
-        '<p class="iw-hint" style="text-align:center">Extrayendo el itinerario completo</p></div>' +
+        '<p class="iw-hint" style="text-align:center">Extrayendo el itinerario completo</p>' +
+        /* Salida de emergencia: si el escaneo nunca vuelve (red colgada, selector
+           cerrado sin elegir nada en un browser que no avisa), sin esto el paso
+           queda trabado para siempre y no se puede ni cargar a mano. */
+        '<div style="text-align:center"><button type="button" class="iw-lnk" data-scan-cancel>' +
+        'Cancelar y cargar a mano</button></div></div>' +
         '<div class="iw-err" data-scan-err></div>');
     }
 
@@ -554,6 +559,14 @@
     return {
       tipoQ: esInterno ? '¿Qué tipo de reclamo es?' : '¿Qué te pasó?',
       tipoD: 'Elegí el tipo de reclamo para empezar.',
+      scanT: esInterno ? 'Cargá la reserva del pasajero' : 'Cargá tu reserva',
+      scanD: esInterno
+        ? 'El documento con el itinerario completo. La IA completa los campos y después se revisan.'
+        : 'Es el documento con el itinerario completo de tu viaje.',
+      scanCta: esInterno
+        ? 'Arrastrá la reserva acá para autocompletar la carga &#9889;'
+        : 'Arrastrá tu reserva aquí para autocompletar la carga &#9889;',
+      scanSkip: esInterno ? 'Prefiero cargar los datos a mano' : 'Prefiero cargar los datos manualmente',
       airlineD: 'Si se escaneó la reserva, esto ya está completo. Revisalo.',
       comentarioQ: esInterno ? 'Comentarios del caso' : '¿Querés contarnos algo más?',
       comentarioD: 'Cualquier detalle importante que no se haya preguntado. Es opcional.',
@@ -611,11 +624,7 @@
       '<div class="iw-head">' +
       '<button class="iw-x" type="button" data-cerrar aria-label="Cerrar">' +
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" ' +
-      'stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
-      '<div data-prog>' +
-      '<div class="iw-prog-top"><span class="iw-prog-step" data-prog-step>Paso 1</span>' +
-      '<span class="iw-prog-pct" data-prog-pct>0%</span></div>' +
-      '<div class="iw-prog-bar"><div class="iw-prog-fill" data-prog-fill></div></div></div></div>' +
+      'stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>' +
       '<div class="iw-body" data-body>' + cuerpoPasos(o) + '</div>' +
       '<div class="iw-foot" data-foot>' +
       '<button class="iw-btn iw-btn-back" type="button" data-atras>&larr; Atrás</button>' +
@@ -692,11 +701,9 @@
       }
       cuerpo.scrollTop = 0;
 
-      var pct = vis.length > 1 ? Math.round((pos / (vis.length - 1)) * 100) : 0;
-      q('[data-prog-fill]').style.width = pct + '%';
-      q('[data-prog-pct]').textContent = pct + '%';
-      q('[data-prog-step]').textContent = cur.id === 'done' ? 'Completado' : 'Paso ' + (pos + 1);
-      q('[data-prog]').style.display = cur.id === 'tipo' ? 'none' : '';
+      /* Sin barra de progreso, sin "Paso N" y sin porcentaje: la cantidad de pasos
+         depende de las respuestas, así que cualquier número que se muestre es una
+         promesa que el wizard no puede cumplir, y ver cuánto falta desalienta. */
 
       if (cur.id === 'done') {
         pie.style.display = 'none';
@@ -839,26 +846,76 @@
       setTimeout(function () { ir(1); }, 180);
     });
 
-    /* ---- escáner (la superficie provee la implementación) ---- */
+    /* ---- escáner (la superficie provee la implementación) ----
+       `alEscanear(listo, files)`: si `files` viene, son los archivos que el usuario
+       soltó y la superficie no abre el selector. `listo(err, datos, cancelado)`:
+       con `cancelado` en true se vuelve al reposo sin avanzar ni mostrar error. */
     if (o.escaner) {
-      q('[data-scan-go]').addEventListener('click', function () {
+      var scanIdle = q('[data-scan-idle]');
+      var scanLoad = q('[data-scan-load]');
+      var scanErr = q('[data-scan-err]');
+      /* Cada escaneo se lleva un turno. Una respuesta de un turno viejo (la que
+         llega después de cancelar) no puede pisar la pantalla. */
+      var scanTurno = 0;
+      var scanReposo = function () {
+        scanIdle.style.display = '';
+        scanLoad.style.display = 'none';
+      };
+      var escanear = function (files) {
         if (typeof o.alEscanear !== 'function') { ir(1); return; }
-        q('[data-scan-idle]').style.display = 'none';
-        q('[data-scan-load]').style.display = '';
-        q('[data-scan-err]').textContent = '';
-        o.alEscanear(function (err, datos) {
-          q('[data-scan-idle]').style.display = '';
-          q('[data-scan-load]').style.display = 'none';
+        scanTurno++;
+        var mio = scanTurno;
+        scanIdle.style.display = 'none';
+        scanLoad.style.display = '';
+        scanErr.textContent = '';
+        o.alEscanear(function (err, datos, cancelado) {
+          if (mio !== scanTurno) return;
+          scanReposo();
+          if (cancelado) return;
           if (err) {
-            q('[data-scan-err]').textContent = 'No se pudieron leer los documentos. Cargá los datos a mano.';
+            scanErr.textContent = 'No se pudieron leer los documentos. Cargá los datos a mano.';
             return;
           }
           if (datos) prellenar(datos);
           ir(1);
-        });
+        }, files || null);
+      };
+      q('[data-scan-go]').addEventListener('click', function () { escanear(null); });
+      q('[data-scan-cancel]').addEventListener('click', function () {
+        scanTurno++;
+        scanReposo();
       });
       q('[data-scan-skip]').addEventListener('click', function () { ir(1); });
+      /* La tarjeta dice "arrastrá tu reserva aquí", así que tiene que aceptar el
+         drop de verdad. Sin esto el browser abre el archivo y se va de la página. */
+      arrastrable(q('[data-scan-go]'), function (files) { escanear(files); });
     }
+
+    /* Deja una zona lista para recibir archivos soltados. `onFiles` recibe un array
+       de File. El feedback visual va por la clase `iw-dragover`. */
+    function arrastrable(zona, onFiles) {
+      if (!zona) return;
+      var salir = function () { zona.className = zona.className.replace(/ ?iw-dragover/g, ''); };
+      zona.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (zona.className.indexOf('iw-dragover') === -1) zona.className += ' iw-dragover';
+      });
+      zona.addEventListener('dragleave', salir);
+      zona.addEventListener('drop', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        salir();
+        var dt = e.dataTransfer;
+        var files = dt && dt.files ? Array.prototype.slice.call(dt.files) : [];
+        if (files.length) onFiles(files);
+      });
+    }
+
+    /* El drop fuera de una zona tiene que morir acá: si no, el browser navega al
+       archivo y se pierde todo lo cargado. */
+    ov.addEventListener('dragover', function (e) { e.preventDefault(); });
+    ov.addEventListener('drop', function (e) { e.preventDefault(); });
 
     /* Deja que la superficie enganche el combo de aeropuertos, también en los inputs
        que se crean en caliente (las escalas). `AirportSelect.attach` es idempotente. */
@@ -966,11 +1023,19 @@
       var i;
       for (i = 0; i < zonas.length; i++) {
         (function (btn) {
-          btn.addEventListener('click', function () {
-            var clave = btn.getAttribute('data-drop');
-            if (typeof o.alElegirArchivo === 'function') {
-              o.alElegirArchivo(clave, function (nombre) { if (nombre) agregarArchivo(clave, nombre); });
-            }
+          var clave = btn.getAttribute('data-drop');
+          var pedir = function (files) {
+            if (typeof o.alElegirArchivo !== 'function') return;
+            o.alElegirArchivo(clave, function (nombre) { if (nombre) agregarArchivo(clave, nombre); }, files || null);
+          };
+          btn.addEventListener('click', function () { pedir(null); });
+          /* Se recortan acá los que sobran del límite: si se mandan igual, la
+             superficie los guarda como File y `agregarArchivo` los rechaza,
+             quedando archivos huérfanos que se suben sin estar en la lista. */
+          arrastrable(btn, function (files) {
+            var libres = limite(btn) - ((ARCHIVOS[clave] || []).length);
+            if (libres <= 0) return;
+            pedir(files.slice(0, libres));
           });
         })(zonas[i]);
       }

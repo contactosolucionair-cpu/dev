@@ -1629,13 +1629,20 @@
      Se suma como camino alternativo: el formulario largo de abajo sigue
      intacto. Acá el pasajero no está presente, así que no hay firma ni
      declaración jurada — la autorización queda pendiente de envío, igual que
-     en cualquier alta cargada por un tercero.
+     en cualquier alta cargada por un tercero. El escáner IA sí está: es el
+     mismo endpoint y el mismo mapeo que el sitio público.
      ============================================================ */
 
   var WZ = null;
   var WZ_FILES = {};
 
-  function wzElegirArchivo(clave, listo) {
+  /* Si `files` viene, son los que se soltaron sobre la zona del wizard y no hay
+     que abrir el selector nativo. */
+  function wzElegirArchivo(clave, listo, files) {
+    if (files && files.length) {
+      files.forEach(function (f) { WZ_FILES[f.name] = f; listo(f.name); });
+      return;
+    }
     var inp = document.createElement('input');
     inp.type = 'file';
     inp.accept = '.pdf,.jpg,.jpeg,.png,.webp';
@@ -1649,6 +1656,67 @@
       listo(f.name);
     });
     inp.click();
+  }
+
+  /* Escaneo IA, el mismo endpoint y el mismo mapeo de campos que el sitio público:
+     el alta por agencia no tiene por qué cargar el itinerario a mano si el B2C no
+     lo hace. Los archivos escaneados quedan aparte de los dropzones —tienen su
+     propio cupo— y se adjuntan al caso en el envío. */
+  var WZ_SCAN = [];
+
+  function wzEscanear(listo, arrastrados) {
+    if (arrastrados && arrastrados.length) { wzEscanearFiles(arrastrados, listo); return; }
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.jpg,.jpeg,.png,.webp,.pdf';
+    inp.multiple = true;
+    inp.style.display = 'none';
+    document.body.appendChild(inp);
+    /* Cerrar el selector sin elegir nada NO dispara `change`: sin este aviso el
+       wizard queda trabado en "Leyendo tus documentos...". */
+    inp.addEventListener('cancel', function () {
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      listo(null, null, true);
+    });
+    inp.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(inp.files || []);
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      if (!files.length) { listo(null, null, true); return; }
+      wzEscanearFiles(files, listo);
+    });
+    inp.click();
+  }
+
+  function wzEscanearFiles(files, listo) {
+    var escaneables = files.filter(function (f) {
+      return /^image\//.test(f.type || '') || f.type === 'application/pdf';
+    });
+    if (!escaneables.length) { listo(new Error('Cargá una imagen o un PDF.'), null); return; }
+    Promise.all(escaneables.map(wzLeerBase64)).then(function (results) {
+      var utiles = results.filter(Boolean);
+      utiles.forEach(function (r) { WZ_SCAN.push({ base64: r.base64, mimeType: r.mimeType, name: r.name }); });
+      return fetch('/api/process-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          images: utiles.map(function (r) { return { base64: r.base64, mimeType: r.mimeType, name: r.name }; }),
+          multiFile: true,
+        }),
+      });
+    }).then(function (r) { return r.json(); }).then(function (json) {
+      if (!json || json.flagDisabled || !json.success || !json.data) { listo(null, null); return; }
+      var d = json.data;
+      listo(null, {
+        aerolinea: d.aerolinea, vuelo_nro: d.vuelo_nro,
+        origen: d.origen, destino: d.destino,
+        fecha_vuelo: d.fecha_vuelo, pnr: d.pnr,
+        nombre: d.nombre, email: d.email,
+        telefono: d.telefono, documento_numero: d.doc_numero,
+      });
+    }).catch(function (err) {
+      console.error('[SA] wizard scan error:', err);
+      listo(err, null);
+    });
   }
 
   function wzLeerBase64(file) {
@@ -1735,7 +1803,10 @@
         gastos_items: gastos,
         comentarios_pasajero: p.comentarios_pasajero,
         acompanantes: p.acompanantes || [],
-        scanned_files: subidos.filter(Boolean),
+        /* Los del escáner primero: son el documento de viaje del que salió el
+           itinerario y tienen que quedar adjuntos aunque no se haya cargado nada
+           más. Ya vienen leídos, no se releen. */
+        scanned_files: WZ_SCAN.concat(subidos.filter(Boolean)),
       };
       return fetch('/api/agency/submit-claim', {
         method: 'POST',
@@ -1749,6 +1820,7 @@
       if (!d || !d.success) { listo(new Error((d && d.error) || 'Error al cargar el caso.'), null); return; }
       toast('Caso ' + d.refCode + ' cargado');
       WZ_FILES = {};
+      WZ_SCAN = [];
       listo(null, { ref_code: d.refCode });
     }).catch(function (err) {
       if (err && err.message === '401') return;
@@ -1763,10 +1835,11 @@
       if (!WZ) {
         WZ = window.IntakeWizard.crear({
           superficie: 'agencia',
-          escaner: false,
+          escaner: true,
           datosPersonales: true,
           acompanantes: true,
           firma: false,
+          alEscanear: wzEscanear,
           alElegirArchivo: wzElegirArchivo,
           alQuitarArchivo: function (clave, nombre) { delete WZ_FILES[nombre]; },
           alMontarCampoAeropuerto: function (n) {

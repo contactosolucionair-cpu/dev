@@ -1411,8 +1411,13 @@ document.addEventListener('DOMContentLoaded', function () {
   function wzOlvidarArchivo(nombre) { delete WZ_FILES[nombre]; }
 
   /* Abre el selector nativo y devuelve el nombre al componente, que solo maneja
-     nombres: el File real queda acá hasta el submit. */
-  function wzElegirArchivo(clave, listo) {
+     nombres: el File real queda acá hasta el submit. Si `files` viene (drag & drop
+     desde el wizard) no se abre nada y se usan esos. */
+  function wzElegirArchivo(clave, listo, files) {
+    if (files && files.length) {
+      files.forEach(function (f) { wzGuardarArchivo(f.name, f); listo(f.name); });
+      return;
+    }
     var inp = document.createElement('input');
     inp.type = 'file';
     inp.accept = '.pdf,.jpg,.jpeg,.png,.webp';
@@ -1429,47 +1434,58 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /* Escaneo IA: mismo endpoint y mismo contrato que usaba el paso 1 del form viejo. */
-  function wzEscanear(listo) {
+  function wzEscanear(listo, arrastrados) {
+    if (arrastrados && arrastrados.length) { wzEscanearFiles(arrastrados, listo); return; }
     var inp = document.createElement('input');
     inp.type = 'file';
     inp.accept = '.jpg,.jpeg,.png,.webp,.pdf';
     inp.multiple = true;
     inp.style.display = 'none';
     document.body.appendChild(inp);
+    /* Cerrar el selector sin elegir nada NO dispara `change`: sin este aviso el
+       wizard se queda en "Leyendo tus documentos..." para siempre. */
+    inp.addEventListener('cancel', function () {
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      listo(null, null, true);
+    });
     inp.addEventListener('change', function () {
       var files = Array.prototype.slice.call(inp.files || []);
       if (inp.parentNode) inp.parentNode.removeChild(inp);
-      if (!files.length) { listo(null, null); return; }
-      Promise.all(files.map(readFileAsBase64)).then(function (results) {
-        var utiles = results.filter(Boolean);
-        utiles.forEach(function (r, i) { if (files[i]) wzGuardarArchivo(files[i].name, files[i]); });
-        S.scannedFiles = utiles;
-        return fetch('/api/process-ticket', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            images: utiles.map(function (r) { return { base64: r.base64, mimeType: r.mimeType, name: r.name }; }),
-            multiFile: true,
-            email: (window.firmaGoogle && window.firmaGoogle.email) || '',
-          }),
-        });
-      }).then(function (r) { return r.json(); }).then(function (json) {
-        /* Con el flag de extracción apagado no hay datos ni los va a haber: se sigue
-           a mano, que es honesto, en vez de anunciar un escaneo exitoso vacío. */
-        if (!json || json.flagDisabled || !json.success || !json.data) { listo(null, null); return; }
-        var d = json.data;
-        listo(null, {
-          aerolinea: d.aerolinea, vuelo_nro: d.vuelo_nro,
-          origen: d.origen, destino: d.destino,
-          fecha_vuelo: d.fecha_vuelo, pnr: d.pnr,
-          telefono: d.telefono, documento_numero: d.doc_numero,
-        });
-      }).catch(function (err) {
-        console.error('[SA] wizard scan error:', err);
-        listo(err, null);
-      });
+      if (!files.length) { listo(null, null, true); return; }
+      wzEscanearFiles(files, listo);
     });
     inp.click();
+  }
+
+  function wzEscanearFiles(files, listo) {
+    Promise.all(files.map(readFileAsBase64)).then(function (results) {
+      var utiles = results.filter(Boolean);
+      utiles.forEach(function (r, i) { if (files[i]) wzGuardarArchivo(files[i].name, files[i]); });
+      S.scannedFiles = utiles;
+      return fetch('/api/process-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          images: utiles.map(function (r) { return { base64: r.base64, mimeType: r.mimeType, name: r.name }; }),
+          multiFile: true,
+          email: (window.firmaGoogle && window.firmaGoogle.email) || '',
+        }),
+      });
+    }).then(function (r) { return r.json(); }).then(function (json) {
+      /* Con el flag de extracción apagado no hay datos ni los va a haber: se sigue
+         a mano, que es honesto, en vez de anunciar un escaneo exitoso vacío. */
+      if (!json || json.flagDisabled || !json.success || !json.data) { listo(null, null); return; }
+      var d = json.data;
+      listo(null, {
+        aerolinea: d.aerolinea, vuelo_nro: d.vuelo_nro,
+        origen: d.origen, destino: d.destino,
+        fecha_vuelo: d.fecha_vuelo, pnr: d.pnr,
+        telefono: d.telefono, documento_numero: d.doc_numero,
+      });
+    }).catch(function (err) {
+      console.error('[SA] wizard scan error:', err);
+      listo(err, null);
+    });
   }
 
   /* Los tramos del itinerario, con el mismo helper que usa el form viejo: los puntos

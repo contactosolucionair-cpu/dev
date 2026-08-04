@@ -75,11 +75,10 @@ function montar(opciones) {
   }
   function tipo(t) { raiz.querySelector('[data-ctype="' + t + '"]').click(); }
   function set(id, v) { var n = raiz.querySelector('#iw-' + id); if (!n) throw new Error('sin campo ' + id); n.value = v; }
-  function pct() { return q('[data-prog-pct]').textContent; }
 
   return {
     W: W, D: D, wz: wz, raiz: raiz, errores: errores, enviados: enviados,
-    q: q, paso: paso, seguir: seguir, atras: atras, elegir: elegir, tipo: tipo, set: set, pct: pct,
+    q: q, paso: paso, seguir: seguir, atras: atras, elegir: elegir, tipo: tipo, set: set,
     esperar: function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); },
   };
 }
@@ -97,8 +96,11 @@ var SALTO = 240;
   var t = montar({ superficie: 'b2c' });
   afirmar('monta sin errores de consola', t.errores.length === 0, t.errores.join(' | '));
   igual('abre en el selector de tipo', t.paso(), 'tipo');
-  afirmar('la barra de progreso está oculta en la primera pantalla',
-    t.q('[data-prog]').style.display === 'none');
+  /* Nada de indicador de progreso: la cantidad de pasos depende de las respuestas,
+     así que cualquier número mostrado sería una promesa que el wizard no cumple. */
+  afirmar('no hay barra de progreso', t.q('[data-prog]') === null);
+  afirmar('ni porcentaje', t.q('[data-prog-pct]') === null);
+  afirmar('ni contador de pasos', t.q('[data-prog-step]') === null);
   afirmar('no hay botón Atrás en la primera pantalla',
     t.q('[data-atras]').style.display === 'none');
 
@@ -108,7 +110,6 @@ var SALTO = 240;
   seccion('rama vuelo · overbooking → medios propios');
   t.tipo('vuelo'); await t.esperar(SALTO);
   igual('tras elegir tipo va al escáner', t.paso(), 'scan');
-  afirmar('la barra de progreso aparece', t.q('[data-prog]').style.display !== 'none');
 
   t.q('[data-scan-skip]').click();
   igual('"cargar a mano" salta a aerolínea', t.paso(), 'airline');
@@ -284,9 +285,6 @@ var SALTO = 240;
   t.set('telefono', '+5491125578402'); t.set('email', 'juan@email.com'); t.seguir();
   t.set('documento_tipo', 'DNI'); t.set('documento_numero', '37806475'); t.seguir();
   igual('llega a la firma', t.paso(), 'firma');
-  var pctFirma = parseInt(t.pct(), 10);
-  afirmar('el progreso está cerca del final pero no en 100%',
-    pctFirma >= 90 && pctFirma < 100, 'real ' + t.pct());
 
   var cbAntes = t.raiz.querySelector('#iw-consent').checked;
   t.raiz.querySelector('[data-doc="tyc"]').click();
@@ -584,6 +582,105 @@ var SALTO = 240;
   x.D.querySelector('[data-cfm-si]').click();
   afirmar('"cerrar y descartar" sí cierra', x.raiz.className.indexOf('iw-open') === -1);
   afirmar('sin errores de consola', x.errores.length === 0, x.errores.join(' | '));
+
+  /* ============================================================
+     10 · escáner: arrastre y salida del estado "leyendo"
+     ------------------------------------------------------------
+     Los tres bugs que aparecieron en staging. El paso del escáner es el único
+     donde el wizard cede el control a la superficie, así que es el único que
+     puede quedarse esperando una respuesta que no llega.
+     ============================================================ */
+  seccion('escáner · arrastre y trabas');
+
+  /* Un drop sintético: jsdom no arma DataTransfer, así que se le cuelga al evento. */
+  function soltar(zona, files, ventana) {
+    var e = new ventana.Event('drop', { bubbles: true, cancelable: true });
+    e.dataTransfer = { files: files };
+    zona.dispatchEvent(e);
+    return e;
+  }
+
+  var pedidos = [];
+  var responder = null;
+  var s = montar({
+    superficie: 'b2c',
+    alEscanear: function (listo, files) {
+      pedidos.push(files ? files.map(function (f) { return f.name; }) : null);
+      responder = listo;   /* nunca contesta sola: la contesta el test */
+    },
+  });
+  s.tipo('vuelo'); await s.esperar(SALTO);
+  igual('arranca en el escáner', s.paso(), 'scan');
+  afirmar('el estado "leyendo" arranca oculto', s.q('[data-scan-load]').style.display === 'none');
+
+  /* --- ii. drag & drop --- */
+  var evt = soltar(s.q('[data-scan-go]'), [{ name: 'reserva.pdf', type: 'application/pdf' }], s.W);
+  afirmar('el drop se cancela: sin esto el browser abre el archivo y se va de la página',
+    evt.defaultPrevented === true);
+  igual('los archivos soltados llegan a la superficie', pedidos, [['reserva.pdf']]);
+  afirmar('y el paso pasa a "leyendo"', s.q('[data-scan-load]').style.display !== 'none');
+
+  /* --- iii. cancelar el selector no puede dejarlo pensando --- */
+  responder(null, null, true);
+  afirmar('REGRESIÓN: cancelar vuelve al reposo, no queda "Leyendo tus documentos..."',
+    s.q('[data-scan-load]').style.display === 'none' && s.q('[data-scan-idle]').style.display !== 'none');
+  igual('y NO avanza de paso: no se eligió nada', s.paso(), 'scan');
+  igual('ni muestra un error que no hubo', s.q('[data-scan-err]').textContent, '');
+
+  /* La red de seguridad, para cuando la superficie no contesta nunca. */
+  s.q('[data-scan-go]').click();
+  afirmar('vuelve a "leyendo"', s.q('[data-scan-load]').style.display !== 'none');
+  var colgado = responder;
+  s.q('[data-scan-cancel]').click();
+  afirmar('REGRESIÓN: la salida manual destraba el paso aunque la superficie no conteste',
+    s.q('[data-scan-load]').style.display === 'none');
+  colgado(null, { aerolinea: 'Iberia' });
+  igual('y una respuesta que llega tarde ya no puede pisar la pantalla', s.paso(), 'scan');
+  igual('ni prellenar campos a destiempo', s.raiz.querySelector('#iw-aerolinea').value, '');
+
+  s.q('[data-scan-skip]').click();
+  igual('desde ahí se sigue a mano', s.paso(), 'airline');
+
+  /* --- ii bis. los dropzones comunes también reciben archivos --- */
+  var recibidos = [];
+  var d = montar({
+    superficie: 'b2c',
+    escaner: false,
+    acompanantes: false,
+    alElegirArchivo: function (clave, listo, files) {
+      if (files) { files.forEach(function (f) { recibidos.push(f.name); listo(f.name); }); return; }
+      listo('elegido.pdf');
+    },
+  });
+  d.tipo('vuelo'); await d.esperar(SALTO);
+  d.set('aerolinea', 'AR'); d.set('vuelo_nro', 'AR1'); d.seguir();
+  d.elegir('solo_ida'); await d.esperar(SALTO);
+  d.elegir('no'); await d.esperar(SALTO);
+  d.set('origen', 'EZE'); d.set('destino', 'MAD'); d.seguir();
+  d.set('fecha_vuelo', '2026-07-01'); d.set('pnr', 'X1'); d.seguir();
+  d.elegir('demora'); await d.esperar(SALTO);
+  d.set('horas_retraso', '3'); d.seguir();
+  d.seguir();
+  d.elegir('no'); await d.esperar(SALTO);   /* ¿hubo gastos? */
+  d.elegir('no'); await d.esperar(SALTO);   /* ¿también hubo problema con el equipaje? */
+  igual('llega al dropzone de otra documentación', d.paso(), 'otrosdocs');
+  var zonaOtros = d.q('[data-drop="otros"]');
+  soltar(zonaOtros, [{ name: 'a.pdf' }, { name: 'b.jpg' }], d.W);
+  igual('el dropzone acepta varios archivos soltados', recibidos, ['a.pdf', 'b.jpg']);
+  igual('y quedan listados como chips', d.raiz.querySelectorAll('[data-chips="otros"] .iw-chip').length, 2);
+
+  /* El límite se aplica ANTES de pedirlos: si se mandan igual, la superficie los
+     guarda como File y el componente los descarta, quedando huérfanos que se suben
+     sin estar en la lista. */
+  recibidos = [];
+  soltar(zonaOtros, [{ name: 'c.pdf' }, { name: 'd.pdf' }, { name: 'e.pdf' }, { name: 'f.pdf' }], d.W);
+  igual('el sobrante del límite no se le pide a la superficie', recibidos, ['c.pdf', 'd.pdf', 'e.pdf']);
+  igual('y el dropzone queda en su tope', d.raiz.querySelectorAll('[data-chips="otros"] .iw-chip').length, 5);
+  recibidos = [];
+  soltar(zonaOtros, [{ name: 'g.pdf' }], d.W);
+  igual('lleno, no se pide nada más', recibidos, []);
+  afirmar('sin errores de consola', d.errores.length === 0 && s.errores.length === 0,
+    d.errores.concat(s.errores).join(' | '));
 
   console.log('\nResumen');
   console.log('  ' + verde(ok + ' ok') + '   ' + (fail ? rojo(fail + ' fallan') : '0 fallan') + '\n');

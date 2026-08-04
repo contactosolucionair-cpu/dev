@@ -233,8 +233,13 @@ console.log('\n\x1b[1mpanel-agencia.html + intake-wizard.js\x1b[0m');
   q5.$('wz-abrir').click();
   var ov5 = w5.document.querySelector('.iw-ov');
   chk(ov5 !== null && ov5.className.indexOf('iw-open') > -1, 'el botón lo abre');
-  chk(w5.document.querySelector('.iw-ms[data-ms="scan"]') === null,
-    'sin escáner: en agencias el documento lo carga la agencia, no se escanea acá');
+  /* El escáner IA va en las tres superficies: el mismo endpoint y el mismo mapeo
+     de campos. Cargar el itinerario a mano acá y no en el sitio público era una
+     asimetría sin motivo. */
+  chk(w5.document.querySelector('.iw-ms[data-ms="scan"]') !== null,
+    'con escáner: el mismo que el sitio público');
+  chk(w5.document.querySelector('[data-scan-cancel]') !== null,
+    'y con salida del estado "leyendo": cerrar el selector sin elegir no traba el paso');
   chk(w5.document.getElementById('iw-consent') === null,
     'sin consentimiento: el pasajero no está presente para firmar');
   chk(w5.document.querySelector('.iw-ms[data-ms="firma"]') !== null,
@@ -276,8 +281,10 @@ console.log('\n\x1b[1mbackoffice.html + intake-wizard.js\x1b[0m');
   chk(!q6.$('nc-ov').classList.contains('open'),
     'y cierra el modal viejo: no quedan dos formularios encimados');
   chk(w6.document.getElementById('iw-consent') === null, 'sin firma: el pasajero no está presente');
-  chk(w6.document.querySelector('.iw-ms[data-ms="scan"]') === null,
-    'sin escáner: el backoffice tiene el suyo con su propio flujo de ruta');
+  chk(w6.document.querySelector('.iw-ms[data-ms="scan"]') !== null,
+    'con escáner: el mismo que el sitio público');
+  chk(w6.document.querySelector('[data-scan-cancel]') !== null,
+    'y con salida del estado "leyendo": cerrar el selector sin elegir no traba el paso');
 
   console.log('  \x1b[2m-- comprobante por ítem en el editor legal --\x1b[0m');
   /* `archivo` estaba en el contrato de gastos_items pero este editor no lo mostraba:
