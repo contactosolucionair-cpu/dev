@@ -1481,6 +1481,10 @@ document.addEventListener('DOMContentLoaded', function () {
         origen: d.origen, destino: d.destino,
         fecha_vuelo: d.fecha_vuelo, pnr: d.pnr,
         telefono: d.telefono, documento_numero: d.doc_numero,
+        /* El itinerario tramo por tramo: sin esto el wizard no puede reconstruir la
+           vuelta cuando el pasajero elige esa dirección, porque los campos sueltos de
+           arriba describen una sola (`process-ticket.js:545`). */
+        segmentos: d.segmentos, direccion_afectada_sugerida: d.direccion_afectada_sugerida,
       });
     }).catch(function (err) {
       console.error('[SA] wizard scan error:', err);

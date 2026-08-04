@@ -4742,7 +4742,10 @@
           origen:d.origen,destino:d.destino,
           fecha_vuelo:d.fecha_vuelo,pnr:d.pnr,
           nombre:d.nombre,email:d.email,
-          telefono:d.telefono,documento_numero:d.doc_numero
+          telefono:d.telefono,documento_numero:d.doc_numero,
+          /* Itinerario tramo por tramo: sin esto el wizard no reconstruye la vuelta al
+             elegir esa dirección (los campos sueltos describen una sola). */
+          segmentos:d.segmentos,direccion_afectada_sugerida:d.direccion_afectada_sugerida
         });
       }).catch(function(err){
         console.error('[SA] wizard scan error:',err);

@@ -381,11 +381,10 @@
       campo('valor_equipaje', '<span data-lbl-bagvalue>Valor estimado (USD)</span>',
         input('valor_equipaje', 'number', '500', false, ' min="0"')) + '</div>');
 
-    h += paso('bagpir', '¿Se presentó el reporte de equipaje (PIR) en el aeropuerto?',
-      'Es el formulario que se completa en el mostrador al notar el problema.',
+    h += paso('bagpir', o.textos.pirQ, o.textos.pirD,
       opts('pir_presentado', [['si', 'Sí', '', '&#9989;'], ['no', 'No', '', '&#10060;'], ['no_sabe', 'No sé', '', '&#129300;']]));
 
-    h += paso('bagpirnum', '¿Tenés el número de PIR?', 'Figura en el comprobante del aeropuerto.',
+    h += paso('bagpirnum', o.textos.pirNumQ, 'Figura en el comprobante del aeropuerto.',
       '<div class="iw-g iw-g1">' +
       campo('pir_numero', 'Número de PIR', input('pir_numero', 'text', 'EZEAR12345')) + '</div>');
 
@@ -431,7 +430,7 @@
       campo('tipo_caso_equipaje', 'Tipo de incidencia', select('tipo_caso_equipaje',
         '<option value="">Seleccionar...</option><option value="perdida">Pérdida</option>' +
         '<option value="danio">Daño</option><option value="demora">Demora en entrega</option>', true), true) +
-      campo('pir_presentado', '¿Se presentó el PIR?', select('pir_presentado',
+      campo('pir_presentado', esc(o.textos.pirQ), select('pir_presentado',
         '<option value="">Seleccionar...</option><option value="si">Sí</option>' +
         '<option value="no">No</option><option value="no_sabe">No sé</option>', true), true) +
       '</div><div class="iw-g iw-g1" style="margin-top:14px">' +
@@ -568,6 +567,11 @@
         : 'Arrastrá tu reserva aquí para autocompletar la carga &#9889;',
       scanSkip: esInterno ? 'Prefiero cargar los datos a mano' : 'Prefiero cargar los datos manualmente',
       airlineD: 'Si se escaneó la reserva, esto ya está completo. Revisalo.',
+      /* Se pregunta por el acto —haber reclamado en el aeropuerto— y no por la sigla:
+         el pasajero sabe si fue al mostrador, no si lo que firmó se llamaba PIR. */
+      pirQ: esInterno ? '¿Se hizo el reclamo en el aeropuerto?' : '¿Hiciste el reclamo en el aeropuerto?',
+      pirD: 'Es el reporte de irregularidad (PIR) que se completa en el mostrador de la aerolínea al notar el problema.',
+      pirNumQ: 'Indicá el número de PIR',
       comentarioQ: esInterno ? 'Comentarios del caso' : '¿Querés contarnos algo más?',
       comentarioD: 'Cualquier detalle importante que no se haya preguntado. Es opcional.',
       comentarioPh: esInterno
@@ -827,7 +831,11 @@
             var os = grupo.querySelectorAll('.iw-opt'), k;
             for (k = 0; k < os.length; k++) os[k].className = 'iw-opt';
             b.className = 'iw-opt iw-sel';
-            OCULTOS[grupo.getAttribute('data-pick')] = b.getAttribute('data-val');
+            var destino = grupo.getAttribute('data-pick');
+            OCULTOS[destino] = b.getAttribute('data-val');
+            /* Cambiar de dirección re-arma la ruta con los tramos de ESA mitad del
+               viaje: es el punto donde el camino con escaneo y el manual se juntan. */
+            if (destino === 'direccion_afectada') aplicarDireccionDesdeScan(OCULTOS[destino]);
             setTimeout(function () { ir(1); }, 180);
           });
         })(grupos[i]);
@@ -956,6 +964,7 @@
       q('.iw-row-del', d).addEventListener('click', function () { cont.removeChild(d); });
       cont.appendChild(d);
       if (aeropuerto) montarCampo(d.querySelector('.iw-in'));
+      return d;
     }
     var armList = q('[data-arm-list]');
     q('[data-arm-add]').addEventListener('click', function () { fila(armList, 'Ciudad o código de escala (ej: GRU)', '', true); });
@@ -965,6 +974,105 @@
       var acompList = q('[data-acomp-list]');
       q('[data-acomp-add]').addEventListener('click', function () { fila(acompList, 'Nombre y apellido', 'Documento'); });
       fila(acompList, 'Nombre y apellido', 'Documento');
+    }
+
+    /* ---- itinerario escaneado: la dirección afectada re-arma la ruta ----
+       El escaneo trae el itinerario tramo por tramo, cada uno etiquetado ida o vuelta.
+       Sin guardarlo, el paso de dirección era cosmético: renombraba las etiquetas a
+       "El viaje de vuelta despegó en" y dejaba abajo los aeropuertos de la ida, porque
+       los campos sueltos del escaneo describen UNA sola dirección (la sugerida, o la
+       de ida). En un ida y vuelta simétrico casi no se nota; en uno que vuelve por otro
+       aeropuerto de la misma ciudad (EZE a la ida, AEP a la vuelta) queda el par
+       equivocado con la etiqueta correcta, que es la peor combinación posible. */
+    var SCAN = { segs: [], dir: '' };
+    var ESCALA_PH = 'Ciudad o código de escala (ej: GRU)';
+
+    function iataDe(txt) {
+      var s = String(txt == null ? '' : txt).toUpperCase();
+      var m = s.match(/^\s*([A-Z]{3})\b/) || s.match(/\(([A-Z]{3})\)/);
+      return m ? m[1] : '';
+    }
+
+    /* La dirección de un tramo sin etiquetar es la del último que sí la tenía: el
+       modelo marca dónde está el corte, no cada tramo uno por uno. */
+    function direccionDe(segs, i) {
+      for (var k = i; k >= 0; k--) if (segs[k].direccion) return segs[k].direccion;
+      return '';
+    }
+
+    function direccionesDelScan() {
+      var vistas = [], i, d;
+      for (i = 0; i < SCAN.segs.length; i++) {
+        d = direccionDe(SCAN.segs, i);
+        if (d && vistas.indexOf(d) === -1) vistas.push(d);
+      }
+      return vistas;
+    }
+
+    function segsDeDireccion(dir) {
+      if (!SCAN.segs.length) return [];
+      /* Sin ninguna etiqueta hay una sola dirección: el itinerario entero. */
+      if (!direccionesDelScan().length) return SCAN.segs.slice(0);
+      var out = [], i;
+      for (i = 0; i < SCAN.segs.length; i++) {
+        if (direccionDe(SCAN.segs, i) === dir) out.push(SCAN.segs[i]);
+      }
+      return out;
+    }
+
+    /* El combo de aeropuertos borra `data-iata` en cuanto alguien tipea y solo lo repone
+       al elegir de la lista. Un valor puesto por código no pasa por ahí, así que el IATA
+       —el dato canónico que consume el motor legal— hay que escribirlo acá: sin él,
+       `puntos_ruta` viaja sin códigos y las superficies arman `segmentos: []`. */
+    function ponerAeropuerto(nodo, texto) {
+      if (!nodo) return;
+      nodo.value = texto || '';
+      var iata = iataDe(texto);
+      if (iata) nodo.setAttribute('data-iata', iata);
+      else nodo.removeAttribute('data-iata');
+    }
+
+    /* Deja una tarjeta elegida sin simular el click: el click además avanza de paso, y
+       preseleccionar no es responder por el usuario. */
+    function marcarOpcion(destino, valor) {
+      var grupo = q('[data-pick="' + destino + '"]');
+      if (!grupo) return;
+      var os = grupo.querySelectorAll('.iw-opt'), i;
+      for (i = 0; i < os.length; i++) {
+        os[i].className = os[i].getAttribute('data-val') === valor ? 'iw-opt iw-sel' : 'iw-opt';
+      }
+      OCULTOS[destino] = valor;
+    }
+
+    /* Vuelca UNA dirección del itinerario escaneado sobre los campos de ruta: origen,
+       destino, escalas intermedias, fecha y vuelo.
+
+       Elegir dirección es una acción explícita y pisa lo que haya, incluso una edición
+       manual. Lo que NO hace es vaciar: si el escaneo no tiene esa dirección —carga a
+       mano, o un solo ida donde igual se elige "vuelta"— no toca nada. Borrar en
+       silencio lo que el usuario ya cargó es peor que dejarlo sin actualizar. */
+    function aplicarDireccionDesdeScan(dir) {
+      var segs = segsDeDireccion(dir);
+      if (!segs.length) return;
+
+      ponerAeropuerto(el('origen'), segs[0].origen);
+      ponerAeropuerto(el('destino'), segs[segs.length - 1].destino);
+
+      /* Las escalas intermedias son los destinos de todos los tramos menos el último. */
+      while (armList.firstChild) armList.removeChild(armList.firstChild);
+      var i, f;
+      for (i = 0; i < segs.length - 1; i++) {
+        f = fila(armList, ESCALA_PH, '', true);
+        ponerAeropuerto(f.querySelector('.iw-in'), segs[i].destino);
+      }
+      /* Una fila vacía siempre: si después responde que sí hubo escalas, el paso tiene
+         dónde escribirlas. */
+      if (segs.length < 2) fila(armList, ESCALA_PH, '', true);
+      marcarOpcion('escalas', segs.length > 1 ? 'si' : 'no');
+
+      if (segs[0].fecha) el('fecha_vuelo').value = segs[0].fecha;
+      if (segs[0].vuelo_nro) el('vuelo_nro').value = segs[0].vuelo_nro;
+      if (segs[0].aerolinea_operadora) el('aerolinea').value = segs[0].aerolinea_operadora;
     }
 
     /* ---- dropzones ----
@@ -1311,6 +1419,23 @@
         var n = el(mapa[i]);
         if (n && datos[mapa[i]]) n.value = datos[mapa[i]];
       }
+
+      /* El itinerario tramo por tramo llega aparte de los campos sueltos, y es lo único
+         que permite reconstruir la otra dirección cuando el pasajero la elige. Va
+         después del mapeo plano a propósito: lo pisa, y de paso deja los `data-iata`
+         que el mapeo plano no puede poner. */
+      if (datos.segmentos && datos.segmentos.length) {
+        SCAN.segs = datos.segmentos;
+        SCAN.dir = datos.direccion_afectada_sugerida || '';
+        var dirs = direccionesDelScan();
+        marcarOpcion('tipo_viaje', dirs.length > 1 ? 'ida_vuelta' : 'solo_ida');
+        /* Sugerencia, nunca decisión: queda preseleccionada y el pasajero la confirma o
+           la cambia con un tap. Si el modelo no la vio, arranca por la ida. */
+        var dirInicial = SCAN.dir || (dirs.length === 1 ? dirs[0] : 'ida');
+        if (dirs.length > 1) marcarOpcion('direccion_afectada', dirInicial);
+        aplicarDireccionDesdeScan(dirInicial);
+      }
+
       if (o.escaner) q('.iw-ms[data-ms="scan"]').setAttribute('data-escaneado', '1');
     }
 

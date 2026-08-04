@@ -682,6 +682,118 @@ var SALTO = 240;
   afirmar('sin errores de consola', d.errores.length === 0 && s.errores.length === 0,
     d.errores.concat(s.errores).join(' | '));
 
+  /* ============================================================
+     9 · itinerario escaneado y dirección afectada
+     ============================================================ */
+  seccion('dirección afectada: la ruta se re-arma con los tramos de esa mitad');
+
+  /* Un ida y vuelta que vuelve por OTRO aeropuerto de la misma ciudad: es el caso donde
+     el bug se ve. Con EZE/EZE simétrico el error queda tapado. */
+  var SEGS = [
+    { orden: 1, direccion: 'ida', origen: 'EZE - Buenos Aires', destino: 'GRU - San Pablo',
+      vuelo_nro: 'AR1234', aerolinea_operadora: 'Aerolineas Argentinas', fecha: '2026-07-01' },
+    { orden: 2, direccion: 'ida', origen: 'GRU - San Pablo', destino: 'MAD - Madrid',
+      vuelo_nro: 'IB6842', aerolinea_operadora: 'Iberia', fecha: '2026-07-02' },
+    { orden: 3, direccion: 'vuelta', origen: 'MAD - Madrid', destino: 'AEP - Buenos Aires',
+      vuelo_nro: 'IB6843', aerolinea_operadora: 'Iberia', fecha: '2026-07-20' },
+  ];
+
+  var it = montar({ superficie: 'b2c', escaner: false, acompanantes: false, firma: false });
+  function valorDe(id) { var n = it.raiz.querySelector('#iw-' + id); return n ? n.value : '(sin campo)'; }
+  function iataDe(id) { var n = it.raiz.querySelector('#iw-' + id); return n ? (n.getAttribute('data-iata') || '') : ''; }
+  function elegida(destino) {
+    var n = it.raiz.querySelector('[data-pick="' + destino + '"] .iw-opt.iw-sel');
+    return n ? n.getAttribute('data-val') : '';
+  }
+  function escalasCargadas() {
+    var ins = it.raiz.querySelectorAll('[data-arm-list] .iw-in'), out = [], i;
+    for (i = 0; i < ins.length; i++) if (ins[i].value) out.push(ins[i].value);
+    return out;
+  }
+
+  it.wz.abrir({
+    aerolinea: 'Aerolineas Argentinas', vuelo_nro: 'AR1234',
+    origen: 'EZE - Buenos Aires', destino: 'MAD - Madrid', fecha_vuelo: '2026-07-01',
+    segmentos: SEGS, direccion_afectada_sugerida: 'ida',
+  });
+
+  igual('el escaneo deja la ida completa', [valorDe('origen'), valorDe('destino')],
+    ['EZE - Buenos Aires', 'MAD - Madrid']);
+  igual('con las escalas intermedias de esa dirección', escalasCargadas(), ['GRU - San Pablo']);
+  /* El combo de aeropuertos solo escribe `data-iata` al elegir de la lista: un valor
+     puesto por código no pasa por ahí y el caso viajaba sin segmentos. */
+  igual('y con el IATA resuelto, que es lo que consume el motor', [iataDe('origen'), iataDe('destino')],
+    ['EZE', 'MAD']);
+  igual('dos direcciones en el billete → ida y vuelta preseleccionado', elegida('tipo_viaje'), 'ida_vuelta');
+  igual('y la sugerencia del modelo queda marcada, no decidida', elegida('direccion_afectada'), 'ida');
+
+  it.tipo('vuelo'); await it.esperar(SALTO);
+  igual('la aerolínea vino del tramo escaneado', valorDe('aerolinea'), 'Aerolineas Argentinas');
+  it.seguir();
+  igual('llega al tipo de viaje', it.paso(), 'tipoviaje');
+  it.elegir('ida_vuelta'); await it.esperar(SALTO);
+  igual('y de ahí a la dirección', it.paso(), 'direccion');
+
+  it.elegir('vuelta'); await it.esperar(SALTO);
+  igual('REGRESIÓN: elegir la vuelta cambia los aeropuertos, no solo las etiquetas',
+    [valorDe('origen'), valorDe('destino')], ['MAD - Madrid', 'AEP - Buenos Aires']);
+  igual('con sus IATA', [iataDe('origen'), iataDe('destino')], ['MAD', 'AEP']);
+  igual('la vuelta es directa: sin escalas cargadas', escalasCargadas(), []);
+  igual('y la tarjeta de escalas se corrige sola', elegida('escalas'), 'no');
+  igual('la fecha pasa a ser la del tramo de vuelta', valorDe('fecha_vuelo'), '2026-07-20');
+  igual('los segmentos que verá el motor son los de la vuelta',
+    it.wz.payload().puntos_ruta.map(function (n) { return n.iata; }), ['MAD', 'AEP']);
+
+  it.atras();
+  igual('vuelve al paso de dirección', it.paso(), 'direccion');
+  it.elegir('ida'); await it.esperar(SALTO);
+  igual('REGRESIÓN: volver a la ida restaura SUS aeropuertos, no los de la vuelta',
+    [valorDe('origen'), valorDe('destino')], ['EZE - Buenos Aires', 'MAD - Madrid']);
+  igual('y sus escalas', escalasCargadas(), ['GRU - San Pablo']);
+  igual('los segmentos vuelven a ser los de la ida',
+    it.wz.payload().puntos_ruta.map(function (n) { return n.iata; }), ['EZE', 'GRU', 'MAD']);
+
+  /* Sin itinerario escaneado no hay nada que re-aplicar: vaciar lo cargado a mano sería
+     destruir en silencio el trabajo del usuario. */
+  var mn = montar({ superficie: 'b2c', escaner: false, acompanantes: false, firma: false });
+  mn.tipo('vuelo'); await mn.esperar(SALTO);
+  mn.set('aerolinea', 'AR'); mn.set('vuelo_nro', 'AR1'); mn.seguir();
+  mn.elegir('ida_vuelta'); await mn.esperar(SALTO);
+  mn.elegir('ida'); await mn.esperar(SALTO);
+  mn.elegir('no'); await mn.esperar(SALTO);
+  igual('carga manual: llega a la ruta', mn.paso(), 'ruta');
+  mn.set('origen', 'EZE'); mn.set('destino', 'MAD');
+  mn.atras(); mn.atras();
+  igual('y se puede volver a la dirección', mn.paso(), 'direccion');
+  mn.elegir('vuelta'); await mn.esperar(SALTO);
+  igual('cambiar de dirección sin escaneo NO borra lo cargado a mano',
+    [mn.raiz.querySelector('#iw-origen').value, mn.raiz.querySelector('#iw-destino').value],
+    ['EZE', 'MAD']);
+
+  /* ============================================================
+     10 · textos del reclamo en aeropuerto (PIR)
+     ============================================================ */
+  seccion('PIR: se pregunta por el acto, no por la sigla');
+  function preguntaDe(t, ms) {
+    var n = t.raiz.querySelector('.iw-ms[data-ms="' + ms + '"] .iw-q');
+    return n ? n.textContent : '(sin paso)';
+  }
+  var pb = montar({ superficie: 'b2c', escaner: false, acompanantes: false, firma: false });
+  igual('en el formulario público se tutea', preguntaDe(pb, 'bagpir'), '¿Hiciste el reclamo en el aeropuerto?');
+  igual('y el número de PIR se pide, no se pregunta si lo tiene',
+    preguntaDe(pb, 'bagpirnum'), 'Indicá el número de PIR');
+  var pi = montar({ superficie: 'backoffice', escaner: false, firma: false });
+  igual('en las superficies internas, impersonal', preguntaDe(pi, 'bagpir'), '¿Se hizo el reclamo en el aeropuerto?');
+  var etiquetaCombo = pb.raiz.querySelector('[data-field="pir_presentado"] .iw-lbl');
+  igual('y el vuelo+equipaje combinado usa la misma pregunta',
+    /* El asterisco de obligatorio es parte de la etiqueta, no del texto. */
+    etiquetaCombo ? etiquetaCombo.textContent.replace(/\s*\*$/, '') : '(sin campo)',
+    '¿Hiciste el reclamo en el aeropuerto?');
+
+  afirmar('sin errores de consola en toda la sección',
+    it.errores.length === 0 && mn.errores.length === 0 && pb.errores.length === 0 && pi.errores.length === 0,
+    it.errores.concat(mn.errores, pb.errores, pi.errores).join(' | '));
+
   console.log('\nResumen');
   console.log('  ' + verde(ok + ' ok') + '   ' + (fail ? rojo(fail + ' fallan') : '0 fallan') + '\n');
   process.exit(fail ? 1 : 0);
