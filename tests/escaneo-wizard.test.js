@@ -63,6 +63,14 @@ var SUPERFICIES = [
       w.firmaGoogle = { nombre: 'Juan Pablo Mario Adaniya', email: 'juan@test.com' };
       w.__abrirIntake();
     },
+    verificarAntes: function (w) {
+      var c = w.document.getElementById('contacto-fallback');
+      chk(!!c && c.style.display !== 'none', 'el bloque de contacto arranca visible, sin depender de JS');
+    },
+    verificarDespues: function (w) {
+      var c = w.document.getElementById('contacto-fallback');
+      chk(!!c && c.style.display === 'none', 'y el wizard lo oculta al abrir bien');
+    },
   },
   {
     nombre: 'backoffice.html · carga guiada',
@@ -101,8 +109,10 @@ async function recorrer(s) {
   chk(typeof w.IntakeWizard === 'object' && typeof w.IntakeWizard.crear === 'function',
     'el componente quedó expuesto en window.IntakeWizard');
 
+  if (s.verificarAntes) s.verificarAntes(w);
   s.abrir(w);
   await ceder();
+  if (s.verificarDespues) s.verificarDespues(w);
 
   /* El overlay del wizard, no el de los documentos legales ni el de confirmación. */
   var ov = w.document.querySelector('.iw-ov.iw-open');
@@ -186,9 +196,47 @@ async function recorrer(s) {
     (r.errores.map(String).join(' | ') || 'ninguno'));
 }
 
+/**
+ * La razón de ser del bloque de contacto: cuando el wizard NO puede abrir, el pasajero
+ * tiene que seguir viendo cómo comunicarse. Se prueba cargando `index.html` sin el
+ * componente, que es la forma honesta de simular "el JS se rompió": `wzInstancia()`
+ * devuelve null, `__abrirIntake` corta antes de ocultar nada, y el bloque queda.
+ */
+async function contactoSobreviveAlFallo() {
+  console.log('\n\x1b[1mindex.html · el wizard no puede abrir\x1b[0m');
+  var r = cargar('index.html', {
+    scripts: ['src/js/airport-select.js', 'src/js/app.js'],   /* SIN intake-wizard.js */
+    fetch: fetchConSesion(SEGMENTOS_IDA_VUELTA),
+  });
+  var w = r.window;
+  await ceder();
+
+  chk(typeof w.IntakeWizard === 'undefined', 'el componente no está: el wizard no puede abrir');
+  var c = w.document.getElementById('contacto-fallback');
+  chk(!!c && c.style.display !== 'none', 'el bloque de contacto está visible antes de intentar');
+
+  w.firmaGoogle = { nombre: 'Juan', email: 'juan@test.com' };
+  w.__abrirIntake();
+  await ceder();
+
+  chk(w.document.querySelector('.iw-ov.iw-open') === null, 'y efectivamente no abrió ningún wizard');
+  chk(c.style.display !== 'none',
+    'REGRESIÓN: con el wizard caído el contacto SIGUE visible, que es para lo que está');
+
+  /* Los canales tienen que ser links de verdad, no algo que arme el JS. */
+  var links = c.querySelectorAll('a[href]');
+  var hrefs = [];
+  for (var i = 0; i < links.length; i++) hrefs.push(links[i].getAttribute('href'));
+  chk(hrefs.length === 3, 'hay tres canales de contacto: ' + hrefs.length);
+  chk(hrefs.join(' ').indexOf('wa.me/5491125578402') > -1, 'WhatsApp, con el número del pie');
+  chk(hrefs.join(' ').indexOf('mailto:contacto@solucionair.com') > -1, 'mail, con la dirección del pie');
+  chk(hrefs.join(' ').indexOf('tel:+5491125578402') > -1, 'teléfono, con el número del pie');
+}
+
 (async function () {
   console.log('\n\x1b[1mEscaneo → autofill contra el wizard, por superficie\x1b[0m');
   for (var i = 0; i < SUPERFICIES.length; i++) await recorrer(SUPERFICIES[i]);
+  await contactoSobreviveAlFallo();
 
   console.log('\n\x1b[1mResumen\x1b[0m');
   console.log('  \x1b[32m' + chk.estado.ok + ' ok\x1b[0m   ' +

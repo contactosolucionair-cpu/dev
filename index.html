@@ -317,6 +317,27 @@
       </div>
     </div>
 
+    <!-- Contacto de respaldo. ESTÁTICO Y VISIBLE POR DEFECTO a propósito, y ese "a
+         propósito" es lo que no se puede perder: si el JS se rompe entero, el pasajero
+         tiene que ver igual cómo comunicarse. Por eso no depende de JavaScript para
+         renderizarse, y por eso se OCULTA cuando el wizard abre bien (ver
+         `wzOcultarFormViejo` en src/js/app.js) en vez de mostrarse cuando algo falla:
+         un bloque que aparece por JS no aparece cuando el JS es justamente lo que
+         falló, y degradar mostrando de más nunca deja a nadie sin poder reclamar.
+         Reemplaza al formulario largo, que cumplía esta misma función de red.
+         TODO: unificar con el footer — dos fuentes para los mismos contactos -->
+    <div id="contacto-fallback" class="claim__wrap">
+      <div class="card" style="text-align:center;padding:26px 24px">
+        <h3 style="font-family:var(--fh);font-size:1rem;font-weight:800;color:var(--g);margin-bottom:6px">¿No se abre el formulario?</h3>
+        <p style="font-size:.84rem;color:var(--t3);line-height:1.6;margin-bottom:18px">Si la ventana de carga no llegó a abrirse, escribinos y cargamos tu reclamo con vos.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
+          <a href="https://wa.me/5491125578402" target="_blank" rel="noopener noreferrer" class="btn-verify" style="text-decoration:none">WhatsApp</a>
+          <a href="mailto:contacto@solucionair.com" class="btn-verify" style="text-decoration:none;background:transparent;color:var(--g);border:1.5px solid var(--g)">contacto@solucionair.com</a>
+          <a href="tel:+5491125578402" class="btn-verify" style="text-decoration:none;background:transparent;color:var(--g);border:1.5px solid var(--g)">+54 9 11 2557-8402</a>
+        </div>
+      </div>
+    </div>
+
     <!-- Contenido del formulario (oculto hasta autenticarse) -->
     <div id="form-content-wrapper" style="display:none"><div class="claim__wrap">
 

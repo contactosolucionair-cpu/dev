@@ -1640,6 +1640,12 @@ document.addEventListener('DOMContentLoaded', function () {
      pero inalcanzable, y se borra en su propia fase para que el diff sea legible y
      revertir siga siendo barato. */
   function wzOcultarFormViejo() {
+    /* El bloque de contacto se oculta ANTES del early return de abajo, y el orden no es
+       casual: cuando el formulario largo desaparezca, ese `return` va a dispararse
+       siempre y el contacto tiene que seguir ocultándose igual. */
+    var contacto = document.getElementById('contacto-fallback');
+    if (contacto) contacto.style.display = 'none';
+
     var cont = document.getElementById('form-content-wrapper');
     if (!cont) return;
     var sel = ['.ctype-tabs', '#wizard-steps', '.prog', '.wz-panel'], i, j;
