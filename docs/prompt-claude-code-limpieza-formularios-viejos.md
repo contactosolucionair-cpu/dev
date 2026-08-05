@@ -1,8 +1,59 @@
 # Prompt Claude Code — Limpieza: eliminar los formularios de carga previos al wizard
 
-> Ciclo autocontenido, **solo de eliminación**. No introduce comportamiento nuevo ni cambia
-> ninguna funcionalidad visible. Precede a los ciclos de reprogramación y downgrade: el censo
-> que produce es el mapa de entrada de los dos.
+> Ciclo autocontenido. Precede a los ciclos de reprogramación y downgrade: el censo que produce
+> es el mapa de entrada de los dos.
+
+> **ENMIENDA DE ALCANCE (2026-08-04, tras el HALT de la Fase 0).** El ciclo **ya no es solo de
+> eliminación**. La Fase 0 probó que los formularios de backoffice y agencias son caminos de
+> carga vivos, que el disparador del wizard en backoffice vive dentro del formulario que se
+> borra, y que el formulario de B2C es un fallback deliberado (`src/js/app.js:59-62`). Se suman
+> al alcance, cada uno con **commit propio**:
+>
+> - **Recableado (H2):** el botón "Nuevo caso" del backoffice pasa a abrir el wizard directo.
+>   Alcance estricto: el disparador. Nada más.
+> - **Pieza nueva (H3):** en B2C, donde hoy está el formulario largo va un **bloque de contacto
+>   estático**. Reglas en la sección "H3 — Bloque de contacto".
+> - **Fase 0-bis obligatoria:** paridad de campos formulario→wizard antes de borrar nada.
+>
+> Se mantiene: sin refactors oportunistas, sin renombres, sin dependencias nuevas,
+> `src/js/intake-wizard.js` con diff cero, y `/api`, `vercel.json`, `perfil.html`,
+> `panel-abogado.html`, `supabase/` y `scripts/` intocables.
+
+## FASE 0-bis — Paridad de campos (antes de la Fase 1)
+
+Por cada uno de los tres formularios, una tabla: **campo → ¿lo cubre el wizard? → ¿en qué paso?**
+
+**Toda fila sin equivalente en el wizard es HALT.** Borrar un formulario que pregunta algo que el
+wizard no pregunta es perder un dato, no limpiar código.
+
+## H3 — Bloque de contacto (reemplaza al formulario largo de B2C)
+
+- **HTML estático, visible por defecto.** Si el JS se rompe entero, el mensaje se ve igual. Nada
+  que dependa de JavaScript para renderizarse.
+- **El wizard lo oculta al abrir bien**, con el mismo mecanismo que hoy usa `wzOcultarFormViejo`
+  (`src/js/app.js:1642`). No inventar un patrón nuevo: se reemplaza *qué* se oculta.
+- **Texto:** aviso breve de que hubo un problema para abrir el formulario, más los canales de
+  contacto.
+- **Los links salen del pie de la web.** Localizar el bloque del footer y reusar esos valores. Si
+  están hardcodeados, copiarlos y dejar `/* TODO: unificar con el footer — dos fuentes para los
+  mismos contactos */`. Si salen de una constante o de config, usar esa fuente. **No inventar ni
+  tipear direcciones nuevas.**
+- **Comentario en el código** explicando por qué es estático y por qué se oculta en vez de
+  mostrarse: es la razón que hoy documenta `src/js/app.js:59-62` y no se puede perder.
+
+## H4 — Tests (decidido)
+
+- `tests/formularios.test.js`: recortar las secciones 1, 2 y 3 (formularios viejos). Las del
+  wizard quedan.
+- `tests/escaneo.test.js`: se borra con su objetivo, pero **antes** reportar qué cobertura se
+  pierde y si las secciones de wizard de `formularios.test.js` ya la cubren. Si no la cubren,
+  decirlo explícito en el reporte final como **deuda de test**.
+- `tests/escaneo-superficies.test.js`: leerla y reportar qué ejercita antes de tocarla. Si es
+  ambiguo, HALT.
+
+## `declaracion` — decidido
+
+No se cablea. Queda reportada y pendiente de columna en la base.
 
 ---
 
