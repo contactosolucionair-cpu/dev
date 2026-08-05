@@ -19,34 +19,6 @@ import { cargar, crearChequeador, consultas } from './lib/dom.js';
 
 var chk = crearChequeador();
 
-/* ============ 2. PANEL DE AGENCIAS ============ */
-console.log('\n\x1b[1mpanel-agencia.html\x1b[0m');
-{
-  /* Sin token el panel hace `location.href = '/agencias'` y corta el script antes de
-     armar nada: hay que sembrar la sesión en beforeParse. */
-  var r2 = cargar('panel-agencia.html', {
-    antes: function (w) {
-      w.localStorage.setItem('sa_ag_token', 'test');
-      w.localStorage.setItem('sa_ag_email', 'test@test.com');
-      w.localStorage.setItem('sa_ag_data', JSON.stringify({ nombre: 'Test', estado: 'aprobada' }));
-    },
-  });
-  var q2 = consultas(r2.window);
-
-  chk(r2.errores.length === 0, r2.errores.length ? 'errores en el arranque: ' + r2.errores.map(String).join(' | ') : 'arranque limpio');
-  chk(q2.$('f-direccion') !== null, 'el select de dirección existe');
-  chk(!q2.visible('field-direccion'), 'arranca oculta');
-  q2.cambiar('f-tipo-viaje', 'ida_vuelta');
-  chk(q2.visible('field-direccion'), 'ida y vuelta → visible');
-  q2.cambiar('f-direccion', 'vuelta');
-  chk(q2.texto('lbl-origen') === 'Origen de la vuelta', 'origen: "' + q2.texto('lbl-origen') + '"');
-  chk(q2.texto('lbl-escalas') === '¿Hubo escalas en la vuelta?', 'escalas: "' + q2.texto('lbl-escalas') + '"');
-  chk(q2.visible('hint-direccion'), 'hint visible');
-  q2.cambiar('f-tipo-viaje', 'solo_ida');
-  chk(q2.val('f-direccion') === '', 'volver a solo ida limpia el valor');
-  chk(q2.texto('lbl-origen') === 'Origen', 'y la etiqueta vuelve a neutra');
-}
-
 /* ============ 4. INTAKE v3 SOBRE EL FORMULARIO PÚBLICO ============
    El wizard no se abre solo: entra después del muro de Google. Acá se carga
    index.html con el componente y app.js juntos y se simula el login, que es el
@@ -128,8 +100,8 @@ console.log('\n\x1b[1mindex.html + intake-wizard.js — arranque tras el login d
 }
 
 /* ============ 5. INTAKE v3 EN EL PORTAL DE AGENCIAS ============
-   Acá el wizard se suma como camino alternativo: el formulario largo sigue
-   entero. Sin firma, porque el pasajero no está presente. */
+   El wizard es hoy el único camino de carga: el formulario largo se retiró.
+   Sin firma, porque el pasajero no está presente. */
 console.log('\n\x1b[1mpanel-agencia.html + intake-wizard.js\x1b[0m');
 {
   var r5 = cargar('panel-agencia.html', {
@@ -144,8 +116,8 @@ console.log('\n\x1b[1mpanel-agencia.html + intake-wizard.js\x1b[0m');
 
   chk(r5.errores.length === 0, 'carga sin errores: ' + (r5.errores.join(' | ') || 'ninguno'));
   chk(q5.$('wz-abrir') !== null, 'existe el botón de carga guiada');
-  chk(q5.$('f-nombre') !== null && q5.$('f-tipo-reclamo') !== null,
-    'el formulario largo sigue entero: se suma, no se reemplaza');
+  chk(q5.$('f-nombre') === null && q5.$('f-tipo-reclamo') === null,
+    'y el formulario largo ya no está: el wizard es el único camino');
   chk(w5.document.querySelector('.iw-ov') === null, 'el wizard no se monta hasta que se lo pide');
 
   q5.$('wz-abrir').click();
@@ -168,10 +140,15 @@ console.log('\n\x1b[1mpanel-agencia.html + intake-wizard.js\x1b[0m');
     'y los acompañantes');
 
   console.log('  \x1b[2m-- aislamiento de estilos --\x1b[0m');
-  /* La página tiene sus propias .btn, .form-group, .card. El componente no puede
-     pisarlas: por eso todo va prefijado. */
-  var propias = w5.document.querySelectorAll('.form-wrap .form-group').length;
-  chk(propias > 0, 'las clases propias de la página siguen presentes (' + propias + ' .form-group)');
+  /* La página tiene sus propias .btn y .card. El componente no puede pisarlas: por eso
+     todo lo suyo va prefijado `iw-`. Antes esto se medía sobre `.form-wrap .form-group`,
+     que era del formulario largo; con el formulario retirado se mide sobre lo que quedó. */
+  var propias = w5.document.querySelectorAll('.main .btn').length;
+  chk(propias > 0, 'las clases propias de la página siguen presentes (' + propias + ' .btn)');
+  var sinPrefijo = Array.prototype.filter.call(ov5.querySelectorAll('[class]'), function (n) {
+    return (n.getAttribute('class') || '').split(/\s+/).some(function (c) { return c && c.indexOf('iw-') !== 0; });
+  }).length;
+  chk(sinPrefijo === 0, 'y el wizard no usa ninguna clase sin prefijar (' + sinPrefijo + ')');
   var sinPrefijo = w5.document.querySelectorAll('.iw-dlg .field, .iw-dlg .card, .iw-dlg .drop').length;
   chk(sinPrefijo === 0, 'el wizard no usa ninguna clase genérica adentro (' + sinPrefijo + ')');
 
