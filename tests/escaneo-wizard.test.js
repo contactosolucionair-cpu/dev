@@ -69,7 +69,9 @@ var SUPERFICIES = [
     archivo: 'backoffice.html',
     scripts: ['src/js/airport-select.js', 'src/js/intake-wizard.js'],
     antes: function (w) { w.localStorage.setItem('sa_admin_pwd', 'test'); },
-    abrir: function (w) { w.document.getElementById('nc-wizard').click(); },
+    /* El disparador real: "Nuevo caso" abre el wizard directo. Antes abría el formulario
+       largo, con la carga guiada colgando de un botón de adentro. */
+    abrir: function (w) { w.document.getElementById('btn-nuevo-caso').click(); },
   },
   {
     nombre: 'panel-agencia.html · cargar caso guiado',

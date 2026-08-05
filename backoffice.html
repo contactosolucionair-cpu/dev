@@ -4668,11 +4668,15 @@
          tramos del anterior sin que se vea en pantalla. */
       ncResetItinerario();
     }
-    if(btnNuevoCaso)btnNuevoCaso.addEventListener('click',function(){if(ncOv){ncReset();ncOv.classList.add('open')}});
+    /* "Nuevo caso" abre el wizard DIRECTO. Antes abría el formulario largo, y la carga
+       guiada colgaba de un botón dentro de ese modal: al retirar el formulario se iba con
+       él el único acceso al wizard. `wzBoAbrir` se declara más abajo, en la sección del
+       wizard; la declaración de función se hoistea, así que al click ya está. */
+    if(btnNuevoCaso)btnNuevoCaso.addEventListener('click',function(){wzBoAbrir()});
     var ncTipo=document.getElementById('nc-tipo');if(ncTipo)ncTipo.addEventListener('change',ncToggleSecciones);
     var ncBagType=document.getElementById('nc-bag-type');if(ncBagType)ncBagType.addEventListener('change',function(){ncSetDisp('nc-bag-delivery-wrap',ncBagType.value==='demora')});
     /* ---- Intake v3: el mismo wizard que el sitio público y las agencias ----
-       Se abre desde el modal de nuevo caso y lo reemplaza mientras está activo. Con
+       Se abre desde "Nuevo caso", que es su único disparador vivo. Con
        escáner —el mismo endpoint que el sitio público— y sin firma: el pasajero no
        está presente. Los gastos entran itemizados con su comprobante, que es lo que
        este alta no permitía. */
@@ -4825,8 +4829,9 @@
         })
         .catch(function(){listo(new Error('Error de conexión.'),null)});
     }
-    var ncWizard=document.getElementById('nc-wizard');
-    if(ncWizard)ncWizard.addEventListener('click',function(){
+    /* Único punto de apertura del wizard: lo llama "Nuevo caso" y, mientras siga
+       existiendo, el botón de dentro del formulario largo. */
+    function wzBoAbrir(){
       if(!window.IntakeWizard){toast('No se pudo cargar la carga guiada',true);return}
       if(!WZ_BO){
         WZ_BO=window.IntakeWizard.crear({
@@ -4841,7 +4846,9 @@
       }
       if(ncOv)ncOv.classList.remove('open');
       WZ_BO.abrir();
-    });
+    }
+    var ncWizard=document.getElementById('nc-wizard');
+    if(ncWizard)ncWizard.addEventListener('click',wzBoAbrir);
 
     var ncClose=document.getElementById('nc-close');var ncCancel=document.getElementById('nc-cancel');
     if(ncClose)ncClose.addEventListener('click',function(){ncOv.classList.remove('open')});
