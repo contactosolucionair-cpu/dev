@@ -1,8 +1,8 @@
 /**
  * tests/escaneo-superficies.test.js
  *
- * El mismo recorrido de `escaneo.test.js` (ida USH→EZE, vuelta AEP→USH) sobre las OTRAS
- * dos bocas de carga: el modal `nc-*` del backoffice y el formulario del panel de agencias.
+ * El recorrido de escaneo (ida USH→EZE, vuelta AEP→USH) sobre la otra boca de carga que
+ * queda con formulario largo: el del panel de agencias.
  *
  *   node tests/escaneo-superficies.test.js
  *
@@ -53,16 +53,8 @@ function soltar(window, idZona) {
 
 /* Cada superficie declara dónde está cada cosa; el recorrido de abajo es uno solo. */
 var SUPERFICIES = [
-  {
-    nombre: 'backoffice.html · modal nc-*',
-    archivo: 'backoffice.html',
-    antes: function (w) { w.localStorage.setItem('sa_admin_pwd', 'test'); },
-    zona: 'nc-scan-zone', boton: 'nc-scan-btn',
-    rutaBox: 'nc-ruta-box', rutaOk: 'nc-ruta-ok', rutaDescartar: 'nc-ruta-descartar',
-    origen: 'nc-origen', destino: 'nc-destino', tipoViaje: 'nc-tipo-viaje', direccion: 'nc-direccion',
-    /* Sin labels ni i18n: la pregunta vive en el placeholder. */
-    etiquetaOrigen: function (q) { return q.ph('nc-origen'); },
-  },
+  /* La entrada del modal `nc-*` del backoffice se retiró al borrarse ese formulario.
+     Su recorrido lo cubre ahora `escaneo-wizard.test.js`, contra el wizard. */
   {
     nombre: 'panel-agencia.html · formulario de alta',
     archivo: 'panel-agencia.html',

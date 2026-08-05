@@ -47,59 +47,6 @@ console.log('\n\x1b[1mpanel-agencia.html\x1b[0m');
   chk(q2.texto('lbl-origen') === 'Origen', 'y la etiqueta vuelve a neutra');
 }
 
-/* ============ 3. BACKOFFICE ============ */
-console.log('\n\x1b[1mbackoffice.html\x1b[0m');
-{
-  var r3 = cargar('backoffice.html', {
-    antes: function (w) { w.localStorage.setItem('sa_admin_pwd', 'test'); },
-  });
-  var q3 = consultas(r3.window);
-
-  chk(r3.errores.length === 0, r3.errores.length ? 'errores en el arranque: ' + r3.errores.map(String).join(' | ') : 'arranque limpio');
-
-  console.log('  \x1b[2m-- markup del Intake v2 --\x1b[0m');
-  ['nc-tipo-viaje', 'nc-direccion', 'nc-escalas', 'nc-armador', 'nc-arm-lista', 'nc-arm-tramos',
-    'nc-ruta-box', 'nc-ruta-tramos', 'nc-scan-zone', 'nc-scan-btn', 'nc-hint-direccion']
-    .forEach(function (id) { chk(q3.$(id) !== null, 'existe #' + id); });
-
-  console.log('  \x1b[2m-- comportamiento --\x1b[0m');
-  chk(!q3.visible('nc-direccion'), 'la pregunta arranca oculta');
-  q3.cambiar('nc-tipo-viaje', 'ida_vuelta');
-  chk(q3.visible('nc-direccion'), 'ida y vuelta → visible');
-  q3.cambiar('nc-direccion', 'vuelta');
-  /* Acá no hay labels ni i18n: la pregunta vive en el placeholder y en la primera
-     opción del select, así que el renombrado va sobre eso. */
-  chk(q3.ph('nc-origen') === 'Origen de la vuelta', 'placeholder origen: "' + q3.ph('nc-origen') + '"');
-  chk(q3.ph('nc-destino') === 'Destino de la vuelta', 'placeholder destino: "' + q3.ph('nc-destino') + '"');
-  chk(q3.$('nc-escalas').options[0].textContent === '¿Hubo escalas en la vuelta?', 'opción escalas: "' + q3.$('nc-escalas').options[0].textContent + '"');
-  chk(q3.visible('nc-hint-direccion'), 'hint visible');
-
-  console.log('  \x1b[2m-- armador de escalas --\x1b[0m');
-  chk(!q3.visible('nc-armador'), 'el armador arranca oculto');
-  q3.cambiar('nc-escalas', 'si');
-  chk(q3.visible('nc-armador'), 'con escalas → visible');
-  chk(q3.$('nc-arm-lista').children.length === 1, 'arranca con una fila');
-  q3.$('nc-arm-add').click();
-  chk(q3.$('nc-arm-lista').children.length === 2, 'el botón agrega otra');
-  q3.$('nc-arm-lista').querySelector('.arm-row__rm').click();
-  chk(q3.$('nc-arm-lista').children.length === 1, 'la ✕ la quita');
-  q3.cambiar('nc-escalas', 'no');
-  chk(!q3.visible('nc-armador'), 'sin escalas → oculto');
-
-  console.log('  \x1b[2m-- ventana del motor legal --\x1b[0m');
-  /* El contenido lo arma `abrirMotorLegal()` con un caso concreto, así que acá solo se
-     verifica el contenedor: que exista, que arranque cerrado y que arranque vacío. Que el
-     editor y el análisis se pinten bien adentro se prueba a mano sobre un caso. */
-  ['ml-ov', 'ml-body', 'ml-close'].forEach(function (id) { chk(q3.$(id) !== null, 'existe #' + id); });
-  chk(!q3.$('ml-ov').classList.contains('open'), 'la ventana arranca cerrada');
-  chk(q3.$('ml-body').innerHTML.trim() === '', 'y vacía: el render cuesta ~370 líneas y se paga al abrir, no al mirar el caso');
-
-  console.log('  \x1b[2m-- vuelta a solo ida --\x1b[0m');
-  q3.cambiar('nc-tipo-viaje', 'solo_ida');
-  chk(q3.val('nc-direccion') === '', 'limpia el valor');
-  chk(q3.ph('nc-origen') === 'Origen', 'placeholder vuelve a neutro');
-}
-
 /* ============ 4. INTAKE v3 SOBRE EL FORMULARIO PÚBLICO ============
    El wizard no se abre solo: entra después del muro de Google. Acá se carga
    index.html con el componente y app.js juntos y se simula el login, que es el
@@ -232,7 +179,7 @@ console.log('\n\x1b[1mpanel-agencia.html + intake-wizard.js\x1b[0m');
 }
 
 /* ============ 6. INTAKE v3 EN EL BACKOFFICE ============
-   Se abre desde el modal de nuevo caso y lo reemplaza mientras está activo. */
+   Se abre desde "Nuevo caso", que es su único disparador. */
 console.log('\n\x1b[1mbackoffice.html + intake-wizard.js\x1b[0m');
 {
   var r6 = cargar('backoffice.html', {
@@ -242,15 +189,14 @@ console.log('\n\x1b[1mbackoffice.html + intake-wizard.js\x1b[0m');
   var w6 = r6.window, q6 = consultas(w6);
 
   chk(r6.errores.length === 0, 'carga sin errores: ' + (r6.errores.join(' | ') || 'ninguno'));
-  chk(q6.$('nc-wizard') !== null, 'existe el botón de carga guiada en el modal de nuevo caso');
-  chk(q6.$('nc-save') !== null && q6.$('nc-nombre') !== null,
-    'el alta manual sigue entera: se suma, no se reemplaza');
+  /* Del formulario largo no queda nada: "Nuevo caso" es hoy el disparador del wizard. */
+  chk(q6.$('nc-ov') === null && q6.$('nc-save') === null && q6.$('nc-nombre') === null,
+    'el modal de alta manual se borró del DOM');
+  chk(q6.$('btn-nuevo-caso') !== null, 'y "Nuevo caso" sigue en su lugar');
 
-  q6.$('nc-wizard').click();
+  q6.$('btn-nuevo-caso').click();
   var ov6 = w6.document.querySelector('.iw-ov');
-  chk(ov6 !== null && ov6.className.indexOf('iw-open') > -1, 'el botón lo abre');
-  chk(!q6.$('nc-ov').classList.contains('open'),
-    'y cierra el modal viejo: no quedan dos formularios encimados');
+  chk(ov6 !== null && ov6.className.indexOf('iw-open') > -1, 'el botón abre el wizard directo');
   chk(w6.document.getElementById('iw-consent') === null, 'sin firma: el pasajero no está presente');
   chk(w6.document.querySelector('.iw-ms[data-ms="scan"]') !== null,
     'con escáner: el mismo que el sitio público');
