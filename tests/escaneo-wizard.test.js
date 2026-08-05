@@ -223,14 +223,13 @@ async function contactoSobreviveAlFallo() {
   chk(c.style.display !== 'none',
     'REGRESIÓN: con el wizard caído el contacto SIGUE visible, que es para lo que está');
 
-  /* Los canales tienen que ser links de verdad, no algo que arme el JS. */
+  /* Un solo canal, y tiene que ser un link de verdad: si lo armara el JS, no estaría
+     justo cuando el JS es lo que falló. */
   var links = c.querySelectorAll('a[href]');
-  var hrefs = [];
-  for (var i = 0; i < links.length; i++) hrefs.push(links[i].getAttribute('href'));
-  chk(hrefs.length === 3, 'hay tres canales de contacto: ' + hrefs.length);
-  chk(hrefs.join(' ').indexOf('wa.me/5491125578402') > -1, 'WhatsApp, con el número del pie');
-  chk(hrefs.join(' ').indexOf('mailto:contacto@solucionair.com') > -1, 'mail, con la dirección del pie');
-  chk(hrefs.join(' ').indexOf('tel:+5491125578402') > -1, 'teléfono, con el número del pie');
+  chk(links.length === 1, 'un único canal de contacto, no una botonera: ' + links.length);
+  chk(links.length === 1 && links[0].getAttribute('href').indexOf('wa.me/5491125578402') > -1,
+    'y es el WhatsApp del pie: ' + (links.length ? links[0].getAttribute('href') : '(sin link)'));
+  chk(c.textContent.indexOf('¿No se abre el formulario?') > -1, 'con el aviso a la vista');
 }
 
 (async function () {
