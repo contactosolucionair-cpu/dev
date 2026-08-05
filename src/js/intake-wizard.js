@@ -149,6 +149,11 @@
       var x = w.leer('tipo_incidencia');
       return x === 'cancelacion' || x === 'reprogramacion' || x === 'overbooking' || x === 'denegacion';
     };
+    /* Hay equipaje que preguntar en dos casos: el reclamo es de equipaje, o es de vuelo
+       y además hubo un problema con el equipaje en ese mismo vuelo. */
+    var hayEquipaje = function (w) {
+      return esEquipaje(w) || (esVuelo(w) && w.leer('_combo_gate') === 'si');
+    };
 
     var P = [];
 
@@ -184,19 +189,26 @@
     } });
     P.push({ id: 'cause', when: esVuelo });
 
-    /* rama equipaje */
-    P.push({ id: 'bagtype', when: esEquipaje });
-    P.push({ id: 'bagdelivery', when: function (w) { return esEquipaje(w) && w.leer('tipo_caso_equipaje') === 'demora'; } });
-    P.push({ id: 'bagvalue', when: esEquipaje });
-    P.push({ id: 'bagpir', when: esEquipaje });
-    P.push({ id: 'bagpirnum', when: function (w) { return esEquipaje(w) && w.leer('pir_presentado') === 'si'; } });
-    P.push({ id: 'bagdesc', when: esEquipaje });
+    /* La compuerta del equipaje combinado va ANTES de la rama de equipaje, porque esa
+       rama la comparten los dos caminos. Para el reclamo de equipaje puro este paso no
+       aplica (`esVuelo`) y el orden visible no cambia. */
+    P.push({ id: 'combogate', when: esVuelo });
+
+    /* rama equipaje — la MISMA para el reclamo puro y para el vuelo+equipaje.
+       Antes el combinado tenía su propio paso `combo` con tres campos sueltos, y por eso
+       no preguntaba el valor del equipaje, la fecha de entrega, el "no entregado" ni el
+       número de PIR: cuatro datos que el formulario viejo sí guardaba (`app.js:1228`).
+       Encaminarlo por estos pasos tapa esa pérdida y borra la duplicación. */
+    P.push({ id: 'bagtype', when: hayEquipaje });
+    P.push({ id: 'bagdelivery', when: function (w) { return hayEquipaje(w) && w.leer('tipo_caso_equipaje') === 'demora'; } });
+    P.push({ id: 'bagvalue', when: hayEquipaje });
+    P.push({ id: 'bagpir', when: hayEquipaje });
+    P.push({ id: 'bagpirnum', when: function (w) { return hayEquipaje(w) && w.leer('pir_presentado') === 'si'; } });
+    P.push({ id: 'bagdesc', when: hayEquipaje });
 
     /* común */
     P.push({ id: 'gastosgate' });
     P.push({ id: 'gastos', when: function (w) { return w.leer('_gastos_gate') === 'si'; } });
-    P.push({ id: 'combogate', when: esVuelo });
-    P.push({ id: 'combo', when: function (w) { return esVuelo(w) && w.leer('_combo_gate') === 'si'; } });
     if (o.acompanantes) {
       P.push({ id: 'acompgate' });
       P.push({ id: 'acomp', when: function (w) { return w.leer('_acomp_gate') === 'si'; } });
@@ -424,19 +436,6 @@
     h += paso('combogate', '¿También hubo un problema con el equipaje en este vuelo?',
       'Si es así se suma al mismo reclamo, sin abrir un caso aparte.',
       opts('_combo_gate', [['si', 'Sí, también el equipaje', '', '&#129523;'], ['no', 'No, solo el vuelo', '', '&#8212;']]));
-
-    h += paso('combo', '¿Qué pasó con el equipaje?', 'Lo básico alcanza.',
-      '<div class="iw-g iw-g2">' +
-      campo('tipo_caso_equipaje', 'Tipo de incidencia', select('tipo_caso_equipaje',
-        '<option value="">Seleccionar...</option><option value="perdida">Pérdida</option>' +
-        '<option value="danio">Daño</option><option value="demora">Demora en entrega</option>', true), true) +
-      campo('pir_presentado', esc(o.textos.pirQ), select('pir_presentado',
-        '<option value="">Seleccionar...</option><option value="si">Sí</option>' +
-        '<option value="no">No</option><option value="no_sabe">No sé</option>', true), true) +
-      '</div><div class="iw-g iw-g1" style="margin-top:14px">' +
-      campo('descripcion_equipaje', 'Descripción',
-        '<textarea class="iw-in iw-ta" id="iw-descripcion_equipaje_combo" rows="2" ' +
-        'placeholder="Ej: La maleta llegó con la rueda rota."></textarea>') + '</div>');
 
     if (o.acompanantes) {
       h += paso('acompgate', '¿Viajaba con alguien más afectado?',
@@ -1332,7 +1331,7 @@
          familias de incidente deriva: con `vuelo` a secas, el incidente de equipaje del
          caso combinado no se derivaría nunca e `incidentes` —campo crítico del motor—
          saldría incompleto sin que falle nada a la vista. */
-      var combinado = esVuelo && OCULTOS._combo_gate === 'si' && !!el('tipo_caso_equipaje').value;
+      var combinado = esVuelo && OCULTOS._combo_gate === 'si' && !!OCULTOS.tipo_caso_equipaje;
 
       var p = {
         tipo_reclamo: combinado ? 'vuelo_equipaje' : (OCULTOS.tipo_reclamo || 'vuelo'),
@@ -1375,7 +1374,11 @@
         p.horas_retraso = aNumero(el('viajo_horas').value);
       }
 
-      if (!esVuelo) {
+      /* Una sola rama para el equipaje puro y para el combinado: los dos recorren los
+         mismos pasos, así que leen los mismos campos. Cuando el combinado tenía pasos
+         propios, estas cuatro líneas del medio no existían para él y el caso se guardaba
+         sin valor, sin fecha de entrega, sin "no entregado" y sin número de PIR. */
+      if (!esVuelo || combinado) {
         p.tipo_caso_equipaje = OCULTOS.tipo_caso_equipaje || null;
         p.fecha_entrega_equipaje = el('fecha_entrega_equipaje').value || null;
         p.equipaje_no_entregado = !!(noEnt && noEnt.checked);
@@ -1383,11 +1386,6 @@
         p.pir_presentado = OCULTOS.pir_presentado || null;
         p.pir_numero = trim(el('pir_numero').value) || null;
         p.descripcion_equipaje = trim(el('descripcion_equipaje').value) || null;
-      } else if (OCULTOS._combo_gate === 'si') {
-        /* Equipaje combinado en el mismo vuelo: usa los selects del paso `combo`. */
-        p.tipo_caso_equipaje = el('tipo_caso_equipaje').value || null;
-        p.pir_presentado = el('pir_presentado').value || null;
-        p.descripcion_equipaje = trim(el('descripcion_equipaje_combo').value) || null;
       }
 
       if (o.acompanantes) p.acompanantes = filasDe(q('[data-acomp-list]'), true);

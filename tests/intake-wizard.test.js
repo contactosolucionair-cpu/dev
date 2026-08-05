@@ -189,7 +189,12 @@ var SALTO = 240;
      ============================================================ */
   seccion('agregador de gastos');
   t.seguir();
-  igual('tras la causa, la compuerta de gastos', t.paso(), 'gastosgate');
+  /* La compuerta del equipaje combinado pasó a ir ANTES que la de gastos: la rama de
+     equipaje la comparten el reclamo puro y el combinado, y las preguntas del caso van
+     antes que las del dinero. */
+  igual('tras la causa, la compuerta de equipaje combinado', t.paso(), 'combogate');
+  t.elegir('no'); await t.esperar(SALTO);
+  igual('y después la compuerta de gastos', t.paso(), 'gastosgate');
   t.elegir('si'); await t.esperar(SALTO);
   igual('"sí" abre el agregador', t.paso(), 'gastos');
 
@@ -251,9 +256,7 @@ var SALTO = 240;
      ============================================================ */
   seccion('otra documentación y comentarios');
   t.seguir();
-  igual('tras gastos, equipaje combinado', t.paso(), 'combogate');
-  t.elegir('no'); await t.esperar(SALTO);
-  igual('luego acompañantes', t.paso(), 'acompgate');
+  igual('tras gastos, acompañantes', t.paso(), 'acompgate');
   t.elegir('no'); await t.esperar(SALTO);
   igual('otra documentación va ANTES de los datos personales', t.paso(), 'otrosdocs');
 
@@ -393,18 +396,33 @@ var SALTO = 240;
   cb2.elegir('demora'); await cb2.esperar(SALTO);
   cb2.set('horas_retraso', '4'); cb2.seguir();
   cb2.seguir();                                  /* causa opcional */
-  cb2.elegir('no'); await cb2.esperar(SALTO);    /* sin gastos */
   igual('llega a la compuerta de equipaje combinado', cb2.paso(), 'combogate');
   cb2.elegir('si'); await cb2.esperar(SALTO);
-  igual('"sí" abre el mini formulario de equipaje', cb2.paso(), 'combo');
-  cb2.set('tipo_caso_equipaje', 'danio');
-  cb2.set('pir_presentado', 'si');
-  cb2.set('descripcion_equipaje_combo', 'La valija llegó con la rueda rota');
+  /* REGRESIÓN: el combinado ya no tiene un mini formulario propio con tres campos.
+     Recorre la MISMA rama que el reclamo de equipaje puro, que es la única que pregunta
+     valor, fecha de entrega, "no entregado" y número de PIR — los cuatro datos que el
+     formulario largo sí guardaba (`src/js/app.js:1228`) y el paso `combo` perdía. */
+  igual('"sí" encamina por la rama de equipaje, no por un mini formulario', cb2.paso(), 'bagtype');
+  cb2.elegir('demora'); await cb2.esperar(SALTO);
+  igual('la demora en la entrega pregunta cuándo lo entregaron', cb2.paso(), 'bagdelivery');
+  cb2.set('fecha_entrega_equipaje', '2026-08-05'); cb2.seguir();
+  igual('después el valor del equipaje', cb2.paso(), 'bagvalue');
+  cb2.set('valor_equipaje', '850'); cb2.seguir();
+  igual('después el reclamo en el aeropuerto', cb2.paso(), 'bagpir');
+  cb2.elegir('si'); await cb2.esperar(SALTO);
+  igual('y con PIR presentado, su número', cb2.paso(), 'bagpirnum');
+  cb2.set('pir_numero', 'EZEAR12345'); cb2.seguir();
+  igual('y termina en la descripción', cb2.paso(), 'bagdesc');
+  cb2.set('descripcion_equipaje', 'La valija llegó con la rueda rota');
   var pc = cb2.wz.payload();
   igual('tipo_reclamo pasa a vuelo_equipaje, no queda en vuelo', pc.tipo_reclamo, 'vuelo_equipaje');
-  igual('viaja el tipo de incidencia de equipaje', pc.tipo_caso_equipaje, 'danio');
+  igual('viaja el tipo de incidencia de equipaje', pc.tipo_caso_equipaje, 'demora');
   igual('y su PIR', pc.pir_presentado, 'si');
   igual('y su descripción', pc.descripcion_equipaje, 'La valija llegó con la rueda rota');
+  igual('REGRESIÓN: el combinado ya guarda el valor del equipaje', pc.valor_equipaje, 850);
+  igual('REGRESIÓN: y la fecha de entrega', pc.fecha_entrega_equipaje, '2026-08-05');
+  igual('REGRESIÓN: y el "no entregado"', pc.equipaje_no_entregado, false);
+  igual('REGRESIÓN: y el número de PIR', pc.pir_numero, 'EZEAR12345');
   igual('el incidente de vuelo sigue viajando', pc.tipo_incidencia, 'demora');
 
   var cb3 = montar({ superficie: 'b2c', escaner: false, acompanantes: false, firma: false });
@@ -417,8 +435,8 @@ var SALTO = 240;
   cb3.elegir('demora'); await cb3.esperar(SALTO);
   cb3.set('horas_retraso', '4'); cb3.seguir();
   cb3.seguir();
-  cb3.elegir('no'); await cb3.esperar(SALTO);
   cb3.elegir('no'); await cb3.esperar(SALTO);    /* SIN equipaje combinado */
+  cb3.elegir('no'); await cb3.esperar(SALTO);    /* sin gastos */
   igual('sin equipaje combinado sigue siendo vuelo', cb3.wz.payload().tipo_reclamo, 'vuelo');
   afirmar('y no arrastra campos de equipaje',
     cb3.wz.payload().tipo_caso_equipaje === null && cb3.wz.payload().descripcion_equipaje === null);
@@ -784,11 +802,13 @@ var SALTO = 240;
     preguntaDe(pb, 'bagpirnum'), 'Indicá el número de PIR');
   var pi = montar({ superficie: 'backoffice', escaner: false, firma: false });
   igual('en las superficies internas, impersonal', preguntaDe(pi, 'bagpir'), '¿Se hizo el reclamo en el aeropuerto?');
-  var etiquetaCombo = pb.raiz.querySelector('[data-field="pir_presentado"] .iw-lbl');
-  igual('y el vuelo+equipaje combinado usa la misma pregunta',
-    /* El asterisco de obligatorio es parte de la etiqueta, no del texto. */
-    etiquetaCombo ? etiquetaCombo.textContent.replace(/\s*\*$/, '') : '(sin campo)',
-    '¿Hiciste el reclamo en el aeropuerto?');
+  /* El combinado ya no tiene una copia del campo: recorre el mismo paso `bagpir`, así
+     que la pregunta existe una sola vez en todo el wizard. */
+  afirmar('el vuelo+equipaje combinado no duplica el campo de PIR',
+    pb.raiz.querySelector('[data-field="pir_presentado"]') === null &&
+    pb.raiz.querySelector('#iw-descripcion_equipaje_combo') === null);
+  igual('y el paso del PIR existe una sola vez',
+    pb.raiz.querySelectorAll('[data-pick="pir_presentado"]').length, 1);
 
   afirmar('sin errores de consola en toda la sección',
     it.errores.length === 0 && mn.errores.length === 0 && pb.errores.length === 0 && pi.errores.length === 0,
