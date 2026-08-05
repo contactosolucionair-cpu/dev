@@ -54,7 +54,7 @@ Módulo de interfaz que reemplaza completamente los popups nativos del navegador
 
 ```
 solucionair-web/
-├── index.html              # Landing page + formulario wizard de 3 pasos (B2C)
+├── index.html              # Landing page + login de Google + bloque de contacto (B2C)
 ├── perfil.html             # Panel del cliente (sus casos, timeline, cancelar/novedad)
 ├── backoffice.html         # Panel admin (reclamos, papelera, agencias, abogados, config)
 ├── agencias.html           # Login / registro del portal B2B de agencias
@@ -64,7 +64,7 @@ solucionair-web/
 ├── vercel.json             # Clean URLs + rewrites /api/{agency,abogados,admin}/:action
 ├── src/
 │   ├── css/styles.css      # Sistema de diseño con CSS custom properties
-│   └── js/app.js           # Formulario, AI scanner, wizard, i18n
+│   └── js/app.js           # Login de Google, montaje del wizard, i18n
 ├── api/
 │   ├── process-ticket.js   # Submit B2C + AI vision (crea caso en instancia 'evaluacion')
 │   ├── public-config.js    # Flags públicos del sitio (whitelist; único canal al navegador)
@@ -283,10 +283,10 @@ Carga de documentos (multi-archivo)
 Gemini 2.5 Flash extrae datos unificados
     │
     ▼
-Autocompletado del formulario (Paso 1 + 2)
+Autocompletado de los pasos del wizard
     │
     ▼
-Firma electrónica y envío (Paso 3)
+Firma electrónica y envío (último paso)
     │
     ├── Persistencia en Supabase
     ├── PDF de autorización firmado (huella SHA-256)
@@ -372,15 +372,15 @@ node tests/motor.test.js CD-05        # filtra casos dorados por id o descripci�
 node tests/motor.test.js --verbose    # imprime el análisis completo de cada caso
 node tests/intake.test.js             # helpers del intake (api/_utils/intake.js)
 node tests/itinerario.test.js         # sanitizeRuta: ciudades con varios aeropuertos
-node tests/formularios.test.js        # los 3 formularios de alta en un DOM real (jsdom)
-node tests/escaneo.test.js            # escaneo de IA punta a punta, con fetch mockeado
+node tests/formularios.test.js        # el wizard montado en las 3 superficies (jsdom)
+node tests/escaneo-wizard.test.js     # escaneo de IA punta a punta por superficie, con fetch mockeado
 ```
 
 Sin framework. La única dependencia es `jsdom` (devDependency), y solo para las dos
 suites de front: las de backend siguen corriendo con `node` pelado. Exit distinto de 0 si
 algo falla. Cuatro grupos:
 
-- **Front en jsdom** (`formularios`, `escaneo`) — cargan el HTML real con su JS y lo
+- **Front en jsdom** (`formularios`, `escaneo-wizard`, `intake-wizard`) — cargan el HTML real con su JS y lo
   ejercitan. Existen porque el front no tiene build: los bugs de orden de ejecución no se
   ven leyendo ni con `node --check`, solo ejecutando el archivo entero contra su markup.
   `tests/lib/dom.js` tiene el harness y documenta sus dos trampas (sembrar `localStorage`

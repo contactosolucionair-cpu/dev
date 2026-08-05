@@ -89,3 +89,12 @@ Con el pasaje real USH→EZE / AEP→USH:
 3. Volver a **ida** → alterna de nuevo a USH → EZE. Repetir el toggle un par de veces: debe alternar SIEMPRE, y `data-iata` (inspeccionable en devtools) debe coincidir con lo visible en cada estado.
 4. Editar manualmente el destino, cambiar de tramo y volver: la edición manual se pierde y gana la dirección elegida (comportamiento decidido, no bug).
 5. Flujo de escaneo inicial sobre formulario con campos ya escritos a mano: la IA NO pisa lo escrito (la semántica sin `force` quedó intacta).
+
+---
+
+> **Nota posterior:** el formulario largo sobre el que corrió este ciclo fue eliminado en
+> `limpieza-formularios-viejos` (2026-08-05). El comportamiento que este fix instaló —que
+> cambiar de tramo reescriba los aeropuertos en vez de solo renombrar las etiquetas— se
+> portó al componente compartido `src/js/intake-wizard.js` en el commit `92ffdbc`, y hoy
+> lo cubre `tests/escaneo-wizard.test.js` en las tres superficies. Este documento queda
+> como registro histórico del ciclo original.

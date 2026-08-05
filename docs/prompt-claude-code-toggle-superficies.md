@@ -45,3 +45,10 @@ Replicar en cada copia el patrón de 0a15ac7 adaptado a su estado local: guardar
 
 ## Aceptación manual (Juan, en preview)
 Pasaje real USH→EZE / AEP→USH en backoffice Y panel-agencia: carga inicial correcta, toggle alternando USH→EZE ↔ AEP→USH repetidamente, dirección sin datos escaneados sin romper nada.
+
+---
+
+> **Nota posterior:** las tres copias de la lógica de consumo del escaneo que este ciclo
+> alineó fueron eliminadas en el ciclo `limpieza-formularios-viejos`, junto con los
+> formularios de carga previos al wizard. El consumo del escaneo vive hoy en
+> `src/js/intake-wizard.js`, en un solo lugar.

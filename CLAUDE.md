@@ -24,7 +24,8 @@ una única tabla `reclamos`.
 
 | Archivo | Rol |
 |---|---|
-| `index.html` + `src/js/app.js` | Landing + formulario wizard B2C + escáner IA + i18n |
+| `index.html` + `src/js/app.js` | Landing + login de Google + i18n; monta el wizard tras verificar identidad |
+| `src/js/intake-wizard.js` | **Componente de alta de casos**: el popup de micro-pasos que usan las tres superficies |
 | `backoffice.html` | Panel admin: casos, papelera, alertas, agencias, abogados, config |
 | `perfil.html` | Panel del cliente (uso real bajo; el seguimiento va por WhatsApp) |
 | `agencias.html` / `panel-agencia.html` | Portal B2B de agencias |
@@ -36,19 +37,26 @@ una única tabla `reclamos`.
 | `vercel.json` | `cleanUrls` + rewrites `/api/{agency,abogados,admin}/:action` |
 | `docs/` | Inventarios de fase y prompts de ciclo |
 
-## Superficies duplicadas — leer antes de tocar el formulario
+## Alta de casos — un solo componente, tres montajes
 
-La lógica de carga de caso y de consumo del payload del escáner IA está
-**duplicada en tres lugares** con copias divergentes:
+La carga de caso vive en **un componente compartido**: `src/js/intake-wizard.js`,
+un popup de micro-pasos que las tres superficies montan con configuración
+distinta (B2C desde `src/js/app.js`, backoffice y panel de agencias desde sus
+scripts inline). **Los formularios largos que había antes fueron eliminados**
+—ciclo `limpieza-formularios-viejos`, agosto 2026— y con ellos las tres copias
+divergentes de la lógica de carga y de consumo del escáner.
 
-1. `src/js/app.js` (B2C)
-2. `backoffice.html` (alta manual)
-3. `panel-agencia.html` (alta por agencia)
+El comportamiento del formulario, el árbol de preguntas y el mapeo de campos se
+tocan **en el componente, una sola vez**. No hay que replicar nada.
 
-Todo cambio de comportamiento del formulario, del escáner o del mapeo de campos
-se aplica **en las tres o no se aplica**. Un fix en una sola superficie es un fix
-a medias: ya pasó con el selector de dirección de tramo y con la detección de
-escalas. Ante cualquier cambio en esta zona, censar las tres antes de editar.
+Lo que **sí** sigue existiendo por triplicado son los cuatro callbacks con que
+cada superficie se engancha: `alEscanear`, `alElegirArchivo`, `alEnviar` y
+`alMontarCampoAeropuerto`. Son transporte —autenticación propia, endpoint propio,
+traducción del payload al contrato de su API— y ahí la regla de paridad sigue
+vigente: si cambia el contrato de respuesta del extractor o el del alta, hay que
+revisar los tres. Ya falló una vez: los tres `alEscanear` truncaban `segmentos`
+antes de entregárselo al componente y el caso llegaba al motor sin itinerario,
+sin que se rompiera nada a la vista.
 
 El único camino vivo de extracción por IA es `api/process-ticket.js` (escaneo
 multi-archivo, prompt con reglas de itinerario multi-tramo, escalas y

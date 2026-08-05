@@ -102,6 +102,31 @@ respuesta de un endpoint de IA, hay que revisar estas tres filas.
 > fueron eliminados. Toda mención a `analyze-document` más abajo en este documento es
 > registro histórico del ciclo original, no una superficie viva.
 
+> **Actualización 2026-08-05 (ciclo `limpieza-formularios-viejos`):** las tres filas de
+> abajo **se consolidaron en una**. Los formularios de carga previos al wizard fueron
+> eliminados en las tres superficies, y con ellos sus tres copias de la lógica de consumo
+> del escaneo. Hoy el escaneo lo consume **un solo lugar**: el componente compartido
+> `src/js/intake-wizard.js`, que las tres superficies montan con configuración distinta.
+> Lo que queda por superficie no es una copia de la lógica sino el **handler de transporte**
+> (`alEscanear`): abre el selector de archivos, pega a `process-ticket` con su propia
+> autenticación y le pasa el payload al componente. El mapeo de campos, la dirección
+> afectada y el armado de la ruta viven en el componente, una vez.
+>
+> El censo vivo pasa a ser esta única fila:
+>
+> | # | Superficie | Endpoint | ¿Prompt propio? | ¿Lee `segmentos`? | ¿`sanitizeRuta` server-side? |
+> |---|---|---|---|---|---|
+> | 1 | `src/js/intake-wizard.js`, montado por B2C (`src/js/app.js`), backoffice y agencias | `POST /api/process-ticket` `{images, multiFile}` | No | Sí, desde el 2026-08-04 | Sí |
+>
+> **El checklist ante un cambio del extractor pasa de tres filas a una.** Lo que sí sigue
+> siendo por triplicado son los tres `alEscanear` que transportan la respuesta: si cambia
+> el CONTRATO de respuesta del endpoint, hay que revisar los tres. Ya pasó una vez —los
+> tres truncaban `segmentos` antes de entregárselo al componente, y el caso viajaba sin
+> itinerario— así que ese punto merece el mismo cuidado que tenía el censo anterior. El
+> e2e `tests/escaneo-wizard.test.js` cubre las tres.
+>
+> La tabla de abajo queda como registro histórico del ciclo original.
+
 | # | Superficie | Endpoint | ¿Prompt propio? | Campos que consume | ¿Lee `segmentos`? | ¿`sanitizeRuta` server-side? |
 |---|---|---|---|---|---|---|
 | 1 | B2C `index.html` + `src/js/app.js:489` (escaneo multi-archivo) | `POST /api/process-ticket` `{images, multiFile}` | No | 15 campos planos | Sí (`app.js:541`) | Sí |
