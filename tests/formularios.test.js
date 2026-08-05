@@ -19,37 +19,6 @@ import { cargar, crearChequeador, consultas } from './lib/dom.js';
 
 var chk = crearChequeador();
 
-/* ============ 1. FORMULARIO PÚBLICO ============ */
-console.log('\n\x1b[1mindex.html + src/js/app.js\x1b[0m');
-{
-  var r = cargar('index.html', { scripts: ['src/js/app.js'] });
-  var q = consultas(r.window);
-
-  chk(r.errores.length === 0, r.errores.length ? 'errores en el arranque: ' + r.errores.map(String).join(' | ') : 'arranque limpio');
-  chk(!q.visible('field-direccion'), 'la pregunta de dirección arranca oculta');
-  q.cambiar('f-tipo-viaje', 'solo_ida');
-  chk(!q.visible('field-direccion'), 'solo ida → sigue oculta');
-  q.cambiar('f-tipo-viaje', 'ida_vuelta');
-  chk(q.visible('field-direccion'), 'ida y vuelta → visible');
-  q.cambiar('f-direccion', 'vuelta');
-  chk(q.lbl('f-origin') === 'Origen de la vuelta', 'origen: "' + q.lbl('f-origin') + '"');
-  chk(q.lbl('f-destination') === 'Destino de la vuelta', 'destino: "' + q.lbl('f-destination') + '"');
-  chk(q.lbl('f-escalas') === '¿Tuviste escalas en la vuelta?', 'escalas: "' + q.lbl('f-escalas') + '"');
-  chk(q.visible('hint-direccion'), 'el hint aparece al elegir dirección');
-
-  /* El renombrado cambia la CLAVE data-t, no el texto: el conmutador de idioma tiene
-     que seguir funcionando solo. */
-  r.window.document.querySelector('.lang__btn[data-lang-btn="en"]').click();
-  chk(q.lbl('f-origin') === 'Return origin', 'en inglés: "' + q.lbl('f-origin') + '"');
-  chk(q.lbl('f-escalas') === 'Did the return have connections?', 'escalas en inglés: "' + q.lbl('f-escalas') + '"');
-  r.window.document.querySelector('.lang__btn[data-lang-btn="es"]').click();
-  chk(q.val('f-direccion') === 'vuelta', 'la dirección elegida sobrevive al cambio de idioma');
-
-  q.cambiar('f-tipo-viaje', 'solo_ida');
-  chk(q.val('f-direccion') === '', 'volver a solo ida limpia el valor');
-  chk(q.lbl('f-origin') === 'Origen', 'y la etiqueta vuelve a neutra');
-}
-
 /* ============ 2. PANEL DE AGENCIAS ============ */
 console.log('\n\x1b[1mpanel-agencia.html\x1b[0m');
 {
@@ -171,16 +140,18 @@ console.log('\n\x1b[1mindex.html + intake-wizard.js — arranque tras el login d
   chk(!!ov && ov.className.indexOf('iw-open') > -1, 'y se abrió solo tras verificar la identidad');
   chk(q4.visible('wz-launcher'), 'la tarjeta de entrada queda a la vista para volver');
 
-  console.log('  \x1b[2m-- el formulario largo queda inalcanzable --\x1b[0m');
+  console.log('  \x1b[2m-- del formulario largo no queda nada --\x1b[0m');
   var cont4 = q4.$('form-content-wrapper');
-  ['.ctype-tabs', '#wizard-steps', '.prog'].forEach(function (sel) {
-    var n = cont4.querySelector(sel);
-    chk(!!n && n.style.display === 'none', 'oculto: ' + sel);
+  ['.ctype-tabs', '#wizard-steps', '.prog', '.wz-panel'].forEach(function (sel) {
+    chk(cont4.querySelector(sel) === null, 'borrado del DOM: ' + sel);
   });
-  var panelesVisibles = Array.prototype.filter.call(
-    cont4.querySelectorAll('.wz-panel'), function (n) { return n.style.display !== 'none'; });
-  chk(panelesVisibles.length === 0, 'ningún panel viejo queda visible (' + panelesVisibles.length + ')');
-  chk(q4.$('wz-1') !== null, 'pero el markup viejo sigue en el DOM: se borra en su propia fase');
+  chk(q4.$('wz-1') === null && q4.$('f-origin') === null,
+    'ni los paneles ni los campos siguen en el markup');
+  /* Lo que sí queda: la tarjeta para volver al wizard y el bloque de contacto, este
+     último ya oculto porque el wizard abrió bien. */
+  var contacto4 = q4.$('contacto-fallback');
+  chk(!!contacto4 && contacto4.style.display === 'none',
+    'el bloque de contacto existe y quedó oculto tras abrir el wizard');
 
   console.log('  \x1b[2m-- identidad prellenada --\x1b[0m');
   var nom = w4.document.getElementById('iw-nombre');
