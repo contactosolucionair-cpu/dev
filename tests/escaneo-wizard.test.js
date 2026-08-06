@@ -244,6 +244,52 @@ async function contactoSobreviveAlFallo() {
  * Acá se recorre el wizard entero y se mira el body, comparado contra las guardas reales
  * del endpoint.
  */
+/** Recorre el wizard de punta a punta por el camino más corto y lo envía. */
+async function caminarYEnviar(ov, o) {
+  o = o || {};
+  function paso() { var n = ov.querySelector('.iw-ms.iw-on'); return n ? n.getAttribute('data-ms') : '(ninguno)'; }
+  function set(id, v) { var n = ov.querySelector('#iw-' + id); if (n) n.value = v; }
+  function seguir() { ov.querySelector('[data-seguir]').click(); }
+  async function elegir(v) {
+    var b = ov.querySelector('.iw-ms.iw-on .iw-opt[data-val="' + v + '"]');
+    if (!b) throw new Error('no hay opción "' + v + '" en el paso ' + paso());
+    b.click();
+    await esperar(SALTO);
+  }
+
+  ov.querySelector('[data-ctype="vuelo"]').click();
+  await esperar(SALTO);
+  /* El escaneo ya se probó arriba; acá interesa el cuerpo del alta. */
+  if (paso() === 'scan') ov.querySelector('[data-scan-skip]').click();
+  set('aerolinea', 'Aerolineas Argentinas'); set('vuelo_nro', 'AR 1891'); seguir();
+  await elegir('solo_ida');
+  await elegir('no');                                     /* sin escalas */
+  set('origen', 'USH - Ushuaia'); set('destino', 'EZE - Buenos Aires'); seguir();
+  set('fecha_vuelo', '2026-07-21'); set('pnr', 'ABC123'); seguir();
+  await elegir('demora');
+  set('horas_retraso', '5'); seguir();
+  seguir();                                               /* causa: opcional */
+  await elegir('no');                                     /* sin equipaje combinado */
+  await elegir('no');                                     /* sin gastos */
+  if (paso() === 'acompgate') await elegir('no');
+  seguir();                                               /* otra documentación */
+  seguir();                                               /* comentario */
+  set('nombre', o.nombre || 'Juan Pablo Martínez'); seguir();
+  set('telefono', '+54 9 11 2557-8402');
+  if (!o.emailBloqueado) set('email', o.email || 'pasajero@test.com');
+  seguir();
+  set('documento_tipo', 'DNI'); set('documento_numero', '37.806.475'); seguir();
+
+  var pasoAntes = paso();
+  var enFirma = pasoAntes === 'firma';
+  /* En B2C el último paso exige la declaración jurada tildada. */
+  var cb = ov.querySelector('#iw-consent');
+  if (cb) { cb.checked = true; cb.dispatchEvent(new ov.ownerDocument.defaultView.Event('change', { bubbles: true })); }
+  seguir();
+  await ceder(12);
+  return { enFirma: enFirma, pasoAntes: pasoAntes, paso: paso };
+}
+
 async function contratoDeAltaAgencias() {
   console.log('\n\x1b[1mpanel-agencia.html · el cuerpo que llega al endpoint de alta\x1b[0m');
 
@@ -270,39 +316,8 @@ async function contratoDeAltaAgencias() {
   await ceder();
 
   var ov = w.document.querySelector('.iw-ov.iw-open');
-  function paso() { var n = ov.querySelector('.iw-ms.iw-on'); return n ? n.getAttribute('data-ms') : '(ninguno)'; }
-  function set(id, v) { var n = ov.querySelector('#iw-' + id); if (n) n.value = v; }
-  function seguir() { ov.querySelector('[data-seguir]').click(); }
-  async function elegir(v) {
-    var b = ov.querySelector('.iw-ms.iw-on .iw-opt[data-val="' + v + '"]');
-    if (!b) throw new Error('no hay opción "' + v + '" en el paso ' + paso());
-    b.click();
-    await esperar(SALTO);
-  }
-
-  ov.querySelector('[data-ctype="vuelo"]').click();
-  await esperar(SALTO);
-  ov.querySelector('[data-scan-skip]').click();          /* carga a mano: el escaneo ya se probó arriba */
-  set('aerolinea', 'Aerolineas Argentinas'); set('vuelo_nro', 'AR 1891'); seguir();
-  await elegir('solo_ida');
-  await elegir('no');                                     /* sin escalas */
-  set('origen', 'USH - Ushuaia'); set('destino', 'EZE - Buenos Aires'); seguir();
-  set('fecha_vuelo', '2026-07-21'); set('pnr', 'ABC123'); seguir();
-  await elegir('demora');
-  set('horas_retraso', '5'); seguir();
-  seguir();                                               /* causa: opcional */
-  await elegir('no');                                     /* sin equipaje combinado */
-  await elegir('no');                                     /* sin gastos */
-  await elegir('no');                                     /* sin acompañantes */
-  seguir();                                               /* otra documentación */
-  seguir();                                               /* comentario */
-  set('nombre', 'Juan Pablo Martínez'); seguir();
-  set('telefono', '+54 9 11 2557-8402'); set('email', 'pasajero@test.com'); seguir();
-  set('documento_tipo', 'DNI'); set('documento_numero', '37.806.475'); seguir();
-
-  chk(paso() === 'firma', 'el recorrido llega al último paso: ' + paso());
-  seguir();
-  await ceder(12);
+  var res = await caminarYEnviar(ov, {});
+  chk(res.enFirma, 'el recorrido llega al último paso: ' + res.pasoAntes);
 
   if (!chk(enviado !== null, 'el alta llegó al endpoint')) return;
   /* Las dos guardas reales de `api/agency.js`: sin cualquiera de las dos, 400. */
@@ -310,7 +325,82 @@ async function contratoDeAltaAgencias() {
     'guarda 1: nombre y email del pasajero viajan');
   chk(enviado.cliente_autorizacion_declarada === true,
     'REGRESIÓN: guarda 2: `cliente_autorizacion_declarada` viaja en true, o el alta rebota con 400');
-  chk(paso() === 'done', 'y el wizard muestra la pantalla de caso cargado: ' + paso());
+  chk(res.paso() === 'done', 'y el wizard muestra la pantalla de caso cargado: ' + res.paso());
+  chk(r.errores.length === 0, 'sin errores de consola: ' + (r.errores.map(String).join(' | ') || 'ninguno'));
+}
+
+async function contratoDeAltaB2C() {
+  console.log('\n\x1b[1mindex.html · el cuerpo que llega a process-ticket\x1b[0m');
+
+  var enviado = null;
+  var base = fetchConSesion(SEGMENTOS_IDA_VUELTA);
+  var r = cargar('index.html', {
+    scripts: ['src/js/airport-select.js', 'src/js/intake-wizard.js', 'src/js/app.js'],
+    fetch: function (url, opts) {
+      var body = opts && opts.body ? JSON.parse(opts.body) : null;
+      if (String(url).indexOf('/api/process-ticket') > -1 && body && body.manualSubmit) {
+        enviado = body;
+        return Promise.resolve({ ok: true, json: function () { return Promise.resolve({ success: true, refCode: 'CSA00098' }); } });
+      }
+      return base(url, opts);
+    },
+  });
+  var w = r.window;
+  await ceder();
+  w.firmaGoogle = { nombre: 'Juan Pablo Martínez', email: 'pasajero@test.com', sub: '1', email_verified: true };
+  w.__abrirIntake();
+  await ceder();
+
+  var ov = w.document.querySelector('.iw-ov.iw-open');
+  /* El mail viene de Google y viaja bloqueado: es el ancla de la verificación. */
+  var res = await caminarYEnviar(ov, { emailBloqueado: true });
+  chk(res.enFirma, 'el recorrido llega a la declaración jurada: ' + res.pasoAntes);
+
+  if (!chk(enviado !== null, 'el alta llegó a process-ticket')) return;
+  /* `manualSubmit` es lo que separa el alta del escaneo en el mismo endpoint: sin él,
+     `process-ticket` intenta leer imágenes y responde "No images provided". */
+  chk(enviado.manualSubmit === true, 'viaja `manualSubmit`, que distingue el alta del escaneo');
+  chk((enviado.email || '') === 'pasajero@test.com', 'guarda del endpoint: el email del pasajero viaja');
+  chk(enviado.consent_tyc === true && !!enviado.firma_ts,
+    'y la firma electrónica: consentimiento + timestamp');
+  chk(res.paso() === 'done', 'el wizard muestra el número de caso: ' + res.paso());
+  chk(r.errores.length === 0, 'sin errores de consola: ' + (r.errores.map(String).join(' | ') || 'ninguno'));
+}
+
+async function contratoDeAltaBackoffice() {
+  console.log('\n\x1b[1mbackoffice.html · el cuerpo que llega a admin?action=create-case\x1b[0m');
+
+  var enviado = null, cabeceras = null;
+  var base = fetchConSesion(SEGMENTOS_IDA_VUELTA);
+  var r = cargar('backoffice.html', {
+    scripts: ['src/js/airport-select.js', 'src/js/intake-wizard.js'],
+    antes: function (w) { w.sessionStorage.setItem('bo_admin_pwd', 'test'); },
+    fetch: function (url, opts) {
+      if (String(url).indexOf('action=create-case') > -1) {
+        enviado = JSON.parse(opts.body);
+        cabeceras = opts.headers || {};
+        return Promise.resolve({ ok: true, json: function () { return Promise.resolve({ success: true, refCode: 'CSA00097', id: 7 }); } });
+      }
+      return base(url, opts);
+    },
+  });
+  var w = r.window;
+  await ceder();
+  w.document.getElementById('btn-nuevo-caso').click();
+  await ceder();
+
+  var ov = w.document.querySelector('.iw-ov.iw-open');
+  var res = await caminarYEnviar(ov, {});
+  chk(res.enFirma, 'el recorrido llega al último paso: ' + res.pasoAntes);
+
+  if (!chk(enviado !== null, 'el alta llegó a create-case')) return;
+  /* La guarda de `api/admin.js:563`. */
+  chk(enviado.nombre === 'Juan Pablo Martínez' && enviado.email === 'pasajero@test.com',
+    'guarda del endpoint: nombre y email del pasajero viajan');
+  /* Sin este header el endpoint responde 401 y el fallo solo se ve en el browser. */
+  chk(!!(cabeceras && cabeceras['X-Admin-Password']),
+    'y va el header de autenticación de admin');
+  chk(res.paso() === 'done', 'el wizard muestra el número de caso: ' + res.paso());
   chk(r.errores.length === 0, 'sin errores de consola: ' + (r.errores.map(String).join(' | ') || 'ninguno'));
 }
 
@@ -319,6 +409,8 @@ async function contratoDeAltaAgencias() {
   for (var i = 0; i < SUPERFICIES.length; i++) await recorrer(SUPERFICIES[i]);
   await contactoSobreviveAlFallo();
   await contratoDeAltaAgencias();
+  await contratoDeAltaB2C();
+  await contratoDeAltaBackoffice();
 
   console.log('\n\x1b[1mResumen\x1b[0m');
   console.log('  \x1b[32m' + chk.estado.ok + ' ok\x1b[0m   ' +
