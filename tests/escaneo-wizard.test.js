@@ -232,10 +232,93 @@ async function contactoSobreviveAlFallo() {
   chk(c.textContent.indexOf('¿No se abre el formulario?') > -1, 'con el aviso a la vista');
 }
 
+/**
+ * El contrato del ALTA, que es distinto del contrato del escaneo.
+ *
+ * Existe por una regresión concreta: `api/agency.js` rechaza el alta sin
+ * `cliente_autorizacion_declarada`, y ese flag no era un campo del formulario sino una
+ * constante escrita en su submit. Al retirar el formulario largo, el alta guiada quedó
+ * rebotando con 400 —en realidad nunca había funcionado— y ningún test lo vio, porque
+ * todos miraban la CAPTURA de campos y ninguno el CUERPO que sale al endpoint.
+ *
+ * Acá se recorre el wizard entero y se mira el body, comparado contra las guardas reales
+ * del endpoint.
+ */
+async function contratoDeAltaAgencias() {
+  console.log('\n\x1b[1mpanel-agencia.html · el cuerpo que llega al endpoint de alta\x1b[0m');
+
+  var enviado = null;
+  var base = fetchConSesion(SEGMENTOS_IDA_VUELTA);
+  var r = cargar('panel-agencia.html', {
+    scripts: ['src/js/airport-select.js', 'src/js/intake-wizard.js'],
+    antes: function (w) {
+      w.localStorage.setItem('sa_ag_token', 'test');
+      w.localStorage.setItem('sa_ag_email', 'test@test.com');
+      w.localStorage.setItem('sa_ag_data', JSON.stringify({ nombre: 'Test', estado: 'aprobada' }));
+    },
+    fetch: function (url, opts) {
+      if (String(url).indexOf('/api/agency/submit-claim') > -1) {
+        enviado = JSON.parse(opts.body);
+        return Promise.resolve({ ok: true, json: function () { return Promise.resolve({ success: true, refCode: 'CSA00099' }); } });
+      }
+      return base(url, opts);
+    },
+  });
+  var w = r.window;
+  await ceder();
+  w.document.getElementById('wz-abrir').click();
+  await ceder();
+
+  var ov = w.document.querySelector('.iw-ov.iw-open');
+  function paso() { var n = ov.querySelector('.iw-ms.iw-on'); return n ? n.getAttribute('data-ms') : '(ninguno)'; }
+  function set(id, v) { var n = ov.querySelector('#iw-' + id); if (n) n.value = v; }
+  function seguir() { ov.querySelector('[data-seguir]').click(); }
+  async function elegir(v) {
+    var b = ov.querySelector('.iw-ms.iw-on .iw-opt[data-val="' + v + '"]');
+    if (!b) throw new Error('no hay opción "' + v + '" en el paso ' + paso());
+    b.click();
+    await esperar(SALTO);
+  }
+
+  ov.querySelector('[data-ctype="vuelo"]').click();
+  await esperar(SALTO);
+  ov.querySelector('[data-scan-skip]').click();          /* carga a mano: el escaneo ya se probó arriba */
+  set('aerolinea', 'Aerolineas Argentinas'); set('vuelo_nro', 'AR 1891'); seguir();
+  await elegir('solo_ida');
+  await elegir('no');                                     /* sin escalas */
+  set('origen', 'USH - Ushuaia'); set('destino', 'EZE - Buenos Aires'); seguir();
+  set('fecha_vuelo', '2026-07-21'); set('pnr', 'ABC123'); seguir();
+  await elegir('demora');
+  set('horas_retraso', '5'); seguir();
+  seguir();                                               /* causa: opcional */
+  await elegir('no');                                     /* sin equipaje combinado */
+  await elegir('no');                                     /* sin gastos */
+  await elegir('no');                                     /* sin acompañantes */
+  seguir();                                               /* otra documentación */
+  seguir();                                               /* comentario */
+  set('nombre', 'Juan Pablo Martínez'); seguir();
+  set('telefono', '+54 9 11 2557-8402'); set('email', 'pasajero@test.com'); seguir();
+  set('documento_tipo', 'DNI'); set('documento_numero', '37.806.475'); seguir();
+
+  chk(paso() === 'firma', 'el recorrido llega al último paso: ' + paso());
+  seguir();
+  await ceder(12);
+
+  if (!chk(enviado !== null, 'el alta llegó al endpoint')) return;
+  /* Las dos guardas reales de `api/agency.js`: sin cualquiera de las dos, 400. */
+  chk(enviado.nombre === 'Juan Pablo Martínez' && enviado.email === 'pasajero@test.com',
+    'guarda 1: nombre y email del pasajero viajan');
+  chk(enviado.cliente_autorizacion_declarada === true,
+    'REGRESIÓN: guarda 2: `cliente_autorizacion_declarada` viaja en true, o el alta rebota con 400');
+  chk(paso() === 'done', 'y el wizard muestra la pantalla de caso cargado: ' + paso());
+  chk(r.errores.length === 0, 'sin errores de consola: ' + (r.errores.map(String).join(' | ') || 'ninguno'));
+}
+
 (async function () {
   console.log('\n\x1b[1mEscaneo → autofill contra el wizard, por superficie\x1b[0m');
   for (var i = 0; i < SUPERFICIES.length; i++) await recorrer(SUPERFICIES[i]);
   await contactoSobreviveAlFallo();
+  await contratoDeAltaAgencias();
 
   console.log('\n\x1b[1mResumen\x1b[0m');
   console.log('  \x1b[32m' + chk.estado.ok + ' ok\x1b[0m   ' +

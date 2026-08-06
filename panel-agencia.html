@@ -834,6 +834,20 @@
       });
     })).then(function (subidos) {
       var body = {
+        /* `api/agency.js:238` rechaza el alta sin este flag. Hasta el 2026-08-05 lo
+           mandaba en `true` el submit del formulario largo, gateado por el checkbox
+           `f-autorizado`; al retirarse ese formulario el alta guiada quedó rebotando
+           con 400 —de hecho nunca habia funcionado, porque el wizard tampoco lo
+           mandaba—.
+
+           Va fijo en `true` por decisión de producto (2026-08-06): la autorización
+           del pasajero deja de declararse caso por caso y pasa a declararse UNA vez
+           por agencia, en el acuerdo que se firma al dar de alta la cuenta. Mientras
+           ese acuerdo no exista, esta línea afirma algo que nadie está declarando:
+           es deuda conocida, no un descuido. La opción `declaracion` del wizard
+           (`intake-wizard.js`) está lista para reponer la casilla por caso si se
+           decide volver atrás. */
+        cliente_autorizacion_declarada: true,
         tipo_reclamo: p.tipo_reclamo,
         nombre: p.nombre, email: p.email, telefono: p.telefono,
         documento_tipo: p.documento_tipo, documento_numero: p.documento_numero,
